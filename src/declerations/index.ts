@@ -4,12 +4,15 @@ type LifecycleFunction = (payload: PayloadInterface, state: StateInterface) => P
 type Type = (v: any) => (v: any) => boolean
 
 interface ModelInterface {
-    name?: string
-    database?: DatabaseInterface
-    schema?: {
-        [key: string]: FieldInterface | string | number
+    name: string
+    database: DatabaseInterface
+    schema: {
+        [key: string]: FieldInterface
     }
-    bind?: {
+    methods: {
+        [key in Method]: (payload: PayloadInterface, state: StateInterface) => unknown
+    }
+    bind: {
         [ls in Method]?: {
             preRule?: LifecycleFunction[]
             modify?: LifecycleFunction[]
@@ -31,7 +34,7 @@ interface ModelInterface {
             }
         }
     }
-    mixins?: MixinInterface[]
+    mixins: MixinInterface[]
 }
 
 interface FieldInterface {
@@ -41,6 +44,8 @@ interface FieldInterface {
     unique_group?: string[]
     only_client?: boolean
     only_server?: boolean
+    relation?: ModelInterface
+    read?: Lifecycle[]
 }
 
 interface FilterFieldInterface {
@@ -51,6 +56,7 @@ interface FilterFieldInterface {
     eq: number | string
     not: number | string
     or: string[] | number[]
+    notor: string[] | number[]
     inc: string | number
 }
 
@@ -59,7 +65,7 @@ interface DatabaseInterface {
     types: Type[]
     connect: Function
     disconnect: Function
-    modify: (model: ModelInterface) => Promise<void>
+    modify: (model: ModelInterface) => void
 }
 
 interface PayloadInterface {
@@ -74,7 +80,7 @@ interface PayloadInterface {
         limit: number
         offset: number
     }
-    body?: object
+    body?: any
     options?: {
         method?: string
         simplified: boolean
@@ -98,10 +104,10 @@ interface StateInterface {
 }
 
 interface MixinInterface {
-    schema: {
+    schema?: {
         [key: string]: FieldInterface | string | number
     }
-    bind: {
+    bind?: {
         [ls in Method]: {
             preRule?: LifecycleFunction[]
             modify?: LifecycleFunction[]

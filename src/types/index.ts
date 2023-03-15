@@ -1,4 +1,3 @@
-import { type } from ".."
 import * as lodash from "lodash"
 
 export const Text: Type = (v) => lodash.isString
@@ -11,7 +10,7 @@ export const Boolean: Type = (v) => lodash.isBoolean
 
 export const Buffer: Type = (v) => lodash.isBuffer
 
-export const Object: Type = (v) => lodash.isObject
+export const Any: Type = (v) => lodash.isObject
 
 export const Char: Type = (v) =>
     function (v) {
