@@ -1,12 +1,13 @@
 import * as lodash from "lodash"
-import { After, Before } from "./mixins/After"
+import { After } from "./core/mixin/After"
+import { Before } from "./core/mixin/Before"
 const methods = ["create", "read", "update", "delete", "count", "test"]
 const lifecycles = ["preRule", "modify", "role", "rule", "filter", "effect"]
 const deepmerge = require("deepmerge")
 
-export const models: ModelInterface[] = []
+export const models: ThisType<ModelInterface>[] = []
 
-export function model(model: Partial<ModelInterface>): ModelInterface {
+export function model(model: Partial<ModelInterface>): ThisType<ModelInterface> {
     if (!lodash.isArray(model.mixins)) {
         model.mixins = []
     }
@@ -84,8 +85,7 @@ export async function run(
         model = models.find((model) => model.name === val)
     }
 
-    payload.model = model
-    return await _run(payload, state)
+    return await _run({ model, ...lodash.omit(payload, "model") }, state)
 }
 
 async function _run(payload: PayloadInterface, state?: StateInterface): Promise<any> {}
