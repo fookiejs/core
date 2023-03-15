@@ -1,0 +1,18 @@
+{
+  "name": "core-ts",
+  "description": "",
+  "version": "0.0.1",
+  "main": "index.js",
+  "devDependencies": {
+    "vitest": "^0.29.3"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "deepmerge": "^4.3.0",
+    "lodash": "^4.17.21"
+  }
+}
