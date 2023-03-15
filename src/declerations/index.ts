@@ -1,5 +1,7 @@
 type Method = "create" | "read"| "update" | "delete" | "count" | "test"
 type Lifecycle = "preRule" | "modify"| "role"| "rule"| "filter"| "effect"
+type LifecycleFunction = (payload:PayloadInterface, state:StateInterface)=> Promise<boolean> | Promise<void>
+type Type = (v:any)=>boolean
 
 interface ModelInterface{
     name:string
@@ -9,13 +11,13 @@ interface ModelInterface{
     },
     bind:{
         [ls in Method]:{
-            [ls in Lifecycle]:LifecycleFunctionInterface[]
+            [ls in Lifecycle]:LifecycleFunction[]
         }
     },
     mixins:MixinInterface[]
 }
 interface FieldInterface{
-    type:TypeInterface
+    type:Type
     required: boolean
     unique: boolean
     unique_group: string[]
@@ -36,16 +38,14 @@ interface FilterFieldInterface{
 
 interface DatabaseInterface{
     pk:string
-    types: TypeInterface[]
+    types: Type[]
     connect: Function
     disconnect: Function
     modify: (model:ModelInterface)=>Promise<void>
 }
 
-interface LifecycleFunctionInterface{
-    name:string
-    function: (payload:PayloadInterface, state:StateInterface)=> Promise<boolean> | Promise<void>
-}
+
+
 
 interface PayloadInterface{
     token:string
@@ -78,17 +78,13 @@ interface StateInterface{
     }
 }
 
-interface TypeInterface{
-    controller: (v:any)=>boolean
-}
-
 interface MixinInterface{
     schema:{
         [key:string]:FieldInterface | string | number
     },
     bind:{
         [ls in Method]:{
-            [ls in Lifecycle]:LifecycleFunctionInterface[]
+            [ls in Lifecycle]:LifecycleFunction[]
         }
     },
 }
