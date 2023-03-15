@@ -4,25 +4,25 @@ type LifecycleFunction = (payload:PayloadInterface, state:StateInterface)=> Prom
 type Type = (v:any)=>boolean
 
 interface ModelInterface{
-    name:string
-    database:DatabaseInterface,
-    schema:{
+    name?:string
+    database?:DatabaseInterface,
+    schema?:{
         [key:string]:FieldInterface | string | number
     },
-    bind:{
-        [ls in Method]:{
-            [ls in Lifecycle]:LifecycleFunction[]
+    bind?:{
+        [ls in Method]?:{
+            [ls in Lifecycle]?:LifecycleFunction[]
         }
     },
-    mixins:MixinInterface[]
+    mixins?:MixinInterface[]
 }
 interface FieldInterface{
     type:Type
-    required: boolean
-    unique: boolean
-    unique_group: string[]
-    only_client:boolean
-    only_server: boolean
+    required?: boolean
+    unique?: boolean
+    unique_group?: string[]
+    only_client?:boolean
+    only_server?: boolean
 }
 
 interface FilterFieldInterface{
@@ -48,10 +48,10 @@ interface DatabaseInterface{
 
 
 interface PayloadInterface{
-    token:string
+    token?:string
     model:ModelInterface
     method: Method
-    query:{
+    query?:{
         filter:{
             [key:string]:FilterFieldInterface | string | number
         },
@@ -59,8 +59,8 @@ interface PayloadInterface{
         limit: number
         offset: number
     },
-    body: object
-    options:{
+    body?: object
+    options?:{
         method?:string
         simplified: boolean
     }
