@@ -85,7 +85,7 @@ interface PayloadInterface {
         method?: string
         simplified: boolean
     }
-    response: {
+    response?: {
         status: boolean
         data: any[] | object | number | boolean
         error: string

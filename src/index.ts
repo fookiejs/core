@@ -85,7 +85,7 @@ export async function run(
     }
 
     payload.model = model
-    return await run(payload, state)
+    return await _run(payload, state)
 }
 
-export async function _run(payload: PayloadInterface, state?: StateInterface): Promise<any> {}
+async function _run(payload: PayloadInterface, state?: StateInterface): Promise<any> {}
