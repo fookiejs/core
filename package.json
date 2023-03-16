@@ -1,5 +1,5 @@
 {
-  "name": "core-ts",
+  "name": "fookie",
   "description": "",
   "version": "0.0.1",
   "main": "index.js",
@@ -12,6 +12,7 @@
   },
   "author": "",
   "license": "ISC",
+  "types": "falan",
   "dependencies": {
     "deepmerge": "^4.3.0",
     "lodash": "^4.17.21",

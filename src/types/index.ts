@@ -1,4 +1,5 @@
 import * as lodash from "lodash"
+import type { Type } from "../declerations"
 
 export const Text: Type = (v) => lodash.isString
 

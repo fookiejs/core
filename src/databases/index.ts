@@ -1,6 +1,7 @@
-import { database } from ".."
+import { database } from "../generators"
 import * as lodash from "lodash"
 import { v4 } from "uuid"
+import type { FilterFieldInterface } from "../declerations"
 const store = {}
 
 export const Store = database({

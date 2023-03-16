@@ -1,9 +1,9 @@
-type Method = "create" | "read" | "update" | "delete" | "count" | "test"
-type Lifecycle = "preRule" | "modify" | "role" | "rule" | "filter" | "effect"
-type LifecycleFunction = (payload: PayloadInterface, state: StateInterface) => Promise<boolean> | Promise<void>
-type Type = (v: any) => (v: any) => boolean
+export type Method = "create" | "read" | "update" | "delete" | "count" | "test"
+export type Lifecycle = "preRule" | "modify" | "role" | "rule" | "filter" | "effect"
+export type LifecycleFunction = (payload: PayloadInterface, state: StateInterface) => Promise<boolean> | Promise<void>
+export type Type = (v: any) => (v: any) => boolean
 
-interface ModelInterface {
+export interface ModelInterface {
     name: string
     database: DatabaseInterface
     schema: {
@@ -37,7 +37,7 @@ interface ModelInterface {
     mixins: MixinInterface[]
 }
 
-interface FieldInterface {
+export interface FieldInterface {
     type: Type
     required?: boolean
     unique?: boolean
@@ -48,7 +48,7 @@ interface FieldInterface {
     read?: Lifecycle[]
 }
 
-interface FilterFieldInterface {
+export interface FilterFieldInterface {
     lte: number
     lt: number
     gte: number
@@ -60,7 +60,7 @@ interface FilterFieldInterface {
     inc: string | number
 }
 
-interface DatabaseInterface {
+export interface DatabaseInterface {
     pk: string
     types: Type[]
     connect: Function
@@ -68,7 +68,7 @@ interface DatabaseInterface {
     modify: (model: ModelInterface) => void
 }
 
-interface PayloadInterface {
+export interface PayloadInterface {
     token?: string
     model: ModelInterface
     method: Method
@@ -92,7 +92,7 @@ interface PayloadInterface {
     }
 }
 
-interface StateInterface {
+export interface StateInterface {
     metrics: {
         start: number
         end: number
@@ -103,7 +103,7 @@ interface StateInterface {
     }
 }
 
-interface MixinInterface {
+export interface MixinInterface {
     schema?: {
         [key: string]: FieldInterface | string | number
     }

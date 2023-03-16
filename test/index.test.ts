@@ -1,5 +1,6 @@
 import { it, describe, assert } from "vitest"
-import { model, run, models } from "../src"
+import { run } from "../src"
+import { model, models } from "generators"
 import { Store } from "../src/databases"
 import { Model, Field } from "../src/decorators"
 import { Create } from "../src/methods"

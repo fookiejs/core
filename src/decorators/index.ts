@@ -1,6 +1,7 @@
 const queue: any[] = []
+import { FieldInterface, ModelInterface } from "../declerations"
 import * as lodash from "lodash"
-import { model } from ".."
+import { model } from "../generators"
 
 export function Model(_model: Partial<ModelInterface>) {
     return function (target: Function) {
