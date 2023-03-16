@@ -1,7 +1,5 @@
-module.exports = {
-    name: "nobody",
-    wait: true,
-    function: async function () {
-        return false
-    },
+import { lifecycle } from "../.."
+
+export default async function () {
+    return false
 }

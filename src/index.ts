@@ -61,8 +61,8 @@ export function type(type: Type) {
     return type
 }
 
-export function lifecycle(lifecycle: LifecycleFunction) {
-    return lifecycle
+export function lifecycle(ls: LifecycleFunction) {
+    return ls
 }
 
 export function mixin(mixin: MixinInterface) {

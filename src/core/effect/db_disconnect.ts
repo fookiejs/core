@@ -1,7 +1,3 @@
-module.exports = {
-    name: "db_disconnect",
-    wait: true,
-    function: async function (payload, ctx, state) {
-        await state.database.disconnect()
-    },
+export default async function db_disconnect(payload, state) {
+    await payload.model.database.disconnect()
 }
