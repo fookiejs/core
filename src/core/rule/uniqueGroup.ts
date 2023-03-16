@@ -19,7 +19,7 @@ export default async function (payload, ctx) {
         }
 
         const res = await ctx.run({
-            token: process.env.SYSTEM_TOKEN,
+            token: "system_token",
             model: model.name,
             method: "count",
             query: {

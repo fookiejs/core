@@ -7,7 +7,7 @@ export default async function (payload, state) {
     })
     keys.forEach(async function (k) {
         const modify = await ctx.run({
-            token: process.env.SYSTEM_TOKEN,
+            token: "system_token",
             model: "lifecycle",
             method: "read",
             query: {

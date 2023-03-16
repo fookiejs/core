@@ -7,7 +7,7 @@ export default async function (payload, state) {
     for (let field of fields) {
         if (model.schema[field].unique) {
             let res = await ctx.run({
-                token: process.env.SYSTEM_TOKEN,
+                token: "system_token",
                 model: payload.model,
                 method: "count",
                 query: {

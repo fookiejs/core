@@ -10,7 +10,7 @@ export default async function (payload, state) {
                 model.schema[field].relation === payload.model
             ) {
                 let res = await ctx.run({
-                    token: process.env.SYSTEM_TOKEN,
+                    token: "system_token",
                     model: payload.model,
                     method: "read",
                     query: payload.query,

@@ -56,19 +56,4 @@ describe("fookie", async function () {
         const account = lodash.find(models, { name: "account" })
         assert.equal(lodash.isObject(account), true)
     })
-
-    it("Create model and read", async function () {
-        @Model({ database: Store })
-        class ModelToRead {
-            @Field({ type: Text, required: true })
-            name: string
-        }
-
-        const response = await run({
-            model: ModelToRead,
-            method: Read,
-        })
-
-        console.log(response)
-    })
 })

@@ -2,7 +2,7 @@ import * as lodash from "lodash"
 
 export default async function (payload, state) {
     let model_res = await ctx.run({
-        token: process.env.SYSTEM_TOKEN,
+        token: "system_token",
         model: "model",
         method: "read",
         query: {
@@ -10,7 +10,7 @@ export default async function (payload, state) {
         },
     })
     let mixins_res = await ctx.run({
-        token: process.env.SYSTEM_TOKEN,
+        token: "system_token",
         model: "mixin",
         method: "read",
         query: payload.query,

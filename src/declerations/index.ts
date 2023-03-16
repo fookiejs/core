@@ -73,12 +73,12 @@ interface PayloadInterface {
     model: ModelInterface
     method: Method
     query?: {
-        filter: {
+        filter?: {
             [key: string]: FilterFieldInterface | string | number
         }
-        attributes: string[]
-        limit: number
-        offset: number
+        attributes?: string[]
+        limit?: number
+        offset?: number
     }
     body?: any
     options?: {
