@@ -1,7 +1,7 @@
 import { lifecycle } from "../../generators"
 import * as lodash from "lodash"
 
-export default lifecycle(async function (payload, state) {
+export default (async function (payload, state) {
     if (lodash.has(payload, "method") && !lodash.isString(payload.method)) return false
     if (lodash.has(payload, "model") && !lodash.isString(payload.model)) return false
     if (lodash.has(payload, "options") && !lodash.isObject(payload.options)) return false
@@ -15,3 +15,5 @@ export default lifecycle(async function (payload, state) {
     let avaible_keys = ["response", "method", "model", "options", "token", "body", "query", "id"]
     return lodash.without(lodash.keys(payload), ...avaible_keys).length === 0
 })
+
+//todo lifecyclesız yap
