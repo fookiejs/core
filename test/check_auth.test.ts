@@ -118,7 +118,7 @@ it(" check auth accept modify", async function () {
                 type: Text,
             },
         },
-        lifecycle: {
+        bind: {
             create: {
                 role: ["everybody"],
                 accept: {
@@ -159,7 +159,7 @@ it(" check auth array", async function () {
                 type: Text,
             },
         },
-        lifecycle: {
+        bind: {
             create: {
                 role: ["nobody", "everybody"],
             },
@@ -194,7 +194,7 @@ it(" check auth field write", async function () {
                 write: ["caf_role"],
             },
         },
-        lifecycle: {
+        bind: {
             create: {
                 role: [],
             },
@@ -229,7 +229,7 @@ it(" check auth field read", async function () {
                 read: ["car_role"],
             },
         },
-        lifecycle: {
+        bind: {
             create: {
                 role: ["everybody"],
             },
@@ -275,7 +275,7 @@ it(" check auth reject rule", async function () {
                 type: Text,
             },
         },
-        lifecycle: {
+        bind: {
             create: {
                 role: ["nobody"],
                 reject: {
@@ -317,7 +317,7 @@ it(" check auth accept rule", async function () {
                 type: Text,
             },
         },
-        lifecycle: {
+        bind: {
             create: {
                 role: ["everybody"],
                 accept: {
@@ -356,7 +356,7 @@ it(" check auth reject rule 2", async function () {
                 type: Text,
             },
         },
-        lifecycle: {
+        bind: {
             create: {
                 role: ["nobody", "everybody"],
                 reject: {
@@ -388,7 +388,7 @@ it(" check auth missing_1", async function () {
                 type: Text,
             },
         },
-        lifecycle: {
+        bind: {
             create: {
                 role: ["nobody"],
                 reject: {
@@ -420,7 +420,7 @@ it(" check auth missing_2", async function () {
                 type: Text,
             },
         },
-        lifecycle: {
+        bind: {
             create: {
                 role: ["nobody"],
                 reject: {
@@ -452,7 +452,7 @@ it(" check auth missing_3", async function () {
                 type: Text,
             },
         },
-        lifecycle: {
+        bind: {
             create: {
                 role: ["everybody"],
                 accept: {
@@ -485,7 +485,7 @@ it(" check auth missing_4", async function () {
                 type: Text,
             },
         },
-        lifecycle: {
+        bind: {
             create: {
                 role: ["everybody"],
                 accept: {

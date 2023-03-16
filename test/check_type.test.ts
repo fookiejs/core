@@ -19,7 +19,7 @@ it("check_type", async function () {
 
     const res = await run({
         model: "model_check_type",
-        method: "create",
+        method: Create,
         body: {
             field: 123,
         },
