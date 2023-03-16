@@ -1,6 +1,6 @@
 const lodash = require("lodash")
 
-module.exports = async function (payload: PayloadInterface, state: StateInterface) {
+export default async function (payload: PayloadInterface, state: StateInterface) {
     const roles = payload.model.bind[payload.method].preRule
     let error = null
 

@@ -1,6 +1,15 @@
 import * as lodash from "lodash"
 import { After } from "./core/mixin/After"
 import { Before } from "./core/mixin/Before"
+
+import preRule from "./lifecycles/preRule"
+import modify from "./lifecycles/modify"
+import role from "./lifecycles/role"
+import rule from "./lifecycles/rule"
+import method from "./lifecycles/effect"
+import filter from "./lifecycles/filter"
+import effect from "./lifecycles/effect"
+
 const methods = ["create", "read", "update", "delete", "count", "test"]
 const lifecycles = ["preRule", "modify", "role", "rule", "filter", "effect"]
 const deepmerge = require("deepmerge")
@@ -71,19 +80,56 @@ export async function run(
     payload:
         | PayloadInterface
         | (Omit<PayloadInterface, "model"> & { model: Function })
-        | (Omit<PayloadInterface, "model"> & { model: string }),
-    state?: StateInterface
+        | (Omit<PayloadInterface, "model"> & { model: string })
 ) {
     let model: ModelInterface
+
     if (typeof payload.model === "function") {
         const val = payload.model.name
-        model = models.find((model) => model.name === val)
+        model = models.find((model) => model.name === lodash.lowerCase(val))
     } else if (typeof payload.model === "string") {
         const val = payload.model
         model = models.find((model) => model.name === val)
+    } else {
+        model = payload.model
     }
 
-    return await _run({ model, ...lodash.omit(payload, "model") }, state)
+    return await _run(
+        { model, ...lodash.omit(payload, "model") },
+        {
+            metrics: {
+                start: Date.now(),
+                lifecycle: [],
+            },
+        }
+    )
 }
 
-async function _run(payload: PayloadInterface, state?: StateInterface): Promise<any> {}
+async function _run(payload: PayloadInterface, state: StateInterface): Promise<any> {
+    payload.response = {
+        data: undefined,
+        status: false,
+        error: null,
+    }
+
+    if (!(await preRule(payload, state))) {
+        return payload.response
+    }
+
+    await modify(payload, state)
+
+    if (!(await role(payload, state))) {
+        return payload.response
+    }
+
+    if (!(await rule(payload, state))) {
+        payload.response.data = undefined
+        return payload.response
+    }
+
+    payload.response.status = true
+    await method(payload, state)
+    await filter(payload, state)
+    await effect(payload, state)
+    return lodash.assign({}, payload.response)
+}

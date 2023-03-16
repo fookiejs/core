@@ -1,11 +1,11 @@
-import { database } from ".."
 import * as lodash from "lodash"
 import { v4 } from "uuid"
+import { Text, Any, Array, Boolean, Buffer, Char, Function, Number } from "../types"
 const store = {}
 
-export const Store = database({
+export const Store: DatabaseInterface = {
     pk: "id",
-    types: [],
+    types: [Text, Any, Array, Boolean, Buffer, Char, Function, Number],
     connect: () => {},
     disconnect: () => {},
     modify: function (model) {
@@ -66,7 +66,7 @@ export const Store = database({
             _payload.response.data = filtered.length
         }
     },
-})
+}
 
 function poolFilter(pool: any[], filter) {
     return pool.filter(function (entity) {

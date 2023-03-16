@@ -2,7 +2,7 @@ import { it, describe, assert } from "vitest"
 import { model, run, models } from "../src"
 import { Store } from "../src/databases"
 import { Model, Field } from "../src/decorators"
-import { Create } from "../src/methods"
+import { Create, Read } from "../src/methods"
 import { Text } from "../src/types"
 import * as lodash from "lodash"
 
@@ -55,5 +55,20 @@ describe("fookie", async function () {
 
         const account = lodash.find(models, { name: "account" })
         assert.equal(lodash.isObject(account), true)
+    })
+
+    it("Create model and read", async function () {
+        @Model({ database: Store })
+        class ModelToRead {
+            @Field({ type: Text, required: true })
+            name: string
+        }
+
+        const response = await run({
+            model: ModelToRead,
+            method: Read,
+        })
+
+        console.log(response)
     })
 })

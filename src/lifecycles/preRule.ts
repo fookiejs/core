@@ -1,4 +1,4 @@
-module.exports = async function (payload: PayloadInterface, state: StateInterface) {
+export default async function (payload: PayloadInterface, state: StateInterface) {
     const preRules = payload.model.bind[payload.method].preRule
     for (let preRule of preRules) {
         const start = Date.now()

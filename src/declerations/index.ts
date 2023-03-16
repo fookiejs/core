@@ -95,7 +95,7 @@ interface PayloadInterface {
 interface StateInterface {
     metrics: {
         start: number
-        end: number
+        end?: number
         lifecycle: {
             name: string
             ms: number

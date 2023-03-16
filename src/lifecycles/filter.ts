@@ -1,4 +1,4 @@
-module.exports = async function (payload, state) {
+export default async function (payload, state) {
     const filters = payload.model.bind[payload.method].filter
     for (const filter of filters) {
         const start = Date.now()

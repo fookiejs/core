@@ -1,4 +1,4 @@
-module.exports = async function (payload, state) {
+export default async function (payload, state) {
     let start = Date.now()
 
     if (ctx.lodash.isUndefined(payload.response.data)) {

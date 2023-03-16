@@ -1,4 +1,4 @@
-module.exports = async function (payload: PayloadInterface, state: StateInterface) {
+export default async function (payload: PayloadInterface, state: StateInterface) {
     const effects = payload.model.bind[payload.method].effect
     for (const effect of effects) {
         let start = Date.now()
