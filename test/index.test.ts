@@ -40,12 +40,17 @@ describe("fookie", async function () {
                     type: Text,
                     required: true,
                 },
+                password: {
+                    type: Text,
+                    required: true,
+                },
             },
             bind: {
                 create: {
-                    effect: [],
+                    role: [],
+                    modify: [],
                     accept: {
-                        everybody: {
+                        user_role: {
                             modify: [],
                             rule: [],
                         },
