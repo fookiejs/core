@@ -5,9 +5,9 @@ const methods = ["create", "read", "update", "delete", "count", "test"]
 const lifecycles = ["preRule", "modify", "role", "rule", "filter", "effect"]
 const deepmerge = require("deepmerge")
 
-export const models: ThisType<ModelInterface>[] = []
+export const models: ModelInterface[] = []
 
-export function model(model: Partial<ModelInterface>): ThisType<ModelInterface> {
+export function model(model: Partial<ModelInterface>): ModelInterface {
     if (!lodash.isArray(model.mixins)) {
         model.mixins = []
     }
@@ -19,7 +19,7 @@ export function model(model: Partial<ModelInterface>): ThisType<ModelInterface> 
     const schema_keys = lodash.keys(model.schema)
 
     for (const key of schema_keys) {
-        if (lodash.isArray(model.schema[key].read)) {
+        if (!lodash.has(model.schema[key], "read")) {
             model.schema[key].read = []
         }
     }
@@ -35,7 +35,6 @@ export function model(model: Partial<ModelInterface>): ThisType<ModelInterface> 
         }
     }
 
-    //set_mixin
     let temp: ModelInterface = Object.assign(model)
     temp = deepmerge(After, temp)
     for (const mixin of temp.mixins) {
@@ -43,13 +42,12 @@ export function model(model: Partial<ModelInterface>): ThisType<ModelInterface> 
     }
     temp = deepmerge(Before, temp)
 
-    for (const key in lodash.keys(temp)) {
+    for (const key of lodash.keys(temp)) {
         model[key] = temp[key]
     }
-
-    // database
-
+    //@ts-ignore
     models.push(model)
+    //@ts-ignore
     return model
 }
 
@@ -61,8 +59,8 @@ export function type(type: Type) {
     return type
 }
 
-export function lifecycle(ls: LifecycleFunction) {
-    return ls
+export const lifecycle = function (lifecycle: LifecycleFunction) {
+    return lifecycle
 }
 
 export function mixin(mixin: MixinInterface) {

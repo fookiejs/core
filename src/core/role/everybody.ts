@@ -1,5 +1,6 @@
 import { lifecycle } from "../.."
 
-export default async function () {
+const everybody: LifecycleFunction = async function (payload, state) {
     return true
 }
+export default everybody

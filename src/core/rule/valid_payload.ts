@@ -1,16 +1,21 @@
-import { lifecycle } from "../.."
+import * as Fookie from "../.."
+import * as lodash from "lodash"
 
-export default async function (payload, state) {
-    if (ctx.lodash.has(payload, "method") && !ctx.lodash.isString(payload.method)) return false
-    if (ctx.lodash.has(payload, "model") && !ctx.lodash.isString(payload.model)) return false
-    if (ctx.lodash.has(payload, "options") && !ctx.lodash.isObject(payload.options)) return false
-    if (ctx.lodash.has(payload, "token") && !ctx.lodash.isString(payload.token)) return false
-    if (ctx.lodash.has(payload, "body") && !ctx.lodash.isObject(payload.body)) return false
-    if (ctx.lodash.has(payload, "query") && !ctx.lodash.isObject(payload.query)) return false
-    if (ctx.lodash.has(payload.options, "drop") && !ctx.lodash.isNumber(payload.options.drop)) return false
-    if (ctx.lodash.has(payload.options, "method") && !ctx.lodash.isString(payload.options.method)) return false
-    if (ctx.lodash.has(payload.options, "simplified") && !ctx.lodash.isBoolean(payload.options.simplified)) return false
+console.log(Fookie.lifecycle, 1)
+
+const valid_payload = Fookie.lifecycle(async function (payload, state) {
+    if (lodash.has(payload, "method") && !lodash.isString(payload.method)) return false
+    if (lodash.has(payload, "model") && !lodash.isString(payload.model)) return false
+    if (lodash.has(payload, "options") && !lodash.isObject(payload.options)) return false
+    if (lodash.has(payload, "token") && !lodash.isString(payload.token)) return false
+    if (lodash.has(payload, "body") && !lodash.isObject(payload.body)) return false
+    if (lodash.has(payload, "query") && !lodash.isObject(payload.query)) return false
+    // if (lodash.has(payload.options, "drop") && !lodash.isNumber(payload.options.drop)) return false
+    if (lodash.has(payload.options, "method") && !lodash.isString(payload.options.method)) return false
+    if (lodash.has(payload.options, "simplified") && !lodash.isBoolean(payload.options.simplified)) return false
 
     let avaible_keys = ["response", "method", "model", "options", "token", "body", "query", "id"]
-    return ctx.lodash.without(ctx.lodash.keys(payload), ...avaible_keys).length === 0
-}
+    return lodash.without(lodash.keys(payload), ...avaible_keys).length === 0
+})
+
+export default valid_payload

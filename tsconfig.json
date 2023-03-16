@@ -1,5 +1,8 @@
 {
-  "compilerOptions": {
-    "experimentalDecorators": true
-  }
+    "compilerOptions": {
+        "experimentalDecorators": true,
+        "baseUrl": "./src/"
+    },
+    "exclude": ["node_modules"],
+    "include": ["**/*.ts"]
 }
