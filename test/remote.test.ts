@@ -7,8 +7,6 @@ import { Text } from "../src/types"
 import * as lodash from "lodash"
 
 it("async effect", async function () {
-    await init
-
     const c_res = await fookie.remote.create("lifecycle", {
         name: "example_ls_remote",
         function: async function () {},

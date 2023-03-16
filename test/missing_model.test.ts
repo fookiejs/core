@@ -7,8 +7,6 @@ import { Text } from "../src/types"
 import * as lodash from "lodash"
 
 it("async effect", async function () {
-    await init
-
     const res = await run({
         model: "not_existed_model_1",
         method: "read",

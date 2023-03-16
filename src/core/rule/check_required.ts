@@ -1,6 +1,6 @@
 import * as lodash from "lodash"
 
-export default async function (payload, state) {
+const check_required: LifecycleFunction = async function (payload, state) {
     let search = [null, undefined]
     let model = payload.model
     let keys = payload.method == "create" ? lodash.keys(model.schema) : lodash.keys(model.body)
@@ -13,3 +13,5 @@ export default async function (payload, state) {
     }
     return true
 }
+
+export default check_required

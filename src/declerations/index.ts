@@ -1,7 +1,7 @@
 type Method = "create" | "read" | "update" | "delete" | "count" | "test"
 type Lifecycle = "preRule" | "modify" | "role" | "rule" | "filter" | "effect"
 type LifecycleFunction = (payload: PayloadInterface, state: StateInterface) => Promise<boolean> | Promise<void>
-type Type = (v: any) => (v: any) => boolean
+type Type = (v: any) => boolean
 
 interface ModelInterface {
     name: string

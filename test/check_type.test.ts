@@ -6,31 +6,25 @@ import { Create, Read } from "../src/methods"
 import { Text } from "../src/types"
 import * as lodash from "lodash"
 
-it("async effect", async function () {
-    await init
-
-    await run({
-        token: "system_token",
-        model: "model",
-        method: "create",
-        body: {
-            name: "ct_model",
-            database: Store,
-            schema: {
-                field: {
-                    type: Text,
-                },
+it("check_type", async function () {
+    await model({
+        name: "model_check_type",
+        database: Store,
+        schema: {
+            field: {
+                type: Text,
             },
         },
     })
 
     const res = await run({
-        model: "ct_model",
+        model: "model_check_type",
         method: "create",
         body: {
             field: 123,
         },
     })
+
     assert.equal(res.status, false)
     assert.equal(res.error, "check_type")
 })

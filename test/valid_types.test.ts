@@ -7,7 +7,6 @@ import { Text } from "../src/types"
 import * as lodash from "lodash"
 
 it("invalid type", async function () {
-    await init
     let res = await run({
         token: "system_token",
         model: "database",
@@ -23,7 +22,6 @@ it("invalid type", async function () {
 })
 
 it("valid type", async function () {
-    await init
     let res = await run({
         token: "system_token",
         model: "database",

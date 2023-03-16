@@ -7,7 +7,6 @@ import { Text } from "../src/types"
 import * as lodash from "lodash"
 
 it("test_method", async function () {
-    await init
     await run({
         token: "system_token",
         model: "model",

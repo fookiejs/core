@@ -7,7 +7,6 @@ import { Text } from "../src/types"
 import * as lodash from "lodash"
 
 it("field control", async function () {
-    await init
     const r = await run({
         token: "system_token",
         model: "model",

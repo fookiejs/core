@@ -7,8 +7,6 @@ import { Text } from "../src/types"
 import * as lodash from "lodash"
 
 it("async effect", async function () {
-    await init
-
     await fookie.lifecycle({
         name: "effect_async",
         wait: false,

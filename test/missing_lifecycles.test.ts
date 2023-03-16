@@ -7,7 +7,6 @@ import { Text } from "../src/types"
 import * as lodash from "lodash"
 
 it("Missing preRule", async function () {
-    await init
     await run({
         token: "system_token",
         model: "model",
@@ -38,7 +37,6 @@ it("Missing preRule", async function () {
 })
 
 it("Missing modify", async function () {
-    await init
     await run({
         token: "system_token",
         model: "model",
@@ -69,7 +67,6 @@ it("Missing modify", async function () {
 })
 
 it("Missing rule", async function () {
-    await init
     await run({
         token: "system_token",
         model: "model",
@@ -100,7 +97,6 @@ it("Missing rule", async function () {
 })
 
 it("Missing role", async function () {
-    await init
     await run({
         token: "system_token",
         model: "model",
@@ -131,7 +127,6 @@ it("Missing role", async function () {
 })
 
 it("Missing filter", async function () {
-    await init
     await run({
         token: "system_token",
         model: "model",

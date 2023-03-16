@@ -7,7 +7,6 @@ import { Text } from "../src/types"
 import * as lodash from "lodash"
 
 it("valid query", async function () {
-    await init
     const res = await run({
         token: "system_token",
         model: "model",
@@ -21,7 +20,6 @@ it("valid query", async function () {
 })
 
 it("valid query", async function () {
-    await init
     const res = await run({
         token: "system_token",
         model: "model",
@@ -38,7 +36,6 @@ it("valid query", async function () {
 })
 
 it("valid query", async function () {
-    await init
     const res = await run({
         token: "system_token",
         model: "model",
@@ -53,7 +50,6 @@ it("valid query", async function () {
 })
 
 it("valid query", async function () {
-    await init
     const res = await run({
         token: "system_token",
         model: "model",
@@ -68,7 +64,6 @@ it("valid query", async function () {
 })
 
 it("valid query", async function () {
-    await init
     const res = await run({
         token: "system_token",
         model: "model",
@@ -85,7 +80,6 @@ it("valid query", async function () {
 })
 
 it("valid query", async function () {
-    await init
     model({
         name: "nmbr",
         database: Store,

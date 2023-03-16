@@ -7,8 +7,6 @@ import { Text } from "../src/types"
 import * as lodash from "lodash"
 
 it("throw error modify", async function () {
-    await init
-
     await fookie.lifecycle({
         name: "throw_error",
         wait: false,

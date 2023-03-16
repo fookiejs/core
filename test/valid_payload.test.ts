@@ -7,7 +7,6 @@ import { Text } from "../src/types"
 import * as lodash from "lodash"
 
 it("valid payload", async function () {
-    await init
     const res = await run({
         token: 1,
         model: "model",
@@ -20,7 +19,6 @@ it("valid payload", async function () {
     assert.equal(res.error, "valid_payload")
 })
 it("valid payload", async function () {
-    await init
     const res = await run({
         model: 1,
         method: "read",
@@ -30,7 +28,6 @@ it("valid payload", async function () {
 })
 
 it("valid payload", async function () {
-    await init
     const res = await run({
         model: "model",
         method: 1,
@@ -40,7 +37,6 @@ it("valid payload", async function () {
 })
 
 it("valid payload", async function () {
-    await init
     const res = await run({
         model: "model",
         method: "read",
@@ -51,7 +47,6 @@ it("valid payload", async function () {
 })
 
 it("valid payload", async function () {
-    await init
     const res = await run({
         model: "model",
         method: "read",
@@ -62,7 +57,6 @@ it("valid payload", async function () {
 })
 
 it("valid payload", async function () {
-    await init
     const res = await run({
         model: "model",
         method: "read",
@@ -73,7 +67,6 @@ it("valid payload", async function () {
 })
 
 it("valid payload", async function () {
-    await init
     const res = await run({
         model: "model",
         method: "read",
@@ -86,7 +79,6 @@ it("valid payload", async function () {
 })
 
 it("valid payload", async function () {
-    await init
     const res = await run({
         model: "model",
         method: "read",
@@ -99,7 +91,6 @@ it("valid payload", async function () {
 })
 
 it("valid payload", async function () {
-    await init
     const res = await run({
         model: "model",
         method: "read",
