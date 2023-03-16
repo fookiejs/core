@@ -1,6 +1,6 @@
-import { lifecycle } from "../.."
+import * as lodash from "lodash"
 
 export default async function (payload, state) {
-    state.model = ctx.local.get("model", payload.model)
-    state.database = ctx.local.get("database", state.model.database)
+    payload.model = payload.model
+    payload.model.database = ctx.local.get("database", payload.model.database)
 }

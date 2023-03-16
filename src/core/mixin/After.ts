@@ -3,7 +3,6 @@ import simplified from "../filter/simplified"
 import valid_query from "../rule/valid_query"
 import reactive_prepare from "../modify/reactive_prepare"
 import filter_fields from "../modify/filter_fields"
-import has_model from "../rule/has_model"
 import has_method from "../rule/has_method"
 import valid_attributes from "../rule/valid_attributes"
 import has_entity from "../rule/has_entity"
@@ -29,7 +28,7 @@ export const After: MixinInterface = {
         read: {
             modify: [filter_fields, pk],
             rule: [valid_query],
-            preRule: [has_model, has_method, valid_attributes],
+            preRule: [has_method, valid_attributes],
             filter: [simplified],
             effect: [db_disconnect],
             role: [],

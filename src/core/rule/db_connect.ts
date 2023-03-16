@@ -1,7 +1,7 @@
-import { lifecycle } from "../.."
+import * as lodash from "lodash"
 
-export default async function (payload, state) {
-    let model = ctx.local.get("model", payload.model)
-    let db = ctx.local.get("database", model.database)
-    return await db.connect()
+const lifecycle: LifecycleFunction = async function (payload, state) {
+    return await payload.model.database.connect()
 }
+
+export default lifecycle

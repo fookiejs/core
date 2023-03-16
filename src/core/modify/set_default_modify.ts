@@ -1,9 +1,9 @@
-import { lifecycle } from "../.."
+import * as lodash from "lodash"
 
 export default async function (payload, state) {
-    let keys = ctx.lodash.keys(ctx.local.get("model", payload.model).schema)
+    let keys = lodash.keys(payload.model.schema)
     keys = keys.filter(function (k) {
-        return ctx.local.get("model", payload.model).schema[k].default
+        return payload.model.schema[k].default
     })
     keys.forEach(async function (k) {
         const modify = await ctx.run({
@@ -12,7 +12,7 @@ export default async function (payload, state) {
             method: "read",
             query: {
                 filter: {
-                    name: ctx.local.get("model", payload.model).schema[k].default,
+                    name: payload.model.schema[k].default,
                 },
             },
         })

@@ -1,12 +1,12 @@
-import { lifecycle } from "../.."
+import * as lodash from "lodash"
 
 export default async function (payload, state) {
-    let model = ctx.local.get("model", payload.model)
-    let defaults = ctx.lodash.mapValues(model.schema, function (o) {
+    let model = payload.model
+    let defaults = lodash.mapValues(model.schema, function (o) {
         return o.default
     })
-    defaults = ctx.lodash.pickBy(defaults, function (v) {
-        return !ctx.lodash.isUndefined(v)
+    defaults = lodash.pickBy(defaults, function (v) {
+        return !lodash.isUndefined(v)
     })
-    payload.body = ctx.lodash.defaults(payload.body, defaults)
+    payload.body = lodash.defaults(payload.body, defaults)
 }

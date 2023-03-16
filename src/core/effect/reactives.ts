@@ -1,11 +1,11 @@
-import { lifecycle } from "../.."
+import * as lodash from "lodash"
 
 export default async function (payload, state) {
-    const schema = state.model.schema
-    const fields = ctx.lodash.keys(schema)
+    const schema = payload.model.schema
+    const fields = lodash.keys(schema)
 
     for (const field of fields) {
-        if (ctx.lodash.has(schema[field], "reactives")) {
+        if (lodash.has(schema[field], "reactives")) {
             for (const reactive of schema[field].reactives) {
                 const entities = await ctx.remote.all(payload.model, payload.query)
                 for (const entity of entities) {

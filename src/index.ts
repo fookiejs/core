@@ -54,6 +54,36 @@ export function model(model: Partial<ModelInterface>): ModelInterface {
     for (const key of lodash.keys(temp)) {
         model[key] = temp[key]
     }
+
+    //@ts-ignore
+    model.database.modify(model)
+
+    model.methods.test = async function (_payload, _state) {
+        let p = Object.assign(lodash.omit(_payload, ["response"]))
+        p.method = _payload.options.method
+        let s = {
+            metrics: {
+                start: Date.now(),
+                lifecycle: [],
+            },
+        }
+        p.response = {
+            data: undefined,
+            status: false,
+            error: null,
+        }
+
+        if (await preRule(p, s)) {
+            await modify(p, s)
+            if (await role(p, s)) {
+                if (await rule(p, s)) {
+                    p.response.status = true
+                }
+            }
+        }
+        _payload.response.data = Object.assign(p.response)
+    }
+
     //@ts-ignore
     models.push(model)
     //@ts-ignore

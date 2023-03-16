@@ -1,10 +1,10 @@
-import { lifecycle } from "../.."
+import * as lodash from "lodash"
 
 export default async function (payload, state) {
-    let model = ctx.local.get("model", payload.model)
-    let keys = ctx.lodash.keys(payload.body)
+    let model = payload.model
+    let keys = lodash.keys(payload.body)
     for (let key of keys) {
-        if (ctx.lodash.has(model.schema[key], "relation")) {
+        if (lodash.has(model.schema[key], "relation")) {
             let res = await ctx.run({
                 token: process.env.SYSTEM_TOKEN,
                 model: model.schema[key].relation,

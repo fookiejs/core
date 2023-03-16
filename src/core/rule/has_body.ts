@@ -1,5 +1,5 @@
-import { lifecycle } from "../.."
+import * as lodash from "lodash"
 
 export default async function (payload, state) {
-    return ctx.lodash.has(payload, "body")
+    return lodash.has(payload, "body")
 }

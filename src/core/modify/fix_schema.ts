@@ -1,19 +1,19 @@
-import { lifecycle } from "../.."
+import * as lodash from "lodash"
 
 export default async function (payload, state) {
     function uniqMerge(target, source) {
-        return ctx.lodash.uniq([...target, ...source])
+        return lodash.uniq([...target, ...source])
     }
     let options = {
         arrayMerge: uniqMerge,
     }
 
     let methods = ["create", "read", "update", "delete", "count", "test"]
-    methods = methods.concat(ctx.lodash.keys(payload.body.lifecycle))
-    methods = methods.concat(ctx.lodash.keys(payload.body.methods))
-    methods = ctx.lodash.uniq(methods)
+    methods = methods.concat(lodash.keys(payload.body.lifecycle))
+    methods = methods.concat(lodash.keys(payload.body.methods))
+    methods = lodash.uniq(methods)
 
-    for (let f of ctx.lodash.keys(payload.body.schema)) {
+    for (let f of lodash.keys(payload.body.schema)) {
         payload.body.schema[f] = ctx.helpers.deepMerge(
             payload.body.schema[f],
             {
@@ -38,5 +38,5 @@ export default async function (payload, state) {
             options
         )
     }
-    payload.body.mixins = ctx.lodash.uniq(ctx.helpers.deepMerge(payload.body.mixin, ["after", "before"], options))
+    payload.body.mixins = lodash.uniq(ctx.helpers.deepMerge(payload.body.mixin, ["after", "before"], options))
 }

@@ -1,5 +1,5 @@
-import { lifecycle } from "../.."
+import * as lodash from "lodash"
 
 export default async function (payload, ctx) {
-    return ctx.lodash.has(payload.options, "method") && typeof payload.options.method == "string"
+    return lodash.has(payload.options, "method") && typeof payload.options.method == "string"
 }

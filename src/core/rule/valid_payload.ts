@@ -2,12 +2,12 @@ import * as lodash from "lodash"
 
 const valid_payload: LifecycleFunction = async function (payload, state) {
     if (lodash.has(payload, "method") && !lodash.isString(payload.method)) return false
-    if (lodash.has(payload, "model") && !lodash.isString(payload.model)) return false
+    if (lodash.has(payload, "model") && !lodash.isObject(payload.model)) return false
     if (lodash.has(payload, "options") && !lodash.isObject(payload.options)) return false
     if (lodash.has(payload, "token") && !lodash.isString(payload.token)) return false
     if (lodash.has(payload, "body") && !lodash.isObject(payload.body)) return false
     if (lodash.has(payload, "query") && !lodash.isObject(payload.query)) return false
-    // if (lodash.has(payload.options, "drop") && !lodash.isNumber(payload.options.drop)) return false
+    if (lodash.has(payload.options, "drop") && !lodash.isNumber(payload.options.drop)) return false
     if (lodash.has(payload.options, "method") && !lodash.isString(payload.options.method)) return false
     if (lodash.has(payload.options, "simplified") && !lodash.isBoolean(payload.options.simplified)) return false
 

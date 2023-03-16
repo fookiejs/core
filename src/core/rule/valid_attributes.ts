@@ -1,8 +1,9 @@
-import { lifecycle } from "../.."
+import * as lodash from "lodash"
 
-export default async function (payload, state) {
-    const model = ctx.local.get("model", payload.model)
+const lifecycle: LifecycleFunction = async function (payload, state) {
     return payload.query.attributes.every(function (k) {
-        return ctx.lodash.keys(model.schema).includes(k)
+        return lodash.keys(payload.model.schema).includes(k)
     })
 }
+
+export default lifecycle

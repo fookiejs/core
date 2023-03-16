@@ -1,11 +1,7 @@
-import { lifecycle } from "../.."
+import * as lodash from "lodash"
 
-export default async function (payload, state) {
-    if (ctx.lodash.has(payload, "method") && typeof payload.method == "string") {
-        let model = ctx.local.get("model", payload.model)
-        if (ctx.lodash.has(model.methods, payload.method)) {
-            return true
-        }
-    }
-    return false
+const has_method: LifecycleFunction = async function (payload, state) {
+    return lodash.has(payload.model.methods, payload.method)
 }
+
+export default has_method

@@ -1,4 +1,4 @@
-import { lifecycle } from "../.."
+import * as lodash from "lodash"
 
 export default async function (payload, state) {
     if (payload.body.mixins) {

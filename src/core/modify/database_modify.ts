@@ -1,13 +1,13 @@
-import { lifecycle } from "../.."
+import * as lodash from "lodash"
 
 export default async function (payload, state) {
-    if (ctx.lodash.has(payload.body, "database")) {
+    if (lodash.has(payload.body, "database")) {
         // updated for update method.
         payload.body.methods = {}
         await ctx.local.get("database", payload.body.database).modify(payload.body, ctx, state)
 
         payload.body.methods.test = async function (_payload, _ctx, _state) {
-            let p = Object.assign(ctx.lodash.omit(_payload, ["response"]))
+            let p = Object.assign(lodash.omit(_payload, ["response"]))
             p.method = _payload.options.method
             let s = {
                 metrics: {

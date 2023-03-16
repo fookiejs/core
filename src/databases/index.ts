@@ -10,7 +10,7 @@ export const Store: DatabaseInterface = {
     disconnect: () => {},
     modify: function (model) {
         store[model.name] = []
-
+        model.methods = {}
         model.methods.read = async function (_payload, _state) {
             if (_payload.query.limit == 0) _payload.query.limit = Infinity
             const pool = store[_payload.model.name]

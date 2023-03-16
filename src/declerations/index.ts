@@ -9,8 +9,8 @@ interface ModelInterface {
     schema: {
         [key: string]: FieldInterface
     }
-    methods: {
-        [key in Method]: (payload: PayloadInterface, state: StateInterface) => unknown
+    methods?: {
+        [key in Method]?: (payload: PayloadInterface, state: StateInterface) => unknown
     }
     bind: {
         [ls in Method]?: {
@@ -84,6 +84,7 @@ interface PayloadInterface {
     options?: {
         method?: string
         simplified: boolean
+        drop: number
     }
     response?: {
         status: boolean

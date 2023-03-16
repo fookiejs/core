@@ -1,7 +1,7 @@
-import { lifecycle } from "../.."
+import * as lodash from "lodash"
 
 export default async function (payload, state) {
-    if (ctx.lodash.has(payload.options, "drop")) {
+    if (lodash.has(payload.options, "drop")) {
         setTimeout(async function () {
             await ctx.run({
                 model: payload.model,
@@ -9,7 +9,7 @@ export default async function (payload, state) {
                 token: payload.token,
                 query: {
                     filter: {
-                        pk: payload.response.data[state.database.pk],
+                        pk: payload.response.data[payload.model.database.pk],
                     },
                 },
             })

@@ -1,4 +1,4 @@
-import { lifecycle } from "../.."
+import * as lodash from "lodash"
 
 export default async function (payload, state) {
     let allModels = ctx.local.all("model", payload.model)

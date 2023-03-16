@@ -1,11 +1,11 @@
-import { lifecycle } from "../.."
+import * as lodash from "lodash"
 
-export default async function (payload, ctx) {
+const only_client: LifecycleFunction = async function (payload, ctx) {
     let search = ["", null, undefined]
-    let model = ctx.local.get("model", payload.model)
-    let keys = ctx.lodash.keys(model.schema)
+    let model = payload.model
+    let keys = lodash.keys(model.schema)
     for (let key of keys) {
-        if (model.schema[key].onlyClient == true) {
+        if (model.schema[key].only_client == true) {
             if (search.includes(payload.body[key])) {
                 return false
             }
@@ -13,3 +13,5 @@ export default async function (payload, ctx) {
     }
     return true
 }
+
+export default only_client

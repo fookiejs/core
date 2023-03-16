@@ -1,4 +1,4 @@
-import { lifecycle } from "../.."
+import * as lodash from "lodash"
 
 export default async function (payload, state) {
     let allModels = ctx.local.all("model", payload.model)
@@ -16,7 +16,7 @@ export default async function (payload, state) {
                     query: payload.query,
                 })
                 state.cascadeDeleteIds = res.data.map(function (e) {
-                    return e[state.database.pk]
+                    return e[payload.model.database.pk]
                 })
             }
         }

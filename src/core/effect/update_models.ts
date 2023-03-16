@@ -1,4 +1,4 @@
-import { lifecycle } from "../.."
+import * as lodash from "lodash"
 
 export default async function (payload, state) {
     let model_res = await ctx.run({
@@ -21,7 +21,7 @@ export default async function (payload, state) {
     for (let model of models) {
         for (let mixin of mixins) {
             if (
-                ctx.lodash.intersection(
+                lodash.intersection(
                     model.mixins,
                     mixins.map(function (mixin) {
                         return mixin.name
