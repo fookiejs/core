@@ -16,6 +16,7 @@ import cascade_delete from "../effect/cascade_delete"
 import pk from "../modify/pk"
 import reactives from "../modify/pk"
 import drop from "../modify/pk"
+import type { MixinInterface } from "../../declerations"
 
 export const After: MixinInterface = {
     bind: {

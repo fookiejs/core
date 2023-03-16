@@ -1,7 +1,12 @@
 import * as lodash from "lodash"
 console.log("filan") // TODO:
-
+import { After } from "../core/mixin/After"
+import { Before } from "../core/mixin/Before"
 import type { ModelInterface, DatabaseInterface, Type, LifecycleFunction, MixinInterface } from "../declerations"
+
+export function lifecycle(lifecycle: LifecycleFunction) {
+    return lifecycle
+}
 
 const methods = ["create", "read", "update", "delete", "count", "test"]
 const lifecycles = ["preRule", "modify", "role", "rule", "filter", "effect"]
@@ -38,11 +43,11 @@ export function model(model: Partial<ModelInterface>): ModelInterface {
     }
 
     let temp: ModelInterface = Object.assign(model)
-    temp = deepmerge(temp)
+    temp = deepmerge(Before, temp)
     for (const mixin of temp.mixins) {
         temp = deepmerge(temp, mixin)
     }
-    temp = deepmerge(temp)
+    temp = deepmerge(After, temp)
 
     for (const key of lodash.keys(temp)) {
         model[key] = temp[key]
@@ -59,10 +64,6 @@ export function database(database: DatabaseInterface) {
 
 export function type(type: Type) {
     return type
-}
-
-export const lifecycle = function (lifecycle: LifecycleFunction) {
-    return lifecycle
 }
 
 export function mixin(mixin: MixinInterface) {
