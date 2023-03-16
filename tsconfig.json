@@ -1,7 +1,8 @@
 {
     "compilerOptions": {
         "experimentalDecorators": true,
-        "baseUrl": "./src/"
+        "baseUrl": "./src/",
+        "outDir": "./dist"
     },
     "exclude": ["node_modules"],
     "include": ["**/*.ts"]

@@ -6,7 +6,7 @@ import preRule from "./lifecycles/preRule"
 import modify from "./lifecycles/modify"
 import role from "./lifecycles/role"
 import rule from "./lifecycles/rule"
-import method from "./lifecycles/effect"
+import method from "./lifecycles/method"
 import filter from "./lifecycles/filter"
 import effect from "./lifecycles/effect"
 

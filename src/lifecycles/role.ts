@@ -1,4 +1,4 @@
-const lodash = require("lodash")
+import * as lodash from "lodash"
 
 export default async function (payload: PayloadInterface, state: StateInterface) {
     const roles = payload.model.bind[payload.method].preRule
