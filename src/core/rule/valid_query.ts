@@ -1,6 +1,6 @@
 import * as lodash from "lodash"
 
-const lifecycle: LifecycleFunction = async function (payload, state) {
+const valid_query: LifecycleFunction = async function (payload, state) {
     const accepted_keywords = ["gte"] //TODO
     let filter_keys = lodash.keys(payload.query.filter)
     let model_keys = lodash.keys(payload.model.schema)
@@ -33,7 +33,7 @@ const lifecycle: LifecycleFunction = async function (payload, state) {
             if (field.or && !lodash.isArray(field.or)) {
                 return false
             }
-            if (field.nor && !lodash.isArray(field.nor)) {
+            if (field.notor && !lodash.isArray(field.notor)) {
                 return false
             }
         }
@@ -41,4 +41,4 @@ const lifecycle: LifecycleFunction = async function (payload, state) {
     return true
 }
 
-export default lifecycle
+export default valid_query
