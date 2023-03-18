@@ -2,34 +2,30 @@ import { it, describe, assert } from "vitest"
 import { model, run, models } from "../src"
 import { Store } from "../src/databases"
 import { Model, Field } from "../src/decorators"
-import { Create, Read } from "../src/methods"
-import { Text } from "../src/types"
+import { Create, Read, Test } from "../src/methods"
+import { nobody } from "../src/roles"
+import { Text, Number, Char } from "../src/types"
 import * as lodash from "lodash"
 
 it("test_method", async function () {
-    await run({
-        token: process.env.SYSTEM_TOKEN,
-        model: "model",
-        method: "create",
-        body: {
-            name: "test_method",
-            database: Store,
-            schema: {
-                field: {
-                    type: "char",
-                },
+    const test_model = model({
+        name: "test_model",
+        database: Store,
+        schema: {
+            field: {
+                type: Char,
             },
-            lifecycle: {
-                read: {
-                    role: ["nobody"],
-                },
+        },
+        bind: {
+            read: {
+                role: [nobody],
             },
         },
     })
 
     const res1 = await run({
-        model: "test_method",
-        method: "test",
+        model: test_model,
+        method: Test,
         options: {
             method: "read",
         },
@@ -39,13 +35,13 @@ it("test_method", async function () {
     assert.equal(res1.status, true)
 
     const res2 = await run({
-        model: "test_method",
-        method: "test",
+        model: test_model,
+        method: Test,
         body: {
             field: "h",
         },
         options: {
-            method: "create",
+            method: Create,
         },
     })
 

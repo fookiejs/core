@@ -3,7 +3,7 @@ import { model, run, models } from "../src"
 import { Store } from "../src/databases"
 import { Model, Field } from "../src/decorators"
 import { Create, Read } from "../src/methods"
-import { Text } from "../src/types"
+import { Text, Number } from "../src/types"
 import * as lodash from "lodash"
 
 it("read_zero", async function () {
@@ -21,7 +21,7 @@ it("read_zero", async function () {
     for (let i = -10; i < 10; i++) {
         let create = await run({
             model: "read_zero_model",
-            method: "create",
+            method: Create,
             body: {
                 number: i,
             },

@@ -15,55 +15,57 @@ import has_field from "../rule/has_field"
 import has_body from "../rule/has_body"
 import need_method_in_options from "../rule/need_method_in_options"
 
-export const Before: MixinInterface = {
+const before: MixinInterface = {
     bind: {
         read: {
             preRule: [valid_payload, default_payload, has_method, valid_attributes, db_connect],
             modify: [],
+            role: [],
             rule: [],
             filter: [],
             effect: [],
-            role: [],
         },
         create: {
             preRule: [valid_payload, default_payload, has_method, only_client, only_server, db_connect],
             modify: [set_default, selection],
+            role: [],
             rule: [has_body, has_field, check_type, field_control, unique, uniqueGroup],
             filter: [],
             effect: [],
-            role: [],
         },
         update: {
             preRule: [valid_payload, default_payload, has_method, has_body, db_connect],
             modify: [],
+            role: [],
             rule: [has_body, has_field, check_type, field_control, unique],
             filter: [],
             effect: [],
-            role: [],
         },
         delete: {
             preRule: [valid_payload, default_payload, has_method, db_connect],
             modify: [],
+            role: [],
             rule: [],
             filter: [],
             effect: [],
-            role: [],
         },
         count: {
             preRule: [valid_payload, default_payload, has_method, db_connect],
             modify: [],
+            role: [],
             rule: [],
             filter: [],
             effect: [],
-            role: [],
         },
         test: {
             preRule: [valid_payload, default_payload, has_method, need_method_in_options],
             modify: [],
+            role: [],
             rule: [has_field],
             filter: [],
             effect: [],
-            role: [],
         },
     },
 }
+
+export default before

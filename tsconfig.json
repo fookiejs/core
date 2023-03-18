@@ -3,7 +3,5 @@
         "experimentalDecorators": true,
         "baseUrl": "./src/",
         "outDir": "./dist"
-    },
-    "exclude": ["node_modules"],
-    "include": ["**/*.ts"]
+    }
 }

@@ -5,7 +5,6 @@ const check_type: LifecycleFunction = async function (payload, state) {
         const type = payload.model.schema[field].type
 
         if (!type(payload.body[field])) {
-            console.log(payload.body[field])
             return false
         }
     }

@@ -1,7 +1,7 @@
 import * as lodash from "lodash"
 import { v4 } from "uuid"
 import { models, run } from "../.."
-import { Count, Delete, Read, Update } from "methods"
+import { Count, Delete, Read, Update } from "../../methods"
 
 const has_field: LifecycleFunction = async function (payload, state) {
     let body_keys = lodash.keys(payload.body)

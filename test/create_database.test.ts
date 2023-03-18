@@ -3,7 +3,7 @@ import { model, run, models, database } from "../src"
 import { Store } from "../src/databases"
 import { Model, Field } from "../src/decorators"
 import { Create, Read } from "../src/methods"
-import { Text } from "../src/types"
+import { Text, Number } from "../src/types"
 import * as lodash from "lodash"
 
 it("database", async function () {

@@ -3,35 +3,29 @@ import { model, run, models } from "../src"
 import { Store } from "../src/databases"
 import { Model, Field } from "../src/decorators"
 import { Create, Read } from "../src/methods"
-import { Text } from "../src/types"
+import { Text, Number } from "../src/types"
 import * as lodash from "lodash"
 
 it("Relation has_entity", async function () {
-    const assert = require("assert")
-    const fookie = require("../src/index")
-    const lodash = require("lodash")
+    class InvalidQueryModel {
+        @Field({ type: Text, required: true })
+        field2: string
+    }
 
-    let res = await run({
-        token: process.env.SYSTEM_TOKEN,
-        model: "model",
-        method: "create",
-        body: {
-            name: "relation_test",
-            database: Store,
-            schema: {
-                model: {
-                    relation: "model",
-                    require: true,
-                },
+    let res = model({
+        name: "relation_test",
+        database: Store,
+        schema: {
+            model: {
+                relation: InvalidQueryModel,
+                require: true,
             },
-            lifecycle: {},
-            mixins: [],
         },
     })
 
     res = await run({
         model: "relation_test",
-        method: "create",
+        method: Create,
         body: {
             model: "not_existed_model_has_entity",
         },

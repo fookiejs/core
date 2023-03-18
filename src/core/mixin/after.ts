@@ -13,15 +13,16 @@ import cascade_prepare from "../modify/cascade_prepare"
 import reactive_delete from "../effect/reactive_delete"
 import cascade_delete from "../effect/cascade_delete"
 import pk from "../modify/pk"
-import reactives from "../modify/pk"
-import drop from "../modify/pk"
+import reactives from "../effect/reactives"
+import drop from "../effect/drop"
 
-export const After: MixinInterface = {
+const after: MixinInterface = {
     bind: {
         create: {
             modify: [filter_fields, pk],
             rule: [has_entity, check_required],
             preRule: [can_write],
+            role: [],
             filter: [],
             effect: [db_disconnect, drop],
         },
@@ -67,3 +68,5 @@ export const After: MixinInterface = {
         },
     },
 }
+
+export default after

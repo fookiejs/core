@@ -1,5 +1,21 @@
+import { After, Before } from "../mixins"
+import { models } from "../"
+import * as lodash from "lodash"
+
 export default async function (payload: PayloadInterface, state: StateInterface) {
-    const preRules = payload.model.bind[payload.method].preRule
+    if (!lodash.includes(models, payload.model)) {
+        payload.response.error = "has_model"
+        return false
+    }
+    if (!lodash.has(payload.model.methods, payload.method)) {
+        payload.response.error = "has_method"
+        return false
+    }
+
+    const befores = Before.bind[payload.method].preRule
+    const afters = After.bind[payload.method].preRule
+    const preRules = [...befores, ...payload.model.bind[payload.method].preRule, ...afters]
+
     for (let preRule of preRules) {
         const start = Date.now()
         const res = await preRule(payload, state)

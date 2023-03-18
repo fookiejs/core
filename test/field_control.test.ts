@@ -3,14 +3,14 @@ import { model, run, models } from "../src"
 import { Store } from "../src/databases"
 import { Model, Field } from "../src/decorators"
 import { Create, Read } from "../src/methods"
-import { Text } from "../src/types"
+import { Text, Number } from "../src/types"
 import * as lodash from "lodash"
 
 it("field control", async function () {
     const r = await run({
         token: process.env.SYSTEM_TOKEN,
         model: "model",
-        method: "create",
+        method: Create,
         body: {
             name: "fc_model",
             database: Store,
@@ -37,7 +37,7 @@ it("field control", async function () {
 
     const res_1 = await run({
         model: "fc_model",
-        method: "create",
+        method: Create,
         body: {
             f_number_1: -1,
         },
@@ -45,7 +45,7 @@ it("field control", async function () {
 
     const res_2 = await run({
         model: "fc_model",
-        method: "create",
+        method: Create,
         body: {
             f_number_2: 101,
         },
@@ -53,7 +53,7 @@ it("field control", async function () {
 
     const res_3 = await run({
         model: "fc_model",
-        method: "create",
+        method: Create,
         body: {
             f_number_1: 0,
         },
@@ -61,7 +61,7 @@ it("field control", async function () {
 
     const res_4 = await run({
         model: "fc_model",
-        method: "create",
+        method: Create,
         body: {
             f_number_2: 100,
         },
@@ -69,7 +69,7 @@ it("field control", async function () {
 
     const res_5 = await run({
         model: "fc_model",
-        method: "create",
+        method: Create,
         body: {
             f_array_1: [1, 2, 3, 4],
         },
@@ -77,7 +77,7 @@ it("field control", async function () {
 
     const res_6 = await run({
         model: "fc_model",
-        method: "create",
+        method: Create,
         body: {
             f_array_2: [],
         },

@@ -1,7 +1,7 @@
 import * as lodash from "lodash"
 import { v4 } from "uuid"
 import { models, run } from "../.."
-import { Count, Create, Delete, Read, Update } from "methods"
+import { Count, Create, Delete, Read, Update } from "../../methods"
 
 const unique: LifecycleFunction = async function (payload, state) {
     let trash_old = payload.method === Create ? 0 : 1

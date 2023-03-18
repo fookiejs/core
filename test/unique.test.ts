@@ -3,18 +3,16 @@ import { model, run, models } from "../src"
 import { Store } from "../src/databases"
 import { Model, Field } from "../src/decorators"
 import { Create, Read } from "../src/methods"
-import { Text } from "../src/types"
+import { Text, Number } from "../src/types"
 import * as lodash from "lodash"
 
 it("Unique", async function () {
-    const fookie = require("../src/index")
-
-    model({
+    const UniqueNumber = model({
         name: "number",
         database: Store,
         schema: {
             val: {
-                type: "number",
+                type: Number,
                 unique: true,
             },
         },
@@ -22,8 +20,8 @@ it("Unique", async function () {
 
     await run({
         token: process.env.SYSTEM_TOKEN,
-        model: "number",
-        method: "create",
+        model: UniqueNumber,
+        method: Create,
         body: {
             val: 1,
         },
@@ -31,12 +29,13 @@ it("Unique", async function () {
 
     const res = await run({
         token: process.env.SYSTEM_TOKEN,
-        model: "number",
-        method: "create",
+        model: UniqueNumber,
+        method: Create,
         body: {
             val: 1,
         },
     })
 
     assert.equal(res.status, false)
+    assert.equal(res.error, "unique")
 })

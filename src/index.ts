@@ -1,6 +1,5 @@
 import * as lodash from "lodash"
-import { After } from "./core/mixin/After"
-import { Before } from "./core/mixin/Before"
+import { After, Before } from "./mixins"
 
 import preRule from "./lifecycles/preRule"
 import modify from "./lifecycles/modify"
@@ -45,11 +44,10 @@ export function model(model: Partial<ModelInterface>): ModelInterface {
     }
 
     let temp: ModelInterface = Object.assign(model)
-    temp = deepmerge(After, temp)
+
     for (const mixin of temp.mixins) {
         temp = deepmerge(temp, mixin)
     }
-    temp = deepmerge(Before, temp)
 
     for (const key of lodash.keys(temp)) {
         model[key] = temp[key]
@@ -66,6 +64,8 @@ export function model(model: Partial<ModelInterface>): ModelInterface {
                 start: Date.now(),
                 lifecycle: [],
             },
+            reactive_delete_list: [],
+            cascade_delete_ids: [],
         }
         p.response = {
             data: undefined,
@@ -103,6 +103,23 @@ export const lifecycle = function (lifecycle: LifecycleFunction) {
 }
 
 export function mixin(mixin: MixinInterface) {
+    if (!lodash.isObject(mixin.bind)) {
+        mixin.bind = {}
+    }
+    if (!lodash.isObject(mixin.schema)) {
+        mixin.schema = {}
+    }
+    for (const method of methods) {
+        if (!lodash.isObject(mixin.bind[method])) {
+            mixin.bind[method] = {}
+        }
+        for (const lifecycle of lifecycles) {
+            if (!lodash.isArray(mixin.bind[method][lifecycle])) {
+                mixin.bind[method][lifecycle] = []
+            }
+        }
+    }
+
     return mixin
 }
 
@@ -112,17 +129,17 @@ export async function run(
         | (Omit<PayloadInterface, "model"> & { model: Function })
         | (Omit<PayloadInterface, "model"> & { model: string })
 ) {
-    let model: ModelInterface
+    let model_name = ""
 
     if (typeof payload.model === "function") {
-        const val = payload.model.name
-        model = models.find((model) => model.name === lodash.lowerCase(val))
+        model_name = lodash.lowerCase(payload.model.name)
     } else if (typeof payload.model === "string") {
-        const val = payload.model
-        model = models.find((model) => model.name === val)
+        model_name = payload.model
     } else {
-        model = payload.model
+        model_name = payload.model.name
     }
+
+    const model = models.find((model) => model.name === model_name)
 
     return await _run(
         { model, ...lodash.omit(payload, "model") },
@@ -132,6 +149,7 @@ export async function run(
                 lifecycle: [],
             },
             reactive_delete_list: [],
+            cascade_delete_ids: [],
         }
     )
 }

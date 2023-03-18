@@ -1,5 +1,10 @@
+import { After, Before } from "../mixins"
+
 export default async function (payload: PayloadInterface, state: StateInterface) {
-    const effects = payload.model.bind[payload.method].effect
+    const befores = Before.bind[payload.method].effect
+    const afters = After.bind[payload.method].effect
+    const effects = [...befores, ...payload.model.bind[payload.method].effect, ...afters]
+
     for (const effect of effects) {
         let start = Date.now()
         await effect(payload, state)

@@ -1,6 +1,6 @@
 import * as lodash from "lodash"
 import { models, run } from "../.."
-import { Delete } from "methods"
+import { Delete } from "../../methods"
 
 const cascade_prepare: LifecycleFunction = async function (payload, state) {
     for (let model of models) {

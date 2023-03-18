@@ -3,8 +3,9 @@ import { model, run, models } from "../src"
 import { Store } from "../src/databases"
 import { Model, Field } from "../src/decorators"
 import { Create, Read } from "../src/methods"
-import { Text } from "../src/types"
+import { Text, Number } from "../src/types"
 import * as lodash from "lodash"
+import { nobody } from "../src/roles"
 
 it("create:['nobody'] -> empty field", async function () {
     let model_res = model({
@@ -13,14 +14,14 @@ it("create:['nobody'] -> empty field", async function () {
         schema: {
             msg: {
                 type: Text,
-                read: ["nobody"],
+                read: [nobody],
             },
         },
     })
 
     let create_res = await run({
         model: "test_field_create",
-        method: "create",
+        method: Create,
         body: {
             msg: "hi",
         },

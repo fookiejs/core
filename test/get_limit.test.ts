@@ -3,23 +3,28 @@ import { model, run, models } from "../src"
 import { Store } from "../src/databases"
 import { Model, Field } from "../src/decorators"
 import { Create, Read } from "../src/methods"
-import { Text } from "../src/types"
+import { Text, Number } from "../src/types"
 import * as lodash from "lodash"
 
 it("get limit", async function () {
-    let res = await run({
-        token: process.env.SYSTEM_TOKEN,
-        model: "model",
-        method: "read",
-        query: {
-            limit: 3,
+    @Model({ database: Store })
+    class LimitTestModel {
+        @Field({ type: Text, required: true })
+        field: string
+    }
+
+    for (let i = 0; i < 10; i++) {}
+    await run({
+        model: LimitTestModel,
+        method: Create,
+        body: {
+            field: "val",
         },
     })
-    assert.equal(res.data.length, 3)
-    res = await run({
-        token: process.env.SYSTEM_TOKEN,
-        model: "model",
-        method: "read",
+
+    const res = await run({
+        model: LimitTestModel,
+        method: Read,
         query: {
             limit: 2,
         },

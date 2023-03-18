@@ -4,7 +4,7 @@ import { nobody, system, everybody } from "../src/roles"
 import { Store } from "../src/databases"
 import { Model, Field } from "../src/decorators"
 import { Create, Read } from "../src/methods"
-import { Text } from "../src/types"
+import { Text, Number } from "../src/types"
 import * as lodash from "lodash"
 
 it("check auth 1", async function () {

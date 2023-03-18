@@ -1,7 +1,7 @@
 import * as lodash from "lodash"
 import { v4 } from "uuid"
 import { models, run } from "../.."
-import { Delete } from "methods"
+import { Delete } from "../../methods"
 
 const pk: LifecycleFunction = async function (payload, state) {
     let model = payload.model

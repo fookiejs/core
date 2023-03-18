@@ -3,101 +3,94 @@ import { model, run, models } from "../src"
 import { Store } from "../src/databases"
 import { Model, Field } from "../src/decorators"
 import { Create, Read } from "../src/methods"
-import { Text } from "../src/types"
+import { Text, Number } from "../src/types"
 import * as lodash from "lodash"
 
-it("valid payload", async function () {
-    const res = await run({
-        token: 1,
-        model: "model",
-        method: "read",
-        options: {
-            drop: "abc",
-        },
-    })
-    assert.equal(res.status, false)
-    assert.equal(res.error, "valid_payload")
-})
-it("valid payload", async function () {
-    const res = await run({
-        model: 1,
-        method: "read",
-    })
-    assert.equal(res.status, false)
-    assert.equal(res.error, "valid_payload")
-})
+describe("valid payload", async function () {
+    @Model({ database: Store })
+    class InvalidPayloadModel {
+        @Field({ type: Number, required: true })
+        field: number
+        @Field({ type: Text, required: true })
+        field2: string
+    }
 
-it("valid payload", async function () {
-    const res = await run({
-        model: "model",
-        method: 1,
-    })
-    assert.equal(res.status, false)
-    assert.equal(res.error, "valid_payload")
-})
+    it("valid payload 1", async function () {
+        const res = await run({
+            model: InvalidPayloadModel,
+            method: Read,
+            options: {
+                drop: "abc",
+            },
+        })
 
-it("valid payload", async function () {
-    const res = await run({
-        model: "model",
-        method: "read",
-        body: 1,
+        assert.equal(res.status, false)
+        assert.equal(res.error, "valid_payload")
     })
-    assert.equal(res.status, false)
-    assert.equal(res.error, "valid_payload")
-})
 
-it("valid payload", async function () {
-    const res = await run({
-        model: "model",
-        method: "read",
-        options: 1,
+    it("valid payload 3", async function () {
+        const res = await run({
+            model: InvalidPayloadModel,
+            method: Create,
+            body: 1,
+        })
+        assert.equal(res.status, false)
+        assert.equal(res.error, "valid_payload")
     })
-    assert.equal(res.status, false)
-    assert.equal(res.error, "valid_payload")
-})
 
-it("valid payload", async function () {
-    const res = await run({
-        model: "model",
-        method: "read",
-        query: 1,
+    it("valid payload 4", async function () {
+        const res = await run({
+            model: InvalidPayloadModel,
+            method: "read",
+            options: 1,
+        })
+        assert.equal(res.status, false)
+        assert.equal(res.error, "valid_payload")
     })
-    assert.equal(res.status, false)
-    assert.equal(res.error, "valid_payload")
-})
 
-it("valid payload", async function () {
-    const res = await run({
-        model: "model",
-        method: "read",
-        options: {
-            drop: "abc",
-        },
+    it("valid payload 5", async function () {
+        const res = await run({
+            model: InvalidPayloadModel,
+            method: "read",
+            query: 1,
+        })
+        assert.equal(res.status, false)
+        assert.equal(res.error, "valid_payload")
     })
-    assert.equal(res.status, false)
-    assert.equal(res.error, "valid_payload")
-})
 
-it("valid payload", async function () {
-    const res = await run({
-        model: "model",
-        method: "read",
-        options: {
-            method: 1,
-        },
+    it("valid payload 6", async function () {
+        const res = await run({
+            model: InvalidPayloadModel,
+            method: "read",
+            options: {
+                drop: "abc",
+            },
+        })
+        assert.equal(res.status, false)
+        assert.equal(res.error, "valid_payload")
     })
-    assert.equal(res.status, false)
-    assert.equal(res.error, "valid_payload")
-})
 
-it("valid payload", async function () {
-    const res = await run({
-        model: "model",
-        method: "read",
-        options: {
-            simplified: 1,
-        },
+    it("valid payload 7", async function () {
+        const res = await run({
+            model: InvalidPayloadModel,
+            method: "read",
+            options: {
+                method: 1,
+            },
+        })
+        assert.equal(res.status, false)
+        assert.equal(res.error, "valid_payload")
     })
-    assert.equal(res.status, false)
-    assert.equal(res.error, "valid_payload")
+
+    it("valid payload 8", async function () {
+        const res = await run({
+            model: InvalidPayloadModel,
+            method: "read",
+            options: {
+                simplified: 1,
+            },
+        })
+        assert.equal(res.status, false)
+        assert.equal(res.error, "valid_payload")
+    })
 })

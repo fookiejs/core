@@ -1,8 +1,8 @@
 import * as lodash from "lodash"
 import { run } from "../.."
-import { Delete } from "methods"
+import { Delete } from "../../methods"
 
-export default async function (payload, state) {
+const drop = async function (payload, state) {
     if (lodash.has(payload.options, "drop")) {
         setTimeout(async function () {
             await run({
@@ -18,3 +18,5 @@ export default async function (payload, state) {
         }, payload.options.drop)
     }
 }
+
+export default drop

@@ -3,14 +3,14 @@ import { model, run, models } from "../src"
 import { Store } from "../src/databases"
 import { Model, Field } from "../src/decorators"
 import { Create, Read } from "../src/methods"
-import { Text } from "../src/types"
+import { Text, Number } from "../src/types"
 import * as lodash from "lodash"
 
 it("async effect", async function () {
     const res = await run({
         token: process.env.SYSTEM_TOKEN,
         model: "model",
-        method: "create",
+        method: Create,
         body: {
             mixins: ["abc"],
             name: "async_effect_model",

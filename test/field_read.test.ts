@@ -3,7 +3,7 @@ import { model, run, models } from "../src"
 import { Store } from "../src/databases"
 import { Model, Field } from "../src/decorators"
 import { Create, Read } from "../src/methods"
-import { Text } from "../src/types"
+import { Text, Number } from "../src/types"
 import * as lodash from "lodash"
 
 it("read:['nobody'] -> empty field", async function () {
@@ -20,7 +20,7 @@ it("read:['nobody'] -> empty field", async function () {
 
     let create_res = await run({
         model: "test_field_read",
-        method: "create",
+        method: Create,
         body: {
             msg: "hi",
         },

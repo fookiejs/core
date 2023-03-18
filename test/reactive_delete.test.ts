@@ -3,7 +3,7 @@ import { model, run, models } from "../src"
 import { Store } from "../src/databases"
 import { Model, Field } from "../src/decorators"
 import { Create, Read } from "../src/methods"
-import { Text } from "../src/types"
+import { Text, Number } from "../src/types"
 import * as lodash from "lodash"
 
 it("Reactive Delete", async function () {
@@ -35,7 +35,7 @@ it("Reactive Delete", async function () {
 
     const create_child_res = await run({
         model: "reactive_child",
-        method: "create",
+        method: Create,
         token: process.env.SYSTEM_TOKEN,
         body: {
             name: "child",
@@ -44,7 +44,7 @@ it("Reactive Delete", async function () {
 
     const create_parent_res = await run({
         model: "reactive_parent",
-        method: "create",
+        method: Create,
         token: process.env.SYSTEM_TOKEN,
         body: {
             name: "parent",

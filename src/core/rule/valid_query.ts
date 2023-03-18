@@ -1,7 +1,7 @@
 import * as lodash from "lodash"
 
 const valid_query: LifecycleFunction = async function (payload, state) {
-    const accepted_keywords = ["gte"] //TODO
+    const accepted_keywords = [] //TODO
     let filter_keys = lodash.keys(payload.query.filter)
     let model_keys = lodash.keys(payload.model.schema)
     if (lodash.has(payload.query, "filter") && !lodash.isObject(payload.query.filter)) return false
@@ -11,9 +11,6 @@ const valid_query: LifecycleFunction = async function (payload, state) {
 
     for (let key of lodash.keys(payload.query.filter)) {
         let field = payload.query.filter[key]
-        if (lodash.isObject(field) && lodash.difference(lodash.keys(field), accepted_keywords).length != 0) {
-            return false
-        }
         if (lodash.isObject(field)) {
             if (field.gte && !lodash.isNumber(field.gte)) {
                 return false

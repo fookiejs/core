@@ -1,7 +1,7 @@
 import * as lodash from "lodash"
 import { v4 } from "uuid"
 import { models, run } from "../.."
-import { Delete, Read } from "methods"
+import { Delete, Read } from "../../methods"
 
 const reactive_prepare: LifecycleFunction = async function (payload, state) {
     let result = []

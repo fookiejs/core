@@ -1,24 +1,20 @@
 import { it, describe, assert } from "vitest"
-import { model, run, models } from "../src"
+import { model, run, models, lifecycle } from "../src"
 import { Store } from "../src/databases"
 import { Model, Field } from "../src/decorators"
 import { Create, Read } from "../src/methods"
-import { Text } from "../src/types"
+import { Text, Number } from "../src/types"
 import * as lodash from "lodash"
 
 it("throw error modify", async function () {
-    await lifecycle({
-        name: "throw_error",
-        wait: false,
-        function: function () {
-            throw Error("modify throw error")
-        },
+    const throw_error = lifecycle(async function () {
+        throw Error("modify throw error")
     })
 
     await run({
         token: process.env.SYSTEM_TOKEN,
         model: "model",
-        method: "create",
+        method: Create,
         body: {
             name: "throw_error_model",
             database: Store,
@@ -29,7 +25,7 @@ it("throw error modify", async function () {
             },
             lifecycle: {
                 read: {
-                    modify: ["throw_error"],
+                    modify: [throw_error],
                 },
             },
         },

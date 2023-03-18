@@ -38,7 +38,7 @@ interface ModelInterface {
 }
 
 interface FieldInterface {
-    type: Type
+    type?: Type
     required?: boolean
     unique?: boolean
     default?: any
@@ -97,8 +97,8 @@ interface PayloadInterface {
     body?: any
     options?: {
         method?: string
-        simplified: boolean
-        drop: number
+        simplified?: boolean
+        drop?: number
     }
     response?: {
         status: boolean
@@ -128,7 +128,7 @@ interface MixinInterface {
         [key: string]: FieldInterface | string | number
     }
     bind?: {
-        [ls in Method]: {
+        [ls in Method]?: {
             preRule?: LifecycleFunction[]
             modify?: LifecycleFunction[]
             role?: LifecycleFunction[]

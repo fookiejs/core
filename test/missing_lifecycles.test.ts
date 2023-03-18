@@ -3,14 +3,14 @@ import { model, run, models } from "../src"
 import { Store } from "../src/databases"
 import { Model, Field } from "../src/decorators"
 import { Create, Read } from "../src/methods"
-import { Text } from "../src/types"
+import { Text, Number } from "../src/types"
 import * as lodash from "lodash"
 
 it("Missing preRule", async function () {
     await run({
         token: process.env.SYSTEM_TOKEN,
         model: "model",
-        method: "create",
+        method: Create,
         body: {
             name: "missing_ls_model_1",
             database: Store,
@@ -40,7 +40,7 @@ it("Missing modify", async function () {
     await run({
         token: process.env.SYSTEM_TOKEN,
         model: "model",
-        method: "create",
+        method: Create,
         body: {
             name: "missing_ls_model_2",
             database: Store,
@@ -70,7 +70,7 @@ it("Missing rule", async function () {
     await run({
         token: process.env.SYSTEM_TOKEN,
         model: "model",
-        method: "create",
+        method: Create,
         body: {
             name: "missing_ls_model_3",
             database: Store,
@@ -100,7 +100,7 @@ it("Missing role", async function () {
     await run({
         token: process.env.SYSTEM_TOKEN,
         model: "model",
-        method: "create",
+        method: Create,
         body: {
             name: "missing_ls_model_4",
             database: Store,
@@ -130,7 +130,7 @@ it("Missing filter", async function () {
     await run({
         token: process.env.SYSTEM_TOKEN,
         model: "model",
-        method: "create",
+        method: Create,
         body: {
             name: "missing_ls_model_5",
             database: Store,
@@ -160,7 +160,7 @@ it("Missing effect", async function () {
     await await run({
         token: process.env.SYSTEM_TOKEN,
         model: "model",
-        method: "create",
+        method: Create,
         body: {
             name: "missing_ls_model_6",
             database: Store,

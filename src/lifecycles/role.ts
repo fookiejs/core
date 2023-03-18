@@ -1,7 +1,12 @@
 import * as lodash from "lodash"
+import { After, Before } from "../mixins"
 
 export default async function (payload: PayloadInterface, state: StateInterface) {
-    const roles = payload.model.bind[payload.method].preRule
+    const befores = Before.bind[payload.method].role
+    const afters = After.bind[payload.method].role
+
+    const roles = [...befores, ...payload.model.bind[payload.method].role, ...afters]
+
     let error = null
 
     if (roles.length === 0) {
@@ -32,7 +37,11 @@ export default async function (payload: PayloadInterface, state: StateInterface)
             return true
         } else {
             let skip = false
-            if (lodash.has(field, "reject") && lodash.has(field.reject, role) && lodash.has(field.reject[role.name], "modify")) {
+            if (
+                lodash.has(field, "reject") &&
+                lodash.has(field.reject, role.name) &&
+                lodash.has(field.reject[role.name], "modify")
+            ) {
                 const modifies = payload.model.bind[payload.method]["reject"][role.name].modify
                 for (const modify of modifies) {
                     await modify(payload, state)
@@ -40,10 +49,14 @@ export default async function (payload: PayloadInterface, state: StateInterface)
                 skip = true || skip
             }
 
-            if (lodash.has(field, "reject") && lodash.has(field.reject, role) && lodash.has(field.reject[role.name], "rule")) {
+            if (
+                lodash.has(field, "reject") &&
+                lodash.has(field.reject, role.name) &&
+                lodash.has(field.reject[role.name], "rule")
+            ) {
                 const extra_rules = payload.model.bind[payload.method]["reject"][role.name].rule
                 for (const rule of extra_rules) {
-                    const extra_rule_response = await ctx.local.get("lifecycle", rule).function(payload, state)
+                    const extra_rule_response = rule(payload, state)
                     if (!extra_rule_response) {
                         error = rule
                         break

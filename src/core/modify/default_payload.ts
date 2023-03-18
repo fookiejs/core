@@ -1,10 +1,11 @@
 import * as lodash from "lodash"
 import { v4 } from "uuid"
 import { models, run } from "../.."
-import { Delete } from "methods"
+import { Delete } from "../../methods"
 
 const defalut_payload: LifecycleFunction = async function (payload, state) {
     const model = payload.model
+
     const newPayload = lodash.merge(payload, {
         options: {},
         body: {},

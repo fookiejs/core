@@ -3,7 +3,7 @@ import { model, run, models, lifecycle } from "../src"
 import { Store } from "../src/databases"
 import { Model, Field } from "../src/decorators"
 import { Create, Read } from "../src/methods"
-import { Text } from "../src/types"
+import { Text, Number } from "../src/types"
 import * as lodash from "lodash"
 
 it("async effect", async function () {
@@ -31,5 +31,6 @@ it("async effect", async function () {
         model: "async_effect_model",
         method: Read,
     })
+
     assert.equal(flag, true)
 })

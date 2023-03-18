@@ -3,35 +3,32 @@ import { model, run, models } from "../src"
 import { Store } from "../src/databases"
 import { Model, Field } from "../src/decorators"
 import { Create, Read } from "../src/methods"
-import { Text } from "../src/types"
+import { Text, Number } from "../src/types"
 import * as lodash from "lodash"
 
 it("uniqueGroup", async function () {
-    const fookie = require("../src/index")
-
-    model({
+    const nbmr = model({
         name: "number",
         database: Store,
         schema: {
             val1: {
-                type: "number",
-                uniqueGroup: ["g1"],
+                type: Number,
+                unique_group: ["g1"],
             },
             val2: {
-                type: "number",
-                uniqueGroup: ["g1"],
+                type: Number,
+                unique_group: ["g1"],
             },
             val3: {
-                type: "number",
-                uniqueGroup: ["g1"],
+                type: Number,
+                unique_group: ["g1"],
             },
         },
     })
 
     await run({
-        token: process.env.SYSTEM_TOKEN,
-        model: "number",
-        method: "create",
+        model: nbmr,
+        method: Create,
         body: {
             val1: 1,
             val2: 1,
@@ -40,9 +37,8 @@ it("uniqueGroup", async function () {
     })
 
     const res = await run({
-        token: process.env.SYSTEM_TOKEN,
-        model: "number",
-        method: "create",
+        model: nbmr,
+        method: Create,
         body: {
             val1: 1,
             val2: 1,
@@ -53,9 +49,8 @@ it("uniqueGroup", async function () {
     assert.equal(res.status, true)
 
     const res2 = await run({
-        token: process.env.SYSTEM_TOKEN,
         model: "number",
-        method: "create",
+        method: Create,
         body: {
             val1: 1,
             val2: 1,

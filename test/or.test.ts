@@ -3,18 +3,16 @@ import { model, run, models } from "../src"
 import { Store } from "../src/databases"
 import { Model, Field } from "../src/decorators"
 import { Create, Read } from "../src/methods"
-import { Text } from "../src/types"
+import { Text, Number } from "../src/types"
 import * as lodash from "lodash"
 
 it("$or", async function () {
-    const fookie = require("../src/index")
-
-    model({
-        name: "number",
+    const OrTestNumber = model({
+        name: "OrTestNumber",
         database: Store,
         schema: {
             val: {
-                type: "number",
+                type: Number,
                 required: true,
             },
         },
@@ -22,8 +20,8 @@ it("$or", async function () {
     for (let i = 0; i < 100; i++) {
         await run({
             token: process.env.SYSTEM_TOKEN,
-            model: "number",
-            method: "create",
+            model: OrTestNumber,
+            method: Create,
             body: {
                 val: Math.round(Math.random() * 10),
             },
@@ -33,16 +31,17 @@ it("$or", async function () {
     const arr = [1, 2, 3]
     const res = await run({
         token: process.env.SYSTEM_TOKEN,
-        model: "number",
-        method: "read",
+        model: OrTestNumber,
+        method: Read,
         query: {
             filter: {
                 val: {
-                    $or: arr,
+                    or: arr,
                 },
             },
         },
     })
+
     for (const number of res.data) {
         if (!arr.includes(number.val)) {
             throw Error("must be 1 or 2 but is " + number.val)
@@ -51,12 +50,12 @@ it("$or", async function () {
 
     const res2 = await run({
         token: process.env.SYSTEM_TOKEN,
-        model: "number",
-        method: "read",
+        model: OrTestNumber,
+        method: Read,
         query: {
             filter: {
                 val: {
-                    $nor: arr,
+                    notor: arr,
                 },
             },
         },
