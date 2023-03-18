@@ -9,7 +9,7 @@ import * as lodash from "lodash"
 it("Model required and crud operations", async function () {
     await fookie.init()
     let res = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         model: "model",
         method: "read",
     })

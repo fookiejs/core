@@ -13,7 +13,7 @@ it("Relation has_entity", async function () {
 
     await fookie.init()
     let res = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         model: "model",
         method: "create",
         body: {

@@ -1,6 +1,9 @@
 import * as lodash from "lodash"
+import { v4 } from "uuid"
+import { models, run } from "../.."
+import { Delete, Read } from "methods"
 
-export default async function (payload, state) {
+const set_default: LifecycleFunction = async function (payload, state) {
     let model = payload.model
     let defaults = lodash.mapValues(model.schema, function (o) {
         return o.default
@@ -10,3 +13,5 @@ export default async function (payload, state) {
     })
     payload.body = lodash.defaults(payload.body, defaults)
 }
+
+export default set_default

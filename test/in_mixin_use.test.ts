@@ -8,7 +8,7 @@ import * as lodash from "lodash"
 
 it("in mixin use exist", async function () {
     let res1 = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         model: "mixin",
         method: "delete",
         query: {
@@ -24,7 +24,7 @@ it("in mixin use exist", async function () {
 
 it("in mixin use not exist", async function () {
     let res2 = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         model: "mixin",
         method: "delete",
         query: {

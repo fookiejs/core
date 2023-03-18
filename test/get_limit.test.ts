@@ -9,7 +9,7 @@ import * as lodash from "lodash"
 it("get limit", async function () {
     await fookie.init()
     let res = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         model: "model",
         method: "read",
         query: {
@@ -18,7 +18,7 @@ it("get limit", async function () {
     })
     assert.equal(res.data.length, 3)
     res = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         model: "model",
         method: "read",
         query: {

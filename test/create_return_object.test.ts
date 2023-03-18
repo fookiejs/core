@@ -9,7 +9,7 @@ import * as lodash from "lodash"
 it("Create return type must be object", async function () {
     await fookie.init()
     let res = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         model: "setting",
         method: "create",
         body: {

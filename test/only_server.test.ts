@@ -22,7 +22,7 @@ it("Unique", async function () {
     })
 
     const res = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         model: "only_server",
         method: "create",
         body: {
@@ -31,7 +31,7 @@ it("Unique", async function () {
     })
 
     const res2 = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         model: "only_server",
         method: "create",
         body: {},

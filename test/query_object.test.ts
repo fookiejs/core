@@ -24,7 +24,7 @@ it("Filters with object", async function () {
     })
     for (let i = 0; i < 10000; i++) {
         await run({
-            token: "system_token",
+            token: process.env.SYSTEM_TOKEN,
             model: "number",
             method: "create",
             body: {
@@ -37,7 +37,7 @@ it("Filters with object", async function () {
     // QUERIES
 
     const gte_res = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         method: "read",
         model: "number",
         query: {
@@ -53,7 +53,7 @@ it("Filters with object", async function () {
     }
 
     const lte_res = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         method: "read",
         model: "number",
         query: {
@@ -69,7 +69,7 @@ it("Filters with object", async function () {
     }
 
     const gt_res = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         method: "read",
         model: "number",
         query: {
@@ -85,7 +85,7 @@ it("Filters with object", async function () {
     }
 
     const lt_res = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         method: "read",
         model: "number",
         query: {
@@ -101,7 +101,7 @@ it("Filters with object", async function () {
     }
 
     const eq_r = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         method: "read",
         model: "number",
         query: {
@@ -117,7 +117,7 @@ it("Filters with object", async function () {
     }
 
     const ne_r = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         method: "read",
         model: "number",
         query: {
@@ -133,7 +133,7 @@ it("Filters with object", async function () {
     }
 
     const inc_r = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         method: "read",
         model: "number",
         query: {
@@ -149,7 +149,7 @@ it("Filters with object", async function () {
     }
 
     const invalid_r = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         method: "read",
         model: "number",
         query: {
@@ -166,7 +166,7 @@ it("Filters with object", async function () {
     accepted_query_field_keys.value.keys.push("$INVALID")
     fookie.local.set("setting", accepted_query_field_keys)
     const invalid_r_2 = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         method: "read",
         model: "number",
         query: {

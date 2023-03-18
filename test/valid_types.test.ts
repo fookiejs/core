@@ -8,7 +8,7 @@ import * as lodash from "lodash"
 
 it("invalid type", async function () {
     let res = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         model: "database",
         method: "create",
         body: {
@@ -23,7 +23,7 @@ it("invalid type", async function () {
 
 it("valid type", async function () {
     let res = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         model: "database",
         method: "create",
         body: {

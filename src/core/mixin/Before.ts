@@ -3,7 +3,6 @@ import default_payload from "../modify/default_payload"
 import has_method from "../rule/has_method"
 import valid_attributes from "../rule/valid_attributes"
 import db_connect from "../rule/db_connect"
-import default_state from "../modify/default_state"
 import set_default from "../modify/set_default"
 import selection from "../modify/selection"
 import only_client from "../rule/only_client"
@@ -20,7 +19,7 @@ export const Before: MixinInterface = {
     bind: {
         read: {
             preRule: [valid_payload, default_payload, has_method, valid_attributes, db_connect],
-            modify: [default_state],
+            modify: [],
             rule: [],
             filter: [],
             effect: [],
@@ -28,7 +27,7 @@ export const Before: MixinInterface = {
         },
         create: {
             preRule: [valid_payload, default_payload, has_method, only_client, only_server, db_connect],
-            modify: [default_state, set_default, selection],
+            modify: [set_default, selection],
             rule: [has_body, has_field, check_type, field_control, unique, uniqueGroup],
             filter: [],
             effect: [],
@@ -36,7 +35,7 @@ export const Before: MixinInterface = {
         },
         update: {
             preRule: [valid_payload, default_payload, has_method, has_body, db_connect],
-            modify: [default_state],
+            modify: [],
             rule: [has_body, has_field, check_type, field_control, unique],
             filter: [],
             effect: [],
@@ -44,7 +43,7 @@ export const Before: MixinInterface = {
         },
         delete: {
             preRule: [valid_payload, default_payload, has_method, db_connect],
-            modify: [default_state],
+            modify: [],
             rule: [],
             filter: [],
             effect: [],
@@ -52,7 +51,7 @@ export const Before: MixinInterface = {
         },
         count: {
             preRule: [valid_payload, default_payload, has_method, db_connect],
-            modify: [default_state],
+            modify: [],
             rule: [],
             filter: [],
             effect: [],
@@ -60,7 +59,7 @@ export const Before: MixinInterface = {
         },
         test: {
             preRule: [valid_payload, default_payload, has_method, need_method_in_options],
-            modify: [default_state],
+            modify: [],
             rule: [has_field],
             filter: [],
             effect: [],

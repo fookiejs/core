@@ -131,6 +131,7 @@ export async function run(
                 start: Date.now(),
                 lifecycle: [],
             },
+            reactive_delete_list: [],
         }
     )
 }

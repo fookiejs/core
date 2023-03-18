@@ -21,7 +21,7 @@ it("$or", async function () {
     })
     for (let i = 0; i < 100; i++) {
         await run({
-            token: "system_token",
+            token: process.env.SYSTEM_TOKEN,
             model: "number",
             method: "create",
             body: {
@@ -32,7 +32,7 @@ it("$or", async function () {
 
     const arr = [1, 2, 3]
     const res = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         model: "number",
         method: "read",
         query: {
@@ -50,7 +50,7 @@ it("$or", async function () {
     }
 
     const res2 = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         model: "number",
         method: "read",
         query: {

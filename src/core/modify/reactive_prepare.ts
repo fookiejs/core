@@ -1,8 +1,16 @@
 import * as lodash from "lodash"
+import { v4 } from "uuid"
+import { models, run } from "../.."
+import { Delete, Read } from "methods"
 
-export default async function (payload, state) {
+const reactive_prepare: LifecycleFunction = async function (payload, state) {
     let result = []
-    const entites = await ctx.remote.all(payload.model, payload.query)
+    const entites = await run({
+        model: payload.model,
+        method: Read,
+        query: payload.query,
+    })
+
     const schema = payload.model.schema
     const has = lodash.has
     for (const f in schema) {
@@ -17,3 +25,5 @@ export default async function (payload, state) {
     }
     state.reactive_delete_list = result
 }
+
+export default reactive_prepare

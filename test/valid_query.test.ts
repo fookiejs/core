@@ -8,7 +8,7 @@ import * as lodash from "lodash"
 
 it("valid query", async function () {
     const res = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         model: "model",
         method: "read",
         query: {
@@ -21,7 +21,7 @@ it("valid query", async function () {
 
 it("valid query", async function () {
     const res = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         model: "model",
         method: "read",
         query: {
@@ -37,7 +37,7 @@ it("valid query", async function () {
 
 it("valid query", async function () {
     const res = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         model: "model",
         method: "read",
         query: {
@@ -51,7 +51,7 @@ it("valid query", async function () {
 
 it("valid query", async function () {
     const res = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         model: "model",
         method: "read",
         query: {
@@ -65,7 +65,7 @@ it("valid query", async function () {
 
 it("valid query", async function () {
     const res = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         model: "model",
         method: "read",
         query: {

@@ -12,11 +12,11 @@ it("async effect", async function () {
         flag = true
     })
 
-    await model({
+    model({
         name: "async_effect_model",
         database: Store,
         schema: {
-            fieid: {
+            field: {
                 type: Text,
             },
         },

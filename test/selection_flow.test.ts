@@ -12,7 +12,7 @@ it("Selection flow", async function () {
     await run({
         model: "model",
         method: "create",
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         body: {
             name: "selection_test",
             database: Store,
@@ -32,7 +32,7 @@ it("Selection flow", async function () {
     const res = await run({
         model: "selection_test",
         method: "create",
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         body: {},
     })
 

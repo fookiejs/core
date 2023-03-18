@@ -11,7 +11,7 @@ it("Features Simplified", async function () {
     const res = await run({
         model: "model",
         method: "read",
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         options: {
             simplified: true,
         },

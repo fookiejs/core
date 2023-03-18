@@ -1,7 +1,9 @@
 import * as lodash from "lodash"
 import { v4 } from "uuid"
+import { models, run } from "../.."
+import { Delete } from "methods"
 
-export default async function (payload, state) {
+const defalut_payload: LifecycleFunction = async function (payload, state) {
     const model = payload.model
     const newPayload = lodash.merge(payload, {
         options: {},
@@ -18,7 +20,6 @@ export default async function (payload, state) {
 
     state.metrics = {
         lifecycle: [],
-        response: 0,
         start: Date.now(),
     }
     if (!payload.query.offset) {
@@ -28,6 +29,8 @@ export default async function (payload, state) {
         payload.query.limit = 0
     }
     if (payload.query.attributes.length == 0) {
-        payload.query.attributes = lodash.keys(model.schema) //TODO eğer model yoksa patlıyor.
+        payload.query.attributes = lodash.keys(model.schema)
     }
 }
+
+export default defalut_payload

@@ -1,6 +1,9 @@
 import * as lodash from "lodash"
+import { v4 } from "uuid"
+import { models, run } from "../.."
+import { Delete } from "methods"
 
-export default async function (payload, state) {
+const pk: LifecycleFunction = async function (payload, state) {
     let model = payload.model
     let database = model.database
     if (lodash.has(payload.query.filter, "pk")) {
@@ -10,3 +13,5 @@ export default async function (payload, state) {
         payload.query.filter = lodash.omit(payload.query.filter, ["pk"])
     }
 }
+
+export default pk

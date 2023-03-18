@@ -22,8 +22,8 @@ interface ModelInterface {
             effect?: LifecycleFunction[]
             accept?: {
                 [key: string]: {
-                    modify: LifecycleFunction[]
-                    rule: LifecycleFunction[]
+                    modify?: LifecycleFunction[]
+                    rule?: LifecycleFunction[]
                 }
             }
             reject?: {
@@ -41,11 +41,25 @@ interface FieldInterface {
     type: Type
     required?: boolean
     unique?: boolean
+    default?: any
     unique_group?: string[]
     only_client?: boolean
     only_server?: boolean
     relation?: ModelInterface
-    read?: Lifecycle[]
+    read?: LifecycleFunction[]
+    write?: LifecycleFunction[]
+    cascade_delete?: boolean
+    reactive_delete?: boolean
+    minimum?: number
+    maximum?: number
+    minimum_size?: number
+    maximum_size?: number
+    selection?: (model: ModelInterface) => Promise<any>
+    reactives?: {
+        to: string
+        from: string
+        compute: Function
+    }[]
 }
 
 interface FilterFieldInterface {
@@ -102,6 +116,11 @@ interface StateInterface {
             ms: number
         }[]
     }
+    reactive_delete_list: {
+        model: ModelInterface
+        pk: string | number
+    }[]
+    cascade_delete_ids: string[]
 }
 
 interface MixinInterface {
@@ -118,8 +137,8 @@ interface MixinInterface {
             effect?: LifecycleFunction[]
             accept?: {
                 [key: string]: {
-                    modify: LifecycleFunction[]
-                    rule: LifecycleFunction[]
+                    modify?: LifecycleFunction[]
+                    rule?: LifecycleFunction[]
                 }
             }
             reject?: {

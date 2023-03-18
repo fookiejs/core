@@ -1,14 +1,14 @@
 import { it, describe, assert } from "vitest"
-import { model, run, models } from "../src"
+import { model, run, models, lifecycle } from "../src"
+import { nobody, system, everybody } from "../src/roles"
 import { Store } from "../src/databases"
 import { Model, Field } from "../src/decorators"
 import { Create, Read } from "../src/methods"
 import { Text } from "../src/types"
 import * as lodash from "lodash"
 
-it("check auth", async function () {
-    // PHASE 1
-    let model_res = model({
+it("check auth 1", async function () {
+    let child_setting = model({
         name: "child_setting",
         database: Store,
         schema: {
@@ -18,23 +18,23 @@ it("check auth", async function () {
         },
         bind: {
             create: {
-                role: ["nobody"],
+                role: [nobody],
             },
         },
     })
 
     let create_res = await run({
-        model: "child_setting",
-        method: "create",
+        model: child_setting,
+        method: Create,
         body: {
             msg: "hola",
         },
     })
     assert.equal(create_res.status, false)
+})
 
-    // PHASE 2
-
-    let model_res_2 = model({
+it("check auth 2", async function () {
+    const child_setting2 = model({
         name: "child_setting2",
         database: Store,
         schema: {
@@ -44,14 +44,14 @@ it("check auth", async function () {
         },
         bind: {
             create: {
-                role: ["nobody"],
+                role: [nobody],
             },
         },
     })
 
     let create_res_2 = await run({
-        model: "child_setting2",
-        method: "create",
+        model: child_setting2,
+        method: Create,
         body: {
             msg: "hola",
         },
@@ -63,11 +63,8 @@ it("check auth", async function () {
 it(" check auth reject modify", async function () {
     let flag = false
 
-    await lifecycle({
-        name: "test_r_modify",
-        function: async function (payload, ctx, state) {
-            flag = true
-        },
+    const test_r_modify = lifecycle(async function (payload, state) {
+        flag = true
     })
     const model_res = model({
         name: "msg_reject_1",
@@ -79,10 +76,10 @@ it(" check auth reject modify", async function () {
         },
         bind: {
             create: {
-                role: ["nobody"],
+                role: [nobody],
                 reject: {
                     nobody: {
-                        modify: ["test_r_modify"],
+                        modify: [test_r_modify],
                     },
                 },
             },
@@ -91,7 +88,7 @@ it(" check auth reject modify", async function () {
 
     let create_res_2 = await run({
         model: "msg_reject_1",
-        method: "create",
+        method: Create,
         body: {
             msg: "hola",
         },
@@ -104,13 +101,11 @@ it(" check auth reject modify", async function () {
 it(" check auth accept modify", async function () {
     let flag = false
 
-    await fookie.lifecycle({
-        name: "test_a_modify",
-        function: async function (payload, ctx, state) {
-            flag = true
-        },
+    const test_a_modify = lifecycle(async function (payload, state) {
+        flag = true
     })
-    model({
+
+    const msg_accept_0 = model({
         name: "msg_accept_0",
         database: Store,
         schema: {
@@ -120,10 +115,10 @@ it(" check auth accept modify", async function () {
         },
         bind: {
             create: {
-                role: ["everybody"],
+                role: [everybody],
                 accept: {
                     everybody: {
-                        modify: ["test_a_modify"],
+                        modify: [test_a_modify],
                     },
                 },
             },
@@ -131,8 +126,8 @@ it(" check auth accept modify", async function () {
     })
 
     let create_res_2 = await run({
-        model: "msg_accept_0",
-        method: "create",
+        model: msg_accept_0,
+        method: Create,
         body: {
             msg: "hola",
         },
@@ -145,11 +140,8 @@ it(" check auth accept modify", async function () {
 it(" check auth array", async function () {
     let flag = false
 
-    await fookie.lifecycle({
-        name: "test_a_modify",
-        function: async function (payload, ctx, state) {
-            flag = true
-        },
+    const test_a_modify = lifecycle(async function (payload, state) {
+        flag = true
     })
     model({
         name: "msg_array",
@@ -161,14 +153,14 @@ it(" check auth array", async function () {
         },
         bind: {
             create: {
-                role: ["nobody", "everybody"],
+                role: [nobody, everybody],
             },
         },
     })
 
     let create_res_2 = await run({
         model: "msg_array",
-        method: "create",
+        method: Create,
         body: {
             msg: "hola",
         },
@@ -178,11 +170,8 @@ it(" check auth array", async function () {
 })
 
 it(" check auth field write", async function () {
-    await fookie.lifecycle({
-        name: "caf_role",
-        function: async function (payload, ctx, state) {
-            return false
-        },
+    const caf_role = lifecycle(async function (payload, state) {
+        return false
     })
 
     model({
@@ -191,7 +180,7 @@ it(" check auth field write", async function () {
         schema: {
             msg: {
                 type: Text,
-                write: ["caf_role"],
+                write: [caf_role],
             },
         },
         bind: {
@@ -203,7 +192,7 @@ it(" check auth field write", async function () {
 
     let create_res_2 = await run({
         model: "caf",
-        method: "create",
+        method: Create,
         body: {
             msg: "hola",
         },
@@ -213,11 +202,8 @@ it(" check auth field write", async function () {
 })
 
 it(" check auth field read", async function () {
-    await fookie.lifecycle({
-        name: "car_role",
-        function: async function (payload, ctx, state) {
-            return false
-        },
+    const car_role = lifecycle(async function (payload, state) {
+        return false
     })
 
     model({
@@ -226,19 +212,19 @@ it(" check auth field read", async function () {
         schema: {
             msg: {
                 type: Text,
-                read: ["car_role"],
+                read: [car_role],
             },
         },
         bind: {
             create: {
-                role: ["everybody"],
+                role: [everybody],
             },
         },
     })
 
     await run({
         model: "car",
-        method: "create",
+        method: Create,
         body: {
             msg: "hola",
         },
@@ -246,7 +232,7 @@ it(" check auth field read", async function () {
 
     let read_res = await run({
         model: "car",
-        method: "read",
+        method: Read,
         body: {
             msg: "hola",
         },
@@ -260,12 +246,9 @@ it(" check auth field read", async function () {
 it(" check auth reject rule", async function () {
     let flag = false
 
-    await fookie.lifecycle({
-        name: "test_r_rule",
-        function: async function (payload, ctx, state) {
-            flag = true
-            return true
-        },
+    const test_r_rule = lifecycle(async function (payload, state) {
+        flag = true
+        return true
     })
     const model_res = model({
         name: "msg_reject_2",
@@ -277,10 +260,10 @@ it(" check auth reject rule", async function () {
         },
         bind: {
             create: {
-                role: ["nobody"],
+                role: [nobody],
                 reject: {
                     nobody: {
-                        rule: ["test_r_rule"],
+                        rule: [test_r_rule],
                     },
                 },
             },
@@ -289,7 +272,7 @@ it(" check auth reject rule", async function () {
 
     let create_res_2 = await run({
         model: "msg_reject_2",
-        method: "create",
+        method: Create,
         body: {
             msg: "hola",
         },
@@ -302,14 +285,12 @@ it(" check auth reject rule", async function () {
 it(" check auth accept rule", async function () {
     let flag = false
 
-    await fookie.lifecycle({
-        name: "test_a_rule",
-        function: async function (payload, ctx, state) {
-            flag = true
-            return false
-        },
+    const test_a_rule = lifecycle(async function (payload, state) {
+        flag = true
+        return false
     })
-    model({
+
+    const msg_accept_1 = model({
         name: "msg_accept_1",
         database: Store,
         schema: {
@@ -319,10 +300,10 @@ it(" check auth accept rule", async function () {
         },
         bind: {
             create: {
-                role: ["everybody"],
+                role: [everybody],
                 accept: {
                     everybody: {
-                        rule: ["test_a_rule"],
+                        rule: [test_a_rule],
                     },
                 },
             },
@@ -330,8 +311,8 @@ it(" check auth accept rule", async function () {
     })
 
     let create_res_2 = await run({
-        model: "msg_accept_1",
-        method: "create",
+        model: msg_accept_1,
+        method: Create,
         body: {
             msg: "hola",
         },
@@ -342,13 +323,11 @@ it(" check auth accept rule", async function () {
 })
 
 it(" check auth reject rule 2", async function () {
-    await fookie.lifecycle({
-        name: "test_a_rule_3",
-        function: async function (payload, ctx, state) {
-            return false
-        },
+    const test_a_rule_3 = lifecycle(async function (payload, state) {
+        return false
     })
-    model({
+
+    const msg_reject_3 = model({
         name: "msg_reject_3",
         database: Store,
         schema: {
@@ -358,10 +337,10 @@ it(" check auth reject rule 2", async function () {
         },
         bind: {
             create: {
-                role: ["nobody", "everybody"],
+                role: [nobody, everybody],
                 reject: {
                     nobody: {
-                        rule: ["test_a_rule_3"],
+                        rule: [test_a_rule_3],
                     },
                 },
             },
@@ -369,142 +348,12 @@ it(" check auth reject rule 2", async function () {
     })
 
     let create_res_2 = await run({
-        model: "msg_reject_3",
-        method: "create",
+        model: msg_reject_3,
+        method: Create,
         body: {
             msg: "hola",
         },
     })
 
     assert.equal(create_res_2.status, true)
-})
-
-it(" check auth missing_1", async function () {
-    model({
-        name: "msg_missing_lsf_1",
-        database: Store,
-        schema: {
-            msg: {
-                type: Text,
-            },
-        },
-        bind: {
-            create: {
-                role: ["nobody"],
-                reject: {
-                    nobody: {
-                        rule: ["not_existed_lfs"],
-                    },
-                },
-            },
-        },
-    })
-
-    try {
-        await run({
-            model: "msg_missing_lsf_1",
-            method: "create",
-            body: {
-                msg: "hola",
-            },
-        })
-        throw Error("-")
-    } catch (error) {}
-})
-it(" check auth missing_2", async function () {
-    model({
-        name: "msg_missing_lsf_2",
-        database: Store,
-        schema: {
-            msg: {
-                type: Text,
-            },
-        },
-        bind: {
-            create: {
-                role: ["nobody"],
-                reject: {
-                    nobody: {
-                        modify: ["not_existed_lfs"],
-                    },
-                },
-            },
-        },
-    })
-
-    try {
-        await run({
-            model: "msg_missing_lsf_2",
-            method: "create",
-            body: {
-                msg: "hola",
-            },
-        })
-        throw Error("-")
-    } catch (error) {}
-})
-it(" check auth missing_3", async function () {
-    model({
-        name: "msg_missing_lsf_3",
-        database: Store,
-        schema: {
-            msg: {
-                type: Text,
-            },
-        },
-        bind: {
-            create: {
-                role: ["everybody"],
-                accept: {
-                    everybody: {
-                        modify: ["not_existed_lfdsds"],
-                    },
-                },
-            },
-        },
-    })
-
-    try {
-        await run({
-            model: "msg_missing_lsf_3",
-            method: "create",
-            body: {
-                msg: "hola",
-            },
-        })
-
-        throw Error("-")
-    } catch (error) {}
-})
-it(" check auth missing_4", async function () {
-    model({
-        name: "msg_missing_lsf_4",
-        database: Store,
-        schema: {
-            msg: {
-                type: Text,
-            },
-        },
-        bind: {
-            create: {
-                role: ["everybody"],
-                accept: {
-                    everybody: {
-                        rule: ["not_existed_lfdss"],
-                    },
-                },
-            },
-        },
-    })
-
-    try {
-        await run({
-            model: "msg_missing_lsf_4",
-            method: "create",
-            body: {
-                msg: "hola",
-            },
-        })
-        throw Error("-")
-    } catch (error) {}
 })

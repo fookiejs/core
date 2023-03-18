@@ -8,7 +8,7 @@ import * as lodash from "lodash"
 
 it("field control", async function () {
     const r = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         model: "model",
         method: "create",
         body: {

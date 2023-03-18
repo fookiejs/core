@@ -1,18 +1,26 @@
 import * as lodash from "lodash"
+import { run } from "../.."
+import { Read, Update } from "methods"
 
-export default async function (payload, state) {
+const reactives: LifecycleFunction = async function (payload, state) {
     const schema = payload.model.schema
     const fields = lodash.keys(schema)
 
     for (const field of fields) {
         if (lodash.has(schema[field], "reactives")) {
             for (const reactive of schema[field].reactives) {
-                const entities = await ctx.remote.all(payload.model, payload.query)
+                const entities = await run({
+                    token: process.env.SYSTEM_TOKEN,
+                    model: payload.model,
+                    method: Read,
+                    query: payload.query,
+                })
                 for (const entity of entities) {
                     if (entity[field]) {
-                        await ctx.run({
+                        await run({
+                            token: process.env.SYSTEM_TOKEN,
                             model: schema[field].relation,
-                            method: "update",
+                            method: Update,
                             query: {
                                 filter: {
                                     pk: entity[field],
@@ -28,3 +36,5 @@ export default async function (payload, state) {
         }
     }
 }
+
+export default reactives

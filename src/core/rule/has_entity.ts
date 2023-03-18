@@ -1,15 +1,15 @@
 import * as lodash from "lodash"
-import { run } from "../../"
+import { v4 } from "uuid"
+import { models, run } from "../.."
+import { Count, Delete, Read, Update } from "methods"
 
-export default async function (payload, state) {
-    let model = payload.model
-    let keys = lodash.keys(payload.body)
-    for (let key of keys) {
-        if (lodash.has(model.schema[key], "relation")) {
-            let res = await run({
+const has_entity: LifecycleFunction = async function (payload, state) {
+    for (let key of lodash.keys(payload.body)) {
+        if (lodash.has(payload.model.schema[key], "relation")) {
+            const res = await run({
                 token: process.env.SYSTEM_TOKEN,
-                model: model.schema[key].relation,
-                method: "count",
+                model: payload.model.schema[key].relation,
+                method: Count,
                 query: {
                     filter: {
                         pk: payload.body[key],
@@ -23,3 +23,5 @@ export default async function (payload, state) {
     }
     return true
 }
+
+export default has_entity

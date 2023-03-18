@@ -23,7 +23,7 @@ it("recalculate_model_when_mixin_update.test", async function () {
     let after_res = await run({
         model: "mixin",
         method: "update",
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         query: {
             filter: {
                 name: "after",
@@ -37,7 +37,7 @@ it("recalculate_model_when_mixin_update.test", async function () {
     let before_res = await run({
         model: "mixin",
         method: "update",
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         query: {
             filter: {
                 name: "after",

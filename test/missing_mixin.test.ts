@@ -8,7 +8,7 @@ import * as lodash from "lodash"
 
 it("async effect", async function () {
     const res = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         model: "model",
         method: "create",
         body: {

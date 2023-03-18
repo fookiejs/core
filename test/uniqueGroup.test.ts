@@ -29,7 +29,7 @@ it("uniqueGroup", async function () {
     })
 
     await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         model: "number",
         method: "create",
         body: {
@@ -40,7 +40,7 @@ it("uniqueGroup", async function () {
     })
 
     const res = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         model: "number",
         method: "create",
         body: {
@@ -53,7 +53,7 @@ it("uniqueGroup", async function () {
     assert.equal(res.status, true)
 
     const res2 = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         model: "number",
         method: "create",
         body: {

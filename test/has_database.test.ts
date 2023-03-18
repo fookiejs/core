@@ -9,7 +9,7 @@ import * as lodash from "lodash"
 it("Attributes", async function () {
     await fookie.init()
     let res = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         model: "model",
         method: "create",
         body: {

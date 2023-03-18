@@ -27,7 +27,7 @@ let example_model = {
 it("Create and update model", async function () {
     await fookie.init()
     let res = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         model: "model",
         method: "create",
         body: example_model,
@@ -36,7 +36,7 @@ it("Create and update model", async function () {
     assert.equal(res.status, true)
 
     res = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         model: "model",
         method: "update",
         query: {

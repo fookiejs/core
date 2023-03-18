@@ -13,7 +13,7 @@ function sleep(ms) {
 it("Drop", async function () {
     await fookie.init()
     let res = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         model: "setting",
         method: "create",
         body: {

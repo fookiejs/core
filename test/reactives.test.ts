@@ -44,7 +44,7 @@ it("Reactives", async function () {
     const create_child_res = await run({
         model: "reactive_child",
         method: "create",
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         body: {
             name: "child",
         },
@@ -53,7 +53,7 @@ it("Reactives", async function () {
     const create_parent_res = await run({
         model: "reactive_parent",
         method: "create",
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         body: {
             name: "parent",
             child: create_child_res.data.id,
@@ -63,7 +63,7 @@ it("Reactives", async function () {
     await run({
         model: "reactive_parent",
         method: "update",
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         query: {
             filter: {},
         },
@@ -75,7 +75,7 @@ it("Reactives", async function () {
     let res = await run({
         model: "reactive_child",
         method: "read",
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         query: {
             filter: {},
         },

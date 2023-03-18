@@ -1,6 +1,9 @@
 import * as lodash from "lodash"
+import { v4 } from "uuid"
+import { models, run } from "../.."
+import { Delete } from "methods"
 
-export default async function (payload, state) {
+const can_write: LifecycleFunction = async function (payload, state) {
     const model = payload.model
     const filtered_schema = lodash.pick(model.schema, lodash.keys(payload.body))
     const writes = lodash.map(filtered_schema, function (i) {
@@ -10,7 +13,7 @@ export default async function (payload, state) {
     const roles = lodash.flatten(filtered_writes)
 
     for (let role of roles) {
-        const res = await ctx.local.get("lifecycle", role).function(payload, state)
+        const res = await role(payload, state)
         if (!res) {
             return false
         }
@@ -18,3 +21,5 @@ export default async function (payload, state) {
 
     return true
 }
+
+export default can_write

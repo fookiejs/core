@@ -15,7 +15,7 @@ it("State must be inclode model and model database", async function () {
         },
     })
     let res = await run({
-        token: "system_token",
+        token: process.env.SYSTEM_TOKEN,
         model: "model",
         method: "create",
         body: {
