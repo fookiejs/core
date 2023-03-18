@@ -7,7 +7,6 @@ import { Text } from "../src/types"
 import * as lodash from "lodash"
 
 it("pk", async function () {
-    await fookie.init()
-    assert.equal(fookie.helpers.pk("model"), "id")
-    assert.equal(fookie.helpers.pk("database"), "id")
+    assert.equal(helpers.pk("model"), "id")
+    assert.equal(helpers.pk("database"), "id")
 })

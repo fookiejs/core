@@ -7,7 +7,6 @@ import { Text } from "../src/types"
 import * as lodash from "lodash"
 
 it("get offset", async function () {
-    await fookie.init()
     let res = await run({
         token: process.env.SYSTEM_TOKEN,
         model: "model",

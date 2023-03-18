@@ -7,7 +7,7 @@ import { Text } from "../src/types"
 import * as lodash from "lodash"
 
 it("async effect", async function () {
-    const res = fookie.local.query("model", {
+    const res = local.query("model", {
         name: "lifecycle",
     })
 

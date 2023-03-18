@@ -7,7 +7,7 @@ import { Text } from "../src/types"
 import * as lodash from "lodash"
 
 it("mixin model", async function () {
-    await fookie.mixin({
+    await mixin({
         name: "mixin1",
         object: {
             schema: {

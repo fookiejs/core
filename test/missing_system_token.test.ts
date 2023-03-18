@@ -8,5 +8,4 @@ import * as lodash from "lodash"
 
 it("Attributes", async function () {
     //TODO
-    await fookie.init()
 })

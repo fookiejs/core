@@ -9,13 +9,13 @@ import * as lodash from "lodash"
 it("recalculate_model_when_mixin_update.test", async function () {
     const assert = require("assert")
     const fookie = require("../src/index")
-    await fookie.init()
-    let after = fookie.local.get("mixin", "after")
-    let before = fookie.local.get("mixin", "before")
+
+    let after = local.get("mixin", "after")
+    let before = local.get("mixin", "before")
     after.object.lifecycle.read.effect.push("test_effect")
     before.object.lifecycle.read.effect.push("test_effect")
 
-    await fookie.lifecycle({
+    await lifecycle({
         name: "test_effect",
         function: async function () {},
     })
@@ -47,8 +47,8 @@ it("recalculate_model_when_mixin_update.test", async function () {
             object: after.object,
         },
     })
-    let models = fookie.local.all("model")
+    let models = local.all("model")
     models.forEach((model) => {
-        assert.equal(fookie.lodash.includes(model.lifecycle.read.effect, "test_effect"), true) //REFAKTÖR ET
+        assert.equal(lodash.includes(model.lifecycle.read.effect, "test_effect"), true) //REFAKTÖR ET
     })
 })

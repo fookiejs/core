@@ -25,7 +25,6 @@ let example_model = {
 }
 
 it("Create and update model", async function () {
-    await fookie.init()
     let res = await run({
         token: process.env.SYSTEM_TOKEN,
         model: "model",

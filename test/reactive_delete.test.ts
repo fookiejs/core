@@ -7,8 +7,6 @@ import { Text } from "../src/types"
 import * as lodash from "lodash"
 
 it("Reactive Delete", async function () {
-    await fookie.init()
-
     model({
         name: "reactive_parent",
         database: Store,

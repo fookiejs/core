@@ -7,21 +7,21 @@ import { Text } from "../src/types"
 import * as lodash from "lodash"
 
 it("async effect", async function () {
-    const c_res = await fookie.remote.create("lifecycle", {
+    const c_res = await remote.create("lifecycle", {
         name: "example_ls_remote",
         function: async function () {},
     })
     assert.equal(true, lodash.isObject(c_res))
 
-    const g_res = await fookie.remote.get("lifecycle", c_res.id)
+    const g_res = await remote.get("lifecycle", c_res.id)
     assert.equal(true, lodash.isObject(g_res))
 
-    const u_res = await fookie.remote.update("lifecycle", c_res.id, {
+    const u_res = await remote.update("lifecycle", c_res.id, {
         name: "example_ls_remote",
         function: async function () {},
     })
     assert.equal(true, lodash.isBoolean(u_res))
 
-    const r_res = await fookie.remote.random("lifecycle")
+    const r_res = await remote.random("lifecycle")
     assert.equal(true, lodash.isObject(r_res))
 })

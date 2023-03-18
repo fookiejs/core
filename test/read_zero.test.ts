@@ -7,7 +7,6 @@ import { Text } from "../src/types"
 import * as lodash from "lodash"
 
 it("read_zero", async function () {
-    await fookie.init()
     // PHASE 1
     let model_res = model({
         name: "read_zero_model",

@@ -8,7 +8,7 @@ import * as lodash from "lodash"
 
 it("Unique", async function () {
     const fookie = require("../src/index")
-    await fookie.init()
+
     model({
         name: "only_server",
         database: Store,

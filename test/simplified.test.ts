@@ -7,7 +7,6 @@ import { Text } from "../src/types"
 import * as lodash from "lodash"
 
 it("Features Simplified", async function () {
-    await fookie.init()
     const res = await run({
         model: "model",
         method: "read",

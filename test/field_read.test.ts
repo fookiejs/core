@@ -7,8 +7,6 @@ import { Text } from "../src/types"
 import * as lodash from "lodash"
 
 it("read:['nobody'] -> empty field", async function () {
-    await fookie.init()
-
     let model_res = model({
         name: "test_field_read",
         database: Store,

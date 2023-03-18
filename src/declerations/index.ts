@@ -143,8 +143,8 @@ interface MixinInterface {
             }
             reject?: {
                 [key: string]: {
-                    modify: LifecycleFunction[]
-                    rule: LifecycleFunction[]
+                    modify?: LifecycleFunction[]
+                    rule?: LifecycleFunction[]
                 }
             }
         }

@@ -7,10 +7,9 @@ import { Text } from "../src/types"
 import * as lodash from "lodash"
 
 it("Instance needs this models", async function () {
-    await fookie.init()
-    assert.equal(fookie.local.has("model", "lifecycle"), true)
-    assert.equal(fookie.local.has("model", "mixin"), true)
-    assert.equal(fookie.local.has("model", "database"), true)
-    assert.equal(fookie.local.has("model", "setting"), true)
-    assert.equal(fookie.local.has("model", "model"), true)
+    assert.equal(local.has("model", "lifecycle"), true)
+    assert.equal(local.has("model", "mixin"), true)
+    assert.equal(local.has("model", "database"), true)
+    assert.equal(local.has("model", "setting"), true)
+    assert.equal(local.has("model", "model"), true)
 })

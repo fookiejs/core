@@ -11,7 +11,6 @@ function sleep(ms) {
 }
 
 it("Drop", async function () {
-    await fookie.init()
     let res = await run({
         token: process.env.SYSTEM_TOKEN,
         model: "setting",
@@ -27,5 +26,5 @@ it("Drop", async function () {
         },
     })
     await sleep(30)
-    assert.equal(fookie.local.has("setting", "test_1"), false)
+    assert.equal(local.has("setting", "test_1"), false)
 })

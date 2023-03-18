@@ -8,7 +8,7 @@ import * as lodash from "lodash"
 
 it("Selection flow", async function () {
     const fookie = require("../src/index")
-    await fookie.init()
+
     await run({
         model: "model",
         method: "create",

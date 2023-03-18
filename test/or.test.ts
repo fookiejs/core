@@ -8,7 +8,7 @@ import * as lodash from "lodash"
 
 it("$or", async function () {
     const fookie = require("../src/index")
-    await fookie.init()
+
     model({
         name: "number",
         database: Store,

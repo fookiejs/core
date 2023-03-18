@@ -8,7 +8,7 @@ import * as lodash from "lodash"
 
 it("mixin", async function () {
     try {
-        await fookie.init(false)
+        false
         throw Error("Store must be object")
     } catch (error) {}
 })

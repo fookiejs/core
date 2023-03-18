@@ -29,7 +29,7 @@ it("async effect", async function () {
 
     await run({
         model: "async_effect_model",
-        method: "read",
+        method: Read,
     })
     assert.equal(flag, true)
 })

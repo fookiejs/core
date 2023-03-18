@@ -11,7 +11,6 @@ it("Relation has_entity", async function () {
     const fookie = require("../src/index")
     const lodash = require("lodash")
 
-    await fookie.init()
     let res = await run({
         token: process.env.SYSTEM_TOKEN,
         model: "model",

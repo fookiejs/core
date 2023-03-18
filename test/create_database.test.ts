@@ -1,40 +1,37 @@
 import { it, describe, assert } from "vitest"
-import { model, run, models } from "../src"
+import { model, run, models, database } from "../src"
 import { Store } from "../src/databases"
 import { Model, Field } from "../src/decorators"
 import { Create, Read } from "../src/methods"
 import { Text } from "../src/types"
 import * as lodash from "lodash"
 
-it("databae", async function () {
-    await fookie.init()
-    let res = await fookie.database({
-        name: "example_db",
+it("database", async function () {
+    let res = database({
         pk: "id",
-        types: ["object", "string", "number", "boolean", "function", "buffer", "array"],
+        types: [Text],
         connect: async function () {},
         disconnect: async function () {},
-        modify: async function (model, ctx, state) {
-            model.methods.read = async function (_payload, _ctx, _state) {
+        modify: function (model) {
+            model.methods.create = async function (_payload, _state) {
+                return {}
+            }
+            model.methods.read = async function (_payload, _state) {
                 return []
             }
 
-            model.methods.create = async function (_payload, _ctx, _state) {
-                return {}
-            }
-
-            model.methods.update = async function (_payload, _ctx, _state) {
+            model.methods.update = async function (_payload, _state) {
                 return true
             }
 
-            model.methods.delete = async function (_payload, _ctx, _state) {
+            model.methods.delete = async function (_payload, _state) {
                 return true
             }
 
-            model.methods.count = async function (_payload, _ctx, _state) {
+            model.methods.count = async function (_payload, _state) {
                 return 1
             }
         },
     })
-    assert.equal(res.status, true)
+    assert.equal(res.pk, "id")
 })

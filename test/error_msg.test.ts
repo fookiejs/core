@@ -7,7 +7,6 @@ import { Text } from "../src/types"
 import * as lodash from "lodash"
 
 it("FOOKIE JS check core functions.", async function () {
-    await fookie.init()
     const res = await run({
         model: "setting",
         method: "read",

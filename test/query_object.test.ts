@@ -7,7 +7,6 @@ import { Text } from "../src/types"
 import * as lodash from "lodash"
 
 it("Filters with object", async function () {
-    await fookie.init()
     const res = model({
         name: "number",
         database: Store,
@@ -162,9 +161,9 @@ it("Filters with object", async function () {
     })
     assert.equal(invalid_r.status, false)
 
-    const accepted_query_field_keys = fookie.local.get("setting", "accepted_query_field_keys")
+    const accepted_query_field_keys = local.get("setting", "accepted_query_field_keys")
     accepted_query_field_keys.value.keys.push("$INVALID")
-    fookie.local.set("setting", accepted_query_field_keys)
+    local.set("setting", accepted_query_field_keys)
     const invalid_r_2 = await run({
         token: process.env.SYSTEM_TOKEN,
         method: "read",

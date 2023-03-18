@@ -7,8 +7,7 @@ import { Text } from "../src/types"
 import * as lodash from "lodash"
 
 it("State must be inclode model and model database", async function () {
-    await fookie.init()
-    await fookie.lifecycle({
+    await lifecycle({
         name: "state_model_check",
         function: async function (payload, ctx, state) {
             return ctx.lodash.has(state, "model") && ctx.lodash.has(state, "database")
