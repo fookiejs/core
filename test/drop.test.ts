@@ -26,12 +26,13 @@ it("Drop", async function () {
             drop: 1,
         },
     })
-    await sleep(10)
 
-    let res = await run({
-        model: DropModel,
-        method: Read,
-    })
+    setTimeout(async () => {
+        let res = await run({
+            model: DropModel,
+            method: Read,
+        })
 
-    assert.equal(res.data.length, 0)
+        assert.equal(res.data.length, 0)
+    }, 20)
 })
