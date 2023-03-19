@@ -34,10 +34,9 @@ export function model(model: Partial<ModelInterface>): ModelInterface {
             const field = model.schema[key]
 
             if (typeof field.relation === "function") {
+                //@ts-ignore
                 const val = field.relation.name
                 const model = lodash.find(models, { name: lodash.toLower(val) })
-                console.log(model.name, 2)
-
                 field.relation = model
             }
         }
