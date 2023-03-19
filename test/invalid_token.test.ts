@@ -21,8 +21,6 @@ it("async effect", async function () {
         method: Read,
     })
 
-    console.log(res)
-
     assert.equal(res.status, false)
     assert.equal(res.error, "validate_payload")
 })

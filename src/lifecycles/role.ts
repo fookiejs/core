@@ -36,43 +36,28 @@ export default async function (payload: PayloadInterface, state: StateInterface)
             }
             return true
         } else {
-            let skip = false
-            error = role.name
-            if (
-                lodash.has(field, "reject") &&
-                lodash.has(field.reject, role.name) &&
-                lodash.has(field.reject[role.name], "modify")
-            ) {
-                const modifies = payload.model.bind[payload.method]["reject"][role.name].modify
-                for (const modify of modifies) {
-                    await modify(payload, state)
-                }
-                skip = true || skip
-            }
-
-            if (
-                lodash.has(field, "reject") &&
-                lodash.has(field.reject, role.name) &&
-                lodash.has(field.reject[role.name], "rule")
-            ) {
-                const extra_rules = payload.model.bind[payload.method]["reject"][role.name].rule
-                for (const rule of extra_rules) {
-                    const extra_rule_response = rule(payload, state)
-                    if (!extra_rule_response) {
-                        error = rule.name
-                        break
+            if (lodash.has(field, "reject") && lodash.has(field.reject, role.name)) {
+                if (lodash.has(field.reject[role.name], "modify")) {
+                    const modifies = payload.model.bind[payload.method]["reject"][role.name].modify
+                    for (const modify of modifies) {
+                        await modify(payload, state)
                     }
                 }
-                skip = true || skip
-            }
 
-            if (skip && i === roles.length - 1) {
+                if (lodash.has(field.reject[role.name], "rule")) {
+                    const extra_rules = payload.model.bind[payload.method]["reject"][role.name].rule
+                    for (const rule of extra_rules) {
+                        const extra_rule_response = await rule(payload, state)
+                        if (!extra_rule_response) {
+                            error = rule.name
+                            return false
+                        }
+                    }
+                }
+
                 return true
             }
-
-            if (skip) {
-                continue
-            }
+            error = role.name
         }
     }
 

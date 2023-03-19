@@ -60,3 +60,63 @@ it("roles_test_token", async function () {
 
     assert.equal(update_res.status, true)
 })
+
+it("roles_test_token 2", async function () {
+    const extra_role_reject_false = model({
+        name: "extra_role_reject_false",
+        database: Store,
+        schema: {
+            field: {
+                type: Text,
+                required: true,
+            },
+        },
+        bind: {
+            read: {
+                role: [nobody],
+                reject: {
+                    nobody: {
+                        rule: [nobody],
+                    },
+                },
+            },
+        },
+    })
+
+    const res = await run({
+        model: extra_role_reject_false,
+        method: Read,
+    })
+
+    assert.equal(res.status, false)
+})
+
+it("roles_test_token 3", async function () {
+    const extra_role_reject_true = model({
+        name: "extra_role_reject_true",
+        database: Store,
+        schema: {
+            field: {
+                type: Text,
+                required: true,
+            },
+        },
+        bind: {
+            read: {
+                role: [nobody],
+                reject: {
+                    nobody: {
+                        rule: [everybody],
+                    },
+                },
+            },
+        },
+    })
+
+    const res = await run({
+        model: extra_role_reject_true,
+        method: Read,
+    })
+
+    assert.equal(res.status, true)
+})

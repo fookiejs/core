@@ -24,8 +24,6 @@ it("valid body", async function () {
         body: 1,
     })
 
-    console.log(res)
-
     assert.equal(res.status, false)
     assert.equal(res.error, "validate_payload")
 })

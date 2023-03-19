@@ -23,6 +23,8 @@ it("Drop", async function () {
         },
     })
 
+    await new Promise((resolve) => setTimeout(resolve, 20))
+
     setTimeout(async () => {
         let res = await run({
             model: DropModel,

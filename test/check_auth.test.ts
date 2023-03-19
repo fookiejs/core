@@ -355,5 +355,5 @@ it(" check auth reject rule 2", async function () {
         },
     })
 
-    assert.equal(create_res_2.status, true)
+    assert.equal(create_res_2.status, false)
 })
