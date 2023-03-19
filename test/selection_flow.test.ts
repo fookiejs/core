@@ -18,6 +18,14 @@ it("Selection flow", async function () {
         },
     })
 
+    const r = await run({
+        model: selection_relation_model,
+        method: Create,
+        body: {
+            field: "as",
+        },
+    })
+
     const selection_test = await model({
         name: "selection_test",
         database: Store,

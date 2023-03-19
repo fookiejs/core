@@ -250,7 +250,7 @@ it(" check auth reject rule", async function () {
         flag = true
         return true
     })
-    const model_res = model({
+    const msg_reject_2 = model({
         name: "msg_reject_2",
         database: Store,
         schema: {
@@ -271,7 +271,7 @@ it(" check auth reject rule", async function () {
     })
 
     let create_res_2 = await run({
-        model: "msg_reject_2",
+        model: msg_reject_2,
         method: Create,
         body: {
             msg: "hola",

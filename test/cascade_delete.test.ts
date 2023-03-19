@@ -6,7 +6,7 @@ import { Create, Delete, Read, Count } from "../src/methods"
 import { Text, Number } from "../src/types"
 import * as lodash from "lodash"
 
-it("Create model", async function () {
+it("cascade delete", async function () {
     @Model({ database: Store })
     class CascadeDeleteParent {
         @Field({ type: Text, required: true })
@@ -15,7 +15,7 @@ it("Create model", async function () {
 
     @Model({ database: Store })
     class CascadeDeleteChild {
-        @Field({ type: Text, required: true, relation: CascadeDeleteParent })
+        @Field({ type: Text, relation: CascadeDeleteParent, cascade_delete: true })
         parent: number
     }
 

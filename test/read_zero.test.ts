@@ -8,19 +8,19 @@ import * as lodash from "lodash"
 
 it("read_zero", async function () {
     // PHASE 1
-    let model_res = model({
+    let read_zero_model = model({
         name: "read_zero_model",
         database: Store,
         schema: {
             number: {
-                type: "number",
+                type: Number,
             },
         },
     })
 
     for (let i = -10; i < 10; i++) {
-        let create = await run({
-            model: "read_zero_model",
+        await run({
+            model: read_zero_model,
             method: Create,
             body: {
                 number: i,
@@ -29,8 +29,8 @@ it("read_zero", async function () {
     }
 
     let read = await run({
-        model: "read_zero_model",
-        method: "read",
+        model: read_zero_model,
+        method: Read,
         query: {
             filter: {
                 id: "notexistedid",

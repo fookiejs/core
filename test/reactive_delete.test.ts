@@ -7,22 +7,7 @@ import { Text, Number } from "../src/types"
 import * as lodash from "lodash"
 
 it("Reactive Delete", async function () {
-    model({
-        name: "reactive_parent",
-        database: Store,
-        schema: {
-            name: {
-                type: Text,
-                required: true,
-            },
-            child: {
-                relation: "reactive_child",
-                reactive_delete: true,
-            },
-        },
-    })
-
-    model({
+    const reactive_child = model({
         name: "reactive_child",
         database: Store,
         schema: {
@@ -33,29 +18,42 @@ it("Reactive Delete", async function () {
         },
     })
 
+    const reactive_parent = model({
+        name: "reactive_parent",
+        database: Store,
+        schema: {
+            name: {
+                type: Text,
+                required: true,
+            },
+            child: {
+                relation: reactive_child,
+                reactive_delete: true,
+            },
+        },
+    })
+
     const create_child_res = await run({
-        model: "reactive_child",
+        model: reactive_child,
         method: Create,
-        token: process.env.SYSTEM_TOKEN,
         body: {
             name: "child",
         },
     })
 
     const create_parent_res = await run({
-        model: "reactive_parent",
+        model: reactive_parent,
         method: Create,
-        token: process.env.SYSTEM_TOKEN,
         body: {
             name: "parent",
             child: create_child_res.data.id,
         },
     })
 
+    console.log(create_parent_res)
     await run({
-        model: "reactive_parent",
+        model: reactive_parent,
         method: "delete",
-        token: process.env.SYSTEM_TOKEN,
         query: {
             filter: {},
         },
@@ -64,7 +62,6 @@ it("Reactive Delete", async function () {
     let res = await run({
         model: "reactive_child",
         method: "count",
-        token: process.env.SYSTEM_TOKEN,
         query: {
             filter: {},
         },

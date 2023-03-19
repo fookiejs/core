@@ -5,12 +5,21 @@ const store = {}
 
 export const Store: DatabaseInterface = {
     pk: "id",
+    pk_type: Text,
     types: [Text, Any, Array, Boolean, Buffer, Char, Function, Number],
     connect: () => {},
     disconnect: () => {},
     modify: function (model) {
         store[model.name] = []
         model.methods = {}
+
+        const schema_keys = lodash.keys(model.schema)
+        for (const key of schema_keys) {
+            if (model.schema[key].relation) {
+                model.schema[key].type = model.schema[key].relation.database.pk_type
+            }
+        }
+
         model.methods.read = async function (_payload, _state) {
             if (_payload.query.limit == 0) _payload.query.limit = Infinity
             const pool = store[_payload.model.name]

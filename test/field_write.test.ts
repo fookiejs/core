@@ -5,21 +5,22 @@ import { Model, Field } from "../src/decorators"
 import { Create, Read } from "../src/methods"
 import { Text, Number } from "../src/types"
 import * as lodash from "lodash"
+import { nobody } from "../src/roles"
 
 it("read:['nobody'] -> empty field", async function () {
-    let model_res = model({
-        name: "child_setting",
+    let field_write_model = model({
+        name: "field_write_model",
         database: Store,
         schema: {
             msg: {
                 type: Text,
-                write: ["nobody"],
+                write: [nobody],
             },
         },
     })
 
     let create_res = await run({
-        model: "child_setting",
+        model: field_write_model,
         method: Create,
         body: {
             msg: "hola",

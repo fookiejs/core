@@ -54,7 +54,7 @@ interface FieldInterface {
     maximum?: number
     minimum_size?: number
     maximum_size?: number
-    selection?: (model: ModelInterface) => Promise<any>
+    selection?: (model: ModelInterface, field: FieldInterface) => Promise<any>
     reactives?: {
         to: string
         from: string
@@ -77,6 +77,7 @@ interface FilterFieldInterface {
 interface DatabaseInterface {
     pk: string
     types: Type[]
+    pk_type: Type
     connect: Function
     disconnect: Function
     modify: (model: ModelInterface) => void

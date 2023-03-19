@@ -6,10 +6,6 @@ import { Create, Read } from "../src/methods"
 import { Text, Number } from "../src/types"
 import * as lodash from "lodash"
 
-function sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
 it("Drop", async function () {
     @Model({ database: Store })
     class DropModel {

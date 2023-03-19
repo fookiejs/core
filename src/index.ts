@@ -30,6 +30,15 @@ export function model(model: Partial<ModelInterface>): ModelInterface {
         if (!lodash.has(model.schema[key], "read")) {
             model.schema[key].read = []
         }
+        if (lodash.has(model.schema[key], "relation")) {
+            const field = model.schema[key]
+
+            if (typeof field.relation === "function") {
+                const val = lodash.lowerCase(field.relation.name)
+                const model = lodash.find(models, { name: val })
+                field.relation = model
+            }
+        }
     }
 
     for (const method of methods) {

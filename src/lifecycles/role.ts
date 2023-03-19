@@ -24,7 +24,7 @@ export default async function (payload: PayloadInterface, state: StateInterface)
                 }
             }
 
-            if (lodash.has(field, `accept.${role}.rule`)) {
+            if (lodash.has(field, `accept.${role.name}.rule`)) {
                 const extra_rules = payload.model.bind[payload.method]["accept"][role.name].rule
                 for (const rule of extra_rules) {
                     const extra_rule_response = await rule(payload, state)

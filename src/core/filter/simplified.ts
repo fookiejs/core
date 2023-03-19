@@ -1,6 +1,6 @@
 import * as lodash from "lodash"
 
-const lifecycle: LifecycleFunction = async function (payload, state) {
+const simplified: LifecycleFunction = async function (payload, state) {
     if (lodash.has(payload.options, "simplified")) {
         const keys = [payload.model.database.pk, ...lodash.keys(payload.model.schema)]
         for (let i in payload.response.data as []) {
@@ -11,4 +11,4 @@ const lifecycle: LifecycleFunction = async function (payload, state) {
     }
 }
 
-export default lifecycle
+export default simplified

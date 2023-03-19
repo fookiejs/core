@@ -5,10 +5,7 @@ const selection: LifecycleFunction = async function (payload, state) {
     let fields = lodash.keys(model.schema)
     for (let field of fields) {
         if (typeof model.schema[field].selection === "function" && !payload.body[field]) {
-            let res = await model.schema[field].selection(model.schema[field].relation)
-            if (res) {
-                payload.body[field] = res[payload.model.database.pk]
-            }
+            payload.body[field] = await model.schema[field].selection(model, model.schema[field])
         }
     }
 }
