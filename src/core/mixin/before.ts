@@ -1,7 +1,7 @@
-import valid_payload from "../rule/valid_payload"
+import validate_payload from "../rule/validate_payload"
 import default_payload from "../modify/default_payload"
 import has_method from "../rule/has_method"
-import valid_attributes from "../rule/valid_attributes"
+import validate_attributes from "../rule/validate_attributes"
 import db_connect from "../rule/db_connect"
 import set_default from "../modify/set_default"
 import selection from "../modify/selection"
@@ -18,7 +18,7 @@ import need_method_in_options from "../rule/need_method_in_options"
 const before: MixinInterface = {
     bind: {
         read: {
-            preRule: [valid_payload, default_payload, has_method, valid_attributes, db_connect],
+            preRule: [validate_payload, default_payload, has_method, validate_attributes, db_connect],
             modify: [],
             role: [],
             rule: [],
@@ -26,7 +26,7 @@ const before: MixinInterface = {
             effect: [],
         },
         create: {
-            preRule: [valid_payload, default_payload, has_method, only_client, only_server, db_connect],
+            preRule: [validate_payload, default_payload, has_method, only_client, only_server, db_connect],
             modify: [set_default, selection],
             role: [],
             rule: [has_body, has_field, check_type, field_control, unique, uniqueGroup],
@@ -34,7 +34,7 @@ const before: MixinInterface = {
             effect: [],
         },
         update: {
-            preRule: [valid_payload, default_payload, has_method, has_body, db_connect],
+            preRule: [validate_payload, default_payload, has_method, has_body, db_connect],
             modify: [],
             role: [],
             rule: [has_body, has_field, check_type, field_control, unique],
@@ -42,7 +42,7 @@ const before: MixinInterface = {
             effect: [],
         },
         delete: {
-            preRule: [valid_payload, default_payload, has_method, db_connect],
+            preRule: [validate_payload, default_payload, has_method, db_connect],
             modify: [],
             role: [],
             rule: [],
@@ -50,7 +50,7 @@ const before: MixinInterface = {
             effect: [],
         },
         count: {
-            preRule: [valid_payload, default_payload, has_method, db_connect],
+            preRule: [validate_payload, default_payload, has_method, db_connect],
             modify: [],
             role: [],
             rule: [],
@@ -58,7 +58,7 @@ const before: MixinInterface = {
             effect: [],
         },
         test: {
-            preRule: [valid_payload, default_payload, has_method, need_method_in_options],
+            preRule: [validate_payload, default_payload, has_method, need_method_in_options],
             modify: [],
             role: [],
             rule: [has_field],

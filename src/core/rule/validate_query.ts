@@ -1,6 +1,6 @@
 import * as lodash from "lodash"
 
-const valid_query: LifecycleFunction = async function (payload, state) {
+const validate_query: LifecycleFunction = async function (payload, state) {
     const accepted_keywords = [] //TODO
     let filter_keys = lodash.keys(payload.query.filter)
     let model_keys = lodash.keys(payload.model.schema)
@@ -38,4 +38,4 @@ const valid_query: LifecycleFunction = async function (payload, state) {
     return true
 }
 
-export default valid_query
+export default validate_query

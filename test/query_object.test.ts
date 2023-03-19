@@ -31,6 +31,23 @@ it("Filters with object", async function () {
                 val_str: Math.round(Math.random() * 1000) + "umudik",
             },
         })
+
+        await run({
+            model: FiterObject,
+            method: Create,
+            body: {
+                val: 50,
+                val_str: "50_umudik",
+            },
+        })
+        await run({
+            model: FiterObject,
+            method: Create,
+            body: {
+                val: 250,
+                val_str: "50_umudik",
+            },
+        })
     }
 
     // QUERIES
@@ -118,14 +135,14 @@ it("Filters with object", async function () {
         query: {
             filter: {
                 val: {
-                    not: 350,
+                    not: 50,
                 },
             },
         },
     })
 
     for (let entity of ne_r.data) {
-        if (entity.val === 350) throw Error("eq")
+        if (entity.val === 50) throw Error("eq")
     }
 
     const inc_r = await run({

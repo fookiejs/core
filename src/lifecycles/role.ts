@@ -37,6 +37,7 @@ export default async function (payload: PayloadInterface, state: StateInterface)
             return true
         } else {
             let skip = false
+            error = role.name
             if (
                 lodash.has(field, "reject") &&
                 lodash.has(field.reject, role.name) &&
@@ -58,7 +59,7 @@ export default async function (payload: PayloadInterface, state: StateInterface)
                 for (const rule of extra_rules) {
                     const extra_rule_response = rule(payload, state)
                     if (!extra_rule_response) {
-                        error = rule
+                        error = rule.name
                         break
                     }
                 }

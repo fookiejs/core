@@ -10,7 +10,7 @@ export const Boolean: Type = (v) => lodash.isBoolean(v)
 
 export const Buffer: Type = (v) => lodash.isBuffer(v)
 
-export const Any: Type = (v) => lodash.isObject(v)
+export const Plain: Type = (v) => lodash.isObject(v)
 
 export const Char: Type = (v) => lodash.isString(v) && v.length == 1
 

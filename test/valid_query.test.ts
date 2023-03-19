@@ -6,7 +6,7 @@ import { Create, Read } from "../src/methods"
 import { Text, Number } from "../src/types"
 import * as lodash from "lodash"
 
-describe("valid_query", async function () {
+describe("validate_query", async function () {
     @Model({ database: Store })
     class InvalidQueryModel {
         @Field({ type: Number, required: true })
@@ -17,7 +17,6 @@ describe("valid_query", async function () {
 
     it("valid query", async function () {
         const res = await run({
-            token: process.env.SYSTEM_TOKEN,
             model: InvalidQueryModel,
             method: Read,
             query: {
@@ -26,12 +25,11 @@ describe("valid_query", async function () {
         })
 
         assert.equal(res.status, false)
-        assert.equal(res.error, "valid_query")
+        assert.equal(res.error, "validate_query")
     })
 
     it("valid query", async function () {
         const res = await run({
-            token: process.env.SYSTEM_TOKEN,
             model: InvalidQueryModel,
             method: Read,
             query: {
@@ -42,12 +40,11 @@ describe("valid_query", async function () {
         })
 
         assert.equal(res.status, false)
-        assert.equal(res.error, "valid_query")
+        assert.equal(res.error, "validate_query")
     })
 
     it("valid query", async function () {
         const res = await run({
-            token: process.env.SYSTEM_TOKEN,
             model: InvalidQueryModel,
             method: Read,
             query: {
@@ -56,12 +53,11 @@ describe("valid_query", async function () {
         })
 
         assert.equal(res.status, false)
-        assert.equal(res.error, "valid_query")
+        assert.equal(res.error, "validate_query")
     })
 
     it("valid query", async function () {
         const res = await run({
-            token: process.env.SYSTEM_TOKEN,
             model: InvalidQueryModel,
             method: Read,
             query: {
@@ -70,12 +66,11 @@ describe("valid_query", async function () {
         })
 
         assert.equal(res.status, false)
-        assert.equal(res.error, "valid_query")
+        assert.equal(res.error, "validate_query")
     })
 
     it("valid query", async function () {
         const res = await run({
-            token: process.env.SYSTEM_TOKEN,
             model: InvalidQueryModel,
             method: Read,
             query: {
@@ -86,7 +81,7 @@ describe("valid_query", async function () {
         })
 
         assert.equal(res.status, false)
-        assert.equal(res.error, "valid_query")
+        assert.equal(res.error, "validate_query")
     })
 
     it("valid query", async function () {
@@ -103,7 +98,7 @@ describe("valid_query", async function () {
         })
 
         assert.equal(r1.status, false)
-        assert.equal(r1.error, "valid_query")
+        assert.equal(r1.error, "validate_query")
 
         const r2 = await run({
             model: InvalidQueryModel,
@@ -117,7 +112,7 @@ describe("valid_query", async function () {
             },
         })
         assert.equal(r2.status, false)
-        assert.equal(r2.error, "valid_query")
+        assert.equal(r2.error, "validate_query")
 
         const r3 = await run({
             model: InvalidQueryModel,
@@ -131,7 +126,7 @@ describe("valid_query", async function () {
             },
         })
         assert.equal(r3.status, false)
-        assert.equal(r3.error, "valid_query")
+        assert.equal(r3.error, "validate_query")
 
         const r4 = await run({
             model: InvalidQueryModel,
@@ -145,7 +140,7 @@ describe("valid_query", async function () {
             },
         })
         assert.equal(r4.status, false)
-        assert.equal(r4.error, "valid_query")
+        assert.equal(r4.error, "validate_query")
 
         const r5 = await run({
             model: InvalidQueryModel,
@@ -159,7 +154,7 @@ describe("valid_query", async function () {
             },
         })
         assert.equal(r5.status, false)
-        assert.equal(r5.error, "valid_query")
+        assert.equal(r5.error, "validate_query")
 
         const r6 = await run({
             model: InvalidQueryModel,
@@ -173,7 +168,7 @@ describe("valid_query", async function () {
             },
         })
         assert.equal(r6.status, false)
-        assert.equal(r6.error, "valid_query")
+        assert.equal(r6.error, "validate_query")
 
         const r7 = await run({
             model: InvalidQueryModel,
@@ -187,7 +182,7 @@ describe("valid_query", async function () {
             },
         })
         assert.equal(r7.status, false)
-        assert.equal(r7.error, "valid_query")
+        assert.equal(r7.error, "validate_query")
 
         const r8 = await run({
             model: InvalidQueryModel,
@@ -201,6 +196,6 @@ describe("valid_query", async function () {
             },
         })
         assert.equal(r8.status, false)
-        assert.equal(r8.error, "valid_query")
+        assert.equal(r8.error, "validate_query")
     })
 })

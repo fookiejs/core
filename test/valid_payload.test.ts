@@ -25,7 +25,7 @@ describe("valid payload", async function () {
         })
 
         assert.equal(res.status, false)
-        assert.equal(res.error, "valid_payload")
+        assert.equal(res.error, "validate_payload")
     })
 
     it("valid payload 3", async function () {
@@ -35,7 +35,7 @@ describe("valid payload", async function () {
             body: 1,
         })
         assert.equal(res.status, false)
-        assert.equal(res.error, "valid_payload")
+        assert.equal(res.error, "validate_payload")
     })
 
     it("valid payload 4", async function () {
@@ -45,7 +45,7 @@ describe("valid payload", async function () {
             options: 1,
         })
         assert.equal(res.status, false)
-        assert.equal(res.error, "valid_payload")
+        assert.equal(res.error, "validate_payload")
     })
 
     it("valid payload 5", async function () {
@@ -55,7 +55,7 @@ describe("valid payload", async function () {
             query: 1,
         })
         assert.equal(res.status, false)
-        assert.equal(res.error, "valid_payload")
+        assert.equal(res.error, "validate_payload")
     })
 
     it("valid payload 6", async function () {
@@ -67,7 +67,7 @@ describe("valid payload", async function () {
             },
         })
         assert.equal(res.status, false)
-        assert.equal(res.error, "valid_payload")
+        assert.equal(res.error, "validate_payload")
     })
 
     it("valid payload 7", async function () {
@@ -79,7 +79,7 @@ describe("valid payload", async function () {
             },
         })
         assert.equal(res.status, false)
-        assert.equal(res.error, "valid_payload")
+        assert.equal(res.error, "validate_payload")
     })
 
     it("valid payload 8", async function () {
@@ -91,6 +91,6 @@ describe("valid payload", async function () {
             },
         })
         assert.equal(res.status, false)
-        assert.equal(res.error, "valid_payload")
+        assert.equal(res.error, "validate_payload")
     })
 })

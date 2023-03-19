@@ -8,7 +8,6 @@ import * as lodash from "lodash"
 
 it("Missing preRule", async function () {
     await run({
-        token: process.env.SYSTEM_TOKEN,
         model: "model",
         method: Create,
         body: {
@@ -38,7 +37,6 @@ it("Missing preRule", async function () {
 
 it("Missing modify", async function () {
     await run({
-        token: process.env.SYSTEM_TOKEN,
         model: "model",
         method: Create,
         body: {
@@ -68,7 +66,6 @@ it("Missing modify", async function () {
 
 it("Missing rule", async function () {
     await run({
-        token: process.env.SYSTEM_TOKEN,
         model: "model",
         method: Create,
         body: {
@@ -98,7 +95,6 @@ it("Missing rule", async function () {
 
 it("Missing role", async function () {
     await run({
-        token: process.env.SYSTEM_TOKEN,
         model: "model",
         method: Create,
         body: {
@@ -128,7 +124,6 @@ it("Missing role", async function () {
 
 it("Missing filter", async function () {
     await run({
-        token: process.env.SYSTEM_TOKEN,
         model: "model",
         method: Create,
         body: {
@@ -158,7 +153,6 @@ it("Missing filter", async function () {
 
 it("Missing effect", async function () {
     await await run({
-        token: process.env.SYSTEM_TOKEN,
         model: "model",
         method: Create,
         body: {

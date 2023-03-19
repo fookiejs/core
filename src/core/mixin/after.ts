@@ -1,10 +1,10 @@
 import db_disconnect from "../effect/db_disconnect"
 import simplified from "../filter/simplified"
-import valid_query from "../rule/valid_query"
+import validate_query from "../rule/validate_query"
 import reactive_prepare from "../modify/reactive_prepare"
 import filter_fields from "../modify/filter_fields"
 import has_method from "../rule/has_method"
-import valid_attributes from "../rule/valid_attributes"
+import validate_attributes from "../rule/validate_attributes"
 import has_entity from "../rule/has_entity"
 import check_required from "../rule/check_required"
 import can_write from "../rule/can_write"
@@ -28,8 +28,8 @@ const after: MixinInterface = {
         },
         read: {
             modify: [filter_fields, pk],
-            rule: [valid_query],
-            preRule: [has_method, valid_attributes],
+            rule: [validate_query],
+            preRule: [has_method, validate_attributes],
             filter: [simplified],
             effect: [db_disconnect],
             role: [],
@@ -37,14 +37,14 @@ const after: MixinInterface = {
         update: {
             preRule: [can_write],
             modify: [pk],
-            rule: [has_entity, valid_query, check_required],
+            rule: [has_entity, validate_query, check_required],
             filter: [],
             effect: [db_disconnect, reactives],
             role: [],
         },
         delete: {
             modify: [pk, reactive_prepare, cascade_prepare],
-            rule: [valid_query],
+            rule: [validate_query],
             preRule: [],
             filter: [],
             effect: [db_disconnect, reactive_delete, cascade_delete],
@@ -52,7 +52,7 @@ const after: MixinInterface = {
         },
         count: {
             modify: [pk],
-            rule: [valid_query],
+            rule: [validate_query],
             preRule: [],
             filter: [],
             effect: [db_disconnect],
