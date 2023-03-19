@@ -15,7 +15,7 @@ export const Store: DatabaseInterface = {
 
         const schema_keys = lodash.keys(model.schema)
         for (const key of schema_keys) {
-            if (model.schema[key].relation) {
+            if (!!model.schema[key].relation) {
                 model.schema[key].type = model.schema[key].relation.database.pk_type
             }
         }

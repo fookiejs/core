@@ -4,7 +4,7 @@ import { model } from ".."
 
 export function Model(_model: Partial<ModelInterface>) {
     return function (target: Function) {
-        _model.name = lodash.lowerCase(target.name)
+        _model.name = lodash.toLower(target.name)
         _model.schema = {}
 
         while (queue.length > 0) {

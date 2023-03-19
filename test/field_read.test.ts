@@ -4,6 +4,7 @@ import { Store } from "../src/databases"
 import { Model, Field } from "../src/decorators"
 import { Create, Read } from "../src/methods"
 import { Text, Number } from "../src/types"
+import { nobody } from "../src/roles"
 import * as lodash from "lodash"
 
 it("read:['nobody'] -> empty field", async function () {
@@ -13,12 +14,12 @@ it("read:['nobody'] -> empty field", async function () {
         schema: {
             msg: {
                 type: Text,
-                read: ["nobody"],
+                read: [nobody],
             },
         },
     })
 
-    let create_res = await run({
+    await run({
         model: "test_field_read",
         method: Create,
         body: {
@@ -31,8 +32,8 @@ it("read:['nobody'] -> empty field", async function () {
         method: "read",
         query: {
             filter: {},
-            attributes: ["msg"],
         },
     })
+
     assert.equal(read_res.data[0].msg, undefined)
 })

@@ -34,8 +34,10 @@ export function model(model: Partial<ModelInterface>): ModelInterface {
             const field = model.schema[key]
 
             if (typeof field.relation === "function") {
-                const val = lodash.lowerCase(field.relation.name)
-                const model = lodash.find(models, { name: val })
+                const val = field.relation.name
+                const model = lodash.find(models, { name: lodash.toLower(val) })
+                console.log(model.name, 2)
+
                 field.relation = model
             }
         }
@@ -141,7 +143,7 @@ export async function run(
     let model_name = ""
 
     if (typeof payload.model === "function") {
-        model_name = lodash.lowerCase(payload.model.name)
+        model_name = lodash.toLower(payload.model.name)
     } else if (typeof payload.model === "string") {
         model_name = payload.model
     } else {
