@@ -5,6 +5,7 @@ import { Delete, Read } from "../../methods"
 
 const reactive_prepare: LifecycleFunction = async function (payload, state) {
     let result = []
+
     const entities = await run({
         model: payload.model,
         method: Read,
@@ -15,7 +16,7 @@ const reactive_prepare: LifecycleFunction = async function (payload, state) {
     const has = lodash.has
     for (const f in schema) {
         if (has(schema[f], "reactive_delete") && !!schema[f].reactive_delete) {
-            for (const e of entities) {
+            for (const e of entities.data) {
                 result.push({
                     model: schema[f].relation,
                     pk: e[f],

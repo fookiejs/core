@@ -7,7 +7,18 @@ import { Text, Number } from "../src/types"
 import * as lodash from "lodash"
 
 it("Reactives", async function () {
-    model({
+    const reactive_child = model({
+        name: "reactive_child",
+        database: Store,
+        schema: {
+            name: {
+                type: Text,
+                required: true,
+            },
+        },
+    })
+
+    const reactive_parent = model({
         name: "reactive_parent",
         database: Store,
         schema: {
@@ -16,7 +27,7 @@ it("Reactives", async function () {
                 required: true,
             },
             child: {
-                relation: "reactive_child",
+                relation: reactive_child,
                 reactives: [
                     {
                         from: "name",
@@ -28,30 +39,17 @@ it("Reactives", async function () {
         },
     })
 
-    model({
-        name: "reactive_child",
-        database: Store,
-        schema: {
-            name: {
-                type: Text,
-                required: true,
-            },
-        },
-    })
-
     const create_child_res = await run({
-        model: "reactive_child",
+        model: reactive_child,
         method: Create,
-        token: process.env.SYSTEM_TOKEN,
         body: {
             name: "child",
         },
     })
 
     const create_parent_res = await run({
-        model: "reactive_parent",
+        model: reactive_parent,
         method: Create,
-        token: process.env.SYSTEM_TOKEN,
         body: {
             name: "parent",
             child: create_child_res.data.id,
@@ -59,9 +57,8 @@ it("Reactives", async function () {
     })
 
     await run({
-        model: "reactive_parent",
+        model: reactive_parent,
         method: "update",
-        token: process.env.SYSTEM_TOKEN,
         query: {
             filter: {},
         },
@@ -73,7 +70,6 @@ it("Reactives", async function () {
     let res = await run({
         model: "reactive_child",
         method: "read",
-        token: process.env.SYSTEM_TOKEN,
         query: {
             filter: {},
         },

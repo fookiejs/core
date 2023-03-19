@@ -13,15 +13,15 @@ it("get limit", async function () {
         field: string
     }
 
-    for (let i = 0; i < 10; i++) {}
-    await run({
-        model: LimitTestModel,
-        method: Create,
-        body: {
-            field: "val",
-        },
-    })
-
+    for (let i = 0; i < 10; i++) {
+        await run({
+            model: LimitTestModel,
+            method: Create,
+            body: {
+                field: "val",
+            },
+        })
+    }
     const res = await run({
         model: LimitTestModel,
         method: Read,

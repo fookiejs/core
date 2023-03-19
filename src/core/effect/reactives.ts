@@ -10,15 +10,13 @@ const reactives: LifecycleFunction = async function (payload, state) {
         if (lodash.has(schema[field], "reactives")) {
             for (const reactive of schema[field].reactives) {
                 const entities = await run({
-                    token: process.env.SYSTEM_TOKEN,
                     model: payload.model,
                     method: Read,
                     query: payload.query,
                 })
-                for (const entity of entities) {
+                for (const entity of entities.data) {
                     if (entity[field]) {
                         await run({
-                            token: process.env.SYSTEM_TOKEN,
                             model: schema[field].relation,
                             method: Update,
                             query: {

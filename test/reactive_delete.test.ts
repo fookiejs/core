@@ -50,7 +50,6 @@ it("Reactive Delete", async function () {
         },
     })
 
-    console.log(create_parent_res)
     await run({
         model: reactive_parent,
         method: "delete",
