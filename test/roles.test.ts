@@ -1,10 +1,10 @@
 import { it, describe, assert } from "vitest"
-import { model, run, models } from "../src"
-import { Store } from "../src/databases"
-import { Model, Field } from "../src/decorators"
-import { Create, Read, Update } from "../src/methods"
-import { Text, Number } from "../src/types"
-import { nobody, everybody, system } from "../src/roles"
+import { model, run, models } from "../index"
+import { Store } from "../packages/databases"
+import { Model, Field } from "../packages/decorators"
+import { Create, Read, Update } from "../packages/methods"
+import { Text, Number } from "../packages/types"
+import { nobody, everybody, system } from "../packages/roles"
 import * as lodash from "lodash"
 
 it("roles_test_token", async function () {

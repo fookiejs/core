@@ -1,4 +1,4 @@
-import { After, Before } from "../mixins"
+import { After, Before } from "../../packages/mixins"
 
 export default async function (payload, state) {
     const befores = Before.bind[payload.method].filter

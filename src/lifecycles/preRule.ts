@@ -1,5 +1,5 @@
-import { After, Before } from "../mixins"
-import { models } from "../"
+import { After, Before } from "../../packages/mixins"
+import { models } from "../.."
 import * as lodash from "lodash"
 
 export default async function (payload: PayloadInterface, state: StateInterface) {

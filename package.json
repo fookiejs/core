@@ -2,14 +2,14 @@
   "name": "fookie",
   "description": "",
   "version": "0.0.1",
-  "main": "dist/index.js",
+  "main": "index.ts",
   "scripts": {
     "test": "vitest",
     "coverage": "vitest run --coverage",
     "prepublishOnly": "tsc",
     "build": "tsc"
   },
-  "types":"dist/declaration",
+  "types":"types.ts",
   "dependencies": {
     "deepmerge": "^4.3.0",
     "lodash": "^4.17.21",

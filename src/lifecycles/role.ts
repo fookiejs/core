@@ -1,5 +1,5 @@
 import * as lodash from "lodash"
-import { After, Before } from "../mixins"
+import { After, Before } from "../../packages/mixins"
 
 export default async function (payload: PayloadInterface, state: StateInterface) {
     const befores = Before.bind[payload.method].role

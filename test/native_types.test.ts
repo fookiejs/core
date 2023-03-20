@@ -1,8 +1,8 @@
 import { it, describe, assert } from "vitest"
-import { model, run, models, lifecycle } from "../src"
-import { Store } from "../src/databases"
-import { Model, Field } from "../src/decorators"
-import { Create, Read } from "../src/methods"
+import { model, run, models, lifecycle } from "../index"
+import { Store } from "../packages/databases"
+import { Model, Field } from "../packages/decorators"
+import { Create, Read } from "../packages/methods"
 import {
     Text as t,
     Number as n,
@@ -12,7 +12,7 @@ import {
     Buffer as bu,
     Char as ch,
     Function as f,
-} from "../src/types"
+} from "../packages/types"
 import * as lodash from "lodash"
 
 it("native types", async function () {
