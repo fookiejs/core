@@ -1,10 +1,10 @@
 import { it, describe, assert } from "vitest"
-import { model, run, models, lifecycle } from "../index"
-import { nobody, system, everybody } from "../packages/roles"
-import { Store } from "../packages/databases"
-import { Model, Field } from "../packages/decorators"
-import { Create, Read } from "../packages/methods"
-import { Text, Number } from "../packages/types"
+import { model, run, models, lifecycle } from "../packages/core/index"
+import { nobody, system, everybody } from "../packages/role"
+import { Store } from "../packages/database"
+import { Model, Field } from "../packages/decorator"
+import { Create, Read } from "../packages/method"
+import { Text, Number } from "../packages/type"
 import * as lodash from "lodash"
 
 it("check auth 1", async function () {

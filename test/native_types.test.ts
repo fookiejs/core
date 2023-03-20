@@ -1,19 +1,21 @@
+import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, run, models, lifecycle } from "../index"
-import { Store } from "../packages/databases"
-import { Model, Field } from "../packages/decorators"
-import { Create, Read } from "../packages/methods"
+import { model, run, models, lifecycle } from "@fookie/core"
+import { Store, database } from "@fookie/database"
+import { Model, Field } from "@fookie/decorator"
+import { Create, Read, Count, Delete, Test, Update } from "@fookie/method"
 import {
     Text as t,
     Number as n,
-    Plain as o,
     Array as a,
     Boolean as b,
     Buffer as bu,
     Char as ch,
     Function as f,
-} from "../packages/types"
-import * as lodash from "lodash"
+    Plain as o,
+} from "@fookie/type"
+import { mixin, After, Before } from "@fookie/mixin"
+import { nobody, everybody, system } from "@fookie/role"
 
 it("native types", async function () {
     model({

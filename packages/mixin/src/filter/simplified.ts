@@ -1,0 +1,15 @@
+import * as lodash from "lodash"
+import { LifecycleFunction } from "@fookie/core"
+
+const simplified: LifecycleFunction = async function (payload, state) {
+    if (lodash.has(payload.options, "simplified")) {
+        const keys = [payload.model.database.pk, ...lodash.keys(payload.model.schema)]
+        for (let i in payload.response.data as []) {
+            payload.response.data[i] = lodash.mapKeys(payload.response.data[i], function (v, k) {
+                return lodash.indexOf(keys, k)
+            })
+        }
+    }
+}
+
+export default simplified

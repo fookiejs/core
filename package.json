@@ -1,8 +1,7 @@
 {
-  "name": "fookie",
+  "name": "@fookie/core",
   "description": "",
   "version": "0.0.1",
-  "main": "index.ts",
   "scripts": {
     "test": "vitest",
     "coverage": "vitest run --coverage",
