@@ -1,6 +1,7 @@
 import * as lodash from "lodash"
+import { LifecycleFunction, PayloadInterface, StateInterface } from "@fookie/core"
 
-export default async function (payload, state) {
+const method: LifecycleFunction = async function (payload, state) {
     let start = Date.now()
 
     if (lodash.isUndefined(payload.response.data)) {
@@ -8,6 +9,8 @@ export default async function (payload, state) {
     }
     state.metrics.lifecycle.push({
         name: "method",
-        time: Date.now() - start,
+        ms: Date.now() - start,
     })
 }
+
+export default method

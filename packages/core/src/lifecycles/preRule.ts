@@ -1,8 +1,9 @@
 import { After, Before } from "@fookie/mixin"
-import { models } from "../index"
+import { models } from "@fookie/core"
 import * as lodash from "lodash"
+import { LifecycleFunction } from "@fookie/core"
 
-export default async function (payload: PayloadInterface, state: StateInterface) {
+const preRule: LifecycleFunction = async function (payload, state) {
     if (!lodash.includes(models, payload.model)) {
         payload.response.error = "has_model"
         return false
@@ -31,3 +32,5 @@ export default async function (payload: PayloadInterface, state: StateInterface)
     }
     return true
 }
+
+export default preRule

@@ -1,6 +1,7 @@
 import { After, Before } from "@fookie/mixin"
+import { LifecycleFunction } from "@fookie/core"
 
-export default async function (payload: PayloadInterface, state: StateInterface) {
+const effect: LifecycleFunction = async function (payload, state) {
     const befores = Before.bind[payload.method].effect
     const afters = After.bind[payload.method].effect
     const effects = [...befores, ...payload.model.bind[payload.method].effect, ...afters]
@@ -15,3 +16,5 @@ export default async function (payload: PayloadInterface, state: StateInterface)
         })
     }
 }
+
+export default effect

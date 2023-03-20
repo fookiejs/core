@@ -13,7 +13,8 @@
         "allowJs": false,
         "outDir": "dist",
         "lib": ["es7"],
-        "baseUrl": ".",
+        "baseUrl": "./",
+        "rootDir": "./",
         "paths": {
             "@fookie/core": ["./packages/core"],
             "@fookie/core/*": ["./packages/core/*"],
@@ -43,6 +44,6 @@
             "@fookie/type/*": ["./packages/type/*"]
         }
     },
-    "include": ["packages/**/*", "integration/**/*", "packages/core/test/attri, "test"butes.test.ts"],
-    "exclude": ["node_modules", "**/*.spec.ts"]
+    "include": ["packages/**/*"],
+    "exclude": ["node_modules", "dist"]
 }

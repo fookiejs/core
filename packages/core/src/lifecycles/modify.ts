@@ -1,6 +1,7 @@
+import { LifecycleFunction } from "@fookie/core"
 import { After, Before } from "@fookie/mixin"
 
-export default async function (payload: PayloadInterface, state: StateInterface) {
+const modify: LifecycleFunction = async function (payload, state:) {
     const befores = Before.bind[payload.method].modify
     const afters = After.bind[payload.method].modify
     const modifies = [...befores, ...payload.model.bind[payload.method].modify, ...afters]
@@ -18,3 +19,4 @@ export default async function (payload: PayloadInterface, state: StateInterface)
         })
     }
 }
+export default modify

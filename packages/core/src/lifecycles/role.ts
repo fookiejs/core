@@ -1,7 +1,8 @@
 import * as lodash from "lodash"
 import { After, Before } from "@fookie/mixin"
+import { LifecycleFunction } from "@fookie/core"
 
-export default async function (payload: PayloadInterface, state: StateInterface) {
+const role: LifecycleFunction = async function (payload, state) {
     const befores = Before.bind[payload.method].role
     const afters = After.bind[payload.method].role
 
@@ -64,3 +65,5 @@ export default async function (payload: PayloadInterface, state: StateInterface)
     payload.response.error = error
     return false
 }
+
+export default role
