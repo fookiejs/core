@@ -1,12 +1,12 @@
 import * as lodash from "lodash"
 import { v4 } from "uuid"
-import { Text, Any, Array, Boolean, Buffer, Char, Function, Number } from "../types"
+import { Text, Plain, Array, Boolean, Buffer, Char, Function, Number } from "../types"
 const store = {}
 
 export const Store: DatabaseInterface = {
     pk: "id",
     pk_type: Text,
-    types: [Text, Any, Array, Boolean, Buffer, Char, Function, Number],
+    types: [Text, Plain, Array, Boolean, Buffer, Char, Function, Number],
     connect: () => {},
     disconnect: () => {},
     modify: function (model) {

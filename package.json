@@ -1,23 +1,24 @@
 {
-  "name": "core-ts",
+  "name": "fookie",
   "description": "",
   "version": "0.0.1",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "vitest",
+    "coverage": "vitest run --coverage",
+    "prepublishOnly": "tsc",
+    "build": "tsc"
+  },
+  "types":"dist/declaration",
+  "dependencies": {
+    "deepmerge": "^4.3.0",
+    "lodash": "^4.17.21",
+    "uuid": "^9.0.0"
+  },
   "devDependencies": {
     "@types/lodash": "^4.14.191",
     "@vitest/coverage-istanbul": "^0.29.3",
     "@vitest/ui": "^0.29.3",
     "vitest": "^0.29.3"
-  },
-  "scripts": {
-    "test": "vitest",
-    "coverage": "vitest run --coverage"
-  },
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "deepmerge": "^4.3.0",
-    "lodash": "^4.17.21",
-    "uuid": "^9.0.0"
   }
 }
