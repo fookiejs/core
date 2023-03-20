@@ -44,6 +44,6 @@
             "@fookie/type/*": ["./packages/type/*"]
         }
     },
-    "include": ["packages/**/*"],
+    "include": ["packages/**/*", "test/**/*"],
     "exclude": ["node_modules", "dist"]
 }
