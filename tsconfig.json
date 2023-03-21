@@ -1,49 +1,11 @@
 {
     "compilerOptions": {
-        "module": "commonjs",
-        "noImplicitAny": false,
-        "noUnusedLocals": false,
-        "removeComments": true,
-        "noLib": false,
-        "emitDecoratorMetadata": true,
-        "experimentalDecorators": true,
-        "useUnknownInCatchVariables": false,
-        "target": "es6",
-        "sourceMap": true,
-        "allowJs": false,
-        "outDir": "dist",
-        "lib": ["es7"],
-        "baseUrl": "./",
-        "rootDir": "./",
+        "declaration": true,
+        "baseUrl": ".",
         "paths": {
-            "@fookie/core": ["./packages/core"],
-            "@fookie/core/*": ["./packages/core/*"],
-
-            "@fookie/database": ["./packages/database"],
-            "@fookie/database/*": ["./packages/database/*"],
-
-            "@fookie/decorator": ["./packages/decorator"],
-            "@fookie/decorator/*": ["./packages/decorator/*"],
-
-            "@fookie/microservices": ["./packages/microservices"],
-            "@fookie/microservices/*": ["./packages/microservices/*"],
-
-            "@fookie/method": ["./packages/method"],
-            "@fookie/method/*": ["./packages/method/*"],
-
-            "@fookie/mixin": ["./packages/mixin"],
-            "@fookie/mixin/*": ["./packages/mixin/*"],
-
-            "@fookie/role": ["./packages/role"],
-            "@fookie/role/*": ["./packages/role/*"],
-
-            "@fookie/selection": ["./packages/selection"],
-            "@fookie/selection/*": ["./packages/selection/*"],
-
-            "@fookie/type": ["./packages/type"],
-            "@fookie/type/*": ["./packages/type/*"]
+            "@fookie/*": ["packages/*/src"]
         }
     },
-    "include": ["packages/**/*", "test/**/*"],
-    "exclude": ["node_modules", "dist"]
+    "include": ["packages/**/*"],
+    "exclude": ["test", "node_modules"]
 }

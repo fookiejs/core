@@ -1,0 +1,14 @@
+{
+  "name": "@fookie/core",
+  "version": "1.0.0",
+  "description": "Fookie Core package",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^4.6.2"
+  }
+}

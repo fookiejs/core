@@ -1,7 +1,7 @@
-import { run } from "../core/index"
+import { run } from "@fookie/core"
 import { Read } from "@fookie/method"
 import * as lodash from "lodash"
-import { Selection } from "./interfaces/type"
+import { Selection } from "./interfaces"
 
 export const Random: Selection = async function (model, field) {
     let res = await run({
@@ -14,4 +14,4 @@ export const Random: Selection = async function (model, field) {
     return r
 }
 
-export * from "./interfaces/type"
+export * from "./interfaces"

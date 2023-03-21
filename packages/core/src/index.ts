@@ -8,13 +8,13 @@ import {
     StateInterface,
 } from "./interfaces/type"
 
-import preRule from "./src/lifecycles/preRule"
-import modify from "./src/lifecycles/modify"
-import role from "./src/lifecycles/role"
-import rule from "./src/lifecycles/rule"
-import method from "./src/lifecycles/method"
-import filter from "./src/lifecycles/filter"
-import effect from "./src/lifecycles/effect"
+import preRule from "./lifecycles/preRule"
+import modify from "./lifecycles/modify"
+import role from "./lifecycles/role"
+import rule from "./lifecycles/rule"
+import method from "./lifecycles/method"
+import filter from "./lifecycles/filter"
+import effect from "./lifecycles/effect"
 import { MixinInterface } from "@fookie/mixin"
 
 const methods = ["create", "read", "update", "delete", "count", "test"]

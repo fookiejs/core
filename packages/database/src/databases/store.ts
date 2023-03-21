@@ -1,5 +1,5 @@
 import * as lodash from "lodash"
-import { DatabaseInterface } from "../../interfaces/index"
+import { DatabaseInterface } from "../interfaces/index"
 import { v4 } from "uuid"
 import { Text, Plain, Array, Boolean, Buffer, Char, Function, Number } from "@fookie/type"
 import { FilterFieldInterface } from "@fookie/core"

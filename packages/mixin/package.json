@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+      "outDir": "dist",
+      "rootDir": "src",
+      "baseUrl": ".",
+      "paths": {
+          "@fookie/core": ["../*/core"],
+          "@fookie/database": ["../*/database"],
+          "@fookie/decorator": ["../*/decorator"],
+          "@fookie/method": ["../*/method"],
+          "@fookie/mixin": ["../*/mixin"],
+          "@fookie/role": ["../*/role"],
+          "@fookie/selection": ["../*/selection"],
+          "@fookie/type": ["../*/type"]
+      }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

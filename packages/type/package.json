@@ -1,0 +1,16 @@
+{
+  "name": "@fookie/type",
+  "version": "1.0.0",
+  "description": "Fookie Method package",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@fookie/core": "^1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^4.6.2"
+  }
+}

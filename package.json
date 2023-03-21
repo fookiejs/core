@@ -1,14 +1,17 @@
 {
-  "name": "@fookie/core",
+  "name": "fookie",
   "description": "",
   "version": "0.0.1",
+  "types": "packages/*",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "test": "vitest",
     "coverage": "vitest run --coverage",
-    "prepublishOnly": "tsc",
-    "build": "tsc"
+    "build": "tsc --build"
   },
-  "types":"types.ts",
+
   "dependencies": {
     "deepmerge": "^4.3.0",
     "lodash": "^4.17.21",
