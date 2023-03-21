@@ -2,8 +2,8 @@
   "name": "@fookie/role",
   "version": "1.0.0",
   "description": "Fookie Method package",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
   "scripts": {
     "build": "tsc"
   },

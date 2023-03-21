@@ -6,15 +6,15 @@ import { MixinInterface } from "@fookie/mixin"
 export type LifecycleFunction = (payload: PayloadInterface, state: StateInterface) => Promise<boolean> | Promise<void>
 
 export interface ModelInterface {
-    name: string
-    database: DatabaseInterface
-    schema: {
+    name?: string
+    database?: DatabaseInterface
+    schema?: {
         [key: string]: FieldInterface
     }
     methods?: {
         [key in Method]?: (payload: PayloadInterface, state: StateInterface) => unknown
     }
-    bind: {
+    bind?: {
         [ls in Method]?: {
             preRule?: LifecycleFunction[]
             modify?: LifecycleFunction[]
@@ -36,7 +36,7 @@ export interface ModelInterface {
             }
         }
     }
-    mixins: MixinInterface[]
+    mixins?: MixinInterface[]
 }
 
 export interface FieldInterface {

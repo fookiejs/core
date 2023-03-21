@@ -1,6 +1,7 @@
 {
     "compilerOptions": {
         "declaration": true,
+        "experimentalDecorators": true,
         "baseUrl": ".",
         "paths": {
             "@fookie/*": ["packages/*/src"]
