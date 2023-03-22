@@ -2,11 +2,12 @@
     "compilerOptions": {
         "declaration": true,
         "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+        "moduleResolution": "nodenext",
         "baseUrl": ".",
-        "paths": {
-            "@fookie/*": ["packages/*/src"]
-        }
+        "target": "ES6"
     },
+
     "include": ["packages/**/*"],
     "exclude": ["test", "node_modules"]
 }

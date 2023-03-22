@@ -1,17 +1,18 @@
 {
-  "name": "fookie",
+  "name": "@fookie/core",
   "description": "",
   "version": "0.0.1",
-  "types": "packages/*",
+  "types": "packages/core/src/index.d.js",
+  "main": "packages/core/src/index.js",
   "workspaces": [
     "packages/*"
   ],
+
   "scripts": {
     "test": "vitest",
     "coverage": "vitest run --coverage",
     "build": "tsc --build"
   },
-
   "dependencies": {
     "deepmerge": "^4.3.0",
     "lodash": "^4.17.21",

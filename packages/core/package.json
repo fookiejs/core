@@ -1,7 +1,7 @@
 {
   "name": "@fookie/core",
   "version": "1.0.0",
-  "description": "Fookie Core package",
+  "description": "@fookie Core package",
   "main": "src/index.js",
   "types": "src/index.d.ts",
   "scripts": {

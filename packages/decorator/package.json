@@ -1,7 +1,7 @@
 {
   "name": "@fookie/decorator",
   "version": "1.0.0",
-  "description": "Fookie Method package",
+  "description": "@fookie Method package",
   "main": "src/index.js",
   "types": "src/index.d.ts",
   "scripts": {

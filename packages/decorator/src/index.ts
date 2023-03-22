@@ -12,6 +12,7 @@ export function Model(_model: Partial<ModelInterface>) {
 
             _model.schema[key] = field
         }
+
         model(_model)
     }
 }

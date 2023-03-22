@@ -7,7 +7,7 @@ import { Create, Read, Count, Delete, Test, Update } from "@fookie/method"
 import { Text, Number, Array, Boolean, Buffer, Char, Function, Plain } from "@fookie/type"
 import { mixin, After, Before } from "@fookie/mixin"
 import { nobody, everybody, system } from "@fookie/role"
-
+import { Random } from "@fookie/selection"
 it("Selection flow", async function () {
     const selection_relation_model = model({
         name: "selection_relation_model",

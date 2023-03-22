@@ -113,6 +113,7 @@ describe("validate_query", async function () {
                 },
             },
         })
+
         assert.equal(r2.status, false)
         assert.equal(r2.error, "validate_query")
 
