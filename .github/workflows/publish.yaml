@@ -2,10 +2,10 @@ name: Npm Publishing
 on:
     push:
         branches: [main]
-        paths:
-            - "src/**.js"
-            - "**.test.js"
-            - "**.json"
+        #paths:
+        #   - "src/**.js"
+        #  - "**.test.js"
+        # - "**.json"
 jobs:
     publish-npm:
         runs-on: ubuntu-latest
