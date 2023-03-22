@@ -43,5 +43,6 @@ it("Attributes", async function () {
     })
 
     assert.equal(response.status, true)
+
     assert.deepEqual(lodash.omit(response.data[0], ["field1", "field4", "id"]), {})
 })
