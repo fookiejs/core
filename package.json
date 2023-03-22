@@ -6,7 +6,8 @@
   "scripts": {
     "test": "vitest",
     "coverage": "vitest run --coverage",
-    "prepublishOnly": "npm run clean && npx tsc"
+    "build": "tsc",
+    "prepublishOnly": "npm run clean && npm rub build"
   },
   "dependencies": {
     "deepmerge": "^4.3.0",
