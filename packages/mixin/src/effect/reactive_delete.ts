@@ -1,7 +1,7 @@
 import * as lodash from "lodash"
-import { run } from "@fookie/core"
-import { Delete } from "@fookie/method"
-import { LifecycleFunction } from "@fookie/core"
+import { models, run } from "../../..//core"
+import { Delete } from "../../../method"
+import { LifecycleFunction } from "../../../../types"
 
 const reactive_delete: LifecycleFunction = async function (payload, state) {
     for (const { model, pk } of state.reactive_delete_list) {

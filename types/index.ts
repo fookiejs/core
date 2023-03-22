@@ -1,20 +1,18 @@
-import { Method } from "@fookie/method"
-import { DatabaseInterface } from "@fookie/database"
-import { Type } from "@fookie/type"
-import { MixinInterface } from "@fookie/mixin"
-
+export type Method = "create" | "read" | "update" | "delete" | "count" | "test"
+export type Lifecycle = "preRule" | "modify" | "role" | "rule" | "filter" | "effect"
 export type LifecycleFunction = (payload: PayloadInterface, state: StateInterface) => Promise<boolean> | Promise<void>
+export type Type = (v: any) => boolean
 
 export interface ModelInterface {
-    name?: string
-    database?: DatabaseInterface
-    schema?: {
+    name: string
+    database: DatabaseInterface
+    schema: {
         [key: string]: FieldInterface
     }
     methods?: {
         [key in Method]?: (payload: PayloadInterface, state: StateInterface) => unknown
     }
-    bind?: {
+    bind: {
         [ls in Method]?: {
             preRule?: LifecycleFunction[]
             modify?: LifecycleFunction[]
@@ -36,7 +34,7 @@ export interface ModelInterface {
             }
         }
     }
-    mixins?: MixinInterface[]
+    mixins: MixinInterface[]
 }
 
 export interface FieldInterface {
@@ -74,6 +72,15 @@ export interface FilterFieldInterface {
     or: string[] | number[]
     notor: string[] | number[]
     inc: string | number
+}
+
+export interface DatabaseInterface {
+    pk: string
+    types: Type[]
+    pk_type: Type
+    connect: Function
+    disconnect: Function
+    modify: (model: ModelInterface) => void
 }
 
 export interface PayloadInterface {
@@ -116,3 +123,33 @@ export interface StateInterface {
     }[]
     cascade_delete_ids: string[]
 }
+
+export interface MixinInterface {
+    schema?: {
+        [key: string]: FieldInterface | string | number
+    }
+    bind?: {
+        [ls in Method]?: {
+            preRule?: LifecycleFunction[]
+            modify?: LifecycleFunction[]
+            role?: LifecycleFunction[]
+            rule?: LifecycleFunction[]
+            filter?: LifecycleFunction[]
+            effect?: LifecycleFunction[]
+            accept?: {
+                [key: string]: {
+                    modify?: LifecycleFunction[]
+                    rule?: LifecycleFunction[]
+                }
+            }
+            reject?: {
+                [key: string]: {
+                    modify?: LifecycleFunction[]
+                    rule?: LifecycleFunction[]
+                }
+            }
+        }
+    }
+}
+
+export type Selection = (model: ModelInterface, field: FieldInterface) => Promise<any>

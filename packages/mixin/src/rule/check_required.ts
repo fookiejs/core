@@ -1,5 +1,5 @@
 import * as lodash from "lodash"
-import { LifecycleFunction } from "@fookie/core"
+import { LifecycleFunction } from "../../../../types"
 
 const check_required: LifecycleFunction = async function (payload, state) {
     let search = [null, undefined]

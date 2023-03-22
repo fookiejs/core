@@ -1,5 +1,5 @@
 import * as lodash from "lodash"
-import { LifecycleFunction } from "@fookie/core"
+import { LifecycleFunction } from "../../../../types"
 
 const selection: LifecycleFunction = async function (payload, state) {
     let model = payload.model

@@ -1,5 +1,5 @@
 import * as lodash from "lodash"
-import { MixinInterface } from "../interfaces/type"
+import { MixinInterface } from "../../../../types"
 export const methods = ["create", "read", "update", "delete", "count", "test"]
 export const lifecycles = ["preRule", "modify", "role", "rule", "filter", "effect"]
 

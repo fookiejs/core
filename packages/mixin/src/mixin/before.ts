@@ -14,7 +14,7 @@ import check_type from "../rule/check_type"
 import has_field from "../rule/has_field"
 import has_body from "../rule/has_body"
 import need_method_in_options from "../rule/need_method_in_options"
-import { MixinInterface } from "@fookie/mixin"
+import { MixinInterface } from "../../../../types"
 
 const Before: MixinInterface = {
     bind: {

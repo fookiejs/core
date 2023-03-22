@@ -1,7 +1,7 @@
 import * as lodash from "lodash"
-import { models, run } from "@fookie/core"
-import { Count, Delete, Read, Update } from "@fookie/method"
-import { LifecycleFunction } from "@fookie/core"
+import { models, run } from "../../../core"
+import { Read, Delete, Create, Count } from "../../../method"
+import { LifecycleFunction } from "../../../../types"
 
 const only_server: LifecycleFunction = async function (payload, ctx) {
     let model = payload.model

@@ -1,5 +1,5 @@
 import * as lodash from "lodash"
-import { LifecycleFunction } from "@fookie/core"
+import { LifecycleFunction } from "../../../../types"
 
 const has_method: LifecycleFunction = async function (payload, state) {
     return lodash.has(payload.model.methods, payload.method)

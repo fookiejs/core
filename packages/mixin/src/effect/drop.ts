@@ -1,7 +1,7 @@
 import * as lodash from "lodash"
-import { run } from "@fookie/core"
-import { Delete } from "@fookie/method"
-import { LifecycleFunction } from "@fookie/core"
+import { models, run } from "../../..//core"
+import { Delete } from "../../../method"
+import { LifecycleFunction } from "../../../../types"
 
 const drop: LifecycleFunction = async function (payload, state) {
     if (lodash.has(payload.options, "drop")) {

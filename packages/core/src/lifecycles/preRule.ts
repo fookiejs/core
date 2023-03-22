@@ -1,7 +1,7 @@
-import { After, Before } from "@fookie/mixin"
-import { models } from "@fookie/core"
 import * as lodash from "lodash"
-import { LifecycleFunction } from "@fookie/core"
+import { models, run } from "../../../core"
+import { LifecycleFunction } from "../../../../types"
+import { After, Before } from "../../../mixin"
 
 const preRule: LifecycleFunction = async function (payload, state) {
     if (!lodash.includes(models, payload.model)) {

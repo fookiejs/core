@@ -1,12 +1,12 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, run, models, lifecycle } from "@fookie/core"
-import { Store } from "@fookie/database"
-import { Model, Field } from "@fookie/decorator"
-import { Create, Read, Count, Delete, Test, Update } from "@fookie/method"
-import { Text, Number, Array, Boolean, Buffer, Char, Function, Plain } from "@fookie/type"
-import { mixin } from "@fookie/mixin"
-import { nobody, everybody, system } from "@fookie/role"
+import { model, run, models, lifecycle } from "../packages/core"
+import { Store } from "../packages/database"
+import { Model, Field } from "../packages/decorator"
+import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
+import { Text, Number, Array, Boolean, Buffer, Char, Function, Plain } from "../packages/type"
+import { mixin } from "../packages/mixin"
+import { nobody, everybody, system } from "../packages/role"
 
 it("check auth 1", async function () {
     let child_setting = model({

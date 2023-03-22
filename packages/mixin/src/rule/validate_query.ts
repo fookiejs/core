@@ -1,5 +1,5 @@
 import * as lodash from "lodash"
-import { LifecycleFunction } from "@fookie/core"
+import { LifecycleFunction } from "../../../../types"
 
 const validate_query: LifecycleFunction = async function (payload, state) {
     const accepted_keywords = [] //TODO

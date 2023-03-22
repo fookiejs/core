@@ -1,5 +1,5 @@
-import { LifecycleFunction } from "@fookie/core"
 import * as lodash from "lodash"
+import { LifecycleFunction } from "../../../../types"
 
 const validate_payload: LifecycleFunction = async function (payload, state) {
     if (lodash.has(payload, "options") && !lodash.isObject(payload.options)) return false

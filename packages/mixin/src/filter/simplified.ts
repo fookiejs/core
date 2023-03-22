@@ -1,5 +1,5 @@
 import * as lodash from "lodash"
-import { LifecycleFunction } from "@fookie/core"
+import { LifecycleFunction } from "../../../../types"
 
 const simplified: LifecycleFunction = async function (payload, state) {
     if (lodash.has(payload.options, "simplified")) {

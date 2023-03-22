@@ -1,5 +1,5 @@
 import * as lodash from "lodash"
-import { LifecycleFunction } from "@fookie/core"
+import { LifecycleFunction } from "../../../../types"
 
 const only_client: LifecycleFunction = async function (payload, ctx) {
     let search = ["", null, undefined]

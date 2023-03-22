@@ -2,12 +2,7 @@
   "name": "@fookie/core",
   "description": "",
   "version": "0.0.1",
-  "types": "packages/core/src/index.d.js",
-  "main": "packages/core/src/index.js",
-  "workspaces": [
-    "packages/*"
-  ],
-
+  "main": "./index.ts",
   "scripts": {
     "test": "vitest",
     "coverage": "vitest run --coverage",

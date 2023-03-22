@@ -1,5 +1,4 @@
-import * as lodash from "lodash"
-import { LifecycleFunction } from "@fookie/core"
+import { LifecycleFunction } from "../../../../types"
 
 const db_connect: LifecycleFunction = async function (payload, state) {
     return await payload.model.database.connect()

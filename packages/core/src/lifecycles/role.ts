@@ -1,6 +1,7 @@
 import * as lodash from "lodash"
-import { After, Before } from "@fookie/mixin"
-import { LifecycleFunction } from "@fookie/core"
+import { models, run } from "../../../core"
+import { LifecycleFunction } from "../../../../types"
+import { After, Before } from "../../../mixin"
 
 const role: LifecycleFunction = async function (payload, state) {
     const befores = Before.bind[payload.method].role

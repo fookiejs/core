@@ -1,7 +1,7 @@
 import * as lodash from "lodash"
-import { run } from "@fookie/core"
-import { Read, Update } from "@fookie/method"
-import { LifecycleFunction } from "@fookie/core"
+import { models, run } from "../../..//core"
+import { Read, Delete, Create, Count, Update } from "../../../method"
+import { LifecycleFunction } from "../../../../types"
 
 const reactives: LifecycleFunction = async function (payload, state) {
     const schema = payload.model.schema

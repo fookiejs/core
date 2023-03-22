@@ -1,7 +1,5 @@
 import * as lodash from "lodash"
-import { models, run } from "@fookie/core"
-import { Count, Delete, Read, Update } from "@fookie/method"
-import { LifecycleFunction } from "@fookie/core"
+import { LifecycleFunction } from "../../../../types"
 
 const need_method_in_options: LifecycleFunction = async function (payload, ctx) {
     return lodash.has(payload.options, "method") && typeof payload.options.method == "string"

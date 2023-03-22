@@ -1,5 +1,5 @@
-import { After, Before } from "@fookie/mixin"
-import { LifecycleFunction } from "@fookie/core"
+import { LifecycleFunction } from "../../../../types"
+import { After, Before } from "../../../mixin"
 
 const rule: LifecycleFunction = async function (payload, state) {
     const befores = Before.bind[payload.method].rule

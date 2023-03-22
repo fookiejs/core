@@ -4,7 +4,7 @@
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
         "moduleResolution": "nodenext",
-        "baseUrl": ".",
+        "baseUrl": "./",
         "target": "ES6"
     },
 

@@ -1,5 +1,5 @@
 import * as lodash from "lodash"
-import { LifecycleFunction } from "@fookie/core"
+import { LifecycleFunction } from "../../../../types"
 
 const check_type: LifecycleFunction = async function (payload, state) {
     for (const field of lodash.keys(payload.body)) {

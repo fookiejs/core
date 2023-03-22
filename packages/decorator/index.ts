@@ -1,6 +1,8 @@
-const queue: any[] = []
 import * as lodash from "lodash"
-import { ModelInterface, FieldInterface, model } from "@fookie/core"
+import { model } from "../core"
+import { ModelInterface, FieldInterface } from "../../types"
+
+const queue: any[] = []
 
 export function Model(_model: Partial<ModelInterface>) {
     return function (target: any) {
