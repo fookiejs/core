@@ -5,7 +5,6 @@ tests/
 __tests__/
 
 # Dosyalar
-*.ts
 *.tsx
 *.log
 *.md
@@ -13,3 +12,4 @@ __tests__/
 yarn.lock
 npm-debug.log
 coverage
+.github

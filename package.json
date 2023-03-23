@@ -1,13 +1,12 @@
 {
   "name": "fookie-next",
   "description": "",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "main": "dist/index.js",
   "scripts": {
     "test": "vitest",
     "coverage": "vitest run --coverage",
-    "build": "tsc",
-    "prepublishOnly": "npm run build"
+    "build": "tsc"
   },
   "dependencies": {
     "deepmerge": "^4.3.0",
