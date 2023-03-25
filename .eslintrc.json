@@ -1,9 +1,9 @@
-module.exports = {
-    extends: ["plugin:@typescript-eslint/recommended"],
-    parser: "@typescript-eslint/parser",
-    plugins: ["@typescript-eslint"],
-    root: true,
-    rules: {
+{
+    "extends": ["plugin:@typescript-eslint/recommended"],
+    "parser": "@typescript-eslint/parser",
+    "plugins": ["@typescript-eslint"],
+    "root": true,
+    "rules": {
         //"es/no-arrow-functions": "error",
         //"es/no-block-scoped-functions": "error",
         //"es/no-classes": "error",
@@ -14,18 +14,18 @@ module.exports = {
         "no-empty": [
             "error",
             {
-                allowEmptyCatch: true,
-            },
+                "allowEmptyCatch": true
+            }
         ],
         "no-unused-vars": "off",
-        indent: ["error", 4],
-        quotes: [
+        "indent": ["error", 4],
+        "quotes": [
             "error",
             "double",
             {
-                allowTemplateLiterals: true,
-            },
+                "allowTemplateLiterals": true
+            }
         ],
-        semi: ["error", "never"],
-    },
+        "semi": ["error", "never"]
+    }
 }
