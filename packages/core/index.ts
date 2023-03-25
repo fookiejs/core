@@ -6,11 +6,19 @@ import rule from "./src/lifecycles/rule"
 import method from "./src/lifecycles/method"
 import filter from "./src/lifecycles/filter"
 import effect from "./src/lifecycles/effect"
-import { ModelInterface, LifecycleFunction, PayloadInterface, StateInterface } from "../../types"
+import {
+    Type,
+    ModelInterface,
+    LifecycleFunction,
+    PayloadInterface,
+    StateInterface,
+    MixinInterface,
+    DatabaseInterface,
+} from "../../types"
+import deepmerge = require("deepmerge")
 
 const methods = ["create", "read", "update", "delete", "count", "test"]
 const lifecycles = ["preRule", "modify", "role", "rule", "filter", "effect"]
-const deepmerge = require("deepmerge")
 
 export const models: ModelInterface[] = []
 
@@ -26,15 +34,14 @@ export function model(model: Partial<ModelInterface>): ModelInterface {
     const schema_keys = lodash.keys(model.schema)
 
     for (const key of schema_keys) {
-        if (!lodash.has(model.schema[key], "read")) {
-            model.schema[key].read = []
-        }
-        if (lodash.has(model.schema[key], "relation")) {
-            const field = model.schema[key]
+        const field = model.schema[key]
 
+        if (!lodash.has(model.schema[key], "read")) {
+            field.read = []
+        }
+        if (lodash.has(field, "relation")) {
             if (typeof field.relation === "function") {
-                //@ts-ignore
-                const val = field.relation.name
+                const val = (field.relation as Function).name
                 const model = lodash.find(models, { name: lodash.toLower(val) })
                 field.relation = model
             }
@@ -62,13 +69,12 @@ export function model(model: Partial<ModelInterface>): ModelInterface {
         model[key] = temp[key]
     }
 
-    //@ts-ignore
     model.database.modify(model)
 
-    model.methods.test = async function (_payload, _state) {
-        let p = Object.assign(lodash.omit(_payload, ["response"]))
+    model.methods.test = async function (_payload) {
+        const p = Object.assign(lodash.omit(_payload, ["response"]))
         p.method = _payload.options.method
-        let s = {
+        const s = {
             metrics: {
                 start: Date.now(),
                 lifecycle: [],
@@ -93,10 +99,8 @@ export function model(model: Partial<ModelInterface>): ModelInterface {
         _payload.response.data = Object.assign(p.response)
     }
 
-    //@ts-ignore
-    models.push(model)
-    //@ts-ignore
-    return model
+    models.push(model as ModelInterface)
+    return model as ModelInterface
 }
 
 export const lifecycle = function (lifecycle: LifecycleFunction) {
@@ -161,4 +165,33 @@ async function _run(payload: PayloadInterface, state: StateInterface): Promise<a
     await filter(payload, state)
     await effect(payload, state)
     return lodash.assign({}, payload.response)
+}
+
+export function mixin(mixin: MixinInterface) {
+    if (!lodash.isObject(mixin.bind)) {
+        mixin.bind = {}
+    }
+    if (!lodash.isObject(mixin.schema)) {
+        mixin.schema = {}
+    }
+    for (const method of methods) {
+        if (!lodash.isObject(mixin.bind[method])) {
+            mixin.bind[method] = {}
+        }
+        for (const lifecycle of lifecycles) {
+            if (!lodash.isArray(mixin.bind[method][lifecycle])) {
+                mixin.bind[method][lifecycle] = []
+            }
+        }
+    }
+
+    return mixin
+}
+
+export const database = function (database: DatabaseInterface) {
+    return database
+}
+
+export function type(type: Type) {
+    return type
 }

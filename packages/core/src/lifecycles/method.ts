@@ -1,9 +1,8 @@
 import * as lodash from "lodash"
-import { After, Before } from "../../../mixin"
 import { LifecycleFunction } from "../../../../types"
 
 const method: LifecycleFunction = async function (payload, state) {
-    let start = Date.now()
+    const start = Date.now()
 
     if (lodash.isUndefined(payload.response.data)) {
         await payload.model.methods[payload.method](payload, state)

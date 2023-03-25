@@ -1,10 +1,10 @@
 import * as lodash from "lodash"
-import { models, run } from "../../../core"
-import { Read, Delete, Create, Count } from "../../../method"
+import { run } from "../../../core"
+import { Read } from "../../../method"
 import { LifecycleFunction } from "../../../../types"
 
 const reactive_prepare: LifecycleFunction = async function (payload, state) {
-    let result = []
+    const result = []
 
     const entities = await run({
         model: payload.model,

@@ -1,13 +1,11 @@
 import * as lodash from "lodash"
-import { models, run } from "../../../core"
-import { Read, Delete, Create, Count } from "../../../method"
 import { LifecycleFunction } from "../../../../types"
 
-const field_control: LifecycleFunction = async function (payload, state) {
+const field_control: LifecycleFunction = async function (payload) {
     const model = payload.model
-    let fields = lodash.keys(payload.body)
+    const fields = lodash.keys(payload.body)
     let res = true
-    for (let f of fields) {
+    for (const f of fields) {
         const field = model.schema[f]
         const value = payload.body[f]
         if (lodash.isNumber(field.minimum)) {

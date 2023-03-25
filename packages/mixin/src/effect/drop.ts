@@ -1,9 +1,9 @@
 import * as lodash from "lodash"
-import { models, run } from "../../..//core"
+import { run } from "../../..//core"
 import { Delete } from "../../../method"
 import { LifecycleFunction } from "../../../../types"
 
-const drop: LifecycleFunction = async function (payload, state) {
+const drop: LifecycleFunction = async function (payload) {
     if (lodash.has(payload.options, "drop")) {
         setTimeout(async function () {
             await run({

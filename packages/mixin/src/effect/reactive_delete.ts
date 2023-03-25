@@ -1,5 +1,4 @@
-import * as lodash from "lodash"
-import { models, run } from "../../..//core"
+import { run } from "../../..//core"
 import { Delete } from "../../../method"
 import { LifecycleFunction } from "../../../../types"
 
@@ -14,7 +13,7 @@ const reactive_delete: LifecycleFunction = async function (payload, state) {
                     pk: pk,
                 },
             },
-        })
+        }) // TODO
     }
 }
 

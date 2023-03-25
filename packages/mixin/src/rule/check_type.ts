@@ -1,7 +1,7 @@
 import * as lodash from "lodash"
 import { LifecycleFunction } from "../../../../types"
 
-const check_type: LifecycleFunction = async function (payload, state) {
+const check_type: LifecycleFunction = async function (payload) {
     for (const field of lodash.keys(payload.body)) {
         const type = payload.model.schema[field].type
 

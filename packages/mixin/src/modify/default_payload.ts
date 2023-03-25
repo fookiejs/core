@@ -1,12 +1,8 @@
 import * as lodash from "lodash"
 import { v4 } from "uuid"
-import { models, run } from "../../../core"
-import { Read, Delete, Create, Count } from "../../../method"
 import { LifecycleFunction } from "../../../../types"
 
 const defalut_payload: LifecycleFunction = async function (payload, state) {
-    const model = payload.model
-
     const newPayload = lodash.merge(payload, {
         options: {},
         body: {},
@@ -16,7 +12,7 @@ const defalut_payload: LifecycleFunction = async function (payload, state) {
         id: v4().replace("-", ""),
     })
 
-    for (let key in newPayload) {
+    for (const key in newPayload) {
         payload[key] = newPayload[key]
     }
 
@@ -28,10 +24,10 @@ const defalut_payload: LifecycleFunction = async function (payload, state) {
         payload.query.offset = 0
     }
     if (!payload.query.limit) {
-        payload.query.limit = 0
+        payload.query.limit = Infinity
     }
     if (payload.query.attributes.length == 0) {
-        payload.query.attributes = lodash.keys(model.schema)
+        payload.query.attributes = lodash.keys(payload.model.schema)
     }
 }
 

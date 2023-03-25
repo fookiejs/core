@@ -13,3 +13,6 @@ yarn.lock
 npm-debug.log
 coverage
 .github
+packages
+.prettierrc.yaml
+vitest.config

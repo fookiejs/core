@@ -1,7 +1,19 @@
 export type Method = "create" | "read" | "update" | "delete" | "count" | "test"
 export type Lifecycle = "preRule" | "modify" | "role" | "rule" | "filter" | "effect"
-export type LifecycleFunction = (payload: PayloadInterface, state: StateInterface) => Promise<boolean> | Promise<void>
-export type Type = (v: any) => boolean
+export interface LifecycleFunction {
+    (payload: PayloadInterface, state: StateInterface): Promise<boolean> | Promise<void>
+}
+export interface Type {
+    (val: any): boolean
+}
+
+export interface Selection {
+    (model: ModelInterface, field: FieldInterface): Promise<any>
+}
+
+export interface Modify {
+    (model: Partial<ModelInterface>)
+}
 
 export interface ModelInterface {
     name: string
@@ -10,7 +22,7 @@ export interface ModelInterface {
         [key: string]: FieldInterface
     }
     methods?: {
-        [key in Method]?: (payload: PayloadInterface, state: StateInterface) => unknown
+        [key in Method]?: LifecycleFunction
     }
     bind: {
         [ls in Method]?: {
@@ -54,7 +66,7 @@ export interface FieldInterface {
     maximum?: number
     minimum_size?: number
     maximum_size?: number
-    selection?: (model: ModelInterface, field: FieldInterface) => Promise<any>
+    selection?: Selection
     reactives?: {
         to: string
         from: string
@@ -80,7 +92,7 @@ export interface DatabaseInterface {
     pk_type: Type
     connect: Function
     disconnect: Function
-    modify: (model: ModelInterface) => void
+    modify: Modify
 }
 
 export interface PayloadInterface {
@@ -151,5 +163,3 @@ export interface MixinInterface {
         }
     }
 }
-
-export type Selection = (model: ModelInterface, field: FieldInterface) => Promise<any>

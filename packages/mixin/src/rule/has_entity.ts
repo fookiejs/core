@@ -1,10 +1,10 @@
 import * as lodash from "lodash"
-import { models, run } from "../../../core"
-import { Read, Delete, Create, Count } from "../../../method"
+import { run } from "../../../core"
+import { Count } from "../../../method"
 import { LifecycleFunction } from "../../../../types"
 
-const has_entity: LifecycleFunction = async function (payload, state) {
-    for (let key of lodash.keys(payload.body)) {
+const has_entity: LifecycleFunction = async function (payload) {
+    for (const key of lodash.keys(payload.body)) {
         if (lodash.has(payload.model.schema[key], "relation")) {
             const res = await run({
                 token: process.env.SYSTEM_TOKEN,

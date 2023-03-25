@@ -2,16 +2,19 @@ import * as lodash from "lodash"
 import { v4 } from "uuid"
 import { Text, Plain, Array, Boolean, Buffer, Char, Function, Number } from "../../../type"
 import { FilterFieldInterface, DatabaseInterface } from "../../../../types"
-const store = {}
 
 export const Store: DatabaseInterface = {
     pk: "id",
     pk_type: Text,
     types: [Text, Plain, Array, Boolean, Buffer, Char, Function, Number],
-    connect: () => {},
-    disconnect: () => {},
+    connect: async function () {
+        return true
+    },
+    disconnect: async function () {
+        return true
+    },
     modify: function (model) {
-        store[model.name] = []
+        let pool = []
         model.methods = {}
 
         const schema_keys = lodash.keys(model.schema)
@@ -21,9 +24,8 @@ export const Store: DatabaseInterface = {
             }
         }
 
-        model.methods.read = async function (_payload, _state) {
-            if (_payload.query.limit == 0) _payload.query.limit = Infinity
-            const pool = store[_payload.model.name]
+        model.methods.read = async function (_payload) {
+            if (_payload.query.limit === Infinity) _payload.query.limit = Infinity
             const filter = _payload.query.filter
             const attributes = ["id"].concat(_payload.query.attributes)
             let res = poolFilter(pool, filter)
@@ -34,46 +36,40 @@ export const Store: DatabaseInterface = {
             _payload.response.data = res
         }
 
-        model.methods.create = async function (_payload, _state) {
+        model.methods.create = async function (_payload) {
             const attributes = ["id"].concat(_payload.query.attributes)
             _payload.body.id = v4().replace("-", "")
-            store[_payload.model.name].push(_payload.body)
+            pool.push(_payload.body)
             _payload.response.data = lodash.pick(_payload.body, attributes)
         }
 
-        model.methods.update = async function (_payload, _state) {
-            let pool = store[_payload.model.name]
-            let database = model.database
-            let ids = poolFilter(pool, _payload.query.filter).map(function (i) {
-                return i[database.pk]
+        model.methods.update = async function (_payload) {
+            const ids = poolFilter(pool, _payload.query.filter).map(function (i) {
+                return i[model.database.pk]
             })
-            for (let item of pool) {
+            for (const item of pool) {
                 for (const key in _payload.body) {
                     if (ids.includes(item.id)) {
                         item[key] = _payload.body[key]
                     }
                 }
             }
-            store[_payload.model.name] = pool
             _payload.response.data = true
         }
 
-        model.methods.delete = async function (_payload, _state) {
-            const pool = store[_payload.model.name]
+        model.methods.delete = async function (_payload) {
             const filtered = poolFilter(pool, _payload.query.filter).map(function (f) {
                 return f.id
             })
             const rejected = lodash.reject(pool, function (entity) {
                 return filtered.includes(entity.id)
             })
-            store[_payload.model.name] = rejected
+            pool = rejected
             _payload.response.data = true
         }
 
-        model.methods.count = async function (_payload, _state) {
-            let pool = store[_payload.model.name]
-            let filtered = poolFilter(pool, _payload.query.filter)
-            _payload.response.data = filtered.length
+        model.methods.count = async function (_payload) {
+            _payload.response.data = poolFilter(pool, _payload.query.filter).length
         }
     },
 }

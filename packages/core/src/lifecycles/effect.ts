@@ -7,7 +7,7 @@ const effect: LifecycleFunction = async function (payload, state) {
     const effects = [...befores, ...payload.model.bind[payload.method].effect, ...afters]
 
     for (const effect of effects) {
-        let start = Date.now()
+        const start = Date.now()
         await effect(payload, state)
 
         state.metrics.lifecycle.push({

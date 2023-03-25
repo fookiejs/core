@@ -1,5 +1,5 @@
 import * as lodash from "lodash"
-import { models, run } from "../../../core"
+import { models } from "../../../core"
 import { LifecycleFunction } from "../../../../types"
 import { After, Before } from "../../../mixin"
 
@@ -17,7 +17,7 @@ const preRule: LifecycleFunction = async function (payload, state) {
     const afters = After.bind[payload.method].preRule
     const preRules = [...befores, ...payload.model.bind[payload.method].preRule, ...afters]
 
-    for (let preRule of preRules) {
+    for (const preRule of preRules) {
         const start = Date.now()
         const res = await preRule(payload, state)
         state.metrics.lifecycle.push({

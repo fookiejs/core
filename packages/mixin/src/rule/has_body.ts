@@ -1,9 +1,7 @@
 import * as lodash from "lodash"
-import { models, run } from "../../../core"
-import { Read, Delete, Create, Count } from "../../../method"
 import { LifecycleFunction } from "../../../../types"
 
-const has_body: LifecycleFunction = async function (payload, state) {
+const has_body: LifecycleFunction = async function (payload) {
     return lodash.has(payload, "body")
 }
 

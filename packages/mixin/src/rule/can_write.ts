@@ -10,7 +10,7 @@ const can_write: LifecycleFunction = async function (payload, state) {
     const filtered_writes = lodash.difference(writes, [undefined, null])
     const roles = lodash.flatten(filtered_writes)
 
-    for (let role of roles) {
+    for (const role of roles) {
         const res = await role(payload, state)
         if (!res) {
             return false
