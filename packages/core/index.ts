@@ -59,7 +59,7 @@ export function model(model: Partial<ModelInterface>): ModelInterface {
         }
     }
 
-    let temp: ModelInterface = Object.assign(model)
+    let temp: Partial<ModelInterface> = Object.assign(model)
 
     for (const mixin of temp.mixins) {
         temp = deepmerge(temp, mixin)
