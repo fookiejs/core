@@ -53,6 +53,7 @@ jobs:
                   git config user.name "Fookie JS BOT"
                   git config user.email "admin@fookiejs.com"
                   npm version patch
+                  git add .
                   git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}
                   git commit -m "[patch]"
                   git push
