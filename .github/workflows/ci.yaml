@@ -40,6 +40,14 @@ jobs:
             github.event_name != 'pull_request' &&
             !contains(github.event.head_commit.message, '[patch]')
         steps:
+            - name: Checkout repository
+              uses: actions/checkout@v3
+
+            - name: Set up Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v3
+              with:
+                  node-version: ${{ matrix.node-version }}
+                  cache: "npm"
             - name: Bump version
               run: |
                   git config user.name "Fookie JS BOT"
