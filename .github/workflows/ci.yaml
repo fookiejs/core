@@ -43,16 +43,17 @@ jobs:
             - name: Checkout repository
               uses: actions/checkout@v3
 
-            - name: Set up Node.js ${{ matrix.node-version }}
+            - name: Set up Node.js
               uses: actions/setup-node@v3
               with:
-                  node-version: ${{ matrix.node-version }}
+                  node-version: 18
                   cache: "npm"
             - name: Bump version
               run: |
                   git config user.name "Fookie JS BOT"
                   git config user.email "admin@fookiejs.com"
                   npm version patch
+                  git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}
                   git commit -m "[patch]"
                   git push --follow-tags
     publish:
