@@ -55,7 +55,7 @@ jobs:
                   npm version patch
                   git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}
                   git commit -m "[patch]"
-                  git push --follow-tags
+                  git push
     publish:
         needs: bump-version
         runs-on: ubuntu-latest
