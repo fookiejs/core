@@ -37,7 +37,7 @@ jobs:
         needs: build-and-test
         runs-on: ubuntu-latest
         if: |
-            github.event_name != 'pull_request'
+            github.event_name != 'pull_request' &&
             !contains(github.event.head_commit.message, '[patch]')
         steps:
             - name: Bump version
@@ -51,7 +51,7 @@ jobs:
         needs: bump-version
         runs-on: ubuntu-latest
         if: |
-            github.event_name != 'pull_request'
+            github.event_name != 'pull_request' &&
             contains(github.event.head_commit.message, '[patch]')
         steps:
             - name: Checkout repository
