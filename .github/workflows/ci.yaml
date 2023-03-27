@@ -56,8 +56,8 @@ jobs:
                   git config --global user.name "GitHub Actions Bot"
                   git config --global user.email "<>"
                   npm version patch
-                  git add .
                   git commit -m "[patch]"
+                  git add .
                   git push
     publish:
         needs: bump-version
