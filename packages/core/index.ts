@@ -54,7 +54,7 @@ export async function run(
         | (Omit<PayloadInterface, "model"> & { model: Function })
         | (Omit<PayloadInterface, "model"> & { model: string })
 ) {
-    const model_name = getModelName(payload.model)
+    const model_name = get_model_name(payload.model)
     const model = models.find((model) => model.name === model_name)
 
     return await _run(
@@ -115,7 +115,7 @@ export function type(type: Type) {
     return type
 }
 
-function getModelName(model: Function | string | ModelInterface): string {
+function get_model_name(model: Function | string | ModelInterface): string {
     if (typeof model === "function") {
         return lodash.toLower(model.name)
     }
