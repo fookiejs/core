@@ -52,7 +52,6 @@ jobs:
                   npm version patch -m "[PATCH]"
                   git push
     publish:
-        needs: bump-version
         runs-on: ubuntu-latest
         if: |
             github.event_name != 'pull_request' &&
