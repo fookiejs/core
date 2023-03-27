@@ -53,8 +53,8 @@ jobs:
                   cache: "npm"
             - name: Bump version
               run: |
-                  git config user.name "Fookie JS BOT"
-                  git config user.email "admin@fookiejs.com"
+                  git config --global user.name "GitHub Actions Bot"
+                  git config --global user.email "<>"
                   npm version patch
                   git add .
                   git commit -m "[patch]"
