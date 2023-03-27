@@ -23,41 +23,11 @@ const lifecycles = ["preRule", "modify", "role", "rule", "filter", "effect"]
 export const models: ModelInterface[] = []
 
 export function model(model: Partial<ModelInterface>): ModelInterface {
-    if (!lodash.isArray(model.mixins)) {
-        model.mixins = []
-    }
+    model.mixins = lodash.isArray(model.mixins) ? model.mixins : []
+    model.bind = lodash.isObject(model.bind) ? model.bind : {}
 
-    if (!lodash.isObject(model.bind)) {
-        model.bind = {}
-    }
-
-    const schema_keys = lodash.keys(model.schema)
-
-    for (const key of schema_keys) {
-        const field = model.schema[key]
-
-        if (!lodash.has(model.schema[key], "read")) {
-            field.read = []
-        }
-        if (lodash.has(field, "relation")) {
-            if (typeof field.relation === "function") {
-                const val = (field.relation as Function).name
-                const model = lodash.find(models, { name: lodash.toLower(val) })
-                field.relation = model
-            }
-        }
-    }
-
-    for (const method of methods) {
-        if (!lodash.isObject(model.bind[method])) {
-            model.bind[method] = {}
-        }
-        for (const lifecycle of lifecycles) {
-            if (!lodash.isArray(model.bind[method][lifecycle])) {
-                model.bind[method][lifecycle] = []
-            }
-        }
-    }
+    initialize_model_schema(model)
+    initialize_model_bindings(model)
 
     let temp: Partial<ModelInterface> = Object.assign(model)
 
@@ -65,39 +35,10 @@ export function model(model: Partial<ModelInterface>): ModelInterface {
         temp = deepmerge(temp, mixin)
     }
 
-    for (const key of lodash.keys(temp)) {
-        model[key] = temp[key]
-    }
+    Object.assign(model, temp)
 
     model.database.modify(model)
-
-    model.methods.test = async function (_payload) {
-        const p = Object.assign(lodash.omit(_payload, ["response"]))
-        p.method = _payload.options.method
-        const s = {
-            metrics: {
-                start: Date.now(),
-                lifecycle: [],
-            },
-            reactive_delete_list: [],
-            cascade_delete_ids: [],
-        }
-        p.response = {
-            data: undefined,
-            status: false,
-            error: null,
-        }
-
-        if (await preRule(p, s)) {
-            await modify(p, s)
-            if (await role(p, s)) {
-                if (await rule(p, s)) {
-                    p.response.status = true
-                }
-            }
-        }
-        _payload.response.data = Object.assign(p.response)
-    }
+    model.methods.test = create_test_function()
 
     models.push(model as ModelInterface)
     return model as ModelInterface
@@ -113,16 +54,7 @@ export async function run(
         | (Omit<PayloadInterface, "model"> & { model: Function })
         | (Omit<PayloadInterface, "model"> & { model: string })
 ) {
-    let model_name = ""
-
-    if (typeof payload.model === "function") {
-        model_name = lodash.toLower(payload.model.name)
-    } else if (typeof payload.model === "string") {
-        model_name = payload.model
-    } else {
-        model_name = payload.model.name
-    }
-
+    const model_name = getModelName(payload.model)
     const model = models.find((model) => model.name === model_name)
 
     return await _run(
@@ -168,22 +100,9 @@ async function _run(payload: PayloadInterface, state: StateInterface): Promise<a
 }
 
 export function mixin(mixin: MixinInterface) {
-    if (!lodash.isObject(mixin.bind)) {
-        mixin.bind = {}
-    }
-    if (!lodash.isObject(mixin.schema)) {
-        mixin.schema = {}
-    }
-    for (const method of methods) {
-        if (!lodash.isObject(mixin.bind[method])) {
-            mixin.bind[method] = {}
-        }
-        for (const lifecycle of lifecycles) {
-            if (!lodash.isArray(mixin.bind[method][lifecycle])) {
-                mixin.bind[method][lifecycle] = []
-            }
-        }
-    }
+    mixin.bind = lodash.isObject(mixin.bind) ? mixin.bind : {}
+    mixin.schema = lodash.isObject(mixin.schema) ? mixin.schema : {}
+    initialize_model_bindings(mixin)
 
     return mixin
 }
@@ -194,4 +113,75 @@ export const database = function (database: DatabaseInterface) {
 
 export function type(type: Type) {
     return type
+}
+
+function getModelName(model: Function | string | ModelInterface): string {
+    if (typeof model === "function") {
+        return lodash.toLower(model.name)
+    }
+    return typeof model === "string" ? model : model.name
+}
+
+function initialize_model_schema(model: Partial<ModelInterface>): void {
+    const schemaKeys = lodash.keys(model.schema)
+
+    for (const key of schemaKeys) {
+        const field = model.schema[key]
+
+        if (!lodash.has(field, "read")) {
+            field.read = []
+        }
+
+        if (lodash.has(field, "relation")) {
+            if (typeof field.relation === "function") {
+                const val = (field.relation as Function).name
+                const relatedModel = lodash.find(models, { name: lodash.toLower(val) })
+                field.relation = relatedModel
+            }
+        }
+    }
+}
+
+function initialize_model_bindings(model: Partial<ModelInterface> | MixinInterface): void {
+    for (const method of methods) {
+        if (!lodash.isObject(model.bind[method])) {
+            model.bind[method] = {}
+        }
+
+        for (const lifecycle of lifecycles) {
+            if (!lodash.isArray(model.bind[method][lifecycle])) {
+                model.bind[method][lifecycle] = []
+            }
+        }
+    }
+}
+
+function create_test_function(): LifecycleFunction {
+    return async function (_payload) {
+        const p = Object.assign(lodash.omit(_payload, ["response"]))
+        p.method = _payload.options.method
+        const s = {
+            metrics: {
+                start: Date.now(),
+                lifecycle: [],
+            },
+            reactive_delete_list: [],
+            cascade_delete_ids: [],
+        }
+        p.response = {
+            data: undefined,
+            status: false,
+            error: null,
+        }
+
+        if (await preRule(p, s)) {
+            await modify(p, s)
+            if (await role(p, s)) {
+                if (await rule(p, s)) {
+                    p.response.status = true
+                }
+            }
+        }
+        _payload.response.data = Object.assign(p.response)
+    }
 }
