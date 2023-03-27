@@ -32,7 +32,7 @@ jobs:
 
             - name: Build project
               run: npm run build
-    bump-version:
+    publish:
         needs: build-and-test
         runs-on: ubuntu-latest
         if: |
@@ -58,8 +58,9 @@ jobs:
               run: npm run build
 
             - name: Publish to NPM
-              run: npm publish
+              run: npm publish --registry=https://npm.pkg.github.com/
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
             - name: Push new version
               run: git push
