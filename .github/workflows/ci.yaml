@@ -38,7 +38,7 @@ jobs:
         runs-on: ubuntu-latest
         if: |
             github.event_name != 'pull_request' &&
-            !contains(github.event.head_commit.message, '[patch]')
+            !contains(github.event.head_commit.message, '[PATCH]')
         steps:
             - name: Checkout repository
               uses: actions/checkout@v3
@@ -55,16 +55,14 @@ jobs:
               run: |
                   git config --global user.name "GitHub Actions Bot"
                   git config --global user.email "<>"
-                  npm version patch
-                  git commit -m "[patch]"
-                  git add .
+                  npm version patch -m "[PATCH]"
                   git push
     publish:
         needs: bump-version
         runs-on: ubuntu-latest
         if: |
             github.event_name != 'pull_request' &&
-            contains(github.event.head_commit.message, '[patch]')
+            contains(github.event.head_commit.message, '[PATCH]')
         steps:
             - name: Checkout repository
               uses: actions/checkout@v3
