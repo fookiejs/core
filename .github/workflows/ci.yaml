@@ -42,6 +42,9 @@ jobs:
         steps:
             - name: Checkout repository
               uses: actions/checkout@v3
+              with:
+                  fetch-depth: 0
+                  persist-credentials: false
 
             - name: Set up Node.js
               uses: actions/setup-node@v3
@@ -54,7 +57,6 @@ jobs:
                   git config user.email "admin@fookiejs.com"
                   npm version patch
                   git add .
-                  git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}
                   git commit -m "[patch]"
                   git push
     publish:
