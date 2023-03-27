@@ -50,8 +50,8 @@ jobs:
 
             - name: Bump version
               run: |
-                  git config --global user.name "Fookie Bot"
-                  git config --global user.email "<>"
+                  git config user.name "Fookie Bot"
+                  git config user.email "<>"
                   npm version patch -m "[PATCH]"
                   git push
     publish:
