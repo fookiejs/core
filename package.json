@@ -1,7 +1,7 @@
 {
-  "name": "fookie-next",
+  "name": "fookie",
   "description": "",
-  "version": "0.0.11",
+  "version": "0.999.0",
   "main": "dist/index.js",
   "scripts": {
     "test": "vitest",
