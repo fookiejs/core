@@ -1,5 +1,5 @@
 import * as lodash from "lodash"
-import { LifecycleFunction } from "../../../../types"
+import { LifecycleFunction, FilterFieldInterface } from "../../../../types"
 
 const validate_query: LifecycleFunction = async function (payload) {
     const filter_keys = lodash.keys(payload.query.filter)
@@ -19,7 +19,7 @@ const validate_query: LifecycleFunction = async function (payload) {
     }
 
     for (const key of lodash.keys(payload.query.filter)) {
-        const field = payload.query.filter[key]
+        const field = payload.query.filter[key] as FilterFieldInterface
         if (lodash.isObject(field)) {
             if (field.gte && !lodash.isNumber(field.gte)) {
                 return false

@@ -10,7 +10,7 @@ const cascade_prepare: LifecycleFunction = async function (payload, state) {
         query: payload.query,
     })
 
-    const cascade_delete_ids: any[] = res.data.map(function (e) {
+    const cascade_delete_ids = res.data.map(function (e) {
         return e[payload.model.database.pk]
     })
 

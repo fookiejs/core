@@ -101,7 +101,7 @@ export interface PayloadInterface {
     method: Method
     query?: {
         filter?: {
-            [key: string]: FilterFieldInterface | string | number
+            [key: string]: FilterFieldInterface | any
         }
         attributes?: string[]
         limit?: number
