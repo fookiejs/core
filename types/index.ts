@@ -130,11 +130,6 @@ export interface StateInterface {
         }[]
     }
     todo: PayloadInterface[]
-    reactive_delete_list: {
-        model: ModelInterface
-        pk: string | number
-    }[]
-    cascade_delete_ids: string[]
 }
 
 export interface MixinInterface {
