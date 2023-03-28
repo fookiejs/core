@@ -64,6 +64,7 @@ export async function run(
                 start: Date.now(),
                 lifecycle: [],
             },
+            todo: [],
             reactive_delete_list: [],
             cascade_delete_ids: [],
         }
@@ -165,6 +166,7 @@ function create_test_function(): LifecycleFunction {
                 start: Date.now(),
                 lifecycle: [],
             },
+            todo: [],
             reactive_delete_list: [],
             cascade_delete_ids: [],
         }

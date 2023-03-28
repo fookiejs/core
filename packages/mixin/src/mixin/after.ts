@@ -10,8 +10,7 @@ import check_required from "../rule/check_required"
 import can_write from "../rule/can_write"
 import need_method_in_options from "../rule/need_method_in_options"
 import cascade_prepare from "../modify/cascade_prepare"
-import reactive_delete from "../effect/reactive_delete"
-import cascade_delete from "../effect/cascade_delete"
+import todo from "../effect/todo"
 import pk from "../modify/pk"
 import reactives from "../effect/reactives"
 import drop from "../effect/drop"
@@ -48,7 +47,7 @@ const After: MixinInterface = {
             rule: [validate_query],
             preRule: [],
             filter: [],
-            effect: [db_disconnect, reactive_delete, cascade_delete],
+            effect: [db_disconnect, todo],
             role: [],
         },
         count: {

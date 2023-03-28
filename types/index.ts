@@ -79,10 +79,10 @@ export interface FilterFieldInterface {
     lt: number
     gte: number
     gt: number
-    eq: number | string
-    not: number | string
-    or: string[] | number[]
-    notor: string[] | number[]
+    eq: any[]
+    not: any[]
+    or: any[]
+    notor: any[]
     inc: string | number
 }
 
@@ -129,6 +129,7 @@ export interface StateInterface {
             ms: number
         }[]
     }
+    todo: PayloadInterface[]
     reactive_delete_list: {
         model: ModelInterface
         pk: string | number
