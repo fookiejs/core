@@ -1,6 +1,7 @@
 # Direktörler
 node_modules/
 test/
+packages/
 tests/
 __tests__/
 
@@ -13,6 +14,5 @@ yarn.lock
 npm-debug.log
 coverage
 .github
-packages
 .prettierrc.yaml
 vitest.config
