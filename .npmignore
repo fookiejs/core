@@ -3,6 +3,7 @@ node_modules/
 test/
 tests/
 __tests__/
+package/
 
 # Dosyalar
 *.tsx
