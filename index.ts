@@ -7,9 +7,8 @@ import * as Role from "./packages/role"
 import * as Selection from "./packages/selection"
 import * as Type from "./packages/type"
 
-export const Fookie = { Core, Database, Decorator, Method, Mixin, Role, Selection, Type }
-
-export async function use(
+const Fookie = { Core, Database, Decorator, Method, Mixin, Role, Selection, Type, use }
+async function use(
     cb: (fookie: {
         Core: typeof Core
         Database: typeof Database
@@ -23,3 +22,4 @@ export async function use(
 ) {
     return await cb(Fookie)
 }
+export default Fookie
