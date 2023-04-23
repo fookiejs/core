@@ -4,7 +4,7 @@ import { model, run, models, lifecycle } from "../packages/core"
 import { Store } from "../packages/database"
 import { Model, Field } from "../packages/decorator"
 import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import { Text, Number, Array, Boolean, Buffer, Char, Function, Plain } from "../packages/type"
+import { Text, Integer, Array, Boolean, Buffer, Char, Function, Plain } from "../packages/type"
 import { After, Before } from "../packages/mixin"
 
 it("Filters with object", async function () {
@@ -13,7 +13,7 @@ it("Filters with object", async function () {
         database: Store,
         schema: {
             val: {
-                type: Number,
+                type: Integer,
                 required: true,
             },
             val_str: {

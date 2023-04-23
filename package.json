@@ -10,6 +10,7 @@
         "lint": "npx eslint packages"
     },
     "dependencies": {
+        "@types/node": "^18.16.0",
         "deepmerge": "^4.3.0",
         "lodash": "^4.17.21",
         "uuid": "^9.0.0"

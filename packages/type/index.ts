@@ -4,9 +4,15 @@ import { Type } from "../../types"
 export const Text: Type = function (v) {
     return lodash.isString(v)
 }
-export const Number: Type = function (v) {
-    return lodash.isNumber(v)
+
+export const Float: Type = function (v) {
+    return lodash.isNumber(v) && Number.isInteger(v)
 }
+
+export const Integer: Type = function (v) {
+    return Number.isInteger(v)
+}
+
 export const Array: Type = function (v) {
     return lodash.isArray(v)
 }
