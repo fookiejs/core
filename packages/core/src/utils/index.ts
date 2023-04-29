@@ -5,6 +5,8 @@ import role from "../../src/lifecycles/role"
 import rule from "../../src/lifecycles/rule"
 
 import { ModelInterface, LifecycleFunction, MixinInterface } from "../../../../types"
+import { run } from "../.."
+import { Read } from "../../../method"
 
 const methods = ["create", "read", "update", "delete", "count", "test"]
 const lifecycles = ["preRule", "modify", "role", "rule", "filter", "effect"]
@@ -76,5 +78,17 @@ export function create_test_function(): LifecycleFunction {
             }
         }
         _payload.response.data = Object.assign(p.response)
+    }
+}
+
+export function create_sumby_function(): LifecycleFunction {
+    return async function (_payload) {
+        const response = await run({
+            model: _payload.model,
+            method: Read,
+            query: _payload.query,
+        })
+        const total = lodash.sumBy(response.data, _payload.options.field)
+        _payload.response.data = total
     }
 }

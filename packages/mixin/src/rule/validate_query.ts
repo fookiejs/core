@@ -36,10 +36,10 @@ const validate_query: LifecycleFunction = async function (payload) {
             if (field.inc && !lodash.isString(field.inc)) {
                 return false
             }
-            if (field.or && !lodash.isArray(field.or)) {
+            if (field.in && !lodash.isArray(field.in)) {
                 return false
             }
-            if (field.notor && !lodash.isArray(field.notor)) {
+            if (field.not_in && !lodash.isArray(field.not_in)) {
                 return false
             }
         }

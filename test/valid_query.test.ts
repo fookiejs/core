@@ -1,17 +1,17 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
 import { model, run, models, lifecycle } from "../packages/core"
-import { Store, database } from "../packages/database"
+import { Store } from "../packages/database"
 import { Model, Field } from "../packages/decorator"
 import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import { Text, Number, Array, Boolean, Buffer, Char, Function, Plain } from "../packages/type"
-import { mixin, After, Before } from "../packages/mixin"
+import { Text, Array, Boolean, Buffer, Char, Function, Plain, Integer } from "../packages/type"
+import { After, Before } from "../packages/mixin"
 import { nobody, everybody, system } from "../packages/role"
 
 describe("validate_query", async function () {
     @Model({ database: Store })
     class InvalidQueryModel {
-        @Field({ type: Number, required: true })
+        @Field({ type: Integer, required: true })
         field: number
         @Field({ type: Text, required: true })
         field2: string
@@ -179,7 +179,7 @@ describe("validate_query", async function () {
             query: {
                 filter: {
                     field: {
-                        or: "hi",
+                        in: "hi",
                     },
                 },
             },
@@ -193,7 +193,7 @@ describe("validate_query", async function () {
             query: {
                 filter: {
                     field: {
-                        notor: "hi",
+                        not_in: "hi",
                     },
                 },
             },
