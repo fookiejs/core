@@ -28,7 +28,7 @@ const cascade_prepare: LifecycleFunction = async function (payload, state) {
                     query: {
                         filter: {
                             [field]: {
-                                or: cascade_delete_ids,
+                                in: cascade_delete_ids,
                             },
                         },
                     },

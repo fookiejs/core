@@ -75,15 +75,15 @@ export interface FieldInterface {
 }
 
 export interface FilterFieldInterface {
-    lte: number
-    lt: number
-    gte: number
-    gt: number
-    eq: any[]
-    not: any[]
-    or: any[]
-    notor: any[]
-    inc: string | number
+    lte: any
+    lt: any
+    gte: any
+    gt: any
+    eq: any
+    not: any
+    in: any[]
+    not_in: any[]
+    inc: any
 }
 
 export interface DatabaseInterface {

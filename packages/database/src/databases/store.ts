@@ -17,15 +17,7 @@ export const Store: DatabaseInterface = {
         let pool = []
         model.methods = {}
 
-        const schema_keys = lodash.keys(model.schema)
-        for (const key of schema_keys) {
-            if (!!model.schema[key].relation) {
-                model.schema[key].type = model.schema[key].relation.database.pk_type
-            }
-        }
-
         model.methods.read = async function (_payload) {
-            if (_payload.query.limit === Infinity) _payload.query.limit = Infinity
             const filter = _payload.query.filter
             const attributes = ["id"].concat(_payload.query.attributes)
             let res = poolFilter(pool, filter)
@@ -100,10 +92,10 @@ function poolFilter(pool: any[], filter) {
                 if (value.not && entity[field] === value.not) {
                     return false
                 }
-                if (value.or && !lodash.includes(value.or, entity[field])) {
+                if (value.in && !lodash.includes(value.in, entity[field])) {
                     return false
                 }
-                if (value.notor && lodash.includes(value.notor, entity[field])) {
+                if (value.not_in && lodash.includes(value.not_in, entity[field])) {
                     return false
                 }
             } else if (entity[field] !== value) {

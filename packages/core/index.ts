@@ -38,6 +38,13 @@ export function model(model: Partial<ModelInterface>): ModelInterface {
     model.database.modify(model)
     model.methods.test = create_test_function()
 
+    const schema_keys = lodash.keys(model.schema)
+    for (const key of schema_keys) {
+        if (model.schema[key].relation) {
+            model.schema[key].type = model.schema[key].relation.database.pk_type
+        }
+    }
+
     models.push(model as ModelInterface)
     return model as ModelInterface
 }
