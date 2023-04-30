@@ -16,7 +16,13 @@ import {
     DatabaseInterface,
 } from "../../types"
 import deepmerge = require("deepmerge")
-import { create_test_function, get_model_name, initialize_model_bindings, initialize_model_schema } from "./src/utils"
+import {
+    create_sumby_function,
+    create_test_function,
+    get_model_name,
+    initialize_model_bindings,
+    initialize_model_schema,
+} from "./src/utils"
 
 export const models: ModelInterface[] = []
 
@@ -37,6 +43,7 @@ export function model(model: Partial<ModelInterface>): ModelInterface {
 
     model.database.modify(model)
     model.methods.test = create_test_function()
+    model.methods.sum = create_sumby_function()
 
     const schema_keys = lodash.keys(model.schema)
     for (const key of schema_keys) {
