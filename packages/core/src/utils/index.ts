@@ -82,7 +82,9 @@ export function create_test_function(): LifecycleFunction {
 
 export function create_sumby_function(): LifecycleFunction {
     return async function (_payload) {
+        const token = _payload.token || ""
         const response = await run({
+            token: token,
             model: _payload.model,
             method: Read,
             query: _payload.query,
