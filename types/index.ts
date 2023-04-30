@@ -1,4 +1,4 @@
-export type Method = "create" | "read" | "update" | "delete" | "count" | "test"
+export type Method = "create" | "read" | "update" | "delete" | "count" | "test" | "sum"
 export type Lifecycle = "preRule" | "modify" | "role" | "rule" | "filter" | "effect"
 export interface LifecycleFunction {
     (payload: PayloadInterface, state: StateInterface): Promise<boolean> | Promise<void>
@@ -110,7 +110,7 @@ export interface PayloadInterface {
     body?: any
     options?: {
         field: string
-        method?: string
+        method?: ClassMethodDecoratorContext
         simplified?: boolean
         drop?: number
     }

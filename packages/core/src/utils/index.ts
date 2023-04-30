@@ -6,9 +6,8 @@ import rule from "../../src/lifecycles/rule"
 
 import { ModelInterface, LifecycleFunction, MixinInterface } from "../../../../types"
 import { run } from "../.."
-import { Read } from "../../../method"
+import { Methods, Read } from "../../../method"
 
-const methods = ["create", "read", "update", "delete", "count", "test"]
 const lifecycles = ["preRule", "modify", "role", "rule", "filter", "effect"]
 
 export function get_model_name(model: Function | string | ModelInterface): string {
@@ -39,7 +38,7 @@ export function initialize_model_schema(models: ModelInterface[], model: Partial
 }
 
 export function initialize_model_bindings(model: Partial<ModelInterface> | MixinInterface): void {
-    for (const method of methods) {
+    for (const method of Methods) {
         if (!lodash.isObject(model.bind[method])) {
             model.bind[method] = {}
         }

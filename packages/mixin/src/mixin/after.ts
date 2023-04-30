@@ -15,6 +15,7 @@ import pk from "../modify/pk"
 import reactives from "../effect/reactives"
 import drop from "../effect/drop"
 import { MixinInterface } from "../../../../types"
+import need_field_in_options from "../rule/need_field_in_options"
 
 const After: MixinInterface = {
     bind: {
@@ -65,6 +66,14 @@ const After: MixinInterface = {
             filter: [],
             effect: [db_disconnect],
             role: [],
+        },
+        sum: {
+            preRule: [need_field_in_options],
+            modify: [pk],
+            rule: [validate_query],
+            filter: [],
+            role: [],
+            effect: [db_disconnect],
         },
     },
 }
