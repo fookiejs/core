@@ -1,25 +1,25 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
 import { model, run, models, lifecycle } from "../packages/core"
-import { Store, database } from "../packages/database"
+import { Store } from "../packages/database"
 import { Model, Field } from "../packages/decorator"
 import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import { Text, Number, Array, Boolean, Buffer, Char, Function, Plain } from "../packages/type"
-import { mixin, After, Before } from "../packages/mixin"
+import { Text, Array, Boolean, Buffer, Char, Function, Plain } from "../packages/type"
+import { After, Before } from "../packages/mixin"
 
 describe("fookie", async function () {
     it("Decorators", async function () {
-        @Model({ database: Store })
-        class User {
-            @Field({ type: Text, required: true })
-            name: string
-
-            @Field({ type: Text, required: true })
-            password: string
-        }
+        const user = await model({
+            name: "user",
+            database: Store,
+            schema: {
+                name: { type: Text, required: true },
+                password: { type: Text, required: true },
+            },
+        })
 
         const res = await run({
-            model: User,
+            model: user,
             method: Create,
             body: {
                 name: "umut",
@@ -27,12 +27,12 @@ describe("fookie", async function () {
             },
         })
 
-        const user = lodash.find(models, { name: "user" })
-        assert.equal(lodash.isObject(user), true)
+        const user_model = lodash.find(models, { name: "user" })
+        assert.equal(lodash.isObject(user_model), true)
     })
 
     it("Model create", async function () {
-        model({
+        await model({
             name: "account",
             database: Store,
             schema: {

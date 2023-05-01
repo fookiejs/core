@@ -8,7 +8,7 @@ import { Text, Number, Array, Boolean, Buffer, Char, Function, Plain } from "../
 import { mixin, After, Before } from "../packages/mixin"
 
 it("Read return type must be array", async function () {
-    let read_return_array = model({
+    let read_return_array = await model({
         name: "read_return_array",
         database: Store,
         schema: {

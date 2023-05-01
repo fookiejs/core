@@ -8,7 +8,7 @@ import { Text, Number, Array, Boolean, Buffer, Char, Function, Plain } from "../
 import { mixin, After, Before } from "../packages/mixin"
 
 it("check_type", async function () {
-    await model({
+    await await model({
         name: "model_check_type",
         database: Store,
         schema: {

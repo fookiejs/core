@@ -9,14 +9,15 @@ import { mixin, After, Before } from "../packages/mixin"
 import { nobody, everybody, system } from "../packages/role"
 
 it("async effect", async function () {
-    @Model({ database: Store })
-    class InvalidTokenModel {
-        @Field({ type: Text, required: true })
-        name: string
+    const InvalidTokenModel = await model({
+        name: "InvalidTokenModel",
+        database: Store,
+        schema: {
+            name: { type: Text, required: true },
+            password: { type: Text, required: true },
+        },
+    })
 
-        @Field({ type: Text, required: true })
-        password: string
-    }
     const res = await run({
         token: 1,
         model: InvalidTokenModel,

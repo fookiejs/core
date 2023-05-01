@@ -9,7 +9,7 @@ import { After, Before } from "../packages/mixin"
 
 it("read_zero", async function () {
     // PHASE 1
-    let read_zero_model = model({
+    let read_zero_model = await model({
         name: "read_zero_model",
         database: Store,
         schema: {

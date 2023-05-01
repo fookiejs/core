@@ -9,7 +9,7 @@ import { mixin, After, Before } from "../packages/mixin"
 import { nobody, everybody, system } from "../packages/role"
 
 it("read:['nobody'] -> empty field", async function () {
-    let field_write_model = model({
+    let field_write_model = await model({
         name: "field_write_model",
         database: Store,
         schema: {

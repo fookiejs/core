@@ -12,7 +12,7 @@ it("invalid token", async function () {
         return true
     })
 
-    const my_type_model = model({
+    const my_type_model = await model({
         name: "my_type_model",
         database: Store,
         schema: {

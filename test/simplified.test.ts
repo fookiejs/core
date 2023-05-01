@@ -8,7 +8,7 @@ import { Text, Number, Array, Boolean, Buffer, Char, Function, Plain } from "../
 import { mixin, After, Before } from "../packages/mixin"
 
 it("Features Simplified", async function () {
-    const simplified_model = model({
+    const simplified_model = await model({
         name: "simplified_model",
         database: Store,
         schema: {

@@ -109,7 +109,7 @@ export interface PayloadInterface {
     }
     body?: any
     options?: {
-        field: string
+        field?: string
         method?: ClassMethodDecoratorContext
         simplified?: boolean
         drop?: number

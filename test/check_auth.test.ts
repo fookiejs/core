@@ -4,12 +4,12 @@ import { model, run, models, lifecycle } from "../packages/core"
 import { Store } from "../packages/database"
 import { Model, Field } from "../packages/decorator"
 import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import { Text, Number, Array, Boolean, Buffer, Char, Function, Plain } from "../packages/type"
-import { mixin } from "../packages/mixin"
+import { Text, Array, Boolean, Buffer, Char, Function, Plain } from "../packages/type"
+
 import { nobody, everybody, system } from "../packages/role"
 
 it("check auth 1", async function () {
-    let child_setting = model({
+    let child_setting = await model({
         name: "child_setting",
         database: Store,
         schema: {
@@ -35,7 +35,7 @@ it("check auth 1", async function () {
 })
 
 it("check auth 2", async function () {
-    const child_setting2 = model({
+    const child_setting2 = await model({
         name: "child_setting2",
         database: Store,
         schema: {
@@ -67,7 +67,7 @@ it(" check auth reject modify", async function () {
     const test_r_modify = lifecycle(async function (payload, state) {
         flag = true
     })
-    const model_res = model({
+    const model_res = await model({
         name: "msg_reject_1",
         database: Store,
         schema: {
@@ -106,7 +106,7 @@ it(" check auth accept modify", async function () {
         flag = true
     })
 
-    const msg_accept_0 = model({
+    const msg_accept_0 = await model({
         name: "msg_accept_0",
         database: Store,
         schema: {
@@ -144,7 +144,7 @@ it(" check auth array", async function () {
     const test_a_modify = lifecycle(async function (payload, state) {
         flag = true
     })
-    model({
+    await model({
         name: "msg_array",
         database: Store,
         schema: {
@@ -175,7 +175,7 @@ it(" check auth field write", async function () {
         return false
     })
 
-    model({
+    await model({
         name: "caf",
         database: Store,
         schema: {
@@ -207,7 +207,7 @@ it(" check auth field read", async function () {
         return false
     })
 
-    model({
+    await model({
         name: "car",
         database: Store,
         schema: {
@@ -251,7 +251,7 @@ it(" check auth reject rule", async function () {
         flag = true
         return true
     })
-    const msg_reject_2 = model({
+    const msg_reject_2 = await model({
         name: "msg_reject_2",
         database: Store,
         schema: {
@@ -291,7 +291,7 @@ it(" check auth accept rule", async function () {
         return false
     })
 
-    const msg_accept_1 = model({
+    const msg_accept_1 = await model({
         name: "msg_accept_1",
         database: Store,
         schema: {
@@ -328,7 +328,7 @@ it(" check auth reject rule 2", async function () {
         return false
     })
 
-    const msg_reject_3 = model({
+    const msg_reject_3 = await model({
         name: "msg_reject_3",
         database: Store,
         schema: {

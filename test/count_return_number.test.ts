@@ -8,14 +8,14 @@ import { Text, Number, Array, Boolean, Buffer, Char, Function, Plain } from "../
 import { mixin, After, Before } from "../packages/mixin"
 
 it("Count return value must be number", async function () {
-    @Model({ database: Store })
-    class ModelToCount {
-        @Field({ type: Text, required: true })
-        name: string
-
-        @Field({ type: Text, required: true })
-        password: string
-    }
+    const ModelToCount = await model({
+        name: "ModelToCount",
+        database: Store,
+        schema: {
+            name: { type: Text, required: true },
+            password: { type: Text, required: true },
+        },
+    })
 
     let res = await run({
         token: process.env.SYSTEM_TOKEN,

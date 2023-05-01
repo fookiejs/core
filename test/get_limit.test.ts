@@ -1,19 +1,21 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
 import { model, run, models, lifecycle } from "../packages/core"
-import { Store, database } from "../packages/database"
+import { Store } from "../packages/database"
 import { Model, Field } from "../packages/decorator"
 import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import { Text, Number, Array, Boolean, Buffer, Char, Function, Plain } from "../packages/type"
-import { mixin, After, Before } from "../packages/mixin"
+import { Text, Array, Boolean, Buffer, Char, Function, Plain } from "../packages/type"
+import { After, Before } from "../packages/mixin"
 import { nobody, everybody, system } from "../packages/role"
 
 it("get limit", async function () {
-    @Model({ database: Store })
-    class LimitTestModel {
-        @Field({ type: Text, required: true })
-        field: string
-    }
+    const LimitTestModel = await model({
+        database: Store,
+        name: "LimitTestModel",
+        schema: {
+            field: { type: Text, required: true },
+        },
+    })
 
     for (let i = 0; i < 10; i++) {
         await run({

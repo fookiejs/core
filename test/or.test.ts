@@ -8,7 +8,7 @@ import { Text, Integer, Array, Boolean, Buffer, Char, Function, Plain } from "..
 import { After, Before } from "../packages/mixin"
 
 it("$or", async function () {
-    const OrTestNumber = model({
+    const OrTestNumber = await model({
         name: "OrTestNumber",
         database: Store,
         schema: {

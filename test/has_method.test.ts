@@ -8,14 +8,15 @@ import { Text, Number, Array, Boolean, Buffer, Char, Function, Plain } from "../
 import { mixin, After, Before } from "../packages/mixin"
 
 it("async effect", async function () {
-    @Model({ database: Store })
-    class HasMethodModel {
-        @Field({ type: Text, required: true })
-        name: string
+    const HasMethodModel = await model({
+        name: "HasMethodModel",
+        database: Store,
+        schema: {
+            name: { type: Text, required: true },
+            password: { type: Text, required: true },
+        },
+    })
 
-        @Field({ type: Text, required: true })
-        password: string
-    }
     const res = await run({
         model: HasMethodModel,
         method: "invalid_method",

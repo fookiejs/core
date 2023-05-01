@@ -8,7 +8,7 @@ import { Text, Number, Array, Boolean, Buffer, Char, Function, Plain } from "../
 import { mixin, After, Before } from "../packages/mixin"
 
 it("Reactive Delete", async function () {
-    const reactive_child = model({
+    const reactive_child = await model({
         name: "reactive_child",
         database: Store,
         schema: {
@@ -19,7 +19,7 @@ it("Reactive Delete", async function () {
         },
     })
 
-    const reactive_parent = model({
+    const reactive_parent = await model({
         name: "reactive_parent",
         database: Store,
         schema: {

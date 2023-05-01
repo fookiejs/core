@@ -8,7 +8,7 @@ import { Text, Float, Integer, Array, Boolean, Buffer, Char, Function, Plain } f
 import { After, Before } from "../packages/mixin"
 
 it("Unique", async function () {
-    model({
+    await model({
         name: "only_server",
         database: Store,
         schema: {

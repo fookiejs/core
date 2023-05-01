@@ -8,7 +8,7 @@ import { Text, Integer, Array, Boolean, Buffer, Char, Function, Plain } from "..
 import { After, Before } from "../packages/mixin"
 
 it("field control", async function () {
-    const field_control_model = model({
+    const field_control_model = await model({
         name: "field_control_model",
         database: Store,
         schema: {

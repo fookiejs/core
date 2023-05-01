@@ -9,11 +9,13 @@ import { mixin, After, Before } from "../packages/mixin"
 
 describe("fookie", async function () {
     it("Class model read", async function () {
-        @Model({ database: Store })
-        class ClassModelToRead {
-            @Field({ type: Text, required: true })
-            name: string
-        }
+        const ClassModelToRead = await model({
+            name: "ClassModelToRead",
+            database: Store,
+            schema: {
+                name: { type: Text, required: true },
+            },
+        })
 
         const response = await run({
             model: ClassModelToRead,
@@ -24,7 +26,7 @@ describe("fookie", async function () {
     })
 
     it("Object model read", async function () {
-        const object_model = model({
+        const object_model = await model({
             name: "object_model_to_read",
             database: Store,
             schema: {

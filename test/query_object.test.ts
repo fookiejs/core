@@ -8,7 +8,7 @@ import { Text, Integer, Array, Boolean, Buffer, Char, Function, Plain } from "..
 import { After, Before } from "../packages/mixin"
 
 it("Filters with object", async function () {
-    const FiterObject = model({
+    const FiterObject = await model({
         name: "FiterObject",
         database: Store,
         schema: {

@@ -16,7 +16,7 @@ it("Model with mixin", async function () {
         },
     })
 
-    const model_w_m = model({
+    const model_w_m = await model({
         name: "model_w_m",
         database: Store,
         mixins: [mx],

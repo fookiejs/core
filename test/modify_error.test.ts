@@ -13,7 +13,7 @@ it("throw error modify", async function () {
         throw Error("modify throw error")
     })
 
-    const mdl = model({
+    const mdl = await model({
         name: "throw_error_model",
         database: Store,
         schema: {

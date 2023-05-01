@@ -9,7 +9,7 @@ import { mixin, After, Before } from "../packages/mixin"
 import { nobody, everybody, system } from "../packages/role"
 import { Random } from "../packages/selection"
 it("Selection flow", async function () {
-    const selection_relation_model = model({
+    const selection_relation_model = await model({
         name: "selection_relation_model",
         database: Store,
         schema: {
@@ -27,7 +27,7 @@ it("Selection flow", async function () {
         },
     })
 
-    const selection_test = await model({
+    const selection_test = await await model({
         name: "selection_test",
         database: Store,
         schema: {

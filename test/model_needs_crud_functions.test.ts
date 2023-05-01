@@ -8,7 +8,7 @@ import { Text, Number, Array, Boolean, Buffer, Char, Function, Plain } from "../
 import { mixin, After, Before } from "../packages/mixin"
 
 it("Model required and crud operations", async function () {
-    let need_crud_model = model({
+    let need_crud_model = await model({
         name: "need_crud_model",
         database: Store,
         schema: {

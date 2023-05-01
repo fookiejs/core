@@ -8,7 +8,7 @@ import { Text, Integer, Array, Boolean, Buffer, Char, Function, Plain } from "..
 import { After, Before } from "../packages/mixin"
 
 it("Unique", async function () {
-    const only_client = model({
+    const only_client = await model({
         name: "only_client",
         database: Store,
         schema: {

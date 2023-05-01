@@ -26,7 +26,7 @@ import {
 
 export const models: ModelInterface[] = []
 
-export function model(model: Partial<ModelInterface>): ModelInterface {
+export async function model(model: Partial<ModelInterface>): Promise<ModelInterface> {
     model.mixins = lodash.isArray(model.mixins) ? model.mixins : []
     model.bind = lodash.isObject(model.bind) ? model.bind : {}
 
@@ -41,7 +41,7 @@ export function model(model: Partial<ModelInterface>): ModelInterface {
 
     Object.assign(model, temp)
 
-    model.database.modify(model)
+    await model.database.modify(model)
     model.methods.test = create_test_function()
     model.methods.sum = create_sumby_function()
 

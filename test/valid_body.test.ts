@@ -8,7 +8,7 @@ import { Text, Number, Array, Boolean, Buffer, Char, Function, Plain } from "../
 import { mixin, After, Before } from "../packages/mixin"
 
 it("valid body", async function () {
-    const has_body_model = model({
+    const has_body_model = await model({
         name: "has_body_model",
         database: Store,
         schema: {

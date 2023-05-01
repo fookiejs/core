@@ -9,7 +9,7 @@ import { mixin, After, Before } from "../packages/mixin"
 import { nobody, everybody, system } from "../packages/role"
 
 it("roles_test_token", async function () {
-    const roles_system_model = model({
+    const roles_system_model = await model({
         name: "roles_system_model",
         database: Store,
         schema: {
@@ -63,7 +63,7 @@ it("roles_test_token", async function () {
 })
 
 it("roles_test_token 2", async function () {
-    const extra_role_reject_false = model({
+    const extra_role_reject_false = await model({
         name: "extra_role_reject_false",
         database: Store,
         schema: {
@@ -93,7 +93,7 @@ it("roles_test_token 2", async function () {
 })
 
 it("roles_test_token 3", async function () {
-    const extra_role_reject_true = model({
+    const extra_role_reject_true = await model({
         name: "extra_role_reject_true",
         database: Store,
         schema: {

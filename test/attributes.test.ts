@@ -4,26 +4,23 @@ import { model, run, models, lifecycle } from "../packages/core"
 import { Store } from "../packages/database"
 import { Model, Field } from "../packages/decorator"
 import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import { Text, Number, Array, Boolean, Buffer, Char, Function, Plain } from "../packages/type"
-import { mixin } from "../packages/mixin"
+import { Text, Array, Boolean, Buffer, Char, Function, Plain } from "../packages/type"
 
 it("Attributes", async function () {
-    @Model({ database: Store })
-    class ClassModelAttributes {
-        @Field({ type: Text, required: true })
-        field1: string
-        @Field({ type: Text, required: true })
-        field2: string
-        @Field({ type: Text, required: true })
-        field3: string
-        @Field({ type: Text, required: true })
-        field4: string
-        @Field({ type: Text, required: true })
-        field5: string
-    }
+    const attributes_model = await await model({
+        name: "ClassModelAttributes",
+        database: Store,
+        schema: {
+            field1: { type: Text, required: true },
+            field2: { type: Text, required: true },
+            field3: { type: Text, required: true },
+            field4: { type: Text, required: true },
+            field5: { type: Text, required: true },
+        },
+    })
 
     await run({
-        model: ClassModelAttributes,
+        model: attributes_model,
         method: Create,
         body: {
             field1: "abc",
@@ -35,7 +32,7 @@ it("Attributes", async function () {
     })
 
     const response = await run({
-        model: ClassModelAttributes,
+        model: attributes_model,
         method: Read,
         query: {
             attributes: ["field1", "field4"],

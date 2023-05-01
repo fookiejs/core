@@ -9,13 +9,14 @@ import { After, Before } from "../packages/mixin"
 import { nobody, everybody, system } from "../packages/role"
 
 describe("validate_query", async function () {
-    @Model({ database: Store })
-    class InvalidQueryModel {
-        @Field({ type: Integer, required: true })
-        field: number
-        @Field({ type: Text, required: true })
-        field2: string
-    }
+    const InvalidQueryModel = await model({
+        name: "InvalidQueryModel",
+        database: Store,
+        schema: {
+            field: { type: Text, required: true },
+            field2: { type: Text, required: true },
+        },
+    })
 
     it("valid query", async function () {
         const res = await run({

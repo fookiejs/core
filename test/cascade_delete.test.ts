@@ -8,17 +8,21 @@ import { Text, Number, Array, Boolean, Buffer, Char, Function, Plain } from "../
 import { mixin, After, Before } from "../packages/mixin"
 
 it("cascade delete", async function () {
-    @Model({ database: Store })
-    class CascadeDeleteParent {
-        @Field({ type: Text, required: true })
-        name: string
-    }
+    const CascadeDeleteParent = await await model({
+        name: "CascadeDeleteParent",
+        database: Store,
+        schema: {
+            name: { type: Text, required: true },
+        },
+    })
 
-    @Model({ database: Store })
-    class CascadeDeleteChild {
-        @Field({ type: Text, relation: CascadeDeleteParent, cascade_delete: true })
-        parent: number
-    }
+    const CascadeDeleteChild = await await model({
+        name: "CascadeDeleteChild",
+        database: Store,
+        schema: {
+            parent: { type: Text, relation: CascadeDeleteParent, cascade_delete: true },
+        },
+    })
 
     const parent = (
         await run({

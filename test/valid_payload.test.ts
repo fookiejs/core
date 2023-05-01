@@ -8,13 +8,14 @@ import { Text, Number, Array, Boolean, Buffer, Char, Function, Plain } from "../
 import { mixin, After, Before } from "../packages/mixin"
 
 describe("valid payload", async function () {
-    @Model({ database: Store })
-    class InvalidPayloadModel {
-        @Field({ type: Number, required: true })
-        field: number
-        @Field({ type: Text, required: true })
-        field2: string
-    }
+    const InvalidPayloadModel = await model({
+        name: "InvalidPayloadModel",
+        database: Store,
+        schema: {
+            field: { type: Text, required: true },
+            field2: { type: Text, required: true },
+        },
+    })
 
     it("valid payload 1", async function () {
         const res = await run({

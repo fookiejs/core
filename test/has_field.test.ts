@@ -9,7 +9,7 @@ import { mixin, After, Before } from "../packages/mixin"
 import { nobody, everybody, system } from "../packages/role"
 
 it("Has field", async function () {
-    const has_field_model = model({
+    const has_field_model = await model({
         name: "hf_model",
         database: Store,
         schema: {
