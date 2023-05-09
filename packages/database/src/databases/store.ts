@@ -1,12 +1,11 @@
 import * as lodash from "lodash"
 import { v4 } from "uuid"
-import { Text, Plain, Array, Boolean, Buffer, Char, Function, Float, Integer } from "../../../type"
+import { Text } from "../../../type"
 import { FilterFieldInterface, DatabaseInterface } from "../../../../types"
 
 export const Store: DatabaseInterface = {
     pk: "id",
     pk_type: Text,
-    types: [Text, Plain, Array, Boolean, Buffer, Char, Function, Float, Integer],
     connect: async function () {
         return true
     },

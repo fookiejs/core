@@ -88,7 +88,6 @@ export interface FilterFieldInterface {
 
 export interface DatabaseInterface {
     pk: string
-    types: Type[]
     pk_type: Type
     connect: Function
     disconnect: Function
