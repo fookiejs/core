@@ -5,7 +5,7 @@ const need_field_in_options: LifecycleFunction = async function (payload) {
     return (
         lodash.has(payload.options, "field") &&
         typeof payload.options.field == "string" &&
-        lodash.keys(payload.model.schema).includes(payload.options.field)
+        lodash.keys(payload.model.schema).concat(payload.model.database.pk).includes(payload.options.field)
     )
 }
 
