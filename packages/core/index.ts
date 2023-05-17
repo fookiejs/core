@@ -32,7 +32,12 @@ export async function model(model: Partial<ModelInterface>): Promise<ModelInterf
 
     initialize_model_schema(models, model)
     initialize_model_bindings(model)
-
+    const schema_keys = lodash.keys(model.schema)
+    for (const key of schema_keys) {
+        if (model.schema[key].relation) {
+            model.schema[key].type = model.schema[key].relation.database.pk_type
+        }
+    }
     let temp: Partial<ModelInterface> = Object.assign(model)
 
     for (const mixin of temp.mixins) {
@@ -44,13 +49,6 @@ export async function model(model: Partial<ModelInterface>): Promise<ModelInterf
     await model.database.modify(model)
     model.methods.test = create_test_function()
     model.methods.sum = create_sumby_function()
-
-    const schema_keys = lodash.keys(model.schema)
-    for (const key of schema_keys) {
-        if (model.schema[key].relation) {
-            model.schema[key].type = model.schema[key].relation.database.pk_type
-        }
-    }
 
     models.push(model as ModelInterface)
     return model as ModelInterface
