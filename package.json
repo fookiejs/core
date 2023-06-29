@@ -22,6 +22,7 @@
         "@vitest/coverage-istanbul": "^0.29.3",
         "@vitest/ui": "^0.29.3",
         "eslint": "^8.36.0",
+        "fookie-types": "^1.0.3",
         "typescript": "^5.0.2",
         "vitest": "^0.29.3"
     },
