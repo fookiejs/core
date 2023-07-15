@@ -5,7 +5,8 @@
         "emitDecoratorMetadata": true,
         "module": "commonjs",
         "target": "es6",
-        "outDir": "./dist"
+        "outDir": "./dist",
+        "types": ["node"]
     },
 
     "include": ["packages/**/*", "index.ts"],

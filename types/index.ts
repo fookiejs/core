@@ -159,3 +159,72 @@ export interface MixinInterface {
         }
     }
 }
+
+export interface Fookie {
+    Core: CorePackage
+    Database: {
+        Store: DatabaseInterface
+    }
+    Decorator: {
+        Model(_model: Partial<ModelInterface>): (target: any) => void
+        Field(field: Partial<FieldInterface>): (target: any, key: any) => void
+    }
+    Method: MethodPackage
+    Mixin: {
+        After: MixinInterface
+        Before: MixinInterface
+    }
+    Role: {
+        everybody: LifecycleFunction
+        nobody: LifecycleFunction
+        system: LifecycleFunction
+    }
+    Selection: {
+        Random: Selection
+    }
+    Type: {
+        Text: Type
+        Float: Type
+        Integer: Type
+        Array: Type
+        Boolean: Type
+        Buffer: Type
+        Plain: Type
+        Char: Type
+        Function: Type
+        Timestamp: Type
+        StringArray: Type
+        FloatArray: Type
+        IntegerArray: Type
+    }
+}
+
+interface CorePackage {
+    models: ModelInterface[]
+    model: (model: Partial<ModelInterface>) => Promise<ModelInterface>
+    lifecycle: (lifecycle: LifecycleFunction) => LifecycleFunction
+    run: (
+        payload:
+            | PayloadInterface
+            | (Omit<PayloadInterface, "model"> & {
+                  model: Function
+              })
+            | (Omit<PayloadInterface, "model"> & {
+                  model: string
+              })
+    ) => Promise<any>
+    mixin: (mixin: MixinInterface) => MixinInterface
+    database: (database: DatabaseInterface) => DatabaseInterface
+    type: (type: Type) => Type
+}
+
+export interface MethodPackage {
+    Create: Method
+    Read: Method
+    Update: Method
+    Delete: Method
+    Count: Method
+    Test: Method
+    Sum: Method
+    Methods: Method[]
+}

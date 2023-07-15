@@ -6,24 +6,22 @@
     "scripts": {
         "test": "vitest",
         "coverage": "vitest run --coverage",
-        "build": "tsc",
+        "build": "npx tsc",
         "lint": "npx eslint packages"
     },
     "dependencies": {
-        "@types/node": "^18.16.0",
         "deepmerge": "^4.3.0",
         "lodash": "^4.17.21",
         "uuid": "^9.0.0"
     },
     "devDependencies": {
         "@types/lodash": "^4.14.191",
+        "@types/node": "^20.4.2",
         "@typescript-eslint/eslint-plugin": "^5.56.0",
         "@typescript-eslint/parser": "^5.56.0",
         "@vitest/coverage-istanbul": "^0.29.3",
         "@vitest/ui": "^0.29.3",
         "eslint": "^8.36.0",
-        "fookie-types": "^1.0.3",
-        "typescript": "^5.0.2",
         "vitest": "^0.29.3"
     },
     "repository": {
