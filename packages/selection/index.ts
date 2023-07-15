@@ -3,9 +3,10 @@ import { Read } from "../method"
 import * as lodash from "lodash"
 import { Selection } from "../../types"
 
-export const Random: Selection = async function (model, field) {
+export const Random: Selection = async function (payload, target_model) {
     const res = await run({
-        model: field.relation,
+        token: payload.token || "",
+        model: target_model,
         method: Read,
     })
 

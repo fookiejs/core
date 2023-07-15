@@ -17,6 +17,13 @@ it("Reactive Delete", async function () {
                 required: true,
             },
         },
+        bind: {
+            test: {},
+            create: {},
+            delete: {},
+            read: {},
+            count: {},
+        },
     })
 
     const reactive_parent = await model({
@@ -31,6 +38,13 @@ it("Reactive Delete", async function () {
                 relation: reactive_child,
                 reactive_delete: true,
             },
+        },
+        bind: {
+            test: {},
+            create: {},
+            delete: {},
+            read: {},
+            count: {},
         },
     })
 

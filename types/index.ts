@@ -8,7 +8,7 @@ export interface Type {
 }
 
 export interface Selection {
-    (model: ModelInterface, field: FieldInterface): Promise<any>
+    (payload: PayloadInterface, target_model: ModelInterface): Promise<any>
 }
 
 export interface Modify {

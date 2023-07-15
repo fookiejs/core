@@ -18,6 +18,13 @@ it("Has field", async function () {
                 required: true,
             },
         },
+        bind: {
+            test: {},
+            create: {},
+            delete: {},
+            read: {},
+            count: {},
+        },
     })
 
     const res = await run({

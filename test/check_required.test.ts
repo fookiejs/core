@@ -17,6 +17,10 @@ it("async effect", async function () {
                 required: true,
             },
         },
+        bind: {
+            test: {},
+            create: {},
+        },
     })
 
     const response = await run({

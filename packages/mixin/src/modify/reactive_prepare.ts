@@ -7,6 +7,7 @@ const reactive_prepare: LifecycleFunction = async function (payload, state) {
     const result = []
 
     const entities = await run({
+        token: process.env.SYSTEM_TOKEN,
         model: payload.model,
         method: Read,
         query: payload.query,

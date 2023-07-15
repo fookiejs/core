@@ -6,6 +6,7 @@ import rule from "./src/lifecycles/rule"
 import method from "./src/lifecycles/method"
 import filter from "./src/lifecycles/filter"
 import effect from "./src/lifecycles/effect"
+import { v4 } from "uuid"
 import {
     Type,
     ModelInterface,
@@ -23,6 +24,10 @@ import {
     initialize_model_bindings,
     initialize_model_schema,
 } from "./src/utils"
+
+if (!process.env.SYSTEM_TOKEN) {
+    process.env.SYSTEM_TOKEN = v4()
+}
 
 export const models: ModelInterface[] = []
 

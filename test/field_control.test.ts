@@ -29,6 +29,13 @@ it("field control", async function () {
                 minimum_size: 2,
             },
         },
+        bind: {
+            test: {},
+            create: {},
+            delete: {},
+            read: {},
+            count: {},
+        },
     })
 
     const res_1 = await run({

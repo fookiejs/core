@@ -25,6 +25,13 @@ it("uniqueGroup", async function () {
                 unique_group: ["g1"],
             },
         },
+        bind: {
+            test: {},
+            create: {},
+            delete: {},
+            read: {},
+            count: {},
+        },
     })
 
     await run({

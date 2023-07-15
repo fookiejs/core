@@ -18,6 +18,13 @@ it("create:['nobody'] -> empty field", async function () {
                 read: [nobody],
             },
         },
+        bind: {
+            test: {},
+            create: {},
+            delete: {},
+            read: {},
+            count: {},
+        },
     })
 
     let create_res = await run({

@@ -21,6 +21,8 @@ it("test_method", async function () {
             read: {
                 role: [nobody],
             },
+            test: {},
+            create: {},
         },
     })
 

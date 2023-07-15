@@ -17,6 +17,14 @@ it("read_zero", async function () {
                 type: Integer,
             },
         },
+        bind: {
+            test: {},
+            create: {},
+            delete: {},
+            read: {},
+            count: {},
+            sum: {},
+        },
     })
 
     for (let i = -10; i < 10; i++) {

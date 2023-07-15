@@ -14,6 +14,13 @@ it("cascade delete", async function () {
         schema: {
             name: { type: Text, required: true },
         },
+        bind: {
+            test: {},
+            create: {},
+            delete: {},
+            read: {},
+            count: {},
+        },
     })
 
     const CascadeDeleteChild = await await model({
@@ -21,6 +28,13 @@ it("cascade delete", async function () {
         database: Store,
         schema: {
             parent: { type: Text, relation: CascadeDeleteParent, cascade_delete: true },
+        },
+        bind: {
+            test: {},
+            create: {},
+            delete: {},
+            read: {},
+            count: {},
         },
     })
 

@@ -16,6 +16,13 @@ it("check_type", async function () {
                 type: Text,
             },
         },
+        bind: {
+            test: {},
+            create: {},
+            delete: {},
+            read: {},
+            count: {},
+        },
     })
 
     const res = await run({

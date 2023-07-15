@@ -16,6 +16,9 @@ describe("validate_query", async function () {
             field: { type: Text, required: true },
             field2: { type: Text, required: true },
         },
+        bind: {
+            read: {},
+        },
     })
 
     it("valid query", async function () {

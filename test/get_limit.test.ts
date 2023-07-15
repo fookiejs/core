@@ -15,6 +15,13 @@ it("get limit", async function () {
         schema: {
             field: { type: Text, required: true },
         },
+        bind: {
+            test: {},
+            create: {},
+            delete: {},
+            read: {},
+            count: {},
+        },
     })
 
     for (let i = 0; i < 10; i++) {

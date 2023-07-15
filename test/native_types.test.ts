@@ -47,6 +47,13 @@ it("native types", async function () {
                 type: f,
             },
         },
+        bind: {
+            test: {},
+            create: {},
+            delete: {},
+            read: {},
+            count: {},
+        },
     })
 
     const res = await run({

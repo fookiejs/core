@@ -15,6 +15,13 @@ describe("fookie", async function () {
             schema: {
                 name: { type: Text, required: true },
             },
+            bind: {
+                test: {},
+                create: {},
+                delete: {},
+                read: {},
+                count: {},
+            },
         })
 
         const response = await run({
@@ -45,6 +52,7 @@ describe("fookie", async function () {
                         },
                     },
                 },
+                read: {},
             },
         })
         const response = await run({

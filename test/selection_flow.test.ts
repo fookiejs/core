@@ -17,6 +17,14 @@ it("Selection flow", async function () {
                 type: Text,
             },
         },
+        bind: {
+            test: {},
+            create: {},
+            delete: {},
+            read: {},
+            count: {},
+            sum: {},
+        },
     })
 
     const r = await run({
@@ -39,6 +47,14 @@ it("Selection flow", async function () {
                 relation: selection_relation_model,
                 selection: Random,
             },
+        },
+        bind: {
+            test: {},
+            create: {},
+            delete: {},
+            read: {},
+            count: {},
+            sum: {},
         },
     })
 

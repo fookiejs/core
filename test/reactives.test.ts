@@ -17,6 +17,13 @@ it("Reactives", async function () {
                 required: true,
             },
         },
+        bind: {
+            test: {},
+            create: {},
+            delete: {},
+            read: {},
+            count: {},
+        },
     })
 
     const reactive_parent = await model({
@@ -38,9 +45,17 @@ it("Reactives", async function () {
                 ],
             },
         },
+        bind: {
+            test: {},
+            create: {},
+            delete: {},
+            read: {},
+            count: {},
+        },
     })
 
     const create_child_res = await run({
+        token: process.env.SYSTEM_TOKEN,
         model: reactive_child,
         method: Create,
         body: {
@@ -49,6 +64,7 @@ it("Reactives", async function () {
     })
 
     const create_parent_res = await run({
+        token: process.env.SYSTEM_TOKEN,
         model: reactive_parent,
         method: Create,
         body: {
@@ -58,6 +74,7 @@ it("Reactives", async function () {
     })
 
     await run({
+        token: process.env.SYSTEM_TOKEN,
         model: reactive_parent,
         method: "update",
         query: {
@@ -75,5 +92,6 @@ it("Reactives", async function () {
             filter: {},
         },
     })
+
     assert.equal(res.data[0].name, "parenthi")
 })

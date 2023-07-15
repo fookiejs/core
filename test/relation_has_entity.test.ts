@@ -14,6 +14,13 @@ it("Relation has_entity", async function () {
         schema: {
             field: { type: Text, required: true },
         },
+        bind: {
+            test: {},
+            create: {},
+            delete: {},
+            read: {},
+            count: {},
+        },
     })
 
     let relation_not_existed_model_test = await model({
@@ -24,6 +31,13 @@ it("Relation has_entity", async function () {
                 relation: RelationNotExistedModel,
                 required: true,
             },
+        },
+        bind: {
+            test: {},
+            create: {},
+            delete: {},
+            read: {},
+            count: {},
         },
     })
 

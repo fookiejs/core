@@ -17,6 +17,13 @@ it("Unique", async function () {
                 only_client: true,
             },
         },
+        bind: {
+            test: {},
+            create: {},
+            delete: {},
+            read: {},
+            count: {},
+        },
     })
 
     const res = await run({

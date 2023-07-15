@@ -17,6 +17,9 @@ it("Unique", async function () {
                 unique: true,
             },
         },
+        bind: {
+            create: {},
+        },
     })
 
     await run({

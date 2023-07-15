@@ -25,6 +25,7 @@ it("check auth 1", async function () {
     })
 
     let create_res = await run({
+        token: process.env.SYSTEM_TOKEN,
         model: child_setting,
         method: Create,
         body: {
@@ -51,6 +52,7 @@ it("check auth 2", async function () {
     })
 
     let create_res_2 = await run({
+        token: process.env.SYSTEM_TOKEN,
         model: child_setting2,
         method: Create,
         body: {
@@ -88,6 +90,7 @@ it(" check auth reject modify", async function () {
     })
 
     let create_res_2 = await run({
+        token: process.env.SYSTEM_TOKEN,
         model: "msg_reject_1",
         method: Create,
         body: {
@@ -232,6 +235,7 @@ it(" check auth field read", async function () {
     })
 
     let read_res = await run({
+        token: process.env.SYSTEM_TOKEN,
         model: "car",
         method: Read,
         body: {
@@ -272,6 +276,7 @@ it(" check auth reject rule", async function () {
     })
 
     let create_res_2 = await run({
+        token: process.env.SYSTEM_TOKEN,
         model: msg_reject_2,
         method: Create,
         body: {
@@ -312,6 +317,7 @@ it(" check auth accept rule", async function () {
     })
 
     let create_res_2 = await run({
+        token: process.env.SYSTEM_TOKEN,
         model: msg_accept_1,
         method: Create,
         body: {
@@ -349,6 +355,7 @@ it(" check auth reject rule 2", async function () {
     })
 
     let create_res_2 = await run({
+        token: process.env.SYSTEM_TOKEN,
         model: msg_reject_3,
         method: Create,
         body: {

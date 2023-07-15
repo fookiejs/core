@@ -16,6 +16,13 @@ it("Features Simplified", async function () {
                 type: Text,
             },
         },
+        bind: {
+            test: {},
+            create: {},
+            delete: {},
+            read: {},
+            count: {},
+        },
     })
 
     await run({

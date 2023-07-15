@@ -16,6 +16,13 @@ it("recalculate_model_when_mixin_update.test", async function () {
         schema: {
             field: { type: Text, required: true },
         },
+        bind: {
+            test: {},
+            create: {},
+            delete: {},
+            read: {},
+            count: {},
+        },
     })
 
     const test_effect = lifecycle(async function () {

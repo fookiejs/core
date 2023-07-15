@@ -21,6 +21,14 @@ it("Filters with object", async function () {
                 required: true,
             },
         },
+        bind: {
+            test: {},
+            create: {},
+            delete: {},
+            read: {},
+            count: {},
+            sum: {},
+        },
     })
 
     for (let i = 0; i < 100; i++) {
