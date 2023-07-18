@@ -67,7 +67,8 @@ export async function run(
     payload:
         | PayloadInterface
         | (Omit<PayloadInterface, "model"> & { model: Function })
-        | (Omit<PayloadInterface, "model"> & { model: string })
+        | (Omit<PayloadInterface, "model"> & { model: string }),
+    state?: StateInterface
 ) {
     const model_name = get_model_name(payload.model)
     const model = models.find((model) => model.name === model_name)
@@ -75,6 +76,7 @@ export async function run(
     return await _run(
         { model, ...lodash.omit(payload, "model") },
         {
+            ...state,
             metrics: {
                 start: Date.now(),
                 lifecycle: [],
