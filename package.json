@@ -1,7 +1,7 @@
 {
     "name": "fookie",
     "description": "",
-    "version": "0.999.21",
+    "version": "0.999.22",
     "main": "dist/index.js",
     "scripts": {
         "test": "vitest",
