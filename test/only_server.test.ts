@@ -8,7 +8,7 @@ import { Text, Float, Integer, Array, Boolean, Buffer, Char, Function, Plain } f
 import { After, Before } from "../packages/mixin"
 
 it("Unique", async function () {
-    await model({
+    const only_server = await model({
         name: "only_server",
         database: Store,
         schema: {
@@ -22,7 +22,7 @@ it("Unique", async function () {
 
     const res = await run({
         token: process.env.SYSTEM_TOKEN,
-        model: "only_server",
+        model: only_server,
         method: Create,
         body: {
             val: 1,
@@ -31,7 +31,7 @@ it("Unique", async function () {
 
     const res2 = await run({
         token: process.env.SYSTEM_TOKEN,
-        model: "only_server",
+        model: only_server,
         method: Create,
         body: {},
     })

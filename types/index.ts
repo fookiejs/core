@@ -193,6 +193,9 @@ export interface Fookie {
         Char: Type
         Function: Type
         Timestamp: Type
+        DateType: Type
+        DateTime: Type
+        Time: Type
         StringArray: Type
         FloatArray: Type
         IntegerArray: Type

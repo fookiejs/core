@@ -17,13 +17,7 @@ import {
     DatabaseInterface,
 } from "../../types"
 import deepmerge = require("deepmerge")
-import {
-    create_sumby_function,
-    create_test_function,
-    get_model_name,
-    initialize_model_bindings,
-    initialize_model_schema,
-} from "./src/utils"
+import { create_sumby_function, create_test_function, initialize_model_bindings, initialize_model_schema } from "./src/utils"
 
 if (!process.env.SYSTEM_TOKEN) {
     process.env.SYSTEM_TOKEN = v4()
@@ -63,32 +57,14 @@ export const lifecycle = function (lifecycle: LifecycleFunction) {
     return lifecycle
 }
 
-export async function run(
-    payload:
-        | PayloadInterface
-        | (Omit<PayloadInterface, "model"> & { model: Function })
-        | (Omit<PayloadInterface, "model"> & { model: string }),
-    state?: StateInterface
-) {
-    const model_name = get_model_name(payload.model)
-    const model = models.find((model) => model.name === model_name)
-
-    return await _run(
-        { model, ...lodash.omit(payload, "model") },
-        {
-            ...state,
-            metrics: {
-                start: Date.now(),
-                lifecycle: [],
-            },
-            todo: [],
-        }
-    )
-}
-
-async function _run(payload: PayloadInterface, state: StateInterface): Promise<any> {
+export async function run(payload: PayloadInterface, state = {} as StateInterface) {
+    state.metrics = {
+        start: Date.now(),
+        lifecycle: [],
+    }
+    state.todo = []
     payload.response = {
-        data: undefined,
+        data: null,
         status: false,
         error: null,
     }
@@ -104,7 +80,7 @@ async function _run(payload: PayloadInterface, state: StateInterface): Promise<a
     }
 
     if (!(await rule(payload, state))) {
-        payload.response.data = undefined
+        payload.response.data = null
         return payload.response
     }
 

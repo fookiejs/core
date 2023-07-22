@@ -4,7 +4,7 @@ import { LifecycleFunction } from "../../../../types"
 const method: LifecycleFunction = async function (payload, state) {
     const start = Date.now()
 
-    if (lodash.isUndefined(payload.response.data)) {
+    if (lodash.isNull(payload.response.data)) {
         await payload.model.methods[payload.method](payload, state)
     }
     state.metrics.lifecycle.push({

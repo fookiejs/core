@@ -35,7 +35,7 @@ it("Unique", async function () {
     })
 
     const res2 = await run({
-        model: "only_client",
+        model: only_client,
         method: Create,
         body: {},
     })

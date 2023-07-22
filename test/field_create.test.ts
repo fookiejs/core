@@ -9,7 +9,7 @@ import { mixin, After, Before } from "../packages/mixin"
 import { nobody, everybody, system } from "../packages/role"
 
 it("create:['nobody'] -> empty field", async function () {
-    let model_res = await model({
+    let test_field_create = await model({
         name: "test_field_create",
         database: Store,
         schema: {
@@ -28,7 +28,7 @@ it("create:['nobody'] -> empty field", async function () {
     })
 
     let create_res = await run({
-        model: "test_field_create",
+        model: test_field_create,
         method: Create,
         body: {
             msg: "hi",

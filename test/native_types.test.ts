@@ -18,7 +18,7 @@ import { After, Before } from "../packages/mixin"
 import { nobody, everybody, system } from "../packages/role"
 
 it("native types", async function () {
-    await model({
+    const async_effect_model = await model({
         name: "async_effect_model",
         database: Store,
         schema: {
@@ -57,7 +57,7 @@ it("native types", async function () {
     })
 
     const res = await run({
-        model: "async_effect_model",
+        model: async_effect_model,
         method: Create,
         body: {
             text: "hi",

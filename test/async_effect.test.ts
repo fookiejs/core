@@ -13,7 +13,7 @@ it("async effect", async function () {
         flag = true
     })
 
-    await await model({
+    const async_effect_model = await model({
         name: "async_effect_model",
         database: Store,
         schema: {
@@ -29,7 +29,7 @@ it("async effect", async function () {
     })
 
     await run({
-        model: "async_effect_model",
+        model: async_effect_model,
         method: Read,
     })
 

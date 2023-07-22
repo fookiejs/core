@@ -26,7 +26,7 @@ const unique_group: LifecycleFunction = async function (payload) {
 
         const res = await run({
             token: process.env.SYSTEM_TOKEN,
-            model: payload.model.name,
+            model: payload.model,
             method: Count,
             query: {
                 filter,

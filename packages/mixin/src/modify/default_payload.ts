@@ -12,6 +12,10 @@ const defalut_payload: LifecycleFunction = async function (payload, state) {
         id: v4().replace("-", ""),
     })
 
+    if (!lodash.has(newPayload.query, "filter")) {
+        newPayload.query.filter = {}
+    }
+
     for (const key in newPayload) {
         payload[key] = newPayload[key]
     }

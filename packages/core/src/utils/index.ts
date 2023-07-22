@@ -7,16 +7,9 @@ import rule from "../../src/lifecycles/rule"
 import { ModelInterface, LifecycleFunction, MixinInterface } from "../../../../types"
 import { run } from "../.."
 import { Methods, Read } from "../../../method"
-import { nobody, system } from "../../../role"
+import { system } from "../../../role"
 
 const lifecycles = ["preRule", "modify", "role", "rule", "filter", "effect"]
-
-export function get_model_name(model: Function | string | ModelInterface): string {
-    if (typeof model === "function") {
-        return lodash.toLower(model.name)
-    }
-    return typeof model === "string" ? model : model.name
-}
 
 export function initialize_model_schema(models: ModelInterface[], model: Partial<ModelInterface>): void {
     const schemaKeys = lodash.keys(model.schema)
@@ -26,14 +19,6 @@ export function initialize_model_schema(models: ModelInterface[], model: Partial
 
         if (!lodash.has(field, "read")) {
             field.read = []
-        }
-
-        if (lodash.has(field, "relation")) {
-            if (typeof field.relation === "function") {
-                const val = (field.relation as Function).name
-                const relatedModel = lodash.find(models, { name: lodash.toLower(val) })
-                field.relation = relatedModel
-            }
         }
     }
 }
@@ -63,7 +48,7 @@ export function create_test_function(): LifecycleFunction {
             todo: [],
         }
         p.response = {
-            data: undefined,
+            data: null,
             status: false,
             error: null,
         }

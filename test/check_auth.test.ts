@@ -69,7 +69,7 @@ it(" check auth reject modify", async function () {
     const test_r_modify = lifecycle(async function (payload, state) {
         flag = true
     })
-    const model_res = await model({
+    const msg_reject_1 = await model({
         name: "msg_reject_1",
         database: Store,
         schema: {
@@ -91,7 +91,7 @@ it(" check auth reject modify", async function () {
 
     let create_res_2 = await run({
         token: process.env.SYSTEM_TOKEN,
-        model: "msg_reject_1",
+        model: msg_reject_1,
         method: Create,
         body: {
             msg: "hola",
@@ -147,7 +147,7 @@ it(" check auth array", async function () {
     const test_a_modify = lifecycle(async function (payload, state) {
         flag = true
     })
-    await model({
+    const msg_array = await model({
         name: "msg_array",
         database: Store,
         schema: {
@@ -163,7 +163,7 @@ it(" check auth array", async function () {
     })
 
     let create_res_2 = await run({
-        model: "msg_array",
+        model: msg_array,
         method: Create,
         body: {
             msg: "hola",
@@ -178,7 +178,7 @@ it(" check auth field write", async function () {
         return false
     })
 
-    await model({
+    const caf = await model({
         name: "caf",
         database: Store,
         schema: {
@@ -195,7 +195,7 @@ it(" check auth field write", async function () {
     })
 
     let create_res_2 = await run({
-        model: "caf",
+        model: caf,
         method: Create,
         body: {
             msg: "hola",
@@ -210,7 +210,7 @@ it(" check auth field read", async function () {
         return false
     })
 
-    await model({
+    const car = await model({
         name: "car",
         database: Store,
         schema: {
@@ -227,7 +227,7 @@ it(" check auth field read", async function () {
     })
 
     await run({
-        model: "car",
+        model: car,
         method: Create,
         body: {
             msg: "hola",
@@ -236,7 +236,7 @@ it(" check auth field read", async function () {
 
     let read_res = await run({
         token: process.env.SYSTEM_TOKEN,
-        model: "car",
+        model: car,
         method: Read,
         body: {
             msg: "hola",

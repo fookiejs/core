@@ -8,7 +8,7 @@ import { Text, Number, Array, Boolean, Buffer, Char, Function, Plain } from "../
 import { mixin, After, Before } from "../packages/mixin"
 
 it("async effect", async function () {
-    await await model({
+    const cr_model = await model({
         name: "cr_model",
         database: Store,
         schema: {
@@ -24,7 +24,7 @@ it("async effect", async function () {
     })
 
     const response = await run({
-        model: "cr_model",
+        model: cr_model,
         method: Create,
         body: {},
     })

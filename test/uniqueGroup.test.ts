@@ -8,7 +8,7 @@ import { Text, Integer, Array, Boolean, Buffer, Char, Function, Plain } from "..
 import { After, Before } from "../packages/mixin"
 
 it("uniqueGroup", async function () {
-    const nbmr = await model({
+    const number = await model({
         name: "number",
         database: Store,
         schema: {
@@ -35,7 +35,7 @@ it("uniqueGroup", async function () {
     })
 
     await run({
-        model: nbmr,
+        model: number,
         method: Create,
         body: {
             val1: 1,
@@ -45,7 +45,7 @@ it("uniqueGroup", async function () {
     })
 
     const res = await run({
-        model: nbmr,
+        model: number,
         method: Create,
         body: {
             val1: 1,
@@ -57,7 +57,7 @@ it("uniqueGroup", async function () {
     assert.equal(res.status, true)
 
     const res2 = await run({
-        model: "number",
+        model: number,
         method: Create,
         body: {
             val1: 1,

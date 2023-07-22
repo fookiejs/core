@@ -9,7 +9,7 @@ import { After, Before } from "../packages/mixin"
 import { nobody, everybody, system } from "../packages/role"
 
 it("read:['nobody'] -> empty field", async function () {
-    let model_res = await model({
+    let test_field_read = await model({
         name: "test_field_read",
         database: Store,
         schema: {
@@ -28,7 +28,7 @@ it("read:['nobody'] -> empty field", async function () {
     })
 
     await run({
-        model: "test_field_read",
+        model: test_field_read,
         method: Create,
         body: {
             msg: "hi",
@@ -36,7 +36,7 @@ it("read:['nobody'] -> empty field", async function () {
     })
 
     let read_res = await run({
-        model: "test_field_read",
+        model: test_field_read,
         method: "read",
         query: {
             filter: {},

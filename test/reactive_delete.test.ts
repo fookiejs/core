@@ -74,7 +74,7 @@ it("Reactive Delete", async function () {
     })
 
     let res = await run({
-        model: "reactive_child",
+        model: reactive_child,
         method: "count",
         query: {
             filter: {},

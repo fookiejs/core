@@ -13,10 +13,6 @@ export const Integer: Type = function (v) {
     return Number.isInteger(v)
 }
 
-export const Array: Type = function (v) {
-    return lodash.isArray(v)
-}
-
 export const Boolean: Type = function (v) {
     return lodash.isBoolean(v)
 }
@@ -37,23 +33,27 @@ export const Function: Type = function (v) {
     return lodash.isFunction(v)
 }
 
+export const Array: (typeFunc: Type) => Type = function (typeFunc) {
+    return function (v) {
+        return lodash.isArray(v) && lodash.every(v, typeFunc)
+    }
+}
+
+export const DateType: Type = function (v) {
+    const date = new Date(v)
+    return !isNaN(date.getTime()) && /^\d{4}-\d{2}-\d{2}$/.test(v)
+}
+
+export const Time: Type = function (v) {
+    return /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)(\.\d+)?$/.test(v)
+}
+
+export const DateTime: Type = function (v) {
+    const date = new Date(v)
+    return !isNaN(date.getTime()) && /^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):([0-5]\d):([0-5]\d)(\.\d+)?$/.test(v)
+}
+
 export const Timestamp: Type = function (v) {
-    return !!new Date(v)
-}
-
-export const StringArray = function (v) {
-    return lodash.isArray(v) && lodash.every(v, lodash.isString)
-}
-
-export const FloatArray = function (v) {
-    return (
-        lodash.isArray(v) &&
-        lodash.every(v, (element) => {
-            return lodash.isNumber(v)
-        })
-    )
-}
-
-export const IntegerArray = function (v) {
-    return lodash.isArray(v) && lodash.every(v, Number.isInteger)
+    const date = new Date(v)
+    return !isNaN(date.getTime())
 }

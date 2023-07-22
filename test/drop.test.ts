@@ -16,18 +16,19 @@ it("Drop", async function () {
         },
     })
 
-    await run({
+    const resp = await run({
+        token: process.env.SYSTEM_TOKEN,
         model: DropModel,
         method: Create,
         body: {
             name: "test_1",
         },
         options: {
-            drop: 1,
+            drop: 10,
         },
     })
-
-    await new Promise((resolve) => setTimeout(resolve, 20))
+    assert.equal(resp.status, true)
+    await new Promise((resolve) => setTimeout(resolve, 200))
 
     setTimeout(async () => {
         let res = await run({
