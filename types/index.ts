@@ -115,7 +115,7 @@ export interface PayloadInterface {
     }
     response?: {
         status: boolean
-        data: any[] | object | number | boolean
+        data: any
         error: string
     }
 }
@@ -186,7 +186,7 @@ export interface Fookie {
         Text: Type
         Float: Type
         Integer: Type
-        Array: Type
+        Array: (Type) => Type
         Boolean: Type
         Buffer: Type
         Plain: Type
@@ -196,9 +196,6 @@ export interface Fookie {
         DateType: Type
         DateTime: Type
         Time: Type
-        StringArray: Type
-        FloatArray: Type
-        IntegerArray: Type
     }
 }
 
