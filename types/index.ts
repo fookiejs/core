@@ -1,5 +1,5 @@
 export type Method = "create" | "read" | "update" | "delete" | "count" | "test" | "sum"
-export type Lifecycle = "preRule" | "modify" | "role" | "rule" | "filter" | "effect"
+export type Lifecycle = "pre_rule" | "modify" | "role" | "rule" | "filter" | "effect"
 export interface LifecycleFunction {
     (payload: PayloadInterface, state: StateInterface): Promise<boolean> | Promise<void>
 }
@@ -26,7 +26,7 @@ export interface ModelInterface {
     }
     bind: {
         [ls in Method]?: {
-            preRule?: LifecycleFunction[]
+            pre_rule?: LifecycleFunction[]
             modify?: LifecycleFunction[]
             role?: LifecycleFunction[]
             rule?: LifecycleFunction[]
@@ -138,7 +138,7 @@ export interface MixinInterface {
     }
     bind?: {
         [ls in Method]?: {
-            preRule?: LifecycleFunction[]
+            pre_rule?: LifecycleFunction[]
             modify?: LifecycleFunction[]
             role?: LifecycleFunction[]
             rule?: LifecycleFunction[]

@@ -1,9 +1,9 @@
 import * as lodash from "lodash"
-import { models } from "../../../core"
+import { models } from "../.."
 import { LifecycleFunction } from "../../../../types"
 import { After, Before } from "../../../mixin"
 
-const preRule: LifecycleFunction = async function (payload, state) {
+const pre_rule: LifecycleFunction = async function (payload, state) {
     if (!lodash.includes(models, payload.model)) {
         payload.response.error = "has_model"
         return false
@@ -13,24 +13,24 @@ const preRule: LifecycleFunction = async function (payload, state) {
         return false
     }
 
-    const befores = Before.bind[payload.method].preRule
-    const afters = After.bind[payload.method].preRule
-    const preRules = [...befores, ...payload.model.bind[payload.method].preRule, ...afters]
+    const befores = Before.bind[payload.method].pre_rule
+    const afters = After.bind[payload.method].pre_rule
+    const pre_rules = [...befores, ...payload.model.bind[payload.method].pre_rule, ...afters]
 
-    for (const preRule of preRules) {
+    for (const pre_rule of pre_rules) {
         const start = Date.now()
-        const res = await preRule(payload, state)
+        const res = await pre_rule(payload, state)
         state.metrics.lifecycle.push({
-            name: preRule.name,
+            name: pre_rule.name,
             ms: Date.now() - start,
         })
 
         if (res === false) {
-            payload.response.error = preRule.name
+            payload.response.error = pre_rule.name
             return false
         }
     }
     return true
 }
 
-export default preRule
+export default pre_rule

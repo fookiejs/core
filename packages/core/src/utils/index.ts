@@ -1,5 +1,5 @@
 import * as lodash from "lodash"
-import preRule from "../../src/lifecycles/preRule"
+import pre_rule from "../../src/lifecycles/pre_rule"
 import modify from "../../src/lifecycles/modify"
 import role from "../../src/lifecycles/role"
 import rule from "../../src/lifecycles/rule"
@@ -9,7 +9,7 @@ import { run } from "../.."
 import { Methods, Read } from "../../../method"
 import { system } from "../../../role"
 
-const lifecycles = ["preRule", "modify", "role", "rule", "filter", "effect"]
+const lifecycles = ["pre_rule", "modify", "role", "rule", "filter", "effect"]
 
 export function initialize_model_schema(models: ModelInterface[], model: Partial<ModelInterface>): void {
     const schemaKeys = lodash.keys(model.schema)
@@ -53,7 +53,7 @@ export function create_test_function(): LifecycleFunction {
             error: null,
         }
 
-        if (await preRule(p, s)) {
+        if (await pre_rule(p, s)) {
             await modify(p, s)
             if (await role(p, s)) {
                 if (await rule(p, s)) {

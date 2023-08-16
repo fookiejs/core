@@ -1,5 +1,5 @@
 import * as lodash from "lodash"
-import preRule from "./src/lifecycles/preRule"
+import pre_rule from "./src/lifecycles/pre_rule"
 import modify from "./src/lifecycles/modify"
 import role from "./src/lifecycles/role"
 import rule from "./src/lifecycles/rule"
@@ -69,7 +69,7 @@ export async function run(payload: PayloadInterface, state = {} as StateInterfac
         error: null,
     }
 
-    if (!(await preRule(payload, state))) {
+    if (!(await pre_rule(payload, state))) {
         return payload.response
     }
 

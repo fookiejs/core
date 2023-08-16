@@ -22,7 +22,7 @@ const After: MixinInterface = {
         create: {
             modify: [filter_fields, pk],
             rule: [has_entity, check_required],
-            preRule: [can_write],
+            pre_rule: [can_write],
             role: [],
             filter: [],
             effect: [db_disconnect, drop],
@@ -30,13 +30,13 @@ const After: MixinInterface = {
         read: {
             modify: [filter_fields, pk],
             rule: [validate_query],
-            preRule: [has_method, validate_attributes],
+            pre_rule: [has_method, validate_attributes],
             filter: [simplified],
             effect: [db_disconnect],
             role: [],
         },
         update: {
-            preRule: [can_write],
+            pre_rule: [can_write],
             modify: [pk],
             rule: [has_entity, validate_query, check_required],
             filter: [],
@@ -46,7 +46,7 @@ const After: MixinInterface = {
         delete: {
             modify: [pk, reactive_prepare, cascade_prepare],
             rule: [validate_query],
-            preRule: [],
+            pre_rule: [],
             filter: [],
             effect: [db_disconnect, todo],
             role: [],
@@ -54,13 +54,13 @@ const After: MixinInterface = {
         count: {
             modify: [pk],
             rule: [validate_query],
-            preRule: [],
+            pre_rule: [],
             filter: [],
             effect: [db_disconnect],
             role: [],
         },
         test: {
-            preRule: [need_method_in_options],
+            pre_rule: [need_method_in_options],
             modify: [],
             rule: [],
             filter: [],
@@ -68,7 +68,7 @@ const After: MixinInterface = {
             role: [],
         },
         sum: {
-            preRule: [need_field_in_options],
+            pre_rule: [need_field_in_options],
             modify: [pk],
             rule: [validate_query],
             filter: [],
