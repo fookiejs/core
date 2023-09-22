@@ -230,46 +230,53 @@ function generate_repository(model: ModelInterface): string {
     return `
     
     import { Core, Method, Types } from "${process.env.FOOKIE_TEST == "true" ? "../../../index" : "fookie"}"
-    import { ${to_pascal_case(model.name)}Body } from "../../interfaces/${to_pascal_case(model.name)}/${to_pascal_case(
-        model.name
-    )}.type"
+    import { 
+        ${to_pascal_case(model.name)}CreateBody, 
+        ${to_pascal_case(model.name)}UpdateBody,
+        ${to_pascal_case(model.name)}Entity,
+        ${to_pascal_case(model.name)}Query 
+    } from "../../interfaces/${to_pascal_case(model.name)}/${to_pascal_case(model.name)}.types"
 
-    import { ${to_pascal_case(model.name)}Query } from "../../interfaces/${to_pascal_case(model.name)}/${to_pascal_case(
-        model.name
-    )}.query"
-
-    type ModifiedPayload = Omit<Types.PayloadInterfaceWithoutModelAndMethod, 'query' | 'body'> & {
+    type CreatePayload = Omit<Types.PayloadInterfaceWithoutModelAndMethod, 'query' | 'body'> & {
+        body: ${to_pascal_case(model.name)}CreateBody
+    }
+    type ReadPayload = Omit<Types.PayloadInterfaceWithoutModelAndMethod, 'query' | 'body'> & {
         query:{
             filter:${to_pascal_case(model.name)}Query
-            body: ${to_pascal_case(model.name)}Body
+        };
+    }
+    type UpdatePayload = Omit<Types.PayloadInterfaceWithoutModelAndMethod, 'query' | 'body'> & {
+        query:{
+            filter:${to_pascal_case(model.name)}Query
+            body: ${to_pascal_case(model.name)}UpdateBody
         };
     }
 
-    export async function Create(payload:ModifiedPayload): Promise<${to_pascal_case(model.name)}Body> {
+    export async function Create(payload:CreatePayload): Promise<${to_pascal_case(model.name)}Entity> {
         const response = await Core.run({ model:Core.Model.${to_pascal_case(model.name)}, method:Method.Create, ...payload })
         return response.data
     }
-    export async function Read(payload:ModifiedPayload): Promise<${to_pascal_case(model.name)}Body[]> {
+    export async function Read(payload:ReadPayload): Promise<${to_pascal_case(model.name)}Entity[]> {
         const response = await Core.run({ model:Core.Model.${to_pascal_case(model.name)}, method:Method.Read, ...payload })
         return response.data
     }
-    export async function Update(payload:ModifiedPayload): Promise<Boolean> {
+    export async function Update(payload:UpdatePayload): Promise<Boolean> {
         const response = await Core.run({ model:Core.Model.${to_pascal_case(model.name)}, method:Method.Update, ...payload })
         return response.data
     }
-    export async function Delete(payload:ModifiedPayload): Promise<Boolean> {
+    export async function Delete(payload:ReadPayload): Promise<Boolean> {
         const response = await Core.run({ model:Core.Model.${to_pascal_case(model.name)}, method:Method.Delete, ...payload })
         return response.data
     }
-    export async function Sum(payload:ModifiedPayload): Promise<Number> {
+    export async function Sum(payload:ReadPayload): Promise<Number> {
         const response = await Core.run({ model:Core.Model.${to_pascal_case(model.name)}, method:Method.Sum, ...payload })
         return response.data
     }
-    export async function Count(payload:ModifiedPayload):Promise<Number> {
+    export async function Count(payload:ReadPayload):Promise<Number> {
         const response = await Core.run({ model:Core.Model.${to_pascal_case(model.name)}, method:Method.Count, ...payload })
         return response.data
     }
-    export async function Test(payload:ModifiedPayload): Promise<Types.ResponseInterface> {
+    export async function Test(payload:UpdatePayload): Promise<Types.ResponseInterface> {
         const response = await Core.run({ model:Core.Model.${to_pascal_case(model.name)}, method:Method.Test, ...payload })
         return response.data
     }
