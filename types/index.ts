@@ -113,12 +113,16 @@ export interface PayloadInterface {
         simplified?: boolean
         drop?: number
     }
-    response?: {
-        status: boolean
-        data: any
-        error: string
-    }
+    response?: ResponseInterface
 }
+
+export interface ResponseInterface {
+    status: boolean
+    data: any
+    error: string
+}
+
+export interface PayloadInterfaceWithoutModelAndMethod extends Omit<PayloadInterface, "model" | "method"> {}
 
 export interface StateInterface {
     metrics: {
