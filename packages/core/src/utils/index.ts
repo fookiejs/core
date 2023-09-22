@@ -216,13 +216,20 @@ function generate_update_body_type(model: ModelInterface): string {
 }
 
 function generate_query_type(model: ModelInterface): string {
-    let ts_query_type = `export interface ${to_pascal_case(model.name)}Query {\n`
+    let ts_query_type = `export interface ${to_pascal_case(model.name)}Query {
+    offset?: number
+    limit?: number
+    filter?: {
+        \n`
     ts_query_type += `  ${model.database.pk}: ${get_typescript_query_type(model.database.pk_type)}\n`
     for (const key in model.schema) {
         const filterType = get_typescript_query_type(model.schema[key].type)
         ts_query_type += `  ${key}?: ${filterType}\n`
     }
-    ts_query_type += `}`
+    ts_query_type += `
+        }
+    }
+    `
     return ts_query_type
 }
 
@@ -241,15 +248,11 @@ function generate_repository(model: ModelInterface): string {
         body: ${to_pascal_case(model.name)}CreateBody
     }
     type ReadPayload = Omit<Types.PayloadInterfaceWithoutModelAndMethod, 'query' | 'body'> & {
-        query:{
-            filter:${to_pascal_case(model.name)}Query
-        };
+        query:${to_pascal_case(model.name)}Query
     }
     type UpdatePayload = Omit<Types.PayloadInterfaceWithoutModelAndMethod, 'query' | 'body'> & {
-        query:{
-            filter:${to_pascal_case(model.name)}Query
-            body: ${to_pascal_case(model.name)}UpdateBody
-        };
+        query:${to_pascal_case(model.name)}Query
+        body:${to_pascal_case(model.name)}UpdateBody
     }
 
     export async function Create(payload:CreatePayload): Promise<${to_pascal_case(model.name)}Entity> {
