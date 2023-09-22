@@ -7,7 +7,8 @@
         "test": "vitest",
         "coverage": "vitest run --coverage",
         "build": "npx tsc",
-        "lint": "npx eslint packages"
+        "lint": "npx eslint packages",
+        "clean": "find . -name \"*.ts\" -exec sh -c 'rm \"${0%.*}.js\" \"${0%.*}.js.map\" 2>/dev/null' {} \\;"
     },
     "dependencies": {
         "deepmerge": "^4.3.0",
