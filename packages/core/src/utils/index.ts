@@ -104,32 +104,26 @@ ${generate_update_body_type(model)}\n
 }
 
 export function get_typescript_type_from_validator(validator: any): string {
-    switch (validator) {
-        case Type.Text:
-        case Type.Char:
-            return "string"
-        case Type.Float:
-        case Type.Integer:
-        case Type.Timestamp:
-            return "number"
-        case Type.Boolean:
-            return "boolean"
-        case Type.Buffer:
-            return "Buffer"
-        case Type.Plain:
-            return "object"
-        case Type.Function:
-            return "Function"
-        case Type.DateType:
-        case Type.Time:
-        case Type.DateTime:
-            return "string"
-        default:
-            if (validator.array_type) {
-                const array_type = get_typescript_type_from_validator(validator.array_type)
-                return `Array<${array_type}>`
-            }
-            return "unknown"
+    if (validator === Type.Text || validator === Type.Char) {
+        return "string"
+    } else if (validator === Type.Float || validator === Type.Integer || validator === Type.Timestamp) {
+        return "number"
+    } else if (validator === Type.Boolean) {
+        return "boolean"
+    } else if (validator === Type.Buffer) {
+        return "Buffer"
+    } else if (validator === Type.Plain) {
+        return "object"
+    } else if (validator === Type.Function) {
+        return "Function"
+    } else if (validator === Type.DateType || validator === Type.Time || validator === Type.DateTime) {
+        return "string"
+    } else {
+        if (validator.array_type) {
+            const array_type = get_typescript_type_from_validator(validator.array_type)
+            return `Array<${array_type}>`
+        }
+        return "unknown"
     }
 }
 
@@ -141,31 +135,24 @@ function to_pascal_case(str: string) {
 }
 
 function get_typescript_query_type(validator: any) {
-    switch (validator) {
-        case Type.Text:
-        case Type.Char:
-            return "{ eq?: string, not?: string, contains?: string, in?: string[], out?: string[] }"
-        case Type.Float:
-        case Type.Integer:
-        case Type.Timestamp:
-            return "{ eq?: number, not?: number, gte?: number, lte?: number, gt?: number, lt?: number, in?: number[], out?: number[] }"
-        case Type.Boolean:
-            return "{ eq?: boolean, not?: boolean }"
-        case Type.Buffer:
-        case Type.Function:
-            return "{}"
-        case Type.DateType:
-        case Type.Time:
-        case Type.DateTime:
-            return "{ eq?: Date, not?: Date, before?: Date, after?: Date, in?: Date[] }"
-        case Type.Plain:
-            return "{}"
-        default:
-            if (validator.array_type) {
-                const array_type = get_typescript_type_from_validator(validator.array_type)
-                return `{ includes?: ${array_type}, excludes?: ${array_type} }`
-            }
-            return "unknown"
+    if (validator === Type.Text || validator === Type.Char) {
+        return "{ eq?: string, not?: string, contains?: string, in?: string[], out?: string[] }"
+    } else if (validator === Type.Float || validator === Type.Integer || validator === Type.Timestamp) {
+        return "{ eq?: number, not?: number, gte?: number, lte?: number, gt?: number, lt?: number, in?: number[], out?: number[] }"
+    } else if (validator === Type.Boolean) {
+        return "{ eq?: boolean, not?: boolean }"
+    } else if (validator === Type.Buffer || validator === Type.Function) {
+        return "{}"
+    } else if (validator === Type.DateType || validator === Type.Time || validator === Type.DateTime) {
+        return "{ eq?: Date, not?: Date, before?: Date, after?: Date, in?: Date[] }"
+    } else if (validator === Type.Plain) {
+        return "{}"
+    } else {
+        if (validator.array_type) {
+            const array_type = get_typescript_type_from_validator(validator.array_type)
+            return `{ includes?: ${array_type}, excludes?: ${array_type} }`
+        }
+        return "unknown"
     }
 }
 
@@ -182,7 +169,7 @@ function generate_body_type(model: ModelInterface): string {
     let ts_type = `export interface ${to_pascal_case(model.name)}CreateBody {\n`
 
     for (const key in model.schema) {
-        let tsType = get_typescript_type_from_validator(model.schema[key].type)
+        const tsType = get_typescript_type_from_validator(model.schema[key].type)
         const field_name = model.schema[key].required ? key : key + "?"
         ts_type += `  ${field_name}: ${tsType}\n`
     }
@@ -195,7 +182,7 @@ function generate_entity_type(model: ModelInterface): string {
     let ts_type = `export interface ${to_pascal_case(model.name)}Entity {\n`
     ts_type += `  ${model.database.pk}: ${get_typescript_type_from_validator(model.database.pk_type)}\n`
     for (const key in model.schema) {
-        let tsType = get_typescript_type_from_validator(model.schema[key].type)
+        const tsType = get_typescript_type_from_validator(model.schema[key].type)
         const field_name = model.schema[key].required ? key : key + "?"
         ts_type += `  ${field_name}: ${tsType}\n`
     }
@@ -208,7 +195,7 @@ function generate_update_body_type(model: ModelInterface): string {
     let ts_type = `export interface ${to_pascal_case(model.name)}UpdateBody {\n`
 
     for (const key in model.schema) {
-        let tsType = get_typescript_type_from_validator(model.schema[key].type)
+        const tsType = get_typescript_type_from_validator(model.schema[key].type)
         ts_type += `  ${key}?: ${tsType}\n`
     }
 
