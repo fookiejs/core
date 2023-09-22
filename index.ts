@@ -6,10 +6,10 @@ import * as Mixin from "./packages/mixin"
 import * as Role from "./packages/role"
 import * as Selection from "./packages/selection"
 import * as Type from "./packages/type"
-import { Fookie } from "./types"
+import * as Types from "./types"
 
-export { Core, Database, Decorator, Method, Mixin, Role, Selection, Type, use }
+export { Core, Database, Decorator, Method, Mixin, Role, Selection, Type, use, Types }
 
-async function use<T>(cb: (fookie: Fookie) => T): Promise<T> {
+async function use<T>(cb: (fookie: Types.Fookie) => T): Promise<T> {
     return await cb({ Core, Database, Decorator, Method, Mixin, Role, Selection, Type })
 }

@@ -32,7 +32,7 @@ it("native types", async function () {
                 type: o,
             },
             arr: {
-                type: a,
+                type: a(n),
             },
             bl: {
                 type: b,
@@ -71,5 +71,5 @@ it("native types", async function () {
         },
     })
 
-    assert.equal(res.status, true)
+    assert.equal(res?.status, true)
 })

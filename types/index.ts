@@ -72,6 +72,7 @@ export interface FieldInterface {
         from: string
         compute: Function
     }[]
+    validators?: [(value: any) => Promise<boolean>]
 }
 
 export interface FilterFieldInterface {
@@ -109,16 +110,23 @@ export interface PayloadInterface {
     body?: any
     options?: {
         field?: string
-        method?: ClassMethodDecoratorContext
+        method?: Method
         simplified?: boolean
         drop?: number
     }
-    response?: {
-        status: boolean
-        data: any
-        error: string
+    response?: ResponseInterface
+}
+
+export interface ResponseInterface {
+    status: boolean
+    data: any
+    error: string
+    validation_error: {
+        [key: string]: string[]
     }
 }
+
+export interface PayloadInterfaceWithoutModelAndMethod extends Omit<PayloadInterface, "model" | "method"> {}
 
 export interface StateInterface {
     metrics: {

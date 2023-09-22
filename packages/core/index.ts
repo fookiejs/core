@@ -15,21 +15,29 @@ import {
     StateInterface,
     MixinInterface,
     DatabaseInterface,
+    ResponseInterface,
 } from "../../types"
 import deepmerge = require("deepmerge")
-import { create_sumby_function, create_test_function, initialize_model_bindings, initialize_model_schema } from "./src/utils"
+import {
+    create_sumby_function,
+    create_test_function,
+    generate_typescript_types,
+    initialize_model_bindings,
+    initialize_model_schema,
+} from "./src/utils"
 
 if (!process.env.SYSTEM_TOKEN) {
     process.env.SYSTEM_TOKEN = v4()
 }
 
 export const models: ModelInterface[] = []
+export const Model: { [model_name: string]: ModelInterface } = {}
 
 export async function model(model: Partial<ModelInterface>): Promise<ModelInterface> {
     model.mixins = lodash.isArray(model.mixins) ? model.mixins : []
     model.bind = lodash.isObject(model.bind) ? model.bind : {}
 
-    initialize_model_schema(models, model)
+    initialize_model_schema(model)
     initialize_model_bindings(model)
     const schema_keys = lodash.keys(model.schema)
     for (const key of schema_keys) {
@@ -49,7 +57,13 @@ export async function model(model: Partial<ModelInterface>): Promise<ModelInterf
     model.methods.test = create_test_function()
     model.methods.sum = create_sumby_function()
 
-    models.push(model as ModelInterface)
+    models.push(model as ModelInterface) //TODO
+    Model[model.name] = model as ModelInterface
+
+    if (process.env.FOOKIE_DEV === "true") {
+        generate_typescript_types(model as ModelInterface)
+    }
+
     return model as ModelInterface
 }
 
@@ -57,7 +71,7 @@ export const lifecycle = function (lifecycle: LifecycleFunction) {
     return lifecycle
 }
 
-export async function run(payload: PayloadInterface, state = {} as StateInterface) {
+export async function run(payload: PayloadInterface, state = {} as StateInterface): Promise<ResponseInterface> {
     state.metrics = {
         start: Date.now(),
         lifecycle: [],
@@ -67,6 +81,7 @@ export async function run(payload: PayloadInterface, state = {} as StateInterfac
         data: null,
         status: false,
         error: null,
+        validation_error: {},
     }
 
     if (!(await pre_rule(payload, state))) {

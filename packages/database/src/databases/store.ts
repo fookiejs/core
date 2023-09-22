@@ -82,9 +82,6 @@ function poolFilter(pool: any[], filter) {
                 if (value.lt && entity[field] >= value.lt) {
                     return false
                 }
-                if (value.inc && !entity[field].includes(value.inc)) {
-                    return false
-                }
                 if (value.eq && entity[field] !== value.eq) {
                     return false
                 }
@@ -95,6 +92,9 @@ function poolFilter(pool: any[], filter) {
                     return false
                 }
                 if (value.not_in && lodash.includes(value.not_in, entity[field])) {
+                    return false
+                }
+                if (value.inc && !entity[field].includes(value.inc)) {
                     return false
                 }
             } else if (entity[field] !== value) {

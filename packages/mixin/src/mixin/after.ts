@@ -16,12 +16,13 @@ import reactives from "../effect/reactives"
 import drop from "../effect/drop"
 import { MixinInterface } from "../../../../types"
 import need_field_in_options from "../rule/need_field_in_options"
+import validate_body from "../rule/validate_body"
 
 const After: MixinInterface = {
     bind: {
         create: {
             modify: [filter_fields, pk],
-            rule: [has_entity, check_required],
+            rule: [has_entity, check_required, validate_body],
             pre_rule: [can_write],
             role: [],
             filter: [],
@@ -38,7 +39,7 @@ const After: MixinInterface = {
         update: {
             pre_rule: [can_write],
             modify: [pk],
-            rule: [has_entity, validate_query, check_required],
+            rule: [has_entity, validate_query, check_required, validate_body],
             filter: [],
             effect: [db_disconnect, reactives],
             role: [],

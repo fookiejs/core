@@ -34,9 +34,11 @@ export const Function: Type = function (v) {
 }
 
 export const Array: (typeFunc: Type) => Type = function (typeFunc) {
-    return function (v) {
+    const func = function (v) {
         return lodash.isArray(v) && lodash.every(v, typeFunc)
     }
+    func.array_type = typeFunc
+    return func
 }
 
 export const DateType: Type = function (v) {

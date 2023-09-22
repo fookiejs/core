@@ -1,6 +1,6 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, run, models, lifecycle } from "../packages/core"
+import { model, run, lifecycle } from "../packages/core"
 import { Store } from "../packages/database"
 import { Model, Field } from "../packages/decorator"
 import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
@@ -21,11 +21,11 @@ it("field control", async function () {
                 maximum: 100,
             },
             f_array_1: {
-                type: Array,
+                type: Array(Integer),
                 maximum_size: 2,
             },
             f_array_2: {
-                type: Array,
+                type: Array(Integer),
                 minimum_size: 2,
             },
         },
