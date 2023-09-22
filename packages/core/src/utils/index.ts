@@ -4,7 +4,7 @@ import modify from "../../src/lifecycles/modify"
 import role from "../../src/lifecycles/role"
 import rule from "../../src/lifecycles/rule"
 
-import { ModelInterface, LifecycleFunction, MixinInterface } from "../../../../types"
+import { ModelInterface, LifecycleFunction, MixinInterface, PayloadInterface } from "../../../../types"
 import { run } from "../.."
 import { Methods, Read } from "../../../method"
 import { system } from "../../../role"
@@ -41,7 +41,7 @@ export function initialize_model_bindings(model: Partial<ModelInterface> | Mixin
 }
 
 export function create_test_function(): LifecycleFunction {
-    return async function (_payload) {
+    return async function (_payload: PayloadInterface) {
         const p = Object.assign(lodash.omit(_payload, ["response"]))
         p.method = _payload.options.method
         const s = {
@@ -55,6 +55,7 @@ export function create_test_function(): LifecycleFunction {
             data: null,
             status: false,
             error: null,
+            validation_error: {},
         }
 
         if (await pre_rule(p, s)) {

@@ -81,6 +81,7 @@ export async function run(payload: PayloadInterface, state = {} as StateInterfac
         data: null,
         status: false,
         error: null,
+        validation_error: {},
     }
 
     if (!(await pre_rule(payload, state))) {
