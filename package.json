@@ -4,7 +4,7 @@
     "version": "0.999.25",
     "main": "dist/index.js",
     "scripts": {
-        "test": "vitest",
+        "test": "FOOKIE_DEV=true FOOKIE_TEST=true vitest",
         "coverage": "vitest run --coverage",
         "build": "npx tsc",
         "lint": "npx eslint packages",
