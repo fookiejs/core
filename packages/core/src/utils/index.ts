@@ -273,31 +273,31 @@ function generate_repository(model: ModelInterface): string {
      }
 
     export async function Create(payload:CreatePayload): Promise<CreateResponse> {
-        const response = await Core.run({ model:Core.Model.${to_pascal_case(model.name)}, method:Method.Create, ...payload })
+        const response = await Core.run({ model:Core.Model.${model.name}, method:Method.Create, ...payload })
         return response
     }
     export async function Read(payload:ReadPayload): Promise<ReadResponse> {
-        const response = await Core.run({ model:Core.Model.${to_pascal_case(model.name)}, method:Method.Read, ...payload })
+        const response = await Core.run({ model:Core.Model.${model.name}, method:Method.Read, ...payload })
         return response
     }
     export async function Update(payload:UpdatePayload): Promise<UpdateResponse> {
-        const response = await Core.run({ model:Core.Model.${to_pascal_case(model.name)}, method:Method.Update, ...payload })
+        const response = await Core.run({ model:Core.Model.${model.name}, method:Method.Update, ...payload })
         return response
     }
     export async function Delete(payload:ReadPayload): Promise<DeleteResponse> {
-        const response = await Core.run({ model:Core.Model.${to_pascal_case(model.name)}, method:Method.Delete, ...payload })
+        const response = await Core.run({ model:Core.Model.${model.name}, method:Method.Delete, ...payload })
         return response
     }
     export async function Sum(payload:ReadPayload): Promise<SumResponse> {
-        const response = await Core.run({ model:Core.Model.${to_pascal_case(model.name)}, method:Method.Sum, ...payload })
+        const response = await Core.run({ model:Core.Model.${model.name}, method:Method.Sum, ...payload })
         return response
     }
     export async function Count(payload:ReadPayload):Promise<CountResponse> {
-        const response = await Core.run({ model:Core.Model.${to_pascal_case(model.name)}, method:Method.Count, ...payload })
+        const response = await Core.run({ model:Core.Model.${model.name}, method:Method.Count, ...payload })
         return response
     }
     export async function Test(payload:UpdatePayload): Promise<TestResponse> {
-        const response = await Core.run({ model:Core.Model.${to_pascal_case(model.name)}, method:Method.Test, ...payload })
+        const response = await Core.run({ model:Core.Model.${model.name}, method:Method.Test, ...payload })
         return response
     }
 
