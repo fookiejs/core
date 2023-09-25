@@ -16,7 +16,7 @@ import {
     initialize_model_bindings,
     initialize_model_schema,
 } from "../run/src/utils"
-import Model from "../model"
+import Dictionary from "../dictionary"
 
 if (!process.env.SYSTEM_TOKEN) {
     process.env.SYSTEM_TOKEN = v4()
@@ -46,7 +46,7 @@ export async function model(model: Partial<ModelInterface>): Promise<ModelInterf
     model.methods.test = create_test_function()
     model.methods.sum = create_sumby_function()
 
-    Model[model.name] = model as ModelInterface
+    Dictionary.Model[model.name] = model as ModelInterface
 
     if (process.env.FOOKIE_DEV === "true") {
         generate_typescript_types(model as ModelInterface)
@@ -63,7 +63,6 @@ export function mixin(mixin: MixinInterface) {
     mixin.bind = lodash.isObject(mixin.bind) ? mixin.bind : {}
     mixin.schema = lodash.isObject(mixin.schema) ? mixin.schema : {}
     initialize_model_bindings(mixin)
-
     return mixin
 }
 

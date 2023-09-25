@@ -2,7 +2,7 @@ import { run } from "../../../run"
 import { LifecycleFunction } from "../../../../types"
 import { Delete, Read } from "../../../method"
 import * as lodash from "lodash"
-import Model from "../../../model"
+import Dictionary from "../../../dictionary"
 
 const cascade_prepare: LifecycleFunction = async function (payload, state) {
     const res = await run({
@@ -16,7 +16,7 @@ const cascade_prepare: LifecycleFunction = async function (payload, state) {
         return e[payload.model.database.pk]
     })
 
-    for (const model of lodash.values(Model)) {
+    for (const model of lodash.values(Dictionary.Model)) {
         for (const field in model.schema) {
             if (
                 model.schema[field].cascade_delete &&

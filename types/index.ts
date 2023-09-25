@@ -1,5 +1,5 @@
 export type Method = "create" | "read" | "update" | "delete" | "count" | "test" | "sum"
-export type Lifecycle = "pre_rule" | "modify" | "role" | "rule" | "filter" | "effect"
+export type LifecycleStep = "pre_rule" | "modify" | "role" | "rule" | "filter" | "effect"
 export interface LifecycleFunction {
     (payload: PayloadInterface, state: StateInterface): Promise<boolean> | Promise<void>
 }
@@ -163,4 +163,14 @@ export interface MixinInterface {
             }
         }
     }
+}
+
+export interface DictionaryInterface {
+    Type: { [name: string]: TypeInterface }
+    Model: { [name: string]: ModelInterface }
+    Database: { [name: string]: DatabaseInterface }
+    Mixin: { [name: string]: MixinInterface }
+    Role: { [name: string]: LifecycleFunction }
+    Selection: { [name: string]: SelectionInterface }
+    Lifecycle: { [name: string]: LifecycleFunction }
 }

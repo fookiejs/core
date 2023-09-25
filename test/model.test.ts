@@ -7,7 +7,7 @@ import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
 import * as Type from "../packages/type"
 import * as Mixin from "../packages/mixin"
 import * as Role from "../packages/role"
-import Model from "../packages/model"
+import Dictionary from "../packages/dictionary"
 
 describe("fookie", async function () {
     it("Decorators", async function () {
@@ -29,7 +29,7 @@ describe("fookie", async function () {
             },
         })
 
-        const user_model = lodash.find(lodash.values(Model), { name: "user" })
+        const user_model = lodash.find(lodash.values(Dictionary.Model), { name: "user" })
         assert.equal(lodash.isObject(user_model), true)
     })
 
@@ -56,7 +56,7 @@ describe("fookie", async function () {
             },
         })
 
-        const account = lodash.find(lodash.values(Model), { name: "account" })
+        const account = lodash.find(lodash.values(Dictionary.Model), { name: "account" })
         assert.equal(lodash.isObject(account), true)
     })
 })
