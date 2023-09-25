@@ -1,9 +1,9 @@
-import { After, Before } from "../../../mixin"
+import * as Mixin from "../../../mixin"
 import { LifecycleFunction } from "../../../../types"
 
 const effect: LifecycleFunction = async function (payload, state) {
-    const befores = Before.bind[payload.method].effect
-    const afters = After.bind[payload.method].effect
+    const befores = Mixin.Before.bind[payload.method].effect
+    const afters = Mixin.After.bind[payload.method].effect
     const effects = [...befores, ...payload.model.bind[payload.method].effect, ...afters]
 
     for (const effect of effects) {

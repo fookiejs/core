@@ -1,20 +1,22 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, run, models, lifecycle } from "../packages/core"
-import { Store } from "../packages/database"
-import { Model, Field } from "../packages/decorator"
+import { model, lifecycle, mixin } from "../packages/builder"
+import { run } from "../packages/run"
+import * as Database from "../packages/database"
 import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import { Text, Array, Boolean, Buffer, Char, Function, Plain } from "../packages/type"
-import { After, Before } from "../packages/mixin"
+import * as Type from "../packages/type"
+import * as Mixin from "../packages/mixin"
+import * as Role from "../packages/role"
+import Model from "../packages/model"
 
 describe("fookie", async function () {
     it("Decorators", async function () {
         const user = await model({
             name: "user",
-            database: Store,
+            database: Database.Store,
             schema: {
-                name: { type: Text, required: true },
-                password: { type: Text, required: true },
+                name: { type: Type.Text, required: true },
+                password: { type: Type.Text, required: true },
             },
         })
 
@@ -27,17 +29,17 @@ describe("fookie", async function () {
             },
         })
 
-        const user_model = lodash.find(models, { name: "user" })
+        const user_model = lodash.find(lodash.values(Model), { name: "user" })
         assert.equal(lodash.isObject(user_model), true)
     })
 
     it("Model create", async function () {
         await model({
             name: "account",
-            database: Store,
+            database: Database.Store,
             schema: {
                 name: {
-                    type: Text,
+                    type: Type.Text,
                     required: true,
                 },
             },
@@ -54,7 +56,7 @@ describe("fookie", async function () {
             },
         })
 
-        const account = lodash.find(models, { name: "account" })
+        const account = lodash.find(lodash.values(Model), { name: "account" })
         assert.equal(lodash.isObject(account), true)
     })
 })

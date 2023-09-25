@@ -1,25 +1,25 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, run, models, lifecycle } from "../packages/core"
-import { Store } from "../packages/database"
-import { Model, Field } from "../packages/decorator"
+import { model, lifecycle, mixin } from "../packages/builder"
+import { run } from "../packages/run"
+import * as Database from "../packages/database"
 import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import { Text, Array, Boolean, Buffer, Char, Function, Plain } from "../packages/type"
-
-import { nobody, everybody, system } from "../packages/role"
+import * as Type from "../packages/type"
+import * as Mixin from "../packages/mixin"
+import * as Role from "../packages/role"
 
 it("check auth 1", async function () {
     let child_setting = await model({
         name: "child_setting",
-        database: Store,
+        database: Database.Store,
         schema: {
             msg: {
-                type: Text,
+                type: Type.Text,
             },
         },
         bind: {
             create: {
-                role: [nobody],
+                role: [Role.nobody],
             },
         },
     })
@@ -38,15 +38,15 @@ it("check auth 1", async function () {
 it("check auth 2", async function () {
     const child_setting2 = await model({
         name: "child_setting2",
-        database: Store,
+        database: Database.Store,
         schema: {
             msg: {
-                type: Text,
+                type: Type.Text,
             },
         },
         bind: {
             create: {
-                role: [nobody],
+                role: [Role.nobody],
             },
         },
     })
@@ -71,15 +71,15 @@ it(" check auth reject modify", async function () {
     })
     const msg_reject_1 = await model({
         name: "msg_reject_1",
-        database: Store,
+        database: Database.Store,
         schema: {
             msg: {
-                type: Text,
+                type: Type.Text,
             },
         },
         bind: {
             create: {
-                role: [nobody],
+                role: [Role.nobody],
                 reject: {
                     nobody: {
                         modify: [test_r_modify],
@@ -111,15 +111,15 @@ it(" check auth accept modify", async function () {
 
     const msg_accept_0 = await model({
         name: "msg_accept_0",
-        database: Store,
+        database: Database.Store,
         schema: {
             msg: {
-                type: Text,
+                type: Type.Text,
             },
         },
         bind: {
             create: {
-                role: [everybody],
+                role: [Role.everybody],
                 accept: {
                     everybody: {
                         modify: [test_a_modify],
@@ -149,15 +149,15 @@ it(" check auth array", async function () {
     })
     const msg_array = await model({
         name: "msg_array",
-        database: Store,
+        database: Database.Store,
         schema: {
             msg: {
-                type: Text,
+                type: Type.Text,
             },
         },
         bind: {
             create: {
-                role: [nobody, everybody],
+                role: [Role.nobody, Role.everybody],
             },
         },
     })
@@ -180,10 +180,10 @@ it(" check auth field write", async function () {
 
     const caf = await model({
         name: "caf",
-        database: Store,
+        database: Database.Store,
         schema: {
             msg: {
-                type: Text,
+                type: Type.Text,
                 write: [caf_role],
             },
         },
@@ -212,16 +212,16 @@ it(" check auth field read", async function () {
 
     const car = await model({
         name: "car",
-        database: Store,
+        database: Database.Store,
         schema: {
             msg: {
-                type: Text,
+                type: Type.Text,
                 read: [car_role],
             },
         },
         bind: {
             create: {
-                role: [everybody],
+                role: [Role.everybody],
             },
         },
     })
@@ -257,15 +257,15 @@ it(" check auth reject rule", async function () {
     })
     const msg_reject_2 = await model({
         name: "msg_reject_2",
-        database: Store,
+        database: Database.Store,
         schema: {
             msg: {
-                type: Text,
+                type: Type.Text,
             },
         },
         bind: {
             create: {
-                role: [nobody],
+                role: [Role.nobody],
                 reject: {
                     nobody: {
                         rule: [test_r_rule],
@@ -298,15 +298,15 @@ it(" check auth accept rule", async function () {
 
     const msg_accept_1 = await model({
         name: "msg_accept_1",
-        database: Store,
+        database: Database.Store,
         schema: {
             msg: {
-                type: Text,
+                type: Type.Text,
             },
         },
         bind: {
             create: {
-                role: [everybody],
+                role: [Role.everybody],
                 accept: {
                     everybody: {
                         rule: [test_a_rule],
@@ -336,15 +336,15 @@ it(" check auth reject rule 2", async function () {
 
     const msg_reject_3 = await model({
         name: "msg_reject_3",
-        database: Store,
+        database: Database.Store,
         schema: {
             msg: {
-                type: Text,
+                type: Type.Text,
             },
         },
         bind: {
             create: {
-                role: [nobody, everybody],
+                role: [Role.nobody, Role.everybody],
                 reject: {
                     nobody: {
                         rule: [test_a_rule_3],

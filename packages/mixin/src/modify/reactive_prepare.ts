@@ -1,5 +1,5 @@
 import * as lodash from "lodash"
-import { run } from "../../../core"
+import { run } from "../../../run"
 import { Read, Delete } from "../../../method"
 import { LifecycleFunction } from "../../../../types"
 

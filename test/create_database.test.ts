@@ -1,37 +1,19 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, run, lifecycle, type, database, mixin } from "../packages/core"
-import { Store } from "../packages/database"
-import { Model, Field } from "../packages/decorator"
+import { model, lifecycle, mixin, database } from "../packages/builder"
+import { run } from "../packages/run"
+import * as Database from "../packages/database"
 import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import { Text } from "../packages/type"
-import { After, Before } from "../packages/mixin"
+import * as Type from "../packages/type"
+import * as Mixin from "../packages/mixin"
+import * as Role from "../packages/role"
 
 it("database", async function () {
     let res = database({
         pk: "id",
-        pk_type: Text,
+        pk_type: Type.Text,
         connect: async function () {},
         disconnect: async function () {},
-        modify: function (model) {
-            model.methods.create = async function (_payload, _state) {
-                return {}
-            }
-            model.methods.read = async function (_payload, _state) {
-                return []
-            }
-
-            model.methods.update = async function (_payload, _state) {
-                return true
-            }
-
-            model.methods.delete = async function (_payload, _state) {
-                return true
-            }
-
-            model.methods.count = async function (_payload, _state) {
-                return 1
-            }
-        },
+        modify: function (model) {},
     })
 })

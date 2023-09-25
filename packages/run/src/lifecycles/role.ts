@@ -1,10 +1,11 @@
 import * as lodash from "lodash"
+import Model from "../../../model"
 import { LifecycleFunction } from "../../../../types"
-import { After, Before } from "../../../mixin"
+import * as Mixin from "../../../mixin"
 
 const role: LifecycleFunction = async function (payload, state) {
-    const befores = Before.bind[payload.method].role
-    const afters = After.bind[payload.method].role
+    const befores = Mixin.Before.bind[payload.method].role
+    const afters = Mixin.After.bind[payload.method].role
 
     const roles = [...befores, ...payload.model.bind[payload.method].role, ...afters]
 
@@ -13,8 +14,10 @@ const role: LifecycleFunction = async function (payload, state) {
     if (roles.length === 0) {
         return true
     }
+
     for (let i = 0; i < roles.length; i++) {
         const role = roles[i]
+
         const res = await role(payload, state)
         const field = payload.model.bind[payload.method]
         if (res) {

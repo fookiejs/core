@@ -1,12 +1,12 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, run, models, lifecycle } from "../packages/core"
-import { Store, database } from "../packages/database"
-import { Model, Field } from "../packages/decorator"
+import { model, lifecycle, mixin } from "../packages/builder"
+import { run } from "../packages/run"
+import * as Database from "../packages/database"
 import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import { Text, Number, Array, Boolean, Buffer, Char, Function, Plain } from "../packages/type"
-import { mixin, After, Before } from "../packages/mixin"
-import { nobody, everybody, system } from "../packages/role"
+import * as Type from "../packages/type"
+import * as Mixin from "../packages/mixin"
+import * as Role from "../packages/role"
 
 it("throw error modify", async function () {
     const throw_error = lifecycle(async function () {
@@ -15,10 +15,10 @@ it("throw error modify", async function () {
 
     const mdl = await model({
         name: "throw_error_model",
-        database: Store,
+        database: Database.Store,
         schema: {
             fieid: {
-                type: Text,
+                type: Type.Text,
             },
         },
         bind: {

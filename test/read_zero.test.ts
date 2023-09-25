@@ -1,20 +1,21 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, run, models, lifecycle } from "../packages/core"
-import { Store } from "../packages/database"
-import { Model, Field } from "../packages/decorator"
+import { model, lifecycle, mixin } from "../packages/builder"
+import { run } from "../packages/run"
+import * as Database from "../packages/database"
 import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import { Text, Integer, Array, Boolean, Buffer, Char, Function, Plain } from "../packages/type"
-import { After, Before } from "../packages/mixin"
+import * as Type from "../packages/type"
+import * as Mixin from "../packages/mixin"
+import * as Role from "../packages/role"
 
 it("read_zero", async function () {
     // PHASE 1
     let read_zero_model = await model({
         name: "read_zero_model",
-        database: Store,
+        database: Database.Store,
         schema: {
             number: {
-                type: Integer,
+                type: Type.Integer,
             },
         },
         bind: {

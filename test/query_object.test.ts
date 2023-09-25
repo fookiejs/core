@@ -1,23 +1,24 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, run, models, lifecycle } from "../packages/core"
-import { Store } from "../packages/database"
-import { Model, Field } from "../packages/decorator"
+import { model, lifecycle, mixin } from "../packages/builder"
+import { run } from "../packages/run"
+import * as Database from "../packages/database"
 import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import { Text, Integer, Array, Boolean, Buffer, Char, Function, Plain } from "../packages/type"
-import { After, Before } from "../packages/mixin"
+import * as Type from "../packages/type"
+import * as Mixin from "../packages/mixin"
+import * as Role from "../packages/role"
 
 it("Filters with object", async function () {
     const FiterObject = await model({
         name: "FiterObject",
-        database: Store,
+        database: Database.Store,
         schema: {
             val: {
-                type: Integer,
+                type: Type.Integer,
                 required: true,
             },
             val_str: {
-                type: Text,
+                type: Type.Text,
                 required: true,
             },
         },

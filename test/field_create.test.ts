@@ -1,21 +1,21 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, run, models, lifecycle } from "../packages/core"
-import { Store, database } from "../packages/database"
-import { Model, Field } from "../packages/decorator"
+import { model, lifecycle, mixin } from "../packages/builder"
+import { run } from "../packages/run"
+import * as Database from "../packages/database"
 import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import { Text, Number, Array, Boolean, Buffer, Char, Function, Plain } from "../packages/type"
-import { mixin, After, Before } from "../packages/mixin"
-import { nobody, everybody, system } from "../packages/role"
+import * as Type from "../packages/type"
+import * as Mixin from "../packages/mixin"
+import * as Role from "../packages/role"
 
 it("create:['nobody'] -> empty field", async function () {
     let test_field_create = await model({
         name: "test_field_create",
-        database: Store,
+        database: Database.Store,
         schema: {
             msg: {
-                type: Text,
-                read: [nobody],
+                type: Type.Text,
+                read: [Role.nobody],
             },
         },
         bind: {

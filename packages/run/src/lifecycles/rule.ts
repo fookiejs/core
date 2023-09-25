@@ -1,9 +1,11 @@
+import * as lodash from "lodash"
+import Model from "../../../model"
 import { LifecycleFunction } from "../../../../types"
-import { After, Before } from "../../../mixin"
+import * as Mixin from "../../../mixin"
 
 const rule: LifecycleFunction = async function (payload, state) {
-    const befores = Before.bind[payload.method].rule
-    const afters = After.bind[payload.method].rule
+    const befores = Mixin.Before.bind[payload.method].rule
+    const afters = Mixin.After.bind[payload.method].rule
     const rules = [...befores, ...payload.model.bind[payload.method].rule, ...afters]
 
     for (const rule of rules) {

@@ -1,12 +1,12 @@
 import * as lodash from "lodash"
 import { LifecycleFunction } from "../../../../types"
-import { Methods } from "../../../method"
+import * as Method from "../../../method"
 
 const need_method_in_options: LifecycleFunction = async function (payload) {
     return (
         lodash.has(payload.options, "method") &&
         typeof payload.options.method == "string" &&
-        Methods.includes(payload.options.method)
+        lodash.values(Method).includes(payload.options.method)
     )
 }
 

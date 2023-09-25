@@ -1,39 +1,39 @@
 import * as lodash from "lodash"
-import { Type } from "../../types"
+import { TypeInterface } from "../../types"
 
-export const Text: Type = function (v) {
+export const Text: TypeInterface = function (v) {
     return lodash.isString(v)
 }
 
-export const Float: Type = function (v) {
+export const Float: TypeInterface = function (v) {
     return lodash.isNumber(v)
 }
 
-export const Integer: Type = function (v) {
+export const Integer: TypeInterface = function (v) {
     return Number.isInteger(v)
 }
 
-export const Boolean: Type = function (v) {
+export const Boolean: TypeInterface = function (v) {
     return lodash.isBoolean(v)
 }
 
-export const Buffer: Type = function (v) {
+export const Buffer: TypeInterface = function (v) {
     return lodash.isBuffer(v)
 }
 
-export const Plain: Type = function (v) {
+export const Plain: TypeInterface = function (v) {
     return lodash.isObject(v)
 }
 
-export const Char: Type = function (v) {
+export const Char: TypeInterface = function (v) {
     return lodash.isString(v) && v.length == 1
 }
 
-export const Function: Type = function (v) {
+export const Function: TypeInterface = function (v) {
     return lodash.isFunction(v)
 }
 
-export const Array: (typeFunc: Type) => Type = function (typeFunc) {
+export const Array: (typeFunc: TypeInterface) => TypeInterface = function (typeFunc) {
     const func = function (v) {
         return lodash.isArray(v) && lodash.every(v, typeFunc)
     }
@@ -41,21 +41,21 @@ export const Array: (typeFunc: Type) => Type = function (typeFunc) {
     return func
 }
 
-export const DateType: Type = function (v) {
+export const DateType: TypeInterface = function (v) {
     const date = new Date(v)
     return !isNaN(date.getTime()) && /^\d{4}-\d{2}-\d{2}$/.test(v)
 }
 
-export const Time: Type = function (v) {
+export const Time: TypeInterface = function (v) {
     return /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)(\.\d+)?$/.test(v)
 }
 
-export const DateTime: Type = function (v) {
+export const DateTime: TypeInterface = function (v) {
     const date = new Date(v)
     return !isNaN(date.getTime()) && /^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):([0-5]\d):([0-5]\d)(\.\d+)?$/.test(v)
 }
 
-export const Timestamp: Type = function (v) {
+export const Timestamp: TypeInterface = function (v) {
     const date = new Date(v)
     return !isNaN(date.getTime())
 }

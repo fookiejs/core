@@ -1,31 +1,32 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, run, lifecycle } from "../packages/core"
-import { Store } from "../packages/database"
-import { Model, Field } from "../packages/decorator"
+import { model } from "../packages/builder"
+import { run } from "../packages/run"
+import * as Database from "../packages/database"
+
 import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import { Text, Integer, Array, Boolean, Buffer, Char, Function, Plain } from "../packages/type"
-import { After, Before } from "../packages/mixin"
+import * as Type from "../packages/type"
+import * as Mixin from "../packages/mixin"
 
 it("field control", async function () {
     const field_control_model = await model({
         name: "field_control_model",
-        database: Store,
+        database: Database.Store,
         schema: {
             f_number_1: {
-                type: Integer,
+                type: Type.Integer,
                 minimum: 0,
             },
             f_number_2: {
-                type: Integer,
+                type: Type.Integer,
                 maximum: 100,
             },
             f_array_1: {
-                type: Array(Integer),
+                type: Type.Array(Type.Integer),
                 maximum_size: 2,
             },
             f_array_2: {
-                type: Array(Integer),
+                type: Type.Array(Type.Integer),
                 minimum_size: 2,
             },
         },

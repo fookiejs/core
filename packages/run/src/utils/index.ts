@@ -1,17 +1,18 @@
 import * as lodash from "lodash"
-import pre_rule from "../../src/lifecycles/pre_rule"
-import modify from "../../src/lifecycles/modify"
-import role from "../../src/lifecycles/role"
-import rule from "../../src/lifecycles/rule"
+import pre_rule from "../lifecycles/pre_rule"
+import modify from "../lifecycles/modify"
+import role from "../lifecycles/role"
+import rule from "../lifecycles/rule"
 
 import { ModelInterface, LifecycleFunction, MixinInterface, PayloadInterface } from "../../../../types"
-import { run } from "../.."
-import { Methods, Read } from "../../../method"
-import { system } from "../../../role"
+import { run } from "../../../run"
+import * as Method from "../../../method"
+import * as Role from "../../../role"
 import * as Type from "../../../type"
 
 import * as fs from "fs"
 import * as path from "path"
+import { create_response } from "../lifecycles/flow"
 
 const lifecycles = ["pre_rule", "modify", "role", "rule", "filter", "effect"]
 
@@ -28,9 +29,9 @@ export function initialize_model_schema(model: Partial<ModelInterface>): void {
 }
 
 export function initialize_model_bindings(model: Partial<ModelInterface> | MixinInterface): void {
-    for (const method of Methods) {
+    for (const method of lodash.values(Method) as string[]) {
         if (!lodash.isObject(model.bind[method])) {
-            model.bind[method] = { role: [system] }
+            model.bind[method] = { role: [Role.system] }
         }
         for (const lifecycle of lifecycles) {
             if (!lodash.isArray(model.bind[method][lifecycle])) {
@@ -51,12 +52,7 @@ export function create_test_function(): LifecycleFunction {
             },
             todo: [],
         }
-        p.response = {
-            data: null,
-            status: false,
-            error: null,
-            validation_error: {},
-        }
+        p.response = create_response()
 
         if (await pre_rule(p, s)) {
             await modify(p, s)
@@ -76,7 +72,7 @@ export function create_sumby_function(): LifecycleFunction {
         const response = await run({
             token: token,
             model: _payload.model,
-            method: Read,
+            method: Method.Read,
             query: _payload.query,
         })
         const total = lodash.sumBy(response.data, _payload.options.field)
@@ -224,7 +220,7 @@ function generate_query_type(model: ModelInterface): string {
 function generate_repository(model: ModelInterface): string {
     return `
     
-    import { Core, Method, Types } from "${process.env.FOOKIE_TEST == "true" ? "../../../index" : "fookie"}"
+    import { run, Model, Method, Types } from "${process.env.FOOKIE_TEST == "true" ? "../../../index" : "fookie"}"
     import { 
         ${to_pascal_case(model.name)}CreateBody, 
         ${to_pascal_case(model.name)}UpdateBody,
@@ -273,31 +269,31 @@ function generate_repository(model: ModelInterface): string {
      }
 
     export async function Create(payload:CreatePayload): Promise<CreateResponse> {
-        const response = await Core.run({ model:Core.Model.${model.name}, method:Method.Create, ...payload })
+        const response = await run({ model:Model["${model.name}"], method:Method.Create, ...payload })
         return response
     }
     export async function Read(payload:ReadPayload): Promise<ReadResponse> {
-        const response = await Core.run({ model:Core.Model.${model.name}, method:Method.Read, ...payload })
+        const response = await run({ model:Model["${model.name}"], method:Method.Read, ...payload })
         return response
     }
     export async function Update(payload:UpdatePayload): Promise<UpdateResponse> {
-        const response = await Core.run({ model:Core.Model.${model.name}, method:Method.Update, ...payload })
+        const response = await run({ model:Model["${model.name}"], method:Method.Update, ...payload })
         return response
     }
     export async function Delete(payload:ReadPayload): Promise<DeleteResponse> {
-        const response = await Core.run({ model:Core.Model.${model.name}, method:Method.Delete, ...payload })
+        const response = await run({ model:Model["${model.name}"], method:Method.Delete, ...payload })
         return response
     }
     export async function Sum(payload:ReadPayload): Promise<SumResponse> {
-        const response = await Core.run({ model:Core.Model.${model.name}, method:Method.Sum, ...payload })
+        const response = await run({ model:Model["${model.name}"], method:Method.Sum, ...payload })
         return response
     }
     export async function Count(payload:ReadPayload):Promise<CountResponse> {
-        const response = await Core.run({ model:Core.Model.${model.name}, method:Method.Count, ...payload })
+        const response = await run({ model:Model["${model.name}"], method:Method.Count, ...payload })
         return response
     }
     export async function Test(payload:UpdatePayload): Promise<TestResponse> {
-        const response = await Core.run({ model:Core.Model.${model.name}, method:Method.Test, ...payload })
+        const response = await run({ model:Model["${model.name}"], method:Method.Test, ...payload })
         return response
     }
 

@@ -1,11 +1,12 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, run, lifecycle } from "../packages/core"
-import { Store } from "../packages/database"
-import { Model, Field } from "../packages/decorator"
+import { model, lifecycle, mixin } from "../packages/builder"
+import { run } from "../packages/run"
+import * as Database from "../packages/database"
 import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import { Text, Array, Boolean, Buffer, Char, Function, Plain } from "../packages/type"
-import { After, Before } from "../packages/mixin"
+import * as Type from "../packages/type"
+import * as Mixin from "../packages/mixin"
+import * as Role from "../packages/role"
 
 it("Missing preRule", async function () {
     await run({
@@ -13,10 +14,10 @@ it("Missing preRule", async function () {
         method: Create,
         body: {
             name: "missing_ls_model_1",
-            database: Store,
+            database: Database.Store,
             schema: {
                 fieid: {
-                    type: Text,
+                    type: Type.Text,
                 },
             },
             lifecycle: {
@@ -42,10 +43,10 @@ it("Missing modify", async function () {
         method: Create,
         body: {
             name: "missing_ls_model_2",
-            database: Store,
+            database: Database.Store,
             schema: {
                 fieid: {
-                    type: Text,
+                    type: Type.Text,
                 },
             },
             lifecycle: {
@@ -71,10 +72,10 @@ it("Missing rule", async function () {
         method: Create,
         body: {
             name: "missing_ls_model_3",
-            database: Store,
+            database: Database.Store,
             schema: {
                 fieid: {
-                    type: Text,
+                    type: Type.Text,
                 },
             },
             lifecycle: {
@@ -100,10 +101,10 @@ it("Missing role", async function () {
         method: Create,
         body: {
             name: "missing_ls_model_4",
-            database: Store,
+            database: Database.Store,
             schema: {
                 fieid: {
-                    type: Text,
+                    type: Type.Text,
                 },
             },
             lifecycle: {
@@ -129,10 +130,10 @@ it("Missing filter", async function () {
         method: Create,
         body: {
             name: "missing_ls_model_5",
-            database: Store,
+            database: Database.Store,
             schema: {
                 fieid: {
-                    type: Text,
+                    type: Type.Text,
                 },
             },
             lifecycle: {
@@ -158,10 +159,10 @@ it("Missing effect", async function () {
         method: Create,
         body: {
             name: "missing_ls_model_6",
-            database: Store,
+            database: Database.Store,
             schema: {
                 fieid: {
-                    type: Text,
+                    type: Type.Text,
                 },
             },
             lifecycle: {

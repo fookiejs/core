@@ -1,9 +1,9 @@
-import { run } from "../core"
+import { run } from "../run"
 import { Read } from "../method"
 import * as lodash from "lodash"
-import { Selection } from "../../types"
+import { SelectionInterface } from "../../types"
 
-export const Random: Selection = async function (payload, target_model) {
+export const Random: SelectionInterface = async function (payload, target_model) {
     const res = await run({
         token: payload.token || "",
         model: target_model,

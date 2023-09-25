@@ -1,18 +1,19 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, run, models, lifecycle } from "../packages/core"
-import { Store } from "../packages/database"
-import { Model, Field } from "../packages/decorator"
+import { model, lifecycle, mixin } from "../packages/builder"
+import { run } from "../packages/run"
+import * as Database from "../packages/database"
 import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import { Text, Array, Boolean, Buffer, Char, Function, Plain } from "../packages/type"
-import { After, Before } from "../packages/mixin"
+import * as Type from "../packages/type"
+import * as Mixin from "../packages/mixin"
+import * as Role from "../packages/role"
 
 it("Relation has_entity", async function () {
     const RelationNotExistedModel = await model({
         name: "RelationNotExistedModel",
-        database: Store,
+        database: Database.Store,
         schema: {
-            field: { type: Text, required: true },
+            field: { type: Type.Text, required: true },
         },
         bind: {
             test: {},
@@ -25,7 +26,7 @@ it("Relation has_entity", async function () {
 
     let relation_not_existed_model_test = await model({
         name: "relation_not_existed_model_test",
-        database: Store,
+        database: Database.Store,
         schema: {
             model: {
                 relation: RelationNotExistedModel,

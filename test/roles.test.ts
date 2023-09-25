@@ -1,32 +1,32 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, run, models, lifecycle } from "../packages/core"
-import { Store, database } from "../packages/database"
-import { Model, Field } from "../packages/decorator"
+import { model, lifecycle, mixin } from "../packages/builder"
+import { run } from "../packages/run"
+import * as Database from "../packages/database"
 import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import { Text, Number, Array, Boolean, Buffer, Char, Function, Plain } from "../packages/type"
-import { mixin, After, Before } from "../packages/mixin"
-import { nobody, everybody, system } from "../packages/role"
+import * as Type from "../packages/type"
+import * as Mixin from "../packages/mixin"
+import * as Role from "../packages/role"
 
 it("roles_test_token", async function () {
     const roles_system_model = await model({
         name: "roles_system_model",
-        database: Store,
+        database: Database.Store,
         schema: {
             field: {
-                type: Text,
+                type: Type.Text,
                 required: true,
             },
         },
         bind: {
             create: {
-                role: [system],
+                role: [Role.system],
             },
             read: {
-                role: [nobody],
+                role: [Role.nobody],
             },
             update: {
-                role: [everybody],
+                role: [Role.everybody],
             },
         },
     })
@@ -65,19 +65,19 @@ it("roles_test_token", async function () {
 it("roles_test_token 2", async function () {
     const extra_role_reject_false = await model({
         name: "extra_role_reject_false",
-        database: Store,
+        database: Database.Store,
         schema: {
             field: {
-                type: Text,
+                type: Type.Text,
                 required: true,
             },
         },
         bind: {
             read: {
-                role: [nobody],
+                role: [Role.nobody],
                 reject: {
                     nobody: {
-                        rule: [nobody],
+                        rule: [Role.nobody],
                     },
                 },
             },
@@ -95,19 +95,19 @@ it("roles_test_token 2", async function () {
 it("roles_test_token 3", async function () {
     const extra_role_reject_true = await model({
         name: "extra_role_reject_true",
-        database: Store,
+        database: Database.Store,
         schema: {
             field: {
-                type: Text,
+                type: Type.Text,
                 required: true,
             },
         },
         bind: {
             read: {
-                role: [nobody],
+                role: [Role.nobody],
                 reject: {
                     nobody: {
-                        rule: [everybody],
+                        rule: [Role.everybody],
                     },
                 },
             },

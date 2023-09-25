@@ -1,10 +1,10 @@
 import * as lodash from "lodash"
-import { models } from "../.."
+import Model from "../../../model"
 import { LifecycleFunction } from "../../../../types"
-import { After, Before } from "../../../mixin"
+import * as Mixin from "../../../mixin"
 
 const pre_rule: LifecycleFunction = async function (payload, state) {
-    if (!lodash.includes(models, payload.model)) {
+    if (!lodash.includes(lodash.values(Model), payload.model)) {
         payload.response.error = "has_model"
         return false
     }
@@ -13,8 +13,8 @@ const pre_rule: LifecycleFunction = async function (payload, state) {
         return false
     }
 
-    const befores = Before.bind[payload.method].pre_rule
-    const afters = After.bind[payload.method].pre_rule
+    const befores = Mixin.Before.bind[payload.method].pre_rule
+    const afters = Mixin.After.bind[payload.method].pre_rule
     const pre_rules = [...befores, ...payload.model.bind[payload.method].pre_rule, ...afters]
 
     for (const pre_rule of pre_rules) {

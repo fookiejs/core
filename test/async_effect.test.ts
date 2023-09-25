@@ -1,11 +1,12 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, run, lifecycle } from "../packages/core"
-import { Store } from "../packages/database"
-import { Model, Field } from "../packages/decorator"
+import { model, lifecycle, mixin } from "../packages/builder"
+import { run } from "../packages/run"
+import * as Database from "../packages/database"
 import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import { Text, Array, Boolean, Buffer, Char, Function, Plain } from "../packages/type"
-import { After, Before } from "../packages/mixin"
+import * as Type from "../packages/type"
+import * as Mixin from "../packages/mixin"
+import * as Role from "../packages/role"
 
 it("async effect", async function () {
     let flag = false
@@ -15,10 +16,10 @@ it("async effect", async function () {
 
     const async_effect_model = await model({
         name: "async_effect_model",
-        database: Store,
+        database: Database.Store,
         schema: {
             field: {
-                type: Text,
+                type: Type.Text,
             },
         },
         bind: {

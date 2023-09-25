@@ -1,21 +1,12 @@
 import * as lodash from "lodash"
-import pre_rule from "./src/lifecycles/pre_rule"
-import modify from "./src/lifecycles/modify"
-import role from "./src/lifecycles/role"
-import rule from "./src/lifecycles/rule"
-import method from "./src/lifecycles/method"
-import filter from "./src/lifecycles/filter"
-import effect from "./src/lifecycles/effect"
 import { v4 } from "uuid"
 import {
-    Type,
+    TypeInterface,
     ModelInterface,
     LifecycleFunction,
-    PayloadInterface,
-    StateInterface,
     MixinInterface,
     DatabaseInterface,
-    ResponseInterface,
+    SelectionInterface,
 } from "../../types"
 import deepmerge = require("deepmerge")
 import {
@@ -24,14 +15,12 @@ import {
     generate_typescript_types,
     initialize_model_bindings,
     initialize_model_schema,
-} from "./src/utils"
+} from "../run/src/utils"
+import Model from "../model"
 
 if (!process.env.SYSTEM_TOKEN) {
     process.env.SYSTEM_TOKEN = v4()
 }
-
-export const models: ModelInterface[] = []
-export const Model: { [model_name: string]: ModelInterface } = {}
 
 export async function model(model: Partial<ModelInterface>): Promise<ModelInterface> {
     model.mixins = lodash.isArray(model.mixins) ? model.mixins : []
@@ -57,7 +46,6 @@ export async function model(model: Partial<ModelInterface>): Promise<ModelInterf
     model.methods.test = create_test_function()
     model.methods.sum = create_sumby_function()
 
-    models.push(model as ModelInterface) //TODO
     Model[model.name] = model as ModelInterface
 
     if (process.env.FOOKIE_DEV === "true") {
@@ -69,41 +57,6 @@ export async function model(model: Partial<ModelInterface>): Promise<ModelInterf
 
 export const lifecycle = function (lifecycle: LifecycleFunction) {
     return lifecycle
-}
-
-export async function run(payload: PayloadInterface, state = {} as StateInterface): Promise<ResponseInterface> {
-    state.metrics = {
-        start: Date.now(),
-        lifecycle: [],
-    }
-    state.todo = []
-    payload.response = {
-        data: null,
-        status: false,
-        error: null,
-        validation_error: {},
-    }
-
-    if (!(await pre_rule(payload, state))) {
-        return payload.response
-    }
-
-    await modify(payload, state)
-
-    if (!(await role(payload, state))) {
-        return payload.response
-    }
-
-    if (!(await rule(payload, state))) {
-        payload.response.data = null
-        return payload.response
-    }
-
-    payload.response.status = true
-    await method(payload, state)
-    await filter(payload, state)
-    await effect(payload, state)
-    return lodash.assign({}, payload.response)
 }
 
 export function mixin(mixin: MixinInterface) {
@@ -118,6 +71,14 @@ export const database = function (database: DatabaseInterface) {
     return database
 }
 
-export function type(type: Type) {
+export function type(type: TypeInterface) {
     return type
+}
+
+export function role(role: LifecycleFunction) {
+    return role
+}
+
+export function selection(selection: SelectionInterface) {
+    return selection
 }

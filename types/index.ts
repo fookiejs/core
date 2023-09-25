@@ -3,16 +3,12 @@ export type Lifecycle = "pre_rule" | "modify" | "role" | "rule" | "filter" | "ef
 export interface LifecycleFunction {
     (payload: PayloadInterface, state: StateInterface): Promise<boolean> | Promise<void>
 }
-export interface Type {
+export interface TypeInterface {
     (val: any): boolean
 }
 
-export interface Selection {
+export interface SelectionInterface {
     (payload: PayloadInterface, target_model: ModelInterface): Promise<any>
-}
-
-export interface Modify {
-    (model: Partial<ModelInterface>)
 }
 
 export interface ModelInterface {
@@ -21,7 +17,7 @@ export interface ModelInterface {
     schema: {
         [key: string]: FieldInterface
     }
-    methods?: {
+    methods: {
         [key in Method]?: LifecycleFunction
     }
     bind: {
@@ -50,7 +46,7 @@ export interface ModelInterface {
 }
 
 export interface FieldInterface {
-    type?: Type
+    type?: TypeInterface
     required?: boolean
     unique?: boolean
     default?: any
@@ -66,7 +62,7 @@ export interface FieldInterface {
     maximum?: number
     minimum_size?: number
     maximum_size?: number
-    selection?: Selection
+    selection?: SelectionInterface
     reactives?: {
         to: string
         from: string
@@ -89,10 +85,10 @@ export interface FilterFieldInterface {
 
 export interface DatabaseInterface {
     pk: string
-    pk_type: Type
+    pk_type: TypeInterface
     connect: Function
     disconnect: Function
-    modify: Modify
+    modify: (model: Partial<ModelInterface>) => void
 }
 
 export interface PayloadInterface {
@@ -138,6 +134,7 @@ export interface StateInterface {
         }[]
     }
     todo: PayloadInterface[]
+    [key: string]: any
 }
 
 export interface MixinInterface {
@@ -166,73 +163,4 @@ export interface MixinInterface {
             }
         }
     }
-}
-
-export interface Fookie {
-    Core: CorePackage
-    Database: {
-        Store: DatabaseInterface
-    }
-    Decorator: {
-        Model(_model: Partial<ModelInterface>): (target: any) => void
-        Field(field: Partial<FieldInterface>): (target: any, key: any) => void
-    }
-    Method: MethodPackage
-    Mixin: {
-        After: MixinInterface
-        Before: MixinInterface
-    }
-    Role: {
-        everybody: LifecycleFunction
-        nobody: LifecycleFunction
-        system: LifecycleFunction
-    }
-    Selection: {
-        Random: Selection
-    }
-    Type: {
-        Text: Type
-        Float: Type
-        Integer: Type
-        Array: (Type) => Type
-        Boolean: Type
-        Buffer: Type
-        Plain: Type
-        Char: Type
-        Function: Type
-        Timestamp: Type
-        DateType: Type
-        DateTime: Type
-        Time: Type
-    }
-}
-
-interface CorePackage {
-    models: ModelInterface[]
-    model: (model: Partial<ModelInterface>) => Promise<ModelInterface>
-    lifecycle: (lifecycle: LifecycleFunction) => LifecycleFunction
-    run: (
-        payload:
-            | PayloadInterface
-            | (Omit<PayloadInterface, "model"> & {
-                  model: Function
-              })
-            | (Omit<PayloadInterface, "model"> & {
-                  model: string
-              })
-    ) => Promise<any>
-    mixin: (mixin: MixinInterface) => MixinInterface
-    database: (database: DatabaseInterface) => DatabaseInterface
-    type: (type: Type) => Type
-}
-
-export interface MethodPackage {
-    Create: Method
-    Read: Method
-    Update: Method
-    Delete: Method
-    Count: Method
-    Test: Method
-    Sum: Method
-    Methods: Method[]
 }

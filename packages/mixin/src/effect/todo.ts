@@ -1,4 +1,4 @@
-import { run } from "../../../core"
+import { run } from "../../../run"
 import { LifecycleFunction } from "../../../../types"
 
 const todo: LifecycleFunction = async function (payload, state) {
