@@ -1,5 +1,4 @@
 import * as lodash from "lodash"
-import Model from "../../../dictionary"
 import { LifecycleFunction } from "../../../../types"
 import * as Mixin from "../../../mixin"
 
