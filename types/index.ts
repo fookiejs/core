@@ -139,7 +139,7 @@ export interface StateInterface {
 
 export interface MixinInterface {
     schema?: {
-        [key: string]: FieldInterface | string | number
+        [key: string]: FieldInterface
     }
     bind?: {
         [ls in Method]?: {
