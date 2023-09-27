@@ -7,7 +7,7 @@ import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
 import * as Type from "../packages/type"
 import * as Mixin from "../packages/mixin"
 import * as Role from "../packages/role"
-import Dictionary from "../packages/dictionary"
+import * as Dictionary from "../packages/dictionary"
 
 describe("fookie", async function () {
     it("Decorators", async function () {

@@ -2,7 +2,7 @@ import { run } from "../../../run"
 import { LifecycleFunction } from "../../../../types"
 import { Delete, Read } from "../../../method"
 import * as lodash from "lodash"
-import Dictionary from "../../../dictionary"
+import * as Dictionary from "../../../dictionary"
 
 const cascade_prepare: LifecycleFunction = async function (payload, state) {
     const res = await run({

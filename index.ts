@@ -7,7 +7,7 @@ import * as Role from "./packages/role"
 import * as Selection from "./packages/selection"
 import * as Type from "./packages/type"
 import * as Types from "./types/index"
-import Dictionary from "./packages/dictionary"
+import * as Dictionary from "./packages/dictionary"
 
 async function use<T>(
     cb: (fookie: { Dictionary; Builder; Database; Method; Mixin; Role; Selection; Type; Types; use; run }) => T

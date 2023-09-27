@@ -164,13 +164,3 @@ export interface MixinInterface {
         }
     }
 }
-
-export interface DictionaryInterface {
-    Type: { [name: string]: TypeInterface }
-    Model: { [name: string]: ModelInterface }
-    Database: { [name: string]: DatabaseInterface }
-    Mixin: { [name: string]: MixinInterface }
-    Role: { [name: string]: LifecycleFunction }
-    Selection: { [name: string]: SelectionInterface }
-    Lifecycle: { [name: string]: LifecycleFunction }
-}

@@ -16,7 +16,7 @@ import {
     initialize_model_bindings,
     initialize_model_schema,
 } from "../run/src/utils"
-import Dictionary from "../dictionary"
+import * as Dictionary from "../dictionary"
 
 if (!process.env.SYSTEM_TOKEN) {
     process.env.SYSTEM_TOKEN = v4()
