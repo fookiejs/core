@@ -7,7 +7,6 @@ import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
 import * as Type from "../packages/type"
 import * as Mixin from "../packages/mixin"
 import * as Role from "../packages/role"
-import Selection from "../packages/selection"
 
 it("Unique", async function () {
     const UniqueNumber = await model({
