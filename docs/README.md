@@ -395,7 +395,7 @@ The basic data types you can use in FookieJS are critical for defining the struc
 | DateTime | Accepts timestamp values that contain both date and time information. |
 | Timestamp | Accepts timestamp values. |
 
-**Query and Response Structure**
+# Query and Response Structure
 
 ## **Run Function and Usage**
 In FookieJS, the **`run`** function allows to execute a specific method on a model. This function facilitates the implementation of CRUD operations (Create, Read, Update, Delete) as well as other specialized methods. Basically, the **`run`** function is the trigger for a model to perform a specific operation.
@@ -422,10 +422,10 @@ const response = await run({
 });
 ```
 
-**Error Management**
+### Error Management
 In a software application, unexpected situations and errors are inevitable. FookieJS has an effective error handling mechanism to manage such situations. Thanks to this mechanism, errors are reported to both the developer and the users of the application with meaningful and informative messages.
 
-## ****Standard Errors****
+## Standard Errors
 FookieJS throws error messages for many common error conditions. 
 
 ```javascript
