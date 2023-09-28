@@ -422,7 +422,7 @@ const response = await run({
 });
 ```
 
-### Error Management
+# Error Management
 In a software application, unexpected situations and errors are inevitable. FookieJS has an effective error handling mechanism to manage such situations. Thanks to this mechanism, errors are reported to both the developer and the users of the application with meaningful and informative messages.
 
 ## Standard Errors
