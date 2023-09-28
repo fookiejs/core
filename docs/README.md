@@ -107,8 +107,8 @@ todo_response
 # **Packages and Modules**
 
 FookieJS makes your application development process simple and effective through integrated packages and modules. These modules come together to fulfill the basic needs of your application.
-## **Temel Paketler**
 
+## **Core Packages**
 ### **Builder**
 It is the basic building block of your application. It allows you to define models and perform operations on these models.
 
