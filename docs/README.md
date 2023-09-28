@@ -14,7 +14,7 @@ npm install fookie
 
 ## **Hello World!**
 
-```jsx
+```javascript
 import {
   Dictionary,
   Builder,
@@ -141,7 +141,7 @@ With FookieJS, creating models, the basic building block of your application, is
 ## **Model Definition and Properties**
 Models are the structure that helps your application interact with the database. Each model represents a specific data structure and contains information about how that structure is stored, how it is queried, etc.
 
-```jsx
+```javascript
 import {
   Dictionary,
   Builder,
@@ -258,7 +258,7 @@ For each model operation, **`reject`** and **`accept`** are used to accept or re
 The **`lifecycle`** functions you specify in **`reject`** and **`accept`** are used to determine whether a transaction is rejected or accepted.
 
 ### Example
-```jsx
+```javascript
 import {
   Dictionary,
   Builder,
@@ -400,7 +400,7 @@ The basic data types you can use in FookieJS are critical for defining the struc
 ## **Run Function and Usage**
 In FookieJS, the **`run`** function allows to execute a specific method on a model. This function facilitates the implementation of CRUD operations (Create, Read, Update, Delete) as well as other specialized methods. Basically, the **`run`** function is the trigger for a model to perform a specific operation.
 
-```jsx
+```javascript
 import { Dictionary, Method, run } from "fookie";
 
 const response = await run({
@@ -428,7 +428,7 @@ In a software application, unexpected situations and errors are inevitable. Fook
 ## ****Standard Errors****
 FookieJS throws error messages for many common error conditions. 
 
-```jsx
+```javascript
 const response = await run({
     model: Dictionary.Model.NOT_EXISTED_MODEL,
     method: Method.Read,
@@ -448,7 +448,7 @@ console.log(response)
 ## **Validation Errors**
 FookieJS provides a specific set of types and rules for the fields defined on the models. When data is entered that does not comply with these rules, the system automatically throws a validation error.
 
-```jsx
+```javascript
 import {
   Dictionary,
   Builder,
