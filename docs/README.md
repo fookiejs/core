@@ -135,10 +135,10 @@ Defines data selection methods, used when selecting from data within a given mod
 ### **Dictionary**
 It allows you to assign to here like something role, mixin and model
 
-# **Model Oluşturma**
+# **Model Creation**
 With FookieJS, creating models, the basic building block of your application, is extremely simple. Models define the data structure of your application and the operations on these structures. In this section, we explain how a model is defined and its most basic properties.
 
-## **Model Tanımı ve Özellikleri**
+## **Model Definition and Properties**
 Models are the structure that helps your application interact with the database. Each model represents a specific data structure and contains information about how that structure is stored, how it is queried, etc.
 
 ```jsx
@@ -189,7 +189,7 @@ import { init_redis } from "fookie_redis";
 })();
 ```
 
-## **Temel Model Özellikleri**
+## **Defination of Model Fields**
 
 | key | description |
 | --- | --- |
