@@ -1,34 +1,28 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, lifecycle, mixin } from "../packages/builder"
-import { run } from "../packages/run"
-import * as Database from "../packages/database"
-import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import * as Type from "../packages/type"
-import * as Mixin from "../packages/mixin"
-import * as Lifecycle from "../packages/lifecycle"
+import * as Fookie from "../index"
 
 it("test_method", async function () {
-    const test_model = await model({
+    const test_model = await Fookie.Builder.model({
         name: "test_model",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
             field: {
-                type: Type.Char,
+                type: Fookie.Dictionary.Type.char,
             },
         },
         bind: {
             read: {
-                role: [Lifecycle.nobody],
+                role: [Fookie.Dictionary.Lifecycle.nobody],
             },
             test: {},
             create: {},
         },
     })
 
-    const res1 = await run<unknown, "test">({
+    const res1 = await Fookie.run<unknown, "test">({
         model: test_model,
-        method: Test,
+        method: Fookie.Method.Test,
         options: {
             method: "read",
         },
@@ -37,14 +31,14 @@ it("test_method", async function () {
     assert.equal(res1.data.status, false)
     assert.equal(res1.status, true)
 
-    const res2 = await run({
+    const res2 = await Fookie.run({
         model: test_model,
-        method: Test,
+        method: Fookie.Method.Test,
         body: {
             field: "h",
         },
         options: {
-            method: Create,
+            method: Fookie.Method.Create,
         },
     })
 

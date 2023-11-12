@@ -1,22 +1,17 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, lifecycle, mixin } from "../packages/builder"
-import { run } from "../packages/run"
-import * as Database from "../packages/database"
-import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import * as Type from "../packages/type"
-import * as Mixin from "../packages/mixin"
+import * as Fookie from "../index"
 
 it("Attributes", async function () {
-    const attributes_model = await model({
+    const attributes_model = await Fookie.Builder.model({
         name: "ClassModelAttributes",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
-            field1: { type: Type.Text, required: true },
-            field2: { type: Type.Text, required: true },
-            field3: { type: Type.Text, required: true },
-            field4: { type: Type.Text, required: true },
-            field5: { type: Type.Text, required: true },
+            field1: { type: Fookie.Dictionary.Type.text, required: true },
+            field2: { type: Fookie.Dictionary.Type.text, required: true },
+            field3: { type: Fookie.Dictionary.Type.text, required: true },
+            field4: { type: Fookie.Dictionary.Type.text, required: true },
+            field5: { type: Fookie.Dictionary.Type.text, required: true },
         },
         bind: {
             test: {},
@@ -27,9 +22,9 @@ it("Attributes", async function () {
         },
     })
 
-    await run({
+    await Fookie.run({
         model: attributes_model,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             field1: "abc",
             field2: "abc",
@@ -39,9 +34,9 @@ it("Attributes", async function () {
         },
     })
 
-    const response = await run({
+    const response = await Fookie.run({
         model: attributes_model,
-        method: Read,
+        method: Fookie.Method.Read,
         query: {
             attributes: ["field1", "field4"],
         },

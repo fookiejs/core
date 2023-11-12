@@ -1,5 +1,5 @@
 import * as lodash from "lodash"
-import * as Dictionary from "../../../dictionary"
+import { Dictionary } from "../../../dictionary"
 import { LifecycleFunction, Method } from "../../../../types"
 import * as Mixin from "../../../mixin"
 
@@ -13,8 +13,8 @@ const pre_rule: LifecycleFunction<unknown, Method> = async function (payload, st
         return false
     }
 
-    const befores = Mixin.Before.bind[payload.method].pre_rule
-    const afters = Mixin.After.bind[payload.method].pre_rule
+    const befores = Mixin.before.bind[payload.method].pre_rule
+    const afters = Mixin.after.bind[payload.method].pre_rule
     const pre_rules = [...befores, ...payload.model.bind[payload.method].pre_rule, ...afters]
 
     for (const pre_rule of pre_rules) {

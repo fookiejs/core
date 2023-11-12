@@ -20,28 +20,27 @@ const validate_query: LifecycleFunction<unknown, Method> = async function (paylo
 
     for (const key of lodash.keys(payload.query.filter)) {
         const field = payload.query.filter[key] as FilterFieldInterface
-        if (lodash.isObject(field)) {
-            if (field.gte && !lodash.isNumber(field.gte)) {
-                return false
-            }
-            if (field.gt && !lodash.isNumber(field.gt)) {
-                return false
-            }
-            if (field.lte && !lodash.isNumber(field.lte)) {
-                return false
-            }
-            if (field.lt && !lodash.isNumber(field.lt)) {
-                return false
-            }
-            if (field.inc && !lodash.isString(field.inc)) {
-                return false
-            }
-            if (field.in && !lodash.isArray(field.in)) {
-                return false
-            }
-            if (field.not_in && !lodash.isArray(field.not_in)) {
-                return false
-            }
+
+        if (field.gte && !lodash.isNumber(field.gte)) {
+            return false
+        }
+        if (field.gt && !lodash.isNumber(field.gt)) {
+            return false
+        }
+        if (field.lte && !lodash.isNumber(field.lte)) {
+            return false
+        }
+        if (field.lt && !lodash.isNumber(field.lt)) {
+            return false
+        }
+        if (field.inc && !lodash.isString(field.inc)) {
+            return false
+        }
+        if (field.in && !lodash.isArray(field.in)) {
+            return false
+        }
+        if (field.not_in && !lodash.isArray(field.not_in)) {
+            return false
         }
     }
     return true

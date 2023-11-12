@@ -16,7 +16,7 @@ import need_method_in_options from "../rule/need_method_in_options"
 import need_field_in_options from "../rule/need_field_in_options"
 import { MixinInterface } from "../../../../types"
 
-const Before: MixinInterface = {
+const before: MixinInterface = {
     bind: {
         create: {
             pre_rule: [validate_payload, default_payload, has_method, only_client, only_server, db_connect],
@@ -77,4 +77,4 @@ const Before: MixinInterface = {
     },
 }
 
-export { Before }
+export { before }

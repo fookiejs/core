@@ -1,40 +1,35 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, lifecycle, mixin } from "../packages/builder"
-import { run } from "../packages/run"
-import * as Database from "../packages/database"
-import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import * as Type from "../packages/type"
-import * as Mixin from "../packages/mixin"
+import * as Fookie from "../index"
 
 it("native types", async function () {
-    const async_effect_model = await model({
+    const async_effect_model = await Fookie.Builder.model({
         name: "async_effect_model",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
             text: {
-                type: Type.Text,
+                type: Fookie.Dictionary.Type.text,
             },
             num: {
-                type: Type.Integer,
+                type: Fookie.Dictionary.Type.integer,
             },
             obj: {
-                type: Type.Plain,
+                type: Fookie.Dictionary.Type.plain,
             },
             arr: {
-                type: Type.Array(Type.Integer),
+                type: Fookie.Dictionary.Type.array(Fookie.Dictionary.Type.integer),
             },
             bl: {
-                type: Type.Boolean,
+                type: Fookie.Dictionary.Type.boolean,
             },
             bf: {
-                type: Type.Buffer,
+                type: Fookie.Dictionary.Type.buffer,
             },
             ch: {
-                type: Type.Char,
+                type: Fookie.Dictionary.Type.char,
             },
             fn: {
-                type: Type.Function,
+                type: Fookie.Dictionary.Type.func,
             },
         },
         bind: {
@@ -46,9 +41,9 @@ it("native types", async function () {
         },
     })
 
-    const res = await run({
+    const res = await Fookie.run({
         model: async_effect_model,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             text: "hi",
             num: 1,

@@ -1,32 +1,26 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model } from "../packages/builder"
-import { run } from "../packages/run"
-import * as Database from "../packages/database"
-
-import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import * as Type from "../packages/type"
-import * as Mixin from "../packages/mixin"
+import * as Fookie from "../index"
 
 it("field control", async function () {
-    const field_control_model = await model({
+    const field_control_model = await Fookie.Builder.model({
         name: "field_control_model",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
             f_number_1: {
-                type: Type.Integer,
+                type: Fookie.Dictionary.Type.integer,
                 minimum: 0,
             },
             f_number_2: {
-                type: Type.Integer,
+                type: Fookie.Dictionary.Type.integer,
                 maximum: 100,
             },
             f_array_1: {
-                type: Type.Array(Type.Integer),
+                type: Fookie.Dictionary.Type.array(Fookie.Dictionary.Type.integer),
                 maximum_size: 2,
             },
             f_array_2: {
-                type: Type.Array(Type.Integer),
+                type: Fookie.Dictionary.Type.array(Fookie.Dictionary.Type.integer),
                 minimum_size: 2,
             },
         },
@@ -39,49 +33,49 @@ it("field control", async function () {
         },
     })
 
-    const res_1 = await run({
+    const res_1 = await Fookie.run({
         model: field_control_model,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             f_number_1: -1,
         },
     })
 
-    const res_2 = await run({
+    const res_2 = await Fookie.run({
         model: field_control_model,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             f_number_2: 101,
         },
     })
 
-    const res_3 = await run({
+    const res_3 = await Fookie.run({
         model: field_control_model,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             f_number_1: 0,
         },
     })
 
-    const res_4 = await run({
+    const res_4 = await Fookie.run({
         model: field_control_model,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             f_number_2: 100,
         },
     })
 
-    const res_5 = await run({
+    const res_5 = await Fookie.run({
         model: field_control_model,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             f_array_1: [1, 2, 3, 4],
         },
     })
 
-    const res_6 = await run({
+    const res_6 = await Fookie.run({
         model: field_control_model,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             f_array_2: [],
         },

@@ -6,9 +6,10 @@ export interface LifecycleFunction<E, M extends Method> {
 }
 
 export interface TypeInterface {
-    name: string
+    native: string
     controller: (val: any) => boolean
     mock: any
+    query: any
 }
 
 export interface ModelInterface {
@@ -71,11 +72,11 @@ export interface FieldInterface {
 }
 
 export interface FilterFieldInterface {
+    equals: any
     lte: any
     lt: any
     gte: any
     gt: any
-    eq: any
     not: any
     in: any[]
     not_in: any[]
@@ -196,4 +197,43 @@ export interface MixinInterface {
             }
         }
     }
+}
+
+export interface ModelDictionary {
+    [key: string]: ModelInterface
+}
+
+export interface DatabaseDictionary {
+    store: DatabaseInterface
+    [key: string]: DatabaseInterface
+}
+
+export interface TypeDictionary {
+    text: TypeInterface
+    float: TypeInterface
+    integer: TypeInterface
+    boolean: TypeInterface
+    buffer: TypeInterface
+    plain: TypeInterface
+    char: TypeInterface
+    func: TypeInterface
+    array: (typeFunc: TypeInterface) => TypeInterface
+    date_type: TypeInterface
+    time: TypeInterface
+    date_time: TypeInterface
+    timestamp: TypeInterface
+    [key: string]: TypeInterface | typeof this.array
+}
+
+export interface MixinDictionary {
+    before: MixinInterface
+    after: MixinInterface
+    [key: string]: MixinInterface
+}
+
+export interface LifecycleDictionary {
+    system: LifecycleFunction<unknown, Method>
+    everybody: LifecycleFunction<unknown, Method>
+    nobody: LifecycleFunction<unknown, Method>
+    [key: string]: LifecycleFunction<unknown, Method>
 }

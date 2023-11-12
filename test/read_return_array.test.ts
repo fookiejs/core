@@ -1,19 +1,14 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, lifecycle, mixin } from "../packages/builder"
-import { run } from "../packages/run"
-import * as Database from "../packages/database"
-import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import * as Type from "../packages/type"
-import * as Mixin from "../packages/mixin"
+import * as Fookie from "../index"
 
 it("Read return type must be array", async function () {
-    let read_return_array = await model({
+    let read_return_array = await Fookie.Builder.model({
         name: "read_return_array",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
             msg: {
-                type: Type.Text,
+                type: Fookie.Dictionary.Type.text,
             },
         },
         bind: {
@@ -23,18 +18,18 @@ it("Read return type must be array", async function () {
     })
 
     for (let i = 0; i < 10; i++) {
-        await run({
+        await Fookie.run({
             model: read_return_array,
-            method: Create,
+            method: Fookie.Method.Create,
             body: {
                 msg: "hi",
             },
         })
     }
-    let res = await run({
+    let res = await Fookie.run({
         token: process.env.SYSTEM_TOKEN,
         model: read_return_array,
-        method: Read,
+        method: Fookie.Method.Read,
     })
 
     assert.equal(res.status, true)

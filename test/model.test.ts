@@ -1,28 +1,23 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, lifecycle, mixin } from "../packages/builder"
-import { run } from "../packages/run"
-import * as Database from "../packages/database"
-import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import * as Type from "../packages/type"
-import * as Mixin from "../packages/mixin"
+import * as Fookie from "../index"
 
-import * as Dictionary from "../packages/dictionary"
+import { Dictionary } from "../packages/dictionary"
 
 describe("fookie", async function () {
     it("Decorators", async function () {
-        const user = await model({
+        const user = await Fookie.Builder.model({
             name: "user",
-            database: Database.Store,
+            database: Fookie.Dictionary.Database.store,
             schema: {
-                name: { type: Type.Text, required: true },
-                password: { type: Type.Text, required: true },
+                name: { type: Fookie.Dictionary.Type.text, required: true },
+                password: { type: Fookie.Dictionary.Type.text, required: true },
             },
         })
 
-        const res = await run({
+        const res = await Fookie.run({
             model: user,
-            method: Create,
+            method: Fookie.Method.Create,
             body: {
                 name: "umut",
                 password: "umut",
@@ -34,12 +29,12 @@ describe("fookie", async function () {
     })
 
     it("Model create", async function () {
-        await model({
+        await Fookie.Builder.model({
             name: "account",
-            database: Database.Store,
+            database: Fookie.Dictionary.Database.store,
             schema: {
                 name: {
-                    type: Type.Text,
+                    type: Fookie.Dictionary.Type.text,
                     required: true,
                 },
             },

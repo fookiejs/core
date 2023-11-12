@@ -1,34 +1,27 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, lifecycle, mixin } from "../packages/builder"
-import { run } from "../packages/run"
-import * as Database from "../packages/database"
-import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import * as Type from "../packages/type"
-import * as Mixin from "../packages/mixin"
 import * as Fookie from "../index"
-import * as Lifecycle from "../packages/lifecycle"
 
 it("check auth 1", async function () {
-    let child_setting = await model({
+    let child_setting = await Fookie.Builder.model({
         name: "child_setting",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
             msg: {
-                type: Type.Text,
+                type: Fookie.Dictionary.Type.text,
             },
         },
         bind: {
             create: {
-                role: [Lifecycle.nobody],
+                role: [Fookie.Dictionary.Lifecycle.nobody],
             },
         },
     })
 
-    let create_res = await run({
+    let create_res = await Fookie.run({
         token: process.env.SYSTEM_TOKEN,
         model: child_setting,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             msg: "hola",
         },
@@ -37,25 +30,25 @@ it("check auth 1", async function () {
 })
 
 it("check auth 2", async function () {
-    const child_setting2 = await model({
+    const child_setting2 = await Fookie.Builder.model({
         name: "child_setting2",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
             msg: {
-                type: Type.Text,
+                type: Fookie.Dictionary.Type.text,
             },
         },
         bind: {
             create: {
-                role: [Lifecycle.nobody],
+                role: [Fookie.Dictionary.Lifecycle.nobody],
             },
         },
     })
 
-    let create_res_2 = await run({
+    let create_res_2 = await Fookie.run({
         token: process.env.SYSTEM_TOKEN,
         model: child_setting2,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             msg: "hola",
         },
@@ -67,20 +60,20 @@ it("check auth 2", async function () {
 it(" check auth reject modify", async function () {
     let flag = false
 
-    const test_r_modify = lifecycle(async function (payload, state) {
+    const test_r_modify = Fookie.Builder.lifecycle(async function (payload, state) {
         flag = true
     })
-    const msg_reject_1 = await model({
+    const msg_reject_1 = await Fookie.Builder.model({
         name: "msg_reject_1",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
             msg: {
-                type: Type.Text,
+                type: Fookie.Dictionary.Type.text,
             },
         },
         bind: {
             create: {
-                role: [Lifecycle.nobody],
+                role: [Fookie.Dictionary.Lifecycle.nobody],
                 reject: {
                     nobody: {
                         modify: [test_r_modify],
@@ -90,10 +83,10 @@ it(" check auth reject modify", async function () {
         },
     })
 
-    let create_res_2 = await run({
+    let create_res_2 = await Fookie.run({
         token: process.env.SYSTEM_TOKEN,
         model: msg_reject_1,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             msg: "hola",
         },
@@ -106,21 +99,21 @@ it(" check auth reject modify", async function () {
 it(" check auth accept modify", async function () {
     let flag = false
 
-    const test_a_modify = lifecycle(async function (payload, state) {
+    const test_a_modify = Fookie.Builder.lifecycle(async function (payload, state) {
         flag = true
     })
 
-    const msg_accept_0 = await model({
+    const msg_accept_0 = await Fookie.Builder.model({
         name: "msg_accept_0",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
             msg: {
-                type: Type.Text,
+                type: Fookie.Dictionary.Type.text,
             },
         },
         bind: {
             create: {
-                role: [Lifecycle.everybody],
+                role: [Fookie.Dictionary.Lifecycle.everybody],
                 accept: {
                     everybody: {
                         modify: [test_a_modify],
@@ -130,9 +123,9 @@ it(" check auth accept modify", async function () {
         },
     })
 
-    let create_res_2 = await run({
+    let create_res_2 = await Fookie.run({
         model: msg_accept_0,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             msg: "hola",
         },
@@ -145,27 +138,27 @@ it(" check auth accept modify", async function () {
 it(" check auth array", async function () {
     let flag = false
 
-    const test_a_modify = lifecycle(async function (payload, state) {
+    const test_a_modify = Fookie.Builder.lifecycle(async function (payload, state) {
         flag = true
     })
-    const msg_array = await model({
+    const msg_array = await Fookie.Builder.model({
         name: "msg_array",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
             msg: {
-                type: Type.Text,
+                type: Fookie.Dictionary.Type.text,
             },
         },
         bind: {
             create: {
-                role: [Lifecycle.nobody, Lifecycle.everybody],
+                role: [Fookie.Dictionary.Lifecycle.nobody, Fookie.Dictionary.Lifecycle.everybody],
             },
         },
     })
 
-    let create_res_2 = await run({
+    let create_res_2 = await Fookie.run({
         model: msg_array,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             msg: "hola",
         },
@@ -175,16 +168,16 @@ it(" check auth array", async function () {
 })
 
 it(" check auth field write", async function () {
-    const caf_role = lifecycle(async function (payload, state) {
+    const caf_role = Fookie.Builder.lifecycle(async function (payload, state) {
         return false
     })
 
-    const caf = await model({
+    const caf = await Fookie.Builder.model({
         name: "caf",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
             msg: {
-                type: Type.Text,
+                type: Fookie.Dictionary.Type.text,
                 write: [caf_role],
             },
         },
@@ -195,9 +188,9 @@ it(" check auth field write", async function () {
         },
     })
 
-    let create_res_2 = await run({
+    let create_res_2 = await Fookie.run({
         model: caf,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             msg: "hola",
         },
@@ -207,41 +200,38 @@ it(" check auth field write", async function () {
 })
 
 it(" check auth field read", async function () {
-    const car_role = lifecycle(async function (payload, state) {
+    const car_role = Fookie.Builder.lifecycle(async function (payload, state) {
         return false
     })
 
-    const car = await model({
+    const car = await Fookie.Builder.model({
         name: "car",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
             msg: {
-                type: Type.Text,
+                type: Fookie.Dictionary.Type.text,
                 read: [car_role],
             },
         },
         bind: {
             create: {
-                role: [Lifecycle.everybody],
+                role: [Fookie.Dictionary.Lifecycle.everybody],
             },
         },
     })
 
-    await run({
+    await Fookie.run({
         model: car,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             msg: "hola",
         },
     })
 
-    let read_res = await run({
+    let read_res = await Fookie.run<any, "read">({
         token: process.env.SYSTEM_TOKEN,
         model: car,
-        method: Read,
-        body: {
-            msg: "hola",
-        },
+        method: Fookie.Method.Read,
     })
 
     for (const data of read_res.data) {
@@ -252,21 +242,21 @@ it(" check auth field read", async function () {
 it(" check auth reject rule", async function () {
     let flag = false
 
-    const test_r_rule = lifecycle(async function (payload, state) {
+    const test_r_rule = Fookie.Builder.lifecycle(async function (payload, state) {
         flag = true
         return true
     })
-    const msg_reject_2 = await model({
+    const msg_reject_2 = await Fookie.Builder.model({
         name: "msg_reject_2",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
             msg: {
-                type: Type.Text,
+                type: Fookie.Dictionary.Type.text,
             },
         },
         bind: {
             create: {
-                role: [Lifecycle.nobody],
+                role: [Fookie.Dictionary.Lifecycle.nobody],
                 reject: {
                     nobody: {
                         rule: [test_r_rule],
@@ -276,10 +266,10 @@ it(" check auth reject rule", async function () {
         },
     })
 
-    let create_res_2 = await run({
+    let create_res_2 = await Fookie.run({
         token: process.env.SYSTEM_TOKEN,
         model: msg_reject_2,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             msg: "hola",
         },
@@ -292,22 +282,22 @@ it(" check auth reject rule", async function () {
 it(" check auth accept rule", async function () {
     let flag = false
 
-    const test_a_rule = lifecycle(async function (payload, state) {
+    const test_a_rule = Fookie.Builder.lifecycle(async function (payload, state) {
         flag = true
         return false
     })
 
-    const msg_accept_1 = await model({
+    const msg_accept_1 = await Fookie.Builder.model({
         name: "msg_accept_1",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
             msg: {
-                type: Type.Text,
+                type: Fookie.Dictionary.Type.text,
             },
         },
         bind: {
             create: {
-                role: [Lifecycle.everybody],
+                role: [Fookie.Dictionary.Lifecycle.everybody],
                 accept: {
                     everybody: {
                         rule: [test_a_rule],
@@ -317,10 +307,10 @@ it(" check auth accept rule", async function () {
         },
     })
 
-    let create_res_2 = await run({
+    let create_res_2 = await Fookie.run({
         token: process.env.SYSTEM_TOKEN,
         model: msg_accept_1,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             msg: "hola",
         },
@@ -331,21 +321,21 @@ it(" check auth accept rule", async function () {
 })
 
 it(" check auth reject rule 2", async function () {
-    const test_a_rule_3 = lifecycle(async function (payload, state) {
+    const test_a_rule_3 = Fookie.Builder.lifecycle(async function (payload, state) {
         return false
     })
 
-    const msg_reject_3 = await model({
+    const msg_reject_3 = await Fookie.Builder.model({
         name: "msg_reject_3",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
             msg: {
-                type: Type.Text,
+                type: Fookie.Dictionary.Type.text,
             },
         },
         bind: {
             create: {
-                role: [Lifecycle.nobody, Lifecycle.everybody],
+                role: [Fookie.Dictionary.Lifecycle.nobody, Fookie.Dictionary.Lifecycle.everybody],
                 reject: {
                     nobody: {
                         rule: [test_a_rule_3],
@@ -355,10 +345,10 @@ it(" check auth reject rule 2", async function () {
         },
     })
 
-    let create_res_2 = await run({
+    let create_res_2 = await Fookie.run({
         token: process.env.SYSTEM_TOKEN,
         model: msg_reject_3,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             msg: "hola",
         },

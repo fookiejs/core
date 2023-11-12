@@ -1,5 +1,4 @@
 import db_disconnect from "../effect/db_disconnect"
-import simplified from "../filter/simplified"
 import validate_query from "../rule/validate_query"
 import reactive_prepare from "../modify/reactive_prepare"
 import filter_fields from "../modify/filter_fields"
@@ -18,7 +17,7 @@ import { MixinInterface } from "../../../../types"
 import need_field_in_options from "../rule/need_field_in_options"
 import validate_body from "../rule/validate_body"
 
-const After: MixinInterface = {
+const after: MixinInterface = {
     bind: {
         create: {
             modify: [filter_fields, pk],
@@ -32,7 +31,7 @@ const After: MixinInterface = {
             modify: [filter_fields, pk],
             rule: [validate_query],
             pre_rule: [has_method, validate_attributes],
-            filter: [simplified],
+            filter: [],
             effect: [db_disconnect],
             role: [],
         },
@@ -79,4 +78,4 @@ const After: MixinInterface = {
     },
 }
 
-export { After }
+export { after }

@@ -3,8 +3,8 @@ import { LifecycleFunction, Method } from "../../../../types"
 import * as Mixin from "../../../mixin"
 
 const rule: LifecycleFunction<unknown, Method> = async function (payload, state) {
-    const befores = Mixin.Before.bind[payload.method].rule
-    const afters = Mixin.After.bind[payload.method].rule
+    const befores = Mixin.before.bind[payload.method].rule
+    const afters = Mixin.after.bind[payload.method].rule
     const rules = [...befores, ...payload.model.bind[payload.method].rule, ...afters]
 
     for (const rule of rules) {

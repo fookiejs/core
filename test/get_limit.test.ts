@@ -1,18 +1,13 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, lifecycle, mixin } from "../packages/builder"
-import { run } from "../packages/run"
-import * as Database from "../packages/database"
-import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import * as Type from "../packages/type"
-import * as Mixin from "../packages/mixin"
+import * as Fookie from "../index"
 
 it("get limit", async function () {
-    const LimitTestModel = await model({
-        database: Database.Store,
+    const LimitTestModel = await Fookie.Builder.model({
+        database: Fookie.Dictionary.Database.store,
         name: "LimitTestModel",
         schema: {
-            field: { type: Type.Text, required: true },
+            field: { type: Fookie.Dictionary.Type.text, required: true },
         },
         bind: {
             test: {},
@@ -24,17 +19,17 @@ it("get limit", async function () {
     })
 
     for (let i = 0; i < 10; i++) {
-        await run({
+        await Fookie.run({
             model: LimitTestModel,
-            method: Create,
+            method: Fookie.Method.Create,
             body: {
                 field: "val",
             },
         })
     }
-    const res = await run({
+    const res = await Fookie.run({
         model: LimitTestModel,
-        method: Read,
+        method: Fookie.Method.Read,
         query: {
             limit: 2,
         },

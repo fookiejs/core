@@ -1,28 +1,21 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, lifecycle, mixin } from "../packages/builder"
-import { run } from "../packages/run"
-import * as Database from "../packages/database"
-import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import * as Type from "../packages/type"
-import * as Mixin from "../packages/mixin"
-
-import Selection from "../packages/selection"
+import * as Fookie from "../index"
 
 describe("valid payload", async function () {
-    const InvalidPayloadModel = await model({
+    const InvalidPayloadModel = await Fookie.Builder.model({
         name: "InvalidPayloadModel",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
-            field: { type: Type.Text, required: true },
-            field2: { type: Type.Text, required: true },
+            field: { type: Fookie.Dictionary.Type.text, required: true },
+            field2: { type: Fookie.Dictionary.Type.text, required: true },
         },
     })
 
     it("valid payload 1", async function () {
-        const res = await run({
+        const res = await Fookie.run({
             model: InvalidPayloadModel,
-            method: Read,
+            method: Fookie.Method.Read,
             options: {
                 drop: "abc",
             },
@@ -33,9 +26,9 @@ describe("valid payload", async function () {
     })
 
     it("valid payload 3", async function () {
-        const res = await run({
+        const res = await Fookie.run({
             model: InvalidPayloadModel,
-            method: Create,
+            method: Fookie.Method.Create,
             body: 1,
         })
         assert.equal(res.status, false)
@@ -43,7 +36,7 @@ describe("valid payload", async function () {
     })
 
     it("valid payload 4", async function () {
-        const res = await run({
+        const res = await Fookie.run({
             model: InvalidPayloadModel,
             method: "read",
             options: 1,
@@ -53,7 +46,7 @@ describe("valid payload", async function () {
     })
 
     it("valid payload 5", async function () {
-        const res = await run({
+        const res = await Fookie.run({
             model: InvalidPayloadModel,
             method: "read",
             query: 1,
@@ -63,7 +56,7 @@ describe("valid payload", async function () {
     })
 
     it("valid payload 6", async function () {
-        const res = await run({
+        const res = await Fookie.run({
             model: InvalidPayloadModel,
             method: "read",
             options: {
@@ -75,7 +68,7 @@ describe("valid payload", async function () {
     })
 
     it("valid payload 7", async function () {
-        const res = await run({
+        const res = await Fookie.run({
             model: InvalidPayloadModel,
             method: "read",
             options: {
@@ -87,7 +80,7 @@ describe("valid payload", async function () {
     })
 
     it("valid payload 8", async function () {
-        const res = await run({
+        const res = await Fookie.run({
             model: InvalidPayloadModel,
             method: "read",
             options: {

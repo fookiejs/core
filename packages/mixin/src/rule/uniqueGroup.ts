@@ -20,7 +20,7 @@ const unique_group: LifecycleFunction<unknown, any> = async function (payload) {
                 payload.model.schema[field].unique_group.includes(group) &&
                 payload.body[field]
             ) {
-                filter[field] = payload.body[field]
+                filter[field] = { equals: payload.body[field] }
             }
         }
 

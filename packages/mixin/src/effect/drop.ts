@@ -12,7 +12,7 @@ const drop: LifecycleFunction<unknown, any> = async function (payload) {
                 method: Delete,
                 query: {
                     filter: {
-                        pk: payload.response.data[payload.model.database.pk],
+                        pk: { equals: payload.response.data[payload.model.database.pk] },
                     },
                 },
             })

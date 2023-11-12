@@ -1,11 +1,11 @@
 import * as lodash from "lodash"
 import { v4 } from "uuid"
 import * as Type from "../../../type"
-import { FilterFieldInterface, DatabaseInterface } from "../../../../types"
+import { DatabaseInterface } from "../../../../types"
 
-export const Store: DatabaseInterface = {
+export const store: DatabaseInterface = {
     pk: "id",
-    pk_type: Type.Text,
+    pk_type: Type.text,
     connect: async function () {
         return true
     },
@@ -65,39 +65,36 @@ export const Store: DatabaseInterface = {
     },
 }
 
-function poolFilter(pool: any[], filter) {
+function poolFilter(pool, filter) {
     return pool.filter(function (entity) {
         for (const field in filter) {
-            const value: FilterFieldInterface = filter[field]
-            if (typeof value === "object") {
-                if (value.gte && entity[field] < value.gte) {
-                    return false
-                }
-                if (value.gt && entity[field] <= value.gt) {
-                    return false
-                }
-                if (value.lte && entity[field] > value.lte) {
-                    return false
-                }
-                if (value.lt && entity[field] >= value.lt) {
-                    return false
-                }
-                if (value.eq && entity[field] !== value.eq) {
-                    return false
-                }
-                if (value.not && entity[field] === value.not) {
-                    return false
-                }
-                if (value.in && !lodash.includes(value.in, entity[field])) {
-                    return false
-                }
-                if (value.not_in && lodash.includes(value.not_in, entity[field])) {
-                    return false
-                }
-                if (value.inc && !entity[field].includes(value.inc)) {
-                    return false
-                }
-            } else if (entity[field] !== value) {
+            const value = filter[field]
+
+            if (value.equals !== undefined && entity[field] !== value.equals) {
+                return false
+            }
+            if (value.not !== undefined && entity[field] === value.not) {
+                return false
+            }
+            if (value.in && !value.in.includes(entity[field])) {
+                return false
+            }
+            if (value.not_in && value.not_in.includes(entity[field])) {
+                return false
+            }
+            if (value.lt !== undefined && entity[field] >= value.lt) {
+                return false
+            }
+            if (value.lte !== undefined && entity[field] > value.lte) {
+                return false
+            }
+            if (value.gt !== undefined && entity[field] <= value.gt) {
+                return false
+            }
+            if (value.gte !== undefined && entity[field] < value.gte) {
+                return false
+            }
+            if (value.contains && !entity[field].includes(value.contains)) {
                 return false
             }
         }

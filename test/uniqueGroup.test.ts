@@ -1,29 +1,22 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, lifecycle, mixin } from "../packages/builder"
-import { run } from "../packages/run"
-import * as Database from "../packages/database"
-import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import * as Type from "../packages/type"
-import * as Mixin from "../packages/mixin"
-
-import Selection from "../packages/selection"
+import * as Fookie from "../index"
 
 it("uniqueGroup", async function () {
-    const number = await model({
+    const number = await Fookie.Builder.model({
         name: "number",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
             val1: {
-                type: Type.Integer,
+                type: Fookie.Dictionary.Type.integer,
                 unique_group: ["g1"],
             },
             val2: {
-                type: Type.Integer,
+                type: Fookie.Dictionary.Type.integer,
                 unique_group: ["g1"],
             },
             val3: {
-                type: Type.Integer,
+                type: Fookie.Dictionary.Type.integer,
                 unique_group: ["g1"],
             },
         },
@@ -36,9 +29,9 @@ it("uniqueGroup", async function () {
         },
     })
 
-    await run({
+    await Fookie.run({
         model: number,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             val1: 1,
             val2: 1,
@@ -46,9 +39,9 @@ it("uniqueGroup", async function () {
         },
     })
 
-    const res = await run({
+    const res = await Fookie.run({
         model: number,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             val1: 1,
             val2: 1,
@@ -58,9 +51,9 @@ it("uniqueGroup", async function () {
 
     assert.equal(res.status, true)
 
-    const res2 = await run({
+    const res2 = await Fookie.run({
         model: number,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             val1: 1,
             val2: 1,

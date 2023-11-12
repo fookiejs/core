@@ -1,26 +1,21 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, lifecycle, mixin } from "../packages/builder"
-import { run } from "../packages/run"
-import * as Database from "../packages/database"
-import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import * as Type from "../packages/type"
-import * as Mixin from "../packages/mixin"
+import * as Fookie from "../index"
 
 it("Create return type must be object", async function () {
-    const SettingToCreate = await model({
+    const SettingToCreate = await Fookie.Builder.model({
         name: "SettingToCreate",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
-            key: { type: Type.Text, required: true },
-            value: { type: Type.Text, required: true },
+            key: { type: Fookie.Dictionary.Type.text, required: true },
+            value: { type: Fookie.Dictionary.Type.text, required: true },
         },
     })
 
-    let res = await run({
+    let res = await Fookie.run({
         token: process.env.SYSTEM_TOKEN,
         model: SettingToCreate,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             key: "Test",
             value: "Test",

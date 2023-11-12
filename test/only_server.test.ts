@@ -1,38 +1,33 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, lifecycle, mixin } from "../packages/builder"
-import { run } from "../packages/run"
-import * as Database from "../packages/database"
-import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import * as Type from "../packages/type"
-import * as Mixin from "../packages/mixin"
+import * as Fookie from "../index"
 
 it("Unique", async function () {
-    const only_server = await model({
+    const only_server = await Fookie.Builder.model({
         name: "only_server",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
             val: {
-                type: Type.Integer,
+                type: Fookie.Dictionary.Type.integer,
                 only_server: true,
                 default: -1,
             },
         },
     })
 
-    const res = await run({
+    const res = await Fookie.run({
         token: process.env.SYSTEM_TOKEN,
         model: only_server,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             val: 1,
         },
     })
 
-    const res2 = await run({
+    const res2 = await Fookie.run({
         token: process.env.SYSTEM_TOKEN,
         model: only_server,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {},
     })
 

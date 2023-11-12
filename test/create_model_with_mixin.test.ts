@@ -1,28 +1,23 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, lifecycle, mixin } from "../packages/builder"
-import { run } from "../packages/run"
-import * as Database from "../packages/database"
-import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import * as Type from "../packages/type"
-import * as Mixin from "../packages/mixin"
+import * as Fookie from "../index"
 
 it("Model with mixin", async function () {
-    const mx = mixin({
+    const mx = Fookie.Builder.mixin({
         schema: {
             mixin_field: {
-                type: Type.Text,
+                type: Fookie.Dictionary.Type.text,
             },
         },
     })
 
-    const model_w_m = await model({
+    const model_w_m = await Fookie.Builder.model({
         name: "model_w_m",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         mixins: [mx],
         schema: {
             field: {
-                type: Type.Text,
+                type: Fookie.Dictionary.Type.text,
             },
         },
     })

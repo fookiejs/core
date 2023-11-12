@@ -1,29 +1,22 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, lifecycle, mixin } from "../packages/builder"
-import { run } from "../packages/run"
-import * as Database from "../packages/database"
-import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import * as Type from "../packages/type"
-import * as Mixin from "../packages/mixin"
-
-import Selection from "../packages/selection"
+import * as Fookie from "../index"
 
 it("valid body", async function () {
-    const has_body_model = await model({
+    const has_body_model = await Fookie.Builder.model({
         name: "has_body_model",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
             field: {
-                type: Type.Text,
+                type: Fookie.Dictionary.Type.text,
                 required: true,
             },
         },
     })
 
-    const res = await run({
+    const res = await Fookie.run({
         model: has_body_model,
-        method: Create,
+        method: Fookie.Method.Create,
         body: 1,
     })
 

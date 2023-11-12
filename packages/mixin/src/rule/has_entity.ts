@@ -12,7 +12,7 @@ const has_entity: LifecycleFunction<unknown, any> = async function (payload) {
                 method: Count,
                 query: {
                     filter: {
-                        pk: payload.body[key],
+                        pk: { equals: payload.body[key] },
                     },
                 },
             })

@@ -1,22 +1,17 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, lifecycle, mixin } from "../packages/builder"
-import { run } from "../packages/run"
-import * as Database from "../packages/database"
-import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import * as Type from "../packages/type"
-import * as Mixin from "../packages/mixin"
+import * as Fookie from "../index"
 
 it("Missing preRule", async function () {
-    await run({
+    await Fookie.run({
         model: "model",
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             name: "missing_ls_model_1",
-            database: Database.Store,
+            database: Fookie.Dictionary.Database.store,
             schema: {
                 fieid: {
-                    type: Type.Text,
+                    type: Fookie.Dictionary.Type.text,
                 },
             },
             lifecycle: {
@@ -28,7 +23,7 @@ it("Missing preRule", async function () {
     })
 
     try {
-        const res = await run({
+        const res = await Fookie.run({
             model: "missing_ls_model_1",
             method: "read",
         })
@@ -37,15 +32,15 @@ it("Missing preRule", async function () {
 })
 
 it("Missing modify", async function () {
-    await run({
+    await Fookie.run({
         model: "model",
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             name: "missing_ls_model_2",
-            database: Database.Store,
+            database: Fookie.Dictionary.Database.store,
             schema: {
                 fieid: {
-                    type: Type.Text,
+                    type: Fookie.Dictionary.Type.text,
                 },
             },
             lifecycle: {
@@ -57,7 +52,7 @@ it("Missing modify", async function () {
     })
 
     try {
-        const res = await run({
+        const res = await Fookie.run({
             model: "missing_ls_model_2",
             method: "read",
         })
@@ -66,15 +61,15 @@ it("Missing modify", async function () {
 })
 
 it("Missing rule", async function () {
-    await run({
+    await Fookie.run({
         model: "model",
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             name: "missing_ls_model_3",
-            database: Database.Store,
+            database: Fookie.Dictionary.Database.store,
             schema: {
                 fieid: {
-                    type: Type.Text,
+                    type: Fookie.Dictionary.Type.text,
                 },
             },
             lifecycle: {
@@ -86,7 +81,7 @@ it("Missing rule", async function () {
     })
 
     try {
-        const res = await run({
+        const res = await Fookie.run({
             model: "missing_ls_model_3",
             method: "read",
         })
@@ -95,15 +90,15 @@ it("Missing rule", async function () {
 })
 
 it("Missing role", async function () {
-    await run({
+    await Fookie.run({
         model: "model",
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             name: "missing_ls_model_4",
-            database: Database.Store,
+            database: Fookie.Dictionary.Database.store,
             schema: {
                 fieid: {
-                    type: Type.Text,
+                    type: Fookie.Dictionary.Type.text,
                 },
             },
             lifecycle: {
@@ -115,7 +110,7 @@ it("Missing role", async function () {
     })
 
     try {
-        const res = await run({
+        const res = await Fookie.run({
             model: "missing_ls_model_4",
             method: "read",
         })
@@ -124,15 +119,15 @@ it("Missing role", async function () {
 })
 
 it("Missing filter", async function () {
-    await run({
+    await Fookie.run({
         model: "model",
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             name: "missing_ls_model_5",
-            database: Database.Store,
+            database: Fookie.Dictionary.Database.store,
             schema: {
                 fieid: {
-                    type: Type.Text,
+                    type: Fookie.Dictionary.Type.text,
                 },
             },
             lifecycle: {
@@ -144,7 +139,7 @@ it("Missing filter", async function () {
     })
 
     try {
-        const res = await run({
+        const res = await Fookie.run({
             model: "missing_ls_model_5",
             method: "read",
         })
@@ -153,15 +148,15 @@ it("Missing filter", async function () {
 })
 
 it("Missing effect", async function () {
-    await await run({
+    await Fookie.run({
         model: "model",
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             name: "missing_ls_model_6",
-            database: Database.Store,
+            database: Fookie.Dictionary.Database.store,
             schema: {
                 fieid: {
-                    type: Type.Text,
+                    type: Fookie.Dictionary.Type.text,
                 },
             },
             lifecycle: {
@@ -173,7 +168,7 @@ it("Missing effect", async function () {
     })
 
     try {
-        const res = await run({
+        const res = await Fookie.run({
             model: "missing_ls_model_6",
             method: "read",
         })

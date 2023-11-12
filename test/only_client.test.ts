@@ -1,19 +1,14 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, lifecycle, mixin } from "../packages/builder"
-import { run } from "../packages/run"
-import * as Database from "../packages/database"
-import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import * as Type from "../packages/type"
-import * as Mixin from "../packages/mixin"
+import * as Fookie from "../index"
 
 it("Unique", async function () {
-    const only_client = await model({
+    const only_client = await Fookie.Builder.model({
         name: "only_client",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
             val: {
-                type: Type.Integer,
+                type: Fookie.Dictionary.Type.integer,
                 only_client: true,
             },
         },
@@ -26,17 +21,17 @@ it("Unique", async function () {
         },
     })
 
-    const res = await run({
+    const res = await Fookie.run({
         model: only_client,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             val: 1,
         },
     })
 
-    const res2 = await run({
+    const res2 = await Fookie.run({
         model: only_client,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {},
     })
 

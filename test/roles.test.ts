@@ -1,40 +1,33 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, lifecycle, mixin } from "../packages/builder"
-import { run } from "../packages/run"
-import * as Database from "../packages/database"
-import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import * as Type from "../packages/type"
-import * as Mixin from "../packages/mixin"
-import { Dictionary } from "../index"
-import * as Lifecycle from "../packages/lifecycle"
+import * as Fookie from "../index"
 
 it("roles_test_token", async function () {
-    const roles_system_model = await model({
+    const roles_system_model = await Fookie.Builder.model({
         name: "roles_system_model",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
             field: {
-                type: Type.Text,
+                type: Fookie.Dictionary.Type.text,
                 required: true,
             },
         },
         bind: {
             create: {
-                role: [Lifecycle.system],
+                role: [Fookie.Dictionary.Lifecycle.system],
             },
             read: {
-                role: [Lifecycle.nobody],
+                role: [Fookie.Dictionary.Lifecycle.nobody],
             },
             update: {
-                role: [Lifecycle.everybody],
+                role: [Fookie.Dictionary.Lifecycle.everybody],
             },
         },
     })
 
-    const create_res = await run({
+    const create_res = await Fookie.run({
         model: roles_system_model,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             field: "hi",
         },
@@ -42,16 +35,16 @@ it("roles_test_token", async function () {
     assert.equal(create_res.status, false)
     assert.equal(create_res.error, "system")
 
-    const read_res = await run({
+    const read_res = await Fookie.run({
         model: roles_system_model,
-        method: Read,
+        method: Fookie.Method.Read,
     })
     assert.equal(read_res.status, false)
     assert.equal(read_res.error, "nobody")
 
-    const update_res = await run({
+    const update_res = await Fookie.run({
         model: roles_system_model,
-        method: Update,
+        method: Fookie.Method.Update,
         query: {
             filter: {},
         },
@@ -64,60 +57,60 @@ it("roles_test_token", async function () {
 })
 
 it("roles_test_token 2", async function () {
-    const extra_role_reject_false = await model({
+    const extra_role_reject_false = await Fookie.Builder.model({
         name: "extra_role_reject_false",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
             field: {
-                type: Type.Text,
+                type: Fookie.Dictionary.Type.text,
                 required: true,
             },
         },
         bind: {
             read: {
-                role: [Lifecycle.nobody],
+                role: [Fookie.Dictionary.Lifecycle.nobody],
                 reject: {
                     nobody: {
-                        rule: [Lifecycle.nobody],
+                        rule: [Fookie.Dictionary.Lifecycle.nobody],
                     },
                 },
             },
         },
     })
 
-    const res = await run({
+    const res = await Fookie.run({
         model: extra_role_reject_false,
-        method: Read,
+        method: Fookie.Method.Read,
     })
 
     assert.equal(res.status, false)
 })
 
 it("roles_test_token 3", async function () {
-    const extra_role_reject_true = await model({
+    const extra_role_reject_true = await Fookie.Builder.model({
         name: "extra_role_reject_true",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
             field: {
-                type: Type.Text,
+                type: Fookie.Dictionary.Type.text,
                 required: true,
             },
         },
         bind: {
             read: {
-                role: [Lifecycle.nobody],
+                role: [Fookie.Dictionary.Lifecycle.nobody],
                 reject: {
                     nobody: {
-                        rule: [Lifecycle.everybody],
+                        rule: [Fookie.Dictionary.Lifecycle.everybody],
                     },
                 },
             },
         },
     })
 
-    const res = await run({
+    const res = await Fookie.run({
         model: extra_role_reject_true,
-        method: Read,
+        method: Fookie.Method.Read,
     })
 
     assert.equal(res.status, true)

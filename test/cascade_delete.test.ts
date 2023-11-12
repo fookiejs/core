@@ -1,18 +1,13 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, lifecycle, mixin } from "../packages/builder"
-import { run } from "../packages/run"
-import * as Database from "../packages/database"
-import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import * as Type from "../packages/type"
-import * as Mixin from "../packages/mixin"
+import * as Fookie from "../index"
 
 it("cascade delete", async function () {
-    const CascadeDeleteParent = await await model({
+    const CascadeDeleteParent = await await Fookie.Builder.model({
         name: "CascadeDeleteParent",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
-            name: { type: Type.Text, required: true },
+            name: { type: Fookie.Dictionary.Type.text, required: true },
         },
         bind: {
             test: {},
@@ -23,11 +18,11 @@ it("cascade delete", async function () {
         },
     })
 
-    const CascadeDeleteChild = await await model({
+    const CascadeDeleteChild = await await Fookie.Builder.model({
         name: "CascadeDeleteChild",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
-            parent: { type: Type.Text, relation: CascadeDeleteParent, cascade_delete: true },
+            parent: { type: Fookie.Dictionary.Type.text, relation: CascadeDeleteParent, cascade_delete: true },
         },
         bind: {
             test: {},
@@ -39,9 +34,9 @@ it("cascade delete", async function () {
     })
 
     const parent = (
-        await run({
+        await Fookie.run({
             model: CascadeDeleteParent,
-            method: Create,
+            method: Fookie.Method.Create,
             body: {
                 name: "parent_1",
             },
@@ -49,29 +44,31 @@ it("cascade delete", async function () {
     ).data
 
     for (let i = 0; i < 10; i++) {
-        await run({
+        await Fookie.run<any, "create">({
             model: CascadeDeleteChild,
-            method: Create,
+            method: Fookie.Method.Create,
             body: {
                 parent: parent.id,
             },
         })
     }
 
-    await run({
+    await Fookie.run<unknown, "delete">({
         model: CascadeDeleteParent,
-        method: Delete,
+        method: Fookie.Method.Delete,
         query: {
             filter: {
-                name: "parent_1",
+                name: {
+                    equals: "parent_1",
+                },
             },
         },
     })
 
     let count = (
-        await run({
+        await Fookie.run({
             model: CascadeDeleteChild,
-            method: Count,
+            method: Fookie.Method.Count,
             query: {
                 filter: {},
             },

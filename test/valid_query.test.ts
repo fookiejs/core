@@ -1,21 +1,14 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, lifecycle, mixin } from "../packages/builder"
-import { run } from "../packages/run"
-import * as Database from "../packages/database"
-import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import * as Type from "../packages/type"
-import * as Mixin from "../packages/mixin"
-
-import Selection from "../packages/selection"
+import * as Fookie from "../index"
 
 describe("validate_query", async function () {
-    const InvalidQueryModel = await model({
+    const InvalidQueryModel = await Fookie.Builder.model({
         name: "InvalidQueryModel",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
-            field: { type: Type.Text, required: true },
-            field2: { type: Type.Text, required: true },
+            field: { type: Fookie.Dictionary.Type.text, required: true },
+            field2: { type: Fookie.Dictionary.Type.text, required: true },
         },
         bind: {
             read: {},
@@ -23,9 +16,9 @@ describe("validate_query", async function () {
     })
 
     it("valid query", async function () {
-        const res = await run({
+        const res = await Fookie.run({
             model: InvalidQueryModel,
-            method: Read,
+            method: Fookie.Method.Read,
             query: {
                 filter: undefined,
             },
@@ -36,9 +29,9 @@ describe("validate_query", async function () {
     })
 
     it("valid query", async function () {
-        const res = await run({
+        const res = await Fookie.run({
             model: InvalidQueryModel,
-            method: Read,
+            method: Fookie.Method.Read,
             query: {
                 filter: {
                     limit: "hi",
@@ -51,9 +44,9 @@ describe("validate_query", async function () {
     })
 
     it("valid query", async function () {
-        const res = await run({
+        const res = await Fookie.run({
             model: InvalidQueryModel,
-            method: Read,
+            method: Fookie.Method.Read,
             query: {
                 offset: "hi",
             },
@@ -64,9 +57,9 @@ describe("validate_query", async function () {
     })
 
     it("valid query", async function () {
-        const res = await run({
+        const res = await Fookie.run({
             model: InvalidQueryModel,
-            method: Read,
+            method: Fookie.Method.Read,
             query: {
                 limit: "hi",
             },
@@ -77,9 +70,9 @@ describe("validate_query", async function () {
     })
 
     it("valid query", async function () {
-        const res = await run({
+        const res = await Fookie.run({
             model: InvalidQueryModel,
-            method: Read,
+            method: Fookie.Method.Read,
             query: {
                 filter: {
                     hi: 1,
@@ -92,9 +85,9 @@ describe("validate_query", async function () {
     })
 
     it("valid query", async function () {
-        const r1 = await run({
+        const r1 = await Fookie.run({
             model: InvalidQueryModel,
-            method: Read,
+            method: Fookie.Method.Read,
             query: {
                 filter: {
                     field: {
@@ -107,9 +100,9 @@ describe("validate_query", async function () {
         assert.equal(r1.status, false)
         assert.equal(r1.error, "validate_query")
 
-        const r2 = await run({
+        const r2 = await Fookie.run({
             model: InvalidQueryModel,
-            method: Read,
+            method: Fookie.Method.Read,
             query: {
                 filter: {
                     field: {
@@ -122,9 +115,9 @@ describe("validate_query", async function () {
         assert.equal(r2.status, false)
         assert.equal(r2.error, "validate_query")
 
-        const r3 = await run({
+        const r3 = await Fookie.run({
             model: InvalidQueryModel,
-            method: Read,
+            method: Fookie.Method.Read,
             query: {
                 filter: {
                     field: {
@@ -136,9 +129,9 @@ describe("validate_query", async function () {
         assert.equal(r3.status, false)
         assert.equal(r3.error, "validate_query")
 
-        const r4 = await run({
+        const r4 = await Fookie.run({
             model: InvalidQueryModel,
-            method: Read,
+            method: Fookie.Method.Read,
             query: {
                 filter: {
                     field: {
@@ -150,9 +143,9 @@ describe("validate_query", async function () {
         assert.equal(r4.status, false)
         assert.equal(r4.error, "validate_query")
 
-        const r5 = await run({
+        const r5 = await Fookie.run({
             model: InvalidQueryModel,
-            method: Read,
+            method: Fookie.Method.Read,
             query: {
                 filter: {
                     field: {
@@ -164,9 +157,9 @@ describe("validate_query", async function () {
         assert.equal(r5.status, false)
         assert.equal(r5.error, "validate_query")
 
-        const r6 = await run({
+        const r6 = await Fookie.run({
             model: InvalidQueryModel,
-            method: Read,
+            method: Fookie.Method.Read,
             query: {
                 filter: {
                     field: {
@@ -178,9 +171,9 @@ describe("validate_query", async function () {
         assert.equal(r6.status, false)
         assert.equal(r6.error, "validate_query")
 
-        const r7 = await run({
+        const r7 = await Fookie.run({
             model: InvalidQueryModel,
-            method: Read,
+            method: Fookie.Method.Read,
             query: {
                 filter: {
                     field: {
@@ -192,9 +185,9 @@ describe("validate_query", async function () {
         assert.equal(r7.status, false)
         assert.equal(r7.error, "validate_query")
 
-        const r8 = await run({
+        const r8 = await Fookie.run({
             model: InvalidQueryModel,
-            method: Read,
+            method: Fookie.Method.Read,
             query: {
                 filter: {
                     field: {

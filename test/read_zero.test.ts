@@ -1,20 +1,15 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, lifecycle, mixin } from "../packages/builder"
-import { run } from "../packages/run"
-import * as Database from "../packages/database"
-import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import * as Type from "../packages/type"
-import * as Mixin from "../packages/mixin"
+import * as Fookie from "../index"
 
 it("read_zero", async function () {
     // PHASE 1
-    let read_zero_model = await model({
+    let read_zero_model = await Fookie.Builder.model({
         name: "read_zero_model",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
             number: {
-                type: Type.Integer,
+                type: Fookie.Dictionary.Type.integer,
             },
         },
         bind: {
@@ -28,22 +23,22 @@ it("read_zero", async function () {
     })
 
     for (let i = -10; i < 10; i++) {
-        await run({
+        await Fookie.run({
             model: read_zero_model,
-            method: Create,
+            method: Fookie.Method.Create,
             body: {
                 number: i,
             },
         })
     }
 
-    let read = await run({
+    let read = await Fookie.run<any, "read">({
         model: read_zero_model,
-        method: Read,
+        method: Fookie.Method.Read,
         query: {
             filter: {
-                id: "notexistedid",
-                number: 0,
+                id: { equals: "notexistedid" },
+                number: { equals: 0 },
             },
         },
     })

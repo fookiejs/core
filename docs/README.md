@@ -31,14 +31,14 @@ import {
 (async () => {
   const todo_model = await Builder.model({
     name: "todo",
-    database: Database.Store,
+    database: Database.store,
     schema: {
       title: {
-        type: Type.Text,
+        type:  Fookie.Dictionary.Type.text,
         required: true,
       },
       status: {
-        type: Type.Text,
+        type:  Fookie.Dictionary.Type.text,
         default: "Not Started",
       },
     },
@@ -52,7 +52,7 @@ import {
     },
   });
 
-  const todo_entity = await run({
+  const todo_entity =await Fookie.run({
     token: process.env.SYSTEM_TOKEN, // Only "system" role can create a todo.
     model: todo_model,
     method: Method.Create,
@@ -62,7 +62,7 @@ import {
   });
   console.log(todo_entity);
 
-  const todo_response = await run({
+  const todo_response =await Fookie.run({
     model: todo_model,
     method: Method.Read,
     query: {
@@ -165,16 +165,16 @@ import { init_redis } from "fookie_redis";
 
   const product_model = await Builder.model({
     name: "product",
-    database: Database.Store,
+    database: Database.store,
     mixins: [mixin_cache],
     schema: {
-      name: { type: Type.Text, required: true, unique: true },
+      name: { type:  Fookie.Dictionary.Type.text, required: true, unique: true },
       stock: {
-        type: Type.Integer,
+        type:  Fookie.Dictionary.Type.integer,
         required: true,
         validators: [positive_integer],
       },
-      color: { type: Type.Integer },
+      color: { type:  Fookie.Dictionary.Type.integer },
     },
     bind: {
       read: {
@@ -294,11 +294,11 @@ import * as lodash from "lodash";
 
   const ArticleModel = await Builder.model({
     name: "article",
-    database: Database.Store,
+    database: Database.store,
     schema: {
-      title: { type: Type.Text, required: true },
-      content: { type: Type.Text, required: true },
-      status: { type: Type.Text, required: true },
+      title: { type:  Fookie.Dictionary.Type.text, required: true },
+      content: { type:  Fookie.Dictionary.Type.text, required: true },
+      status: { type:  Fookie.Dictionary.Type.text, required: true },
     },
     bind: {
       read: {
@@ -321,7 +321,7 @@ import * as lodash from "lodash";
   });
 
   for (let i = 0; i < 100; i++) {
-    await run({
+   await Fookie.run({
       token: process.env.SYSTEM_TOKEN,
       model: ArticleModel,
       method: Method.Create,
@@ -333,7 +333,7 @@ import * as lodash from "lodash";
     });
   }
 
-  const response_1 = await run({
+  const response_1 =await Fookie.run({
     model: ArticleModel,
     method: Method.Read,
     query: {},
@@ -345,7 +345,7 @@ import * as lodash from "lodash";
       lodash.filter(response_1.data, { status: "published" }).length
   );
 
-  const response_2 = await run({
+  const response_2 =await Fookie.run({
     token: process.env.SYSTEM_TOKEN, // system token
     model: ArticleModel,
     method: Method.Read,
@@ -399,7 +399,7 @@ In FookieJS, the **`run`** function allows to execute a specific method on a mod
 ```javascript
 import { Dictionary, Method, run } from "fookie";
 
-const response = await run({
+const response =await Fookie.run({
   token: "some string token",
   model: Dictionary.Model.user,
   method: Method.Update,
@@ -425,7 +425,7 @@ In a software application, unexpected situations and errors are inevitable. Fook
 FookieJS throws error messages for many common error conditions. 
 
 ```javascript
-const response = await run({
+const response =await Fookie.run({
     model: Dictionary.Model.NOT_EXISTED_MODEL,
     method: Method.Read,
     query: { }
@@ -484,16 +484,16 @@ import {
 
   const account = await Builder.model({
     name: "account",
-    database: Database.Store,
+    database: Database.store,
     schema: {
       email: {
-        type: Type.Text,
+        type:  Fookie.Dictionary.Type.text,
         required: true,
         unique: true,
         validators: [is_email],
       },
       password: {
-        type: Type.Text,
+        type:  Fookie.Dictionary.Type.text,
         required: true,
         validators: [is_strong_password],
       },
@@ -505,7 +505,7 @@ import {
     },
   });
 
-  const response = await run({
+  const response =await Fookie.run({
     model: account,
     method: Method.Create,
     body: {

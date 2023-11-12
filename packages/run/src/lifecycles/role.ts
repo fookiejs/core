@@ -4,8 +4,8 @@ import { LifecycleFunction, Method } from "../../../../types"
 import * as Mixin from "../../../mixin"
 
 const role: LifecycleFunction<unknown, Method> = async function (payload, state) {
-    const befores = Mixin.Before.bind[payload.method].role
-    const afters = Mixin.After.bind[payload.method].role
+    const befores = Mixin.before.bind[payload.method].role
+    const afters = Mixin.after.bind[payload.method].role
 
     const roles = [...befores, ...payload.model.bind[payload.method].role, ...afters]
 

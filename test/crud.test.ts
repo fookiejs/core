@@ -1,19 +1,14 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, lifecycle, mixin } from "../packages/builder"
-import { run } from "../packages/run"
-import * as Database from "../packages/database"
-import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import * as Type from "../packages/type"
-import * as Mixin from "../packages/mixin"
+import * as Fookie from "../index"
 
 describe("fookie", async function () {
     it("Class model read", async function () {
-        const ClassModelToRead = await model({
+        const ClassModelToRead = await Fookie.Builder.model({
             name: "ClassModelToRead",
-            database: Database.Store,
+            database: Fookie.Dictionary.Database.store,
             schema: {
-                name: { type: Type.Text, required: true },
+                name: { type: Fookie.Dictionary.Type.text, required: true },
             },
             bind: {
                 test: {},
@@ -24,21 +19,21 @@ describe("fookie", async function () {
             },
         })
 
-        const response = await run({
+        const response = await Fookie.run({
             model: ClassModelToRead,
-            method: Read,
+            method: Fookie.Method.Read,
         })
 
         assert.equal(lodash.isArray(response.data), true)
     })
 
     it("Object model read", async function () {
-        const object_model = await model({
+        const object_model = await Fookie.Builder.model({
             name: "object_model_to_read",
-            database: Database.Store,
+            database: Fookie.Dictionary.Database.store,
             schema: {
                 name: {
-                    type: Type.Text,
+                    type: Fookie.Dictionary.Type.text,
                     required: true,
                 },
             },
@@ -55,9 +50,9 @@ describe("fookie", async function () {
                 read: {},
             },
         })
-        const response = await run({
+        const response = await Fookie.run({
             model: object_model,
-            method: Read,
+            method: Fookie.Method.Read,
         })
         assert.equal(lodash.isArray(response.data), true)
     })

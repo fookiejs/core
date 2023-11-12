@@ -1,20 +1,15 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, lifecycle, mixin } from "../packages/builder"
-import { run } from "../packages/run"
-import * as Database from "../packages/database"
-import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import * as Type from "../packages/type"
-import * as Lifecycle from "../packages/lifecycle"
+import * as Fookie from "../index"
 
 it("read:['nobody'] -> empty field", async function () {
-    let test_field_read = await model({
+    let test_field_read = await Fookie.Builder.model({
         name: "test_field_read",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
             msg: {
-                type: Type.Text,
-                read: [Lifecycle.nobody],
+                type: Fookie.Dictionary.Type.text,
+                read: [Fookie.Dictionary.Lifecycle.nobody],
             },
         },
         bind: {
@@ -26,15 +21,15 @@ it("read:['nobody'] -> empty field", async function () {
         },
     })
 
-    await run({
+    await Fookie.run({
         model: test_field_read,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             msg: "hi",
         },
     })
 
-    let read_res = await run({
+    let read_res = await Fookie.run({
         model: test_field_read,
         method: "read",
         query: {

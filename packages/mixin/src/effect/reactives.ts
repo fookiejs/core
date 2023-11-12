@@ -24,7 +24,7 @@ const reactives: LifecycleFunction<unknown, "create" | "read" | "delete"> = asyn
                             method: Update,
                             query: {
                                 filter: {
-                                    pk: entity[field],
+                                    pk: { equals: entity[field] },
                                 },
                             },
                             body: {

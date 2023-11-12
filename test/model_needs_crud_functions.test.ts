@@ -1,19 +1,14 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, lifecycle, mixin } from "../packages/builder"
-import { run } from "../packages/run"
-import * as Database from "../packages/database"
-import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import * as Type from "../packages/type"
-import * as Mixin from "../packages/mixin"
+import * as Fookie from "../index"
 
 it("Model required and crud operations", async function () {
-    let need_crud_model = await model({
+    let need_crud_model = await Fookie.Builder.model({
         name: "need_crud_model",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
             msg: {
-                type: Type.Text,
+                type: Fookie.Dictionary.Type.text,
             },
         },
     })

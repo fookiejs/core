@@ -6,7 +6,8 @@
         "module": "commonjs",
         "target": "es6",
         "outDir": "./dist",
-        "types": ["node"]
+        "types": ["node"],
+        "skipLibCheck": true
     },
 
     "include": ["packages/**/*", "index.ts"],

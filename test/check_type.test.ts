@@ -1,19 +1,14 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, lifecycle, mixin } from "../packages/builder"
-import { run } from "../packages/run"
-import * as Database from "../packages/database"
-import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import * as Type from "../packages/type"
-import * as Mixin from "../packages/mixin"
+import * as Fookie from "../index"
 
 it("check_type", async function () {
-    const model_check_type = await model({
+    const model_check_type = await Fookie.Builder.model({
         name: "model_check_type",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
             field: {
-                type: Type.Text,
+                type: Fookie.Dictionary.Type.text,
             },
         },
         bind: {
@@ -25,9 +20,9 @@ it("check_type", async function () {
         },
     })
 
-    const res = await run({
+    const res = await Fookie.run({
         model: model_check_type,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             field: 123,
         },

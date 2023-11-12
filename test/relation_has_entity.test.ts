@@ -1,18 +1,13 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, lifecycle, mixin } from "../packages/builder"
-import { run } from "../packages/run"
-import * as Database from "../packages/database"
-import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import * as Type from "../packages/type"
-import * as Mixin from "../packages/mixin"
+import * as Fookie from "../index"
 
 it("Relation has_entity", async function () {
-    const RelationNotExistedModel = await model({
+    const RelationNotExistedModel = await Fookie.Builder.model({
         name: "RelationNotExistedModel",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
-            field: { type: Type.Text, required: true },
+            field: { type: Fookie.Dictionary.Type.text, required: true },
         },
         bind: {
             test: {},
@@ -23,9 +18,9 @@ it("Relation has_entity", async function () {
         },
     })
 
-    let relation_not_existed_model_test = await model({
+    let relation_not_existed_model_test = await Fookie.Builder.model({
         name: "relation_not_existed_model_test",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
             model: {
                 relation: RelationNotExistedModel,
@@ -41,9 +36,9 @@ it("Relation has_entity", async function () {
         },
     })
 
-    const res = await run({
+    const res = await Fookie.run({
         model: relation_not_existed_model_test,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             model: "not_existed_model_has_entity",
         },

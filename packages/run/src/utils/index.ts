@@ -3,12 +3,9 @@ import pre_rule from "../lifecycles/pre_rule"
 import modify from "../lifecycles/modify"
 import role from "../lifecycles/role"
 import rule from "../lifecycles/rule"
-
-import { ModelInterface, LifecycleFunction, MixinInterface, PayloadInterface, Method } from "../../../../types"
+import { ModelInterface, LifecycleFunction, MixinInterface, PayloadInterface, Method, TypeInterface } from "../../../../types"
 import { run } from "../../../run"
 import * as Methods from "../../../method"
-import * as Type from "../../../type"
-
 import * as fs from "fs"
 import * as path from "path"
 import { create_response } from "../lifecycles/flow"
@@ -92,28 +89,8 @@ ${generate_update_body_type(model)}\n
     )
 }
 
-export function get_typescript_type_from_validator(validator: any): string {
-    if (validator === Type.Text || validator === Type.Char) {
-        return "string"
-    } else if (validator === Type.Float || validator === Type.Integer || validator === Type.Timestamp) {
-        return "number"
-    } else if (validator === Type.Boolean) {
-        return "boolean"
-    } else if (validator === Type.Buffer) {
-        return "Buffer"
-    } else if (validator === Type.Plain) {
-        return "object"
-    } else if (validator === Type.Function) {
-        return "Function"
-    } else if (validator === Type.DateType || validator === Type.Time || validator === Type.DateTime) {
-        return "string"
-    } else {
-        if (validator.array_type) {
-            const array_type = get_typescript_type_from_validator(validator.array_type)
-            return `Array<${array_type}>`
-        }
-        return "unknown"
-    }
+export function get_typescript_type(type: TypeInterface): string {
+    return type.native
 }
 
 function to_pascal_case(str: string) {
@@ -123,24 +100,10 @@ function to_pascal_case(str: string) {
         .join("")
 }
 
-function get_typescript_query_type(validator: any) {
-    if (validator === Type.Text || validator === Type.Char) {
-        return "{ eq?: string, not?: string, contains?: string, in?: string[], out?: string[] }"
-    } else if (validator === Type.Float || validator === Type.Integer || validator === Type.Timestamp) {
-        return "{ eq?: number, not?: number, gte?: number, lte?: number, gt?: number, lt?: number, in?: number[], out?: number[] }"
-    } else if (validator === Type.Boolean) {
-        return "{ eq?: boolean, not?: boolean }"
-    } else if (validator === Type.Buffer || validator === Type.Function) {
-        return "{}"
-    } else if (validator === Type.DateType || validator === Type.Time || validator === Type.DateTime) {
-        return "{ eq?: Date, not?: Date, before?: Date, after?: Date, in?: Date[] }"
-    } else if (validator === Type.Plain) {
-        return "{}"
+function get_typescript_query_type(type: TypeInterface) {
+    if (type.query) {
+        return type.query
     } else {
-        if (validator.array_type) {
-            const array_type = get_typescript_type_from_validator(validator.array_type)
-            return `{ includes?: ${array_type}, excludes?: ${array_type} }`
-        }
         return "unknown"
     }
 }
@@ -158,7 +121,7 @@ function generate_body_type(model: ModelInterface): string {
     let ts_type = `export interface ${to_pascal_case(model.name)}CreateBody {\n`
 
     for (const key in model.schema) {
-        const tsType = get_typescript_type_from_validator(model.schema[key].type)
+        const tsType = get_typescript_type(model.schema[key].type)
         const field_name = model.schema[key].required ? key : key + "?"
         ts_type += `  ${field_name}: ${tsType}\n`
     }
@@ -169,9 +132,9 @@ function generate_body_type(model: ModelInterface): string {
 
 function generate_entity_type(model: ModelInterface): string {
     let ts_type = `export interface ${to_pascal_case(model.name)}Entity {\n`
-    ts_type += `  ${model.database.pk}: ${get_typescript_type_from_validator(model.database.pk_type)}\n`
+    ts_type += `  ${model.database.pk}: ${get_typescript_type(model.database.pk_type)}\n`
     for (const key in model.schema) {
-        const tsType = get_typescript_type_from_validator(model.schema[key].type)
+        const tsType = get_typescript_type(model.schema[key].type)
         const field_name = model.schema[key].required ? key : key + "?"
         ts_type += `  ${field_name}: ${tsType}\n`
     }
@@ -184,7 +147,7 @@ function generate_update_body_type(model: ModelInterface): string {
     let ts_type = `export interface ${to_pascal_case(model.name)}UpdateBody {\n`
 
     for (const key in model.schema) {
-        const tsType = get_typescript_type_from_validator(model.schema[key].type)
+        const tsType = get_typescript_type(model.schema[key].type)
         ts_type += `  ${key}?: ${tsType}\n`
     }
 

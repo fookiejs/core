@@ -1,19 +1,14 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, lifecycle, mixin } from "../packages/builder"
-import { run } from "../packages/run"
-import * as Database from "../packages/database"
-import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import * as Type from "../packages/type"
-import * as Mixin from "../packages/mixin"
+import * as Fookie from "../index"
 
 it("Reactive Delete", async function () {
-    const reactive_child = await model({
+    const reactive_child = await Fookie.Builder.model({
         name: "reactive_child",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
             name: {
-                type: Type.Text,
+                type: Fookie.Dictionary.Type.text,
                 required: true,
             },
         },
@@ -26,12 +21,12 @@ it("Reactive Delete", async function () {
         },
     })
 
-    const reactive_parent = await model({
+    const reactive_parent = await Fookie.Builder.model({
         name: "reactive_parent",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
             name: {
-                type: Type.Text,
+                type: Fookie.Dictionary.Type.text,
                 required: true,
             },
             child: {
@@ -48,24 +43,24 @@ it("Reactive Delete", async function () {
         },
     })
 
-    const create_child_res = await run({
+    const create_child_res = await Fookie.run({
         model: reactive_child,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             name: "child",
         },
     })
 
-    const create_parent_res = await run({
+    const create_parent_res = await Fookie.run({
         model: reactive_parent,
-        method: Create,
+        method: Fookie.Method.Create,
         body: {
             name: "parent",
             child: create_child_res.data.id,
         },
     })
 
-    await run({
+    const delete_res = await Fookie.run({
         model: reactive_parent,
         method: "delete",
         query: {
@@ -73,7 +68,7 @@ it("Reactive Delete", async function () {
         },
     })
 
-    let res = await run({
+    let res = await Fookie.run({
         model: reactive_child,
         method: "count",
         query: {

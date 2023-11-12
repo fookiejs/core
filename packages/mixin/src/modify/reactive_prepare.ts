@@ -4,8 +4,6 @@ import { Read, Delete } from "../../../method"
 import { LifecycleFunction } from "../../../../types"
 
 const reactive_prepare: LifecycleFunction<unknown, any> = async function (payload, state) {
-    const result = []
-
     const entities = await run<any, "read">({
         token: process.env.SYSTEM_TOKEN,
         model: payload.model,
@@ -24,7 +22,7 @@ const reactive_prepare: LifecycleFunction<unknown, any> = async function (payloa
                     method: Delete,
                     query: {
                         filter: {
-                            pk: entity[field],
+                            pk: { equals: entity[field] },
                         },
                     },
                 })

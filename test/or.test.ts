@@ -1,28 +1,23 @@
 import * as lodash from "lodash"
 import { it, describe, assert } from "vitest"
-import { model, lifecycle, mixin } from "../packages/builder"
-import { run } from "../packages/run"
-import * as Database from "../packages/database"
-import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
-import * as Type from "../packages/type"
-import * as Mixin from "../packages/mixin"
+import * as Fookie from "../index"
 
 it("$or", async function () {
-    const OrTestNumber = await model({
+    const OrTestNumber = await Fookie.Builder.model({
         name: "OrTestNumber",
-        database: Database.Store,
+        database: Fookie.Dictionary.Database.store,
         schema: {
             val: {
-                type: Type.Integer,
+                type: Fookie.Dictionary.Type.integer,
                 required: true,
             },
         },
     })
     for (let i = 0; i < 100; i++) {
-        await run({
+        await Fookie.run({
             token: process.env.SYSTEM_TOKEN,
             model: OrTestNumber,
-            method: Create,
+            method: Fookie.Method.Create,
             body: {
                 val: Math.round(Math.random() * 10),
             },
@@ -30,10 +25,10 @@ it("$or", async function () {
     }
 
     const arr = [1, 2, 3]
-    const res = await run({
+    const res = await Fookie.run<any, "read">({
         token: process.env.SYSTEM_TOKEN,
         model: OrTestNumber,
-        method: Read,
+        method: Fookie.Method.Read,
         query: {
             filter: {
                 val: {
@@ -49,10 +44,10 @@ it("$or", async function () {
         }
     }
 
-    const res2 = await run({
+    const res2 = await Fookie.run({
         token: process.env.SYSTEM_TOKEN,
         model: OrTestNumber,
-        method: Read,
+        method: Fookie.Method.Read,
         query: {
             filter: {
                 val: {

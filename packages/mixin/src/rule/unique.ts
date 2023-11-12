@@ -14,7 +14,7 @@ const unique: LifecycleFunction<unknown, Method> = async function (payload) {
                 method: Count,
                 query: {
                     filter: {
-                        [field]: payload.body[field],
+                        [field]: { equals: payload.body[field] },
                     },
                 },
             })
