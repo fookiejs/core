@@ -1,13 +1,6 @@
 import * as lodash from "lodash"
 import { v4 } from "uuid"
-import {
-    TypeInterface,
-    ModelInterface,
-    LifecycleFunction,
-    MixinInterface,
-    DatabaseInterface,
-    SelectionInterface,
-} from "../../types"
+import { TypeInterface, ModelInterface, LifecycleFunction, MixinInterface, DatabaseInterface, Method } from "../../types"
 import deepmerge = require("deepmerge")
 import {
     create_sumby_function,
@@ -55,7 +48,7 @@ export async function model(model: Partial<ModelInterface>): Promise<ModelInterf
     return model as ModelInterface
 }
 
-export const lifecycle = function (lifecycle: LifecycleFunction) {
+export function lifecycle<E, M extends Method>(lifecycle: LifecycleFunction<E, M>) {
     return lifecycle
 }
 
@@ -66,18 +59,10 @@ export function mixin(mixin: MixinInterface) {
     return mixin
 }
 
-export const database = function (database: DatabaseInterface) {
+export function database(database: DatabaseInterface) {
     return database
 }
 
 export function type(type: TypeInterface) {
     return type
-}
-
-export function role(role: LifecycleFunction) {
-    return role
-}
-
-export function selection(selection: SelectionInterface) {
-    return selection
 }

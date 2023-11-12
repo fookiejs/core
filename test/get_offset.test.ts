@@ -6,7 +6,6 @@ import * as Database from "../packages/database"
 import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
 import * as Type from "../packages/type"
 import * as Mixin from "../packages/mixin"
-import * as Role from "../packages/role"
 
 it("get offset", async function () {
     const OffsetModel = await model({
@@ -29,7 +28,7 @@ it("get offset", async function () {
             },
         })
     }
-    let res = await run({
+    let res = await run<any, "read">({
         token: process.env.SYSTEM_TOKEN,
         model: OffsetModel,
         method: Read,

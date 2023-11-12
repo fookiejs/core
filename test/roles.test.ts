@@ -6,7 +6,8 @@ import * as Database from "../packages/database"
 import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
 import * as Type from "../packages/type"
 import * as Mixin from "../packages/mixin"
-import * as Role from "../packages/role"
+import { Dictionary } from "../index"
+import * as Lifecycle from "../packages/lifecycle"
 
 it("roles_test_token", async function () {
     const roles_system_model = await model({
@@ -20,13 +21,13 @@ it("roles_test_token", async function () {
         },
         bind: {
             create: {
-                role: [Role.system],
+                role: [Lifecycle.system],
             },
             read: {
-                role: [Role.nobody],
+                role: [Lifecycle.nobody],
             },
             update: {
-                role: [Role.everybody],
+                role: [Lifecycle.everybody],
             },
         },
     })
@@ -74,10 +75,10 @@ it("roles_test_token 2", async function () {
         },
         bind: {
             read: {
-                role: [Role.nobody],
+                role: [Lifecycle.nobody],
                 reject: {
                     nobody: {
-                        rule: [Role.nobody],
+                        rule: [Lifecycle.nobody],
                     },
                 },
             },
@@ -104,10 +105,10 @@ it("roles_test_token 3", async function () {
         },
         bind: {
             read: {
-                role: [Role.nobody],
+                role: [Lifecycle.nobody],
                 reject: {
                     nobody: {
-                        rule: [Role.everybody],
+                        rule: [Lifecycle.everybody],
                     },
                 },
             },

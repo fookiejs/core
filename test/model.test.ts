@@ -6,7 +6,7 @@ import * as Database from "../packages/database"
 import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
 import * as Type from "../packages/type"
 import * as Mixin from "../packages/mixin"
-import * as Role from "../packages/role"
+
 import * as Dictionary from "../packages/dictionary"
 
 describe("fookie", async function () {

@@ -5,8 +5,8 @@ import { run } from "../packages/run"
 import * as Database from "../packages/database"
 import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
 import * as Type from "../packages/type"
-import * as Mixin from "../packages/mixin"
-import * as Role from "../packages/role"
+import * as Lifecycle from "../packages/lifecycle"
+
 it("read:['nobody'] -> empty field", async function () {
     let test_field_read = await model({
         name: "test_field_read",
@@ -14,7 +14,7 @@ it("read:['nobody'] -> empty field", async function () {
         schema: {
             msg: {
                 type: Type.Text,
-                read: [Role.nobody],
+                read: [Lifecycle.nobody],
             },
         },
         bind: {

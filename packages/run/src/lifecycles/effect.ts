@@ -1,7 +1,7 @@
 import * as Mixin from "../../../mixin"
-import { LifecycleFunction } from "../../../../types"
+import { PreRuleLifecycleFunction } from "../../../../types"
 
-const effect: LifecycleFunction = async function (payload, state) {
+const effect: PreRuleLifecycleFunction = async function (payload, state) {
     const befores = Mixin.Before.bind[payload.method].effect
     const afters = Mixin.After.bind[payload.method].effect
     const effects = [...befores, ...payload.model.bind[payload.method].effect, ...afters]

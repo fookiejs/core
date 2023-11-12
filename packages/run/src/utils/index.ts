@@ -4,15 +4,15 @@ import modify from "../lifecycles/modify"
 import role from "../lifecycles/role"
 import rule from "../lifecycles/rule"
 
-import { ModelInterface, LifecycleFunction, MixinInterface, PayloadInterface } from "../../../../types"
+import { ModelInterface, LifecycleFunction, MixinInterface, PayloadInterface, Method } from "../../../../types"
 import { run } from "../../../run"
-import * as Method from "../../../method"
-import * as Role from "../../../role"
+import * as Methods from "../../../method"
 import * as Type from "../../../type"
 
 import * as fs from "fs"
 import * as path from "path"
 import { create_response } from "../lifecycles/flow"
+import * as Lifecycle from "../../../lifecycle"
 
 const lifecycles = ["pre_rule", "modify", "role", "rule", "filter", "effect"]
 
@@ -29,9 +29,9 @@ export function initialize_model_schema(model: Partial<ModelInterface>): void {
 }
 
 export function initialize_model_bindings(model: Partial<ModelInterface> | MixinInterface): void {
-    for (const method of lodash.values(Method) as string[]) {
+    for (const method of lodash.values(Methods) as string[]) {
         if (!lodash.isObject(model.bind[method])) {
-            model.bind[method] = { role: [Role.system] }
+            model.bind[method] = { role: [Lifecycle.system] }
         }
         for (const lifecycle of lifecycles) {
             if (!lodash.isArray(model.bind[method][lifecycle])) {
@@ -41,8 +41,8 @@ export function initialize_model_bindings(model: Partial<ModelInterface> | Mixin
     }
 }
 
-export function create_test_function(): LifecycleFunction {
-    return async function (_payload: PayloadInterface) {
+export function create_test_function(): LifecycleFunction<unknown, Method> {
+    return async function (_payload: PayloadInterface<unknown, "test">) {
         const p = Object.assign(lodash.omit(_payload, ["response"]))
         p.method = _payload.options.method
         const s = {
@@ -52,7 +52,7 @@ export function create_test_function(): LifecycleFunction {
             },
             todo: [],
         }
-        p.response = create_response()
+        p.response = create_response(_payload.method)
 
         if (await pre_rule(p, s)) {
             await modify(p, s)
@@ -66,23 +66,22 @@ export function create_test_function(): LifecycleFunction {
     }
 }
 
-export function create_sumby_function(): LifecycleFunction {
+export function create_sumby_function(): LifecycleFunction<unknown, Method> {
     return async function (_payload) {
         const token = _payload.token || ""
         const response = await run({
             token: token,
             model: _payload.model,
-            method: Method.Read,
+            method: Methods.Read,
             query: _payload.query,
         })
-        const total = lodash.sumBy(response.data, _payload.options.field)
+        const total = lodash.sumBy(response.data as Array<any>, _payload.options.field)
         _payload.response.data = total
     }
 }
 
 export function generate_typescript_types(model: ModelInterface) {
     send_as_file(
-        `interfaces/${to_pascal_case(model.name)}`,
         `${to_pascal_case(model.name)}.types.ts`,
         `
 ${generate_body_type(model)}\n
@@ -90,12 +89,6 @@ ${generate_query_type(model)}\n
 ${generate_entity_type(model)}\n
 ${generate_update_body_type(model)}\n
         `
-    )
-
-    send_as_file(
-        `repositories/${to_pascal_case(model.name)}`,
-        `${to_pascal_case(model.name)}.repository.ts`,
-        generate_repository(model)
     )
 }
 
@@ -152,12 +145,12 @@ function get_typescript_query_type(validator: any) {
     }
 }
 
-function send_as_file(folder: string, file: string, code: string) {
-    const dirPath = path.join(".fookie", folder)
-    if (!fs.existsSync(dirPath)) {
-        fs.mkdirSync(dirPath, { recursive: true })
+function send_as_file(file: string, code: string) {
+    const dir_path = path.join(`${process.env.FOOKIE_PATH || ""}`, ".fookie")
+    if (!fs.existsSync(dir_path)) {
+        fs.mkdirSync(dir_path, { recursive: true })
     }
-    fs.writeFileSync(path.join(dirPath, file), code)
+    fs.writeFileSync(path.join(dir_path, file), code)
     return true
 }
 
@@ -215,87 +208,4 @@ function generate_query_type(model: ModelInterface): string {
     }
     `
     return ts_query_type
-}
-
-function generate_repository(model: ModelInterface): string {
-    return `
-    
-    import { run, Dictionary, Method, Types } from "${process.env.FOOKIE_TEST == "true" ? "../../../index" : "fookie"}"
-    import { 
-        ${to_pascal_case(model.name)}CreateBody, 
-        ${to_pascal_case(model.name)}UpdateBody,
-        ${to_pascal_case(model.name)}Entity,
-        ${to_pascal_case(model.name)}Query 
-    } from "../../interfaces/${to_pascal_case(model.name)}/${to_pascal_case(model.name)}.types"
-
-    type CreatePayload = Omit<Types.PayloadInterfaceWithoutModelAndMethod, 'query' | 'body'> & {
-        body: ${to_pascal_case(model.name)}CreateBody
-    }
-    type ReadPayload = Omit<Types.PayloadInterfaceWithoutModelAndMethod, 'query' | 'body'> & {
-        query:${to_pascal_case(model.name)}Query
-    }
-    type UpdatePayload = Omit<Types.PayloadInterfaceWithoutModelAndMethod, 'query' | 'body'> & {
-        query:${to_pascal_case(model.name)}Query
-        body:${to_pascal_case(model.name)}UpdateBody
-    }
-
-    type CreateResponse = Omit<Types.PayloadInterfaceWithoutModelAndMethod, 'data'> & {
-       data:${to_pascal_case(model.name)}Entity
-    }
-
-    type ReadResponse = Omit<Types.PayloadInterfaceWithoutModelAndMethod, 'data'> & {
-        data:${to_pascal_case(model.name)}Entity[]
-
-     }
-
-     type UpdateResponse = Omit<Types.PayloadInterfaceWithoutModelAndMethod, 'data'> & {
-        data:boolean
-     }
-
-     type DeleteResponse = Omit<Types.PayloadInterfaceWithoutModelAndMethod, 'data'> & {
-        data:boolean
-     }
-
-     type CountResponse = Omit<Types.PayloadInterfaceWithoutModelAndMethod, 'data'> & {
-        data:number
-     }
-
-     type SumResponse = Omit<Types.PayloadInterfaceWithoutModelAndMethod, 'data'> & {
-        data:number
-     }
-
-     type TestResponse = Omit<Types.PayloadInterfaceWithoutModelAndMethod, 'data'> & {
-        data:Types.ResponseInterface
-     }
-
-    export async function Create(payload:CreatePayload): Promise<CreateResponse> {
-        const response = await run({ model:Dictionary.Model.${model.name}, method:Method.Create, ...payload })
-        return response
-    }
-    export async function Read(payload:ReadPayload): Promise<ReadResponse> {
-        const response = await run({ model:Dictionary.Model.${model.name}, method:Method.Read, ...payload })
-        return response
-    }
-    export async function Update(payload:UpdatePayload): Promise<UpdateResponse> {
-        const response = await run({ model:Dictionary.Model.${model.name}, method:Method.Update, ...payload })
-        return response
-    }
-    export async function Delete(payload:ReadPayload): Promise<DeleteResponse> {
-        const response = await run({ model:Dictionary.Model.${model.name}, method:Method.Delete, ...payload })
-        return response
-    }
-    export async function Sum(payload:ReadPayload): Promise<SumResponse> {
-        const response = await run({ model:Dictionary.Model.${model.name}, method:Method.Sum, ...payload })
-        return response
-    }
-    export async function Count(payload:ReadPayload):Promise<CountResponse> {
-        const response = await run({ model:Dictionary.Model.${model.name}, method:Method.Count, ...payload })
-        return response
-    }
-    export async function Test(payload:UpdatePayload): Promise<TestResponse> {
-        const response = await run({ model:Dictionary.Model.${model.name}, method:Method.Test, ...payload })
-        return response
-    }
-
-    `
 }

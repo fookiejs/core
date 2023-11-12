@@ -6,7 +6,6 @@ import * as Database from "../packages/database"
 import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
 import * as Type from "../packages/type"
 import * as Mixin from "../packages/mixin"
-import * as Role from "../packages/role"
 
 it("Reactive Delete", async function () {
     const reactive_child = await model({

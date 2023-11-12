@@ -4,7 +4,6 @@ import has_method from "../rule/has_method"
 import validate_attributes from "../rule/validate_attributes"
 import db_connect from "../rule/db_connect"
 import set_default from "../modify/set_default"
-import selection from "../modify/selection"
 import only_client from "../rule/only_client"
 import only_server from "../rule/only_server"
 import uniqueGroup from "../rule/uniqueGroup"
@@ -21,7 +20,7 @@ const Before: MixinInterface = {
     bind: {
         create: {
             pre_rule: [validate_payload, default_payload, has_method, only_client, only_server, db_connect],
-            modify: [set_default, selection],
+            modify: [set_default],
             role: [],
             rule: [has_body, has_field, check_type, field_control, unique, uniqueGroup],
             filter: [],

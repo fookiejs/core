@@ -6,7 +6,7 @@ import * as Database from "../packages/database"
 import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
 import * as Type from "../packages/type"
 import * as Mixin from "../packages/mixin"
-import * as Role from "../packages/role"
+import * as Lifecycle from "../packages/lifecycle"
 
 it("create:['nobody'] -> empty field", async function () {
     let test_field_create = await model({
@@ -15,7 +15,7 @@ it("create:['nobody'] -> empty field", async function () {
         schema: {
             msg: {
                 type: Type.Text,
-                read: [Role.nobody],
+                read: [Lifecycle.nobody],
             },
         },
         bind: {

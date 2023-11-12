@@ -22,7 +22,6 @@ import {
   Method,
   Mixin,
   Role,
-  Selection,
   Type,
   Types,
   use,
@@ -45,10 +44,10 @@ import {
     },
     bind: {
       read: {
-        role: [Role.everybody],
+        role: [Lifecycle.everybody],
       },
       create: {
-        role: [Role.system],
+        role: [Lifecycle.system],
       },
     },
   });
@@ -129,9 +128,6 @@ It helps you add additional features or functions to your app's models.
 ### **Role**
 Defines authentication and authorization functions. This increases the security level of your application.
 
-### **Selection**
-Defines data selection methods, used when selecting from data within a given model.
-
 ### **Dictionary**
 It allows you to assign to here like something role, mixin and model
 
@@ -182,7 +178,7 @@ import { init_redis } from "fookie_redis";
     },
     bind: {
       read: {
-        role: [Role.everybody],
+        role: [Lifecycle.everybody],
       },
     },
   });
@@ -244,7 +240,7 @@ This defines how the methods of a model work. It can be written separately for e
 The **`bind`** concept allows you to control operations (such as CRUD operations) performed on a specific model. For example, it specifies which roles can read, update, create or delete a model.
 
 ### Role
-**`role`** represents the authorization of users or systems to perform certain operations. For example, **`Role.everybody`** gives access to all users, while **`Role.nobody`** gives access to no users.
+**`role`** represents the authorization of users or systems to perform certain operations. For example, **`Lifecycle.everybody`** gives access to all users, while **`Lifecycle.nobody`** gives access to no users.
 
 ### ****Lifecycle, Reject ve Accept****
 The **`lifecycle`** specifies special functions to be executed during the operation performed on a model.
@@ -306,7 +302,7 @@ import * as lodash from "lodash";
     },
     bind: {
       read: {
-        role: [Role.system, Role.everybody],
+        role: [Lifecycle.system, Lifecycle.everybody],
         reject: {
           system: {
             modify: [set_limit, set_published],
@@ -317,7 +313,7 @@ import * as lodash from "lodash";
         pre_rule: [],
         rule: [valide_article_status],
         modify: [set_draft],
-        role: [Role.system],
+        role: [Lifecycle.system],
         filter: [],
         effect: [],
       },
@@ -504,7 +500,7 @@ import {
     },
     bind: {
       create: {
-        role: [Role.everybody],
+        role: [Lifecycle.everybody],
       },
     },
   });

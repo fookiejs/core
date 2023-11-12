@@ -3,14 +3,14 @@ import { run } from "../../../run"
 import { Read, Update } from "../../../method"
 import { LifecycleFunction } from "../../../../types"
 
-const reactives: LifecycleFunction = async function (payload) {
+const reactives: LifecycleFunction<unknown, "create" | "read" | "delete"> = async function (payload) {
     const schema = payload.model.schema
     const fields = lodash.keys(schema)
 
     for (const field of fields) {
         if (lodash.has(schema[field], "reactives")) {
             for (const reactive of schema[field].reactives) {
-                const entities = await run({
+                const entities = await run<any, "read">({
                     token: process.env.SYSTEM_TOKEN,
                     model: payload.model,
                     method: Read,

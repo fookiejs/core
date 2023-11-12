@@ -6,7 +6,8 @@ import * as Database from "../packages/database"
 import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
 import * as Type from "../packages/type"
 import * as Mixin from "../packages/mixin"
-import * as Role from "../packages/role"
+import * as Fookie from "../index"
+import * as Lifecycle from "../packages/lifecycle"
 
 it("check auth 1", async function () {
     let child_setting = await model({
@@ -19,7 +20,7 @@ it("check auth 1", async function () {
         },
         bind: {
             create: {
-                role: [Role.nobody],
+                role: [Lifecycle.nobody],
             },
         },
     })
@@ -46,7 +47,7 @@ it("check auth 2", async function () {
         },
         bind: {
             create: {
-                role: [Role.nobody],
+                role: [Lifecycle.nobody],
             },
         },
     })
@@ -79,7 +80,7 @@ it(" check auth reject modify", async function () {
         },
         bind: {
             create: {
-                role: [Role.nobody],
+                role: [Lifecycle.nobody],
                 reject: {
                     nobody: {
                         modify: [test_r_modify],
@@ -119,7 +120,7 @@ it(" check auth accept modify", async function () {
         },
         bind: {
             create: {
-                role: [Role.everybody],
+                role: [Lifecycle.everybody],
                 accept: {
                     everybody: {
                         modify: [test_a_modify],
@@ -157,7 +158,7 @@ it(" check auth array", async function () {
         },
         bind: {
             create: {
-                role: [Role.nobody, Role.everybody],
+                role: [Lifecycle.nobody, Lifecycle.everybody],
             },
         },
     })
@@ -221,7 +222,7 @@ it(" check auth field read", async function () {
         },
         bind: {
             create: {
-                role: [Role.everybody],
+                role: [Lifecycle.everybody],
             },
         },
     })
@@ -265,7 +266,7 @@ it(" check auth reject rule", async function () {
         },
         bind: {
             create: {
-                role: [Role.nobody],
+                role: [Lifecycle.nobody],
                 reject: {
                     nobody: {
                         rule: [test_r_rule],
@@ -306,7 +307,7 @@ it(" check auth accept rule", async function () {
         },
         bind: {
             create: {
-                role: [Role.everybody],
+                role: [Lifecycle.everybody],
                 accept: {
                     everybody: {
                         rule: [test_a_rule],
@@ -344,7 +345,7 @@ it(" check auth reject rule 2", async function () {
         },
         bind: {
             create: {
-                role: [Role.nobody, Role.everybody],
+                role: [Lifecycle.nobody, Lifecycle.everybody],
                 reject: {
                     nobody: {
                         rule: [test_a_rule_3],

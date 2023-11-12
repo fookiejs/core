@@ -6,8 +6,7 @@ import * as Database from "../packages/database"
 import { Create, Read, Count, Delete, Test, Update } from "../packages/method"
 import * as Type from "../packages/type"
 import * as Mixin from "../packages/mixin"
-import * as Role from "../packages/role"
-import Selection from "../packages/selection"
+import * as Lifecycle from "../packages/lifecycle"
 
 it("test_method", async function () {
     const test_model = await model({
@@ -20,14 +19,14 @@ it("test_method", async function () {
         },
         bind: {
             read: {
-                role: [Role.nobody],
+                role: [Lifecycle.nobody],
             },
             test: {},
             create: {},
         },
     })
 
-    const res1 = await run({
+    const res1 = await run<unknown, "test">({
         model: test_model,
         method: Test,
         options: {
