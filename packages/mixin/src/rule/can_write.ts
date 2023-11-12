@@ -1,7 +1,7 @@
 import * as lodash from "lodash"
 import { LifecycleFunction } from "../../../../types"
 
-const can_write: LifecycleFunction = async function (payload, state) {
+const can_write: LifecycleFunction<unknown, any> = async function (payload, state) {
     const model = payload.model
     const filtered_schema = lodash.pick(model.schema, lodash.keys(payload.body))
     const writes = lodash.map(filtered_schema, function (i) {

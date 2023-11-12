@@ -3,7 +3,7 @@ import { run } from "../../../run"
 import { Count } from "../../../method"
 import { LifecycleFunction } from "../../../../types"
 
-const has_entity: LifecycleFunction = async function (payload) {
+const has_entity: LifecycleFunction<unknown, any> = async function (payload) {
     for (const key of lodash.keys(payload.body)) {
         if (lodash.has(payload.model.schema[key], "relation")) {
             const res = await run({

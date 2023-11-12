@@ -122,14 +122,18 @@ type DataType<E, M extends Method> = M extends "create"
     ? ResponseInterface<E, M>
     : unknown
 
+type ExtendedType<E> = {
+    [key in keyof E]: Partial<FilterFieldInterface>
+} & {
+    [key: string]: Partial<FilterFieldInterface>
+}
+
 export interface PayloadInterface<E, M extends Method> {
     token?: string
     model: ModelInterface
     method: Method
     query?: {
-        filter?: {
-            [key in keyof E | string]: FilterFieldInterface
-        }
+        filter?: ExtendedType<E>
         attributes?: string[]
         limit?: number
         offset?: number

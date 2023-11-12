@@ -1,7 +1,7 @@
 import * as lodash from "lodash"
-import { LifecycleFunction } from "../../../../types"
+import { LifecycleFunction, Method } from "../../../../types"
 
-const method: LifecycleFunction = async function (payload, state) {
+const method: LifecycleFunction<unknown, Method> = async function (payload, state) {
     const start = Date.now()
 
     if (lodash.isNull(payload.response.data)) {

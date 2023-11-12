@@ -1,7 +1,7 @@
 import * as lodash from "lodash"
 import { LifecycleFunction } from "../../../../types"
 
-const set_default: LifecycleFunction = async function (payload) {
+const set_default: LifecycleFunction<unknown, any> = async function (payload) {
     let defaults = lodash.mapValues(payload.model.schema, function (o) {
         return o.default
     })

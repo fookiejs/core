@@ -1,6 +1,6 @@
 import { LifecycleFunction } from "../../../../types"
 
-const db_connect: LifecycleFunction = async function (payload) {
+const db_connect: LifecycleFunction<unknown, any> = async function (payload) {
     return await payload.model.database.connect()
 }
 

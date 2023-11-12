@@ -1,7 +1,7 @@
 import * as Mixin from "../../../mixin"
-import { LifecycleFunction } from "../../../../types"
+import { LifecycleFunction, Method } from "../../../../types"
 
-const filter: LifecycleFunction = async function (payload, state) {
+const filter: LifecycleFunction<unknown, Method> = async function (payload, state) {
     const befores = Mixin.Before.bind[payload.method].filter
     const afters = Mixin.After.bind[payload.method].filter
     const filters = [...befores, ...payload.model.bind[payload.method].filter, ...afters]

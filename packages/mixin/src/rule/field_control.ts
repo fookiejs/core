@@ -1,7 +1,7 @@
 import * as lodash from "lodash"
 import { LifecycleFunction } from "../../../../types"
 
-const field_control: LifecycleFunction = async function (payload) {
+const field_control: LifecycleFunction<unknown, any> = async function (payload) {
     const model = payload.model
     const fields = lodash.keys(payload.body)
     let res = true

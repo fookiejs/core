@@ -280,7 +280,7 @@ import * as lodash from "lodash";
     payload.query.limit = 10;
   });
 
-  const set_published: Types.LifecycleFunction = async function set_published(
+  const set_published: Types.LifecycleFunction<unknown,any> = async function set_published(
     payload,
     state
   ) {

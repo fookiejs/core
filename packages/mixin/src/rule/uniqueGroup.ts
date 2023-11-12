@@ -3,7 +3,7 @@ import { run } from "../../../run"
 import { Count } from "../../../method"
 import { LifecycleFunction } from "../../../../types"
 
-const unique_group: LifecycleFunction = async function (payload) {
+const unique_group: LifecycleFunction<unknown, any> = async function (payload) {
     const fields = lodash.keys(payload.body)
     let groups = []
     for (const field of fields) {

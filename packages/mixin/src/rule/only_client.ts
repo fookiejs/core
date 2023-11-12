@@ -1,7 +1,7 @@
 import * as lodash from "lodash"
 import { LifecycleFunction } from "../../../../types"
 
-const only_client: LifecycleFunction = async function (payload) {
+const only_client: LifecycleFunction<unknown, any> = async function (payload) {
     const search = ["", null, undefined]
     const model = payload.model
     const keys = lodash.keys(model.schema)

@@ -1,7 +1,7 @@
 import * as lodash from "lodash"
 import { LifecycleFunction } from "../../../../types"
 
-const validate_body: LifecycleFunction = async function (payload, state) {
+const validate_body: LifecycleFunction<unknown, any> = async function (payload, state) {
     const model = payload.model
     let flag = true
     for (const field_name in payload.body) {

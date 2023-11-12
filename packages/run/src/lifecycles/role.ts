@@ -1,9 +1,9 @@
 import * as lodash from "lodash"
 
-import { LifecycleFunction } from "../../../../types"
+import { LifecycleFunction, Method } from "../../../../types"
 import * as Mixin from "../../../mixin"
 
-const role: LifecycleFunction = async function (payload, state) {
+const role: LifecycleFunction<unknown, Method> = async function (payload, state) {
     const befores = Mixin.Before.bind[payload.method].role
     const afters = Mixin.After.bind[payload.method].role
 

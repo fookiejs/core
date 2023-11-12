@@ -3,7 +3,7 @@ import { run } from "../../../run"
 import { Delete } from "../../../method"
 import { LifecycleFunction } from "../../../../types"
 
-const drop: LifecycleFunction = async function (payload) {
+const drop: LifecycleFunction<unknown, any> = async function (payload) {
     if (lodash.has(payload.options, "drop")) {
         setTimeout(async function () {
             await run({

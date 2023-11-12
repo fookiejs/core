@@ -1,7 +1,7 @@
 import * as lodash from "lodash"
-import { LifecycleFunction, FilterFieldInterface } from "../../../../types"
+import { LifecycleFunction, FilterFieldInterface, Method } from "../../../../types"
 
-const validate_query: LifecycleFunction = async function (payload) {
+const validate_query: LifecycleFunction<unknown, Method> = async function (payload) {
     const filter_keys = lodash.keys(payload.query.filter)
     const model_keys = lodash.keys(payload.model.schema)
 

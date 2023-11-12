@@ -1,9 +1,9 @@
 import * as lodash from "lodash"
 import * as Dictionary from "../../../dictionary"
-import { LifecycleFunction } from "../../../../types"
+import { LifecycleFunction, Method } from "../../../../types"
 import * as Mixin from "../../../mixin"
 
-const pre_rule: LifecycleFunction = async function (payload, state) {
+const pre_rule: LifecycleFunction<unknown, Method> = async function (payload, state) {
     if (!lodash.includes(lodash.values(Dictionary.Model), payload.model)) {
         payload.response.error = "has_model"
         return false

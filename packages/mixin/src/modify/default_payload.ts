@@ -2,7 +2,7 @@ import * as lodash from "lodash"
 import { v4 } from "uuid"
 import { LifecycleFunction } from "../../../../types"
 
-const defalut_payload: LifecycleFunction = async function (payload, state) {
+const defalut_payload: LifecycleFunction<unknown, any> = async function (payload, state) {
     const newPayload = lodash.merge(payload, {
         options: {},
         body: {},

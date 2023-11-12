@@ -3,10 +3,10 @@ import { run } from "../../../run"
 import { Read, Delete } from "../../../method"
 import { LifecycleFunction } from "../../../../types"
 
-const reactive_prepare: LifecycleFunction = async function (payload, state) {
+const reactive_prepare: LifecycleFunction<unknown, any> = async function (payload, state) {
     const result = []
 
-    const entities = await run({
+    const entities = await run<any, "read">({
         token: process.env.SYSTEM_TOKEN,
         model: payload.model,
         method: Read,

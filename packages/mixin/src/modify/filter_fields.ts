@@ -1,7 +1,7 @@
 import * as lodash from "lodash"
 import { LifecycleFunction } from "../../../../types"
 
-const filter_fields: LifecycleFunction = async function (payload, state) {
+const filter_fields: LifecycleFunction<unknown, any> = async function (payload, state) {
     const model = payload.model
     for (const field of payload.query.attributes) {
         const attr_roles = lodash.has(model.schema[field], "read") ? model.schema[field].read : []
