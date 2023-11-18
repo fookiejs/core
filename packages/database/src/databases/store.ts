@@ -97,6 +97,12 @@ function poolFilter(pool, filter) {
             if (value.contains && !entity[field].includes(value.contains)) {
                 return false
             }
+            if (value.include && !value.include.every((val) => entity[field].includes(val))) {
+                return false
+            }
+            if (value.exclude && value.exclude.some((val) => entity[field].includes(val))) {
+                return false
+            }
         }
         return true
     })

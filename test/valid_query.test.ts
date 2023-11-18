@@ -163,7 +163,7 @@ describe("validate_query", async function () {
             query: {
                 filter: {
                     field: {
-                        inc: 111,
+                        include: 111,
                     },
                 },
             },

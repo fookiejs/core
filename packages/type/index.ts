@@ -2,45 +2,45 @@ import * as lodash from "lodash"
 import { TypeInterface } from "../../types"
 
 const queryStructures = {
-    stringQuery: `{
-        equals: string,
-        not: string,
-        in: string[],
-        not_in: string[],
-        contains: string,
-    }`,
-    numberQuery: `{
-        equals: number,
-        not: number,
-        in: number[],
-        not_in: number[],
-        lt: number,
-        lte: number,
-        gt: number,
-        gte: number,
-    }`,
-    booleanQuery: `{
-        equals: boolean,
-        not: boolean,
-    }`,
-    dateQuery: `{
-        equals: Date,
-        not: Date,
-        in: Date[],
-        not_in: Date[],
-        lt: Date,
-        lte: Date,
-        gt: Date,
-        gte: Date,
-    }`,
-    bufferQuery: "{}",
-    functionQuery: "{}",
-    plainQuery: "{}",
+    stringQuery: {
+        equals: "string",
+        not: "string",
+        in: "string[]",
+        not_in: "string[]",
+        contains: "string",
+    },
+    numberQuery: {
+        equals: "number",
+        not: "number",
+        in: "number[]",
+        not_in: "number[]",
+        lt: "number",
+        lte: "number",
+        gt: "number",
+        gte: "number",
+    },
+    booleanQuery: {
+        equals: "boolean",
+        not: "boolean",
+    },
+    dateQuery: {
+        equals: "Date",
+        not: "Date",
+        in: "Date[]",
+        not_in: "Date[]",
+        lt: "Date",
+        lte: "Date",
+        gt: "Date",
+        gte: "Date",
+    },
+    bufferQuery: "never",
+    functionQuery: "never",
+    plainQuery: "never",
     arrayQuery: function (typeFunc: TypeInterface) {
-        return `{
-            include: ${typeFunc.native}[],
-            exclude: ${typeFunc.native}[],
-        }`
+        return {
+            include: `${typeFunc.native}[]`,
+            exclude: `${typeFunc.native}[]`,
+        }
     },
 }
 

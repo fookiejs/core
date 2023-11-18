@@ -33,7 +33,10 @@ const validate_query: LifecycleFunction<unknown, Method> = async function (paylo
         if (field.lt && !lodash.isNumber(field.lt)) {
             return false
         }
-        if (field.inc && !lodash.isString(field.inc)) {
+        if (field.include && !lodash.isArray(field.include)) {
+            return false
+        }
+        if (field.exclude && !lodash.isArray(field.exclude)) {
             return false
         }
         if (field.in && !lodash.isArray(field.in)) {

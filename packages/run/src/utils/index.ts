@@ -102,7 +102,7 @@ function to_pascal_case(str: string) {
 
 function get_typescript_query_type(type: TypeInterface) {
     if (type.query) {
-        return type.query
+        return JSON.stringify(type.query).replaceAll('"', "")
     } else {
         return "unknown"
     }
@@ -161,7 +161,7 @@ function generate_query_type(model: ModelInterface): string {
     limit?: number
     filter?: {
         \n`
-    ts_query_type += `  ${model.database.pk}: ${get_typescript_query_type(model.database.pk_type)}\n`
+    ts_query_type += `  ${model.database.pk}?: ${get_typescript_query_type(model.database.pk_type)}\n`
     for (const key in model.schema) {
         const filterType = get_typescript_query_type(model.schema[key].type)
         ts_query_type += `  ${key}?: ${filterType}\n`

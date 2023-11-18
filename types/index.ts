@@ -72,15 +72,17 @@ export interface FieldInterface {
 }
 
 export interface FilterFieldInterface {
-    equals: any
-    lte: any
-    lt: any
-    gte: any
-    gt: any
-    not: any
-    in: any[]
-    not_in: any[]
-    inc: any
+    equals: unknown
+    lte: unknown
+    lt: unknown
+    gte: unknown
+    gt: unknown
+    not: unknown
+    in: unknown[]
+    not_in: unknown[]
+    include: unknown[]
+    exclude: unknown[]
+    contains: unknown
 }
 
 export interface DatabaseInterface {
