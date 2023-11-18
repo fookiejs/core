@@ -102,7 +102,7 @@ function to_pascal_case(str: string) {
 
 function get_typescript_query_type(type: TypeInterface) {
     if (type.query) {
-        return JSON.stringify(type.query).replaceAll('"', "")
+        return JSON.stringify(type.query).replaceAll(`"`, "")
     } else {
         return "unknown"
     }
