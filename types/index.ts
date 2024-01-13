@@ -7,9 +7,10 @@ export interface LifecycleFunction<E, M extends Method> {
 
 export interface TypeInterface {
     native: string
-    controller: (val: any) => boolean
-    mock: any
-    query: any
+    controller: (val: unknown) => boolean
+    mock: unknown
+    query: unknown
+    query_controller?: (val: unknown) => boolean
 }
 
 export interface ModelInterface {

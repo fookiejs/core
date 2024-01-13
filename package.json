@@ -4,7 +4,7 @@
     "version": "0.999.35",
     "main": "dist/index.js",
     "scripts": {
-        "test": "FOOKIE_DEV=true FOOKIE_TEST=true vitest",
+        "test": "cross-env FOOKIE_DEV=true FOOKIE_TEST=true vitest",
         "coverage": "vitest run --coverage",
         "build": "npx tsc",
         "lint": "npx eslint packages",
@@ -22,6 +22,7 @@
         "@typescript-eslint/parser": "^5.56.0",
         "@vitest/coverage-istanbul": "^0.29.3",
         "@vitest/ui": "^0.29.3",
+        "cross-env": "^7.0.3",
         "eslint": "^8.36.0",
         "vitest": "^0.29.3"
     },
