@@ -1,7 +1,7 @@
 {
     "name": "fookie",
     "description": "",
-    "version": "0.999.35",
+    "version": "0.999.36",
     "main": "dist/index.js",
     "scripts": {
         "test": "cross-env FOOKIE_DEV=true FOOKIE_TEST=true vitest",
