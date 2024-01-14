@@ -4,7 +4,7 @@ import * as Fookie from "../index"
 
 it("read_zero", async function () {
     // PHASE 1
-    let read_zero_model = await Fookie.Builder.model({
+    const read_zero_model = await Fookie.Builder.model({
         name: "read_zero_model",
         database: Fookie.Dictionary.Database.store,
         schema: {
@@ -32,7 +32,7 @@ it("read_zero", async function () {
         })
     }
 
-    let read = await Fookie.run<any, "read">({
+    const read = await Fookie.run<any, "read">({
         model: read_zero_model,
         method: Fookie.Method.Read,
         query: {
@@ -42,5 +42,6 @@ it("read_zero", async function () {
             },
         },
     })
+
     assert.equal(read.data.length === 0, true)
 })

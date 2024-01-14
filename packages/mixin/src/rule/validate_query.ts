@@ -20,29 +20,18 @@ const validate_query: LifecycleFunction<unknown, Method> = async function (paylo
 
     for (const key of lodash.keys(payload.query.filter)) {
         const field = payload.query.filter[key] as FilterFieldInterface
+        const type = payload.model.database.pk === key ? payload.model.database.pk_type : payload.model.schema[key].type
+        const valid_filter_keys = lodash.keys(type.query).concat(payload.model.database.pk)
 
-        if (field.gte && !lodash.isNumber(field.gte)) {
+        if (lodash.pull(lodash.keys(field), ...valid_filter_keys).length > 0) {
             return false
         }
-        if (field.gt && !lodash.isNumber(field.gt)) {
+
+        if (!lodash.isObject(field)) {
             return false
         }
-        if (field.lte && !lodash.isNumber(field.lte)) {
-            return false
-        }
-        if (field.lt && !lodash.isNumber(field.lt)) {
-            return false
-        }
-        if (field.include && !lodash.isArray(field.include)) {
-            return false
-        }
-        if (field.exclude && !lodash.isArray(field.exclude)) {
-            return false
-        }
-        if (field.in && !lodash.isArray(field.in)) {
-            return false
-        }
-        if (field.not_in && !lodash.isArray(field.not_in)) {
+
+        if (Object.keys(field).length > 0 && type.query_controller(field) === false) {
             return false
         }
     }

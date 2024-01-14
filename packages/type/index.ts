@@ -13,12 +13,29 @@ export const text: TypeInterface = {
         contains: "string",
     },
     query_controller: function (field_query: unknown) {
-        return (
-            lodash.every(
-                ["in", "not_in"],
-                (value) => lodash.isArray(field_query[value]) && lodash.every(field_query[value], (str) => lodash.isString(str))
-            ) && lodash.every(["equals", "not", "contains"], (value) => lodash.isString(field_query[value]))
-        )
+        const keys = Object.keys(field_query)
+
+        for (const key of keys) {
+            if (["in", "not_in"].includes(key)) {
+                if (!lodash.isArray(field_query[key])) {
+                    return false
+                }
+
+                for (const value of field_query[key]) {
+                    if (!lodash.isString(value)) {
+                        return false
+                    }
+                }
+            }
+
+            if (["equals", "contains"].includes(key)) {
+                if (!lodash.isString(field_query[key])) {
+                    return false
+                }
+            }
+        }
+
+        return true
     },
 }
 
@@ -37,12 +54,29 @@ export const float: TypeInterface = {
         gte: "number",
     },
     query_controller: function (field_query: unknown) {
-        return (
-            lodash.every(
-                ["in", "not_in"],
-                (value) => lodash.isArray(field_query[value]) && lodash.every(field_query[value], (str) => lodash.isNumber(str))
-            ) && lodash.every(["equals", "not", "lt", "lte", "gt", "gte"], (value) => lodash.isNumber(field_query[value]))
-        )
+        const keys = Object.keys(field_query)
+
+        for (const key of keys) {
+            if (["in", "not_in"].includes(key)) {
+                if (!lodash.isArray(field_query[key])) {
+                    return false
+                }
+
+                for (const value of field_query[key]) {
+                    if (!lodash.isNumber(value)) {
+                        return false
+                    }
+                }
+            }
+
+            if (["equals", "contains"].includes(key)) {
+                if (!lodash.isNumber(field_query[key])) {
+                    return false
+                }
+            }
+        }
+
+        return true
     },
 }
 
@@ -61,12 +95,29 @@ export const integer: TypeInterface = {
         gte: "number",
     },
     query_controller: function (field_query: unknown) {
-        return (
-            lodash.every(
-                ["in", "not_in"],
-                (value) => lodash.isArray(field_query[value]) && lodash.every(field_query[value], (str) => lodash.isNumber(str))
-            ) && lodash.every(["equals", "not", "lt", "lte", "gt", "gte"], (value) => lodash.isNumber(field_query[value]))
-        )
+        const keys = Object.keys(field_query)
+
+        for (const key of keys) {
+            if (["in", "not_in"].includes(key)) {
+                if (!lodash.isArray(field_query[key])) {
+                    return false
+                }
+
+                for (const value of field_query[key]) {
+                    if (!lodash.isNumber(value)) {
+                        return false
+                    }
+                }
+            }
+
+            if (["equals", "not", "lt", "lte", "gt", "gte"].includes(key)) {
+                if (!lodash.isNumber(field_query[key])) {
+                    return false
+                }
+            }
+        }
+
+        return true
     },
 }
 
@@ -79,7 +130,17 @@ export const boolean: TypeInterface = {
         not: "boolean",
     },
     query_controller: function (field_query: unknown) {
-        return lodash.every(["equals", "not"], (value) => lodash.isBoolean(field_query[value]))
+        const keys = Object.keys(field_query)
+
+        for (const key of keys) {
+            if (["equals", "not"].includes(key)) {
+                if (!lodash.isBoolean(field_query[key])) {
+                    return false
+                }
+            }
+        }
+
+        return true
     },
 }
 
@@ -121,12 +182,29 @@ export const char: TypeInterface = {
         contains: "string",
     },
     query_controller: function (field_query: unknown) {
-        return (
-            lodash.every(
-                ["in", "not_in"],
-                (value) => lodash.isArray(field_query[value]) && lodash.every(field_query[value], (str) => lodash.isString(str))
-            ) && lodash.every(["equals", "not", "contains"], (value) => lodash.isString(field_query[value]))
-        )
+        const keys = Object.keys(field_query)
+
+        for (const key of keys) {
+            if (["in", "not_in"].includes(key)) {
+                if (!lodash.isArray(field_query[key])) {
+                    return false
+                }
+
+                for (const value of field_query[key]) {
+                    if (!lodash.isString(value)) {
+                        return false
+                    }
+                }
+            }
+
+            if (["equals", "not", "contains"].includes(key)) {
+                if (!lodash.isString(field_query[key])) {
+                    return false
+                }
+            }
+        }
+
+        return true
     },
 }
 
@@ -162,13 +240,29 @@ export const date_type: TypeInterface = {
         gte: "Date",
     },
     query_controller: function (field_query: unknown) {
-        return (
-            lodash.every(
-                ["in", "not_in"],
-                (value) =>
-                    lodash.isArray(field_query[value]) && lodash.every(field_query[value], (str) => date_type.controller(str))
-            ) && lodash.every(["equals", "not", "lt", "lte", "gt", "gte"], (value) => date_type.controller(field_query[value]))
-        )
+        const keys = Object.keys(field_query)
+
+        for (const key of keys) {
+            if (["in", "not_in"].includes(key)) {
+                if (!lodash.isArray(field_query[key])) {
+                    return false
+                }
+
+                for (const value of field_query[key]) {
+                    if (!date_type.controller(value)) {
+                        return false
+                    }
+                }
+            }
+
+            if (["equals", "not", "lt", "lte", "gt", "gte"].includes(key)) {
+                if (!date_type.controller(field_query[key])) {
+                    return false
+                }
+            }
+        }
+
+        return true
     },
 }
 
@@ -186,12 +280,29 @@ export const time: TypeInterface = {
         contains: "string",
     },
     query_controller: function (field_query: unknown) {
-        return (
-            lodash.every(
-                ["in", "not_in"],
-                (value) => lodash.isArray(field_query[value]) && lodash.every(field_query[value], (str) => time.controller(str))
-            ) && lodash.every(["equals", "not", "contains"], (value) => time.controller(field_query[value]))
-        )
+        const keys = Object.keys(field_query)
+
+        for (const key of keys) {
+            if (["in", "not_in"].includes(key)) {
+                if (!lodash.isArray(field_query[key])) {
+                    return false
+                }
+
+                for (const value of field_query[key]) {
+                    if (!time.controller(value)) {
+                        return false
+                    }
+                }
+            }
+
+            if (["equals", "not", "lt", "lte", "gt", "gte"].includes(key)) {
+                if (!time.controller(field_query[key])) {
+                    return false
+                }
+            }
+        }
+
+        return true
     },
 }
 
@@ -213,13 +324,29 @@ export const date_time: TypeInterface = {
         gte: "Date",
     },
     query_controller: function (field_query: unknown) {
-        return (
-            lodash.every(
-                ["in", "not_in"],
-                (value) =>
-                    lodash.isArray(field_query[value]) && lodash.every(field_query[value], (str) => date_time.controller(str))
-            ) && lodash.every(["equals", "not", "lt", "lte", "gt", "gte"], (value) => date_time.controller(field_query[value]))
-        )
+        const keys = Object.keys(field_query)
+
+        for (const key of keys) {
+            if (["in", "not_in"].includes(key)) {
+                if (!lodash.isArray(field_query[key])) {
+                    return false
+                }
+
+                for (const value of field_query[key]) {
+                    if (!date_time.controller(value)) {
+                        return false
+                    }
+                }
+            }
+
+            if (["equals", "not", "lt", "lte", "gt", "gte"].includes(key)) {
+                if (!date_time.controller(field_query[key])) {
+                    return false
+                }
+            }
+        }
+
+        return true
     },
 }
 
@@ -241,13 +368,29 @@ export const timestamp: TypeInterface = {
         gte: "number",
     },
     query_controller: function (field_query: unknown) {
-        return (
-            lodash.every(
-                ["in", "not_in"],
-                (value) =>
-                    lodash.isArray(field_query[value]) && lodash.every(field_query[value], (str) => timestamp.controller(str))
-            ) && lodash.every(["equals", "not", "lt", "lte", "gt", "gte"], (value) => timestamp.controller(field_query[value]))
-        )
+        const keys = Object.keys(field_query)
+
+        for (const key of keys) {
+            if (["in", "not_in"].includes(key)) {
+                if (!lodash.isArray(field_query[key])) {
+                    return false
+                }
+
+                for (const value of field_query[key]) {
+                    if (!timestamp.controller(value)) {
+                        return false
+                    }
+                }
+            }
+
+            if (["equals", "not", "lt", "lte", "gt", "gte"].includes(key)) {
+                if (!timestamp.controller(field_query[key])) {
+                    return false
+                }
+            }
+        }
+
+        return true
     },
 }
 
@@ -265,10 +408,21 @@ export const array: (typeFunc: TypeInterface) => TypeInterface = function (typeF
             exclude: `${typeFunc.native}[]`,
         },
         query_controller: function (field_query: unknown): boolean {
-            return lodash.every(
-                ["include", "exclude"],
-                (value) => lodash.isArray(field_query[value]) && lodash.every(field_query[value], typeFunc.query_controller)
-            )
+            const keys = Object.keys(field_query)
+
+            for (const key of keys) {
+                if (["include", "exclude"].includes(key)) {
+                    if (!lodash.isArray(field_query[key])) {
+                        return false
+                    }
+
+                    for (const value of field_query[key]) {
+                        if (!typeFunc.query_controller(value)) {
+                            return false
+                        }
+                    }
+                }
+            }
         },
     }
 }
