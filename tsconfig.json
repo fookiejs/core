@@ -1,16 +1,25 @@
 {
-    "compilerOptions": {
-        "declaration": true,
-        "experimentalDecorators": true,
-        "emitDecoratorMetadata": true,
-        "module": "commonjs",
-        "target": "es6",
-        "outDir": "./dist",
-        "types": ["node"],
-        "skipLibCheck": true,
-        "lib": ["ES2021"]
-    },
+  "compilerOptions": {
+    "target": "es2020",
+    "module": "commonjs",
+    "lib": ["ESNext","DOM"],
+    "strict": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "skipLibCheck": true,
+    "outDir": "./dist",
+    "strictNullChecks": true,
+    "strictPropertyInitialization": false,
+    "strictFunctionTypes": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "allowImportingTsExtensions":true,
+    "noEmit": true
+  },
 
-    "include": ["packages/**/*", "index.ts"],
-    "exclude": ["test", "node_modules"]
+
 }

@@ -1,34 +1,28 @@
 {
-    "name": "fookie",
-    "description": "",
-    "version": "0.999.36",
-    "main": "dist/index.js",
-    "scripts": {
-        "test": "cross-env FOOKIE_DEV=true FOOKIE_TEST=true vitest",
-        "coverage": "vitest run --coverage",
-        "build": "npx tsc",
-        "lint": "npx eslint packages",
-        "clean": "find . -name \"*.ts\" -exec sh -c 'rm \"${0%.*}.js\" \"${0%.*}.js.map\" 2>/dev/null' {} \\;"
-    },
-    "dependencies": {
-        "deepmerge": "^4.3.0",
-        "lodash": "^4.17.21",
-        "uuid": "^9.0.0"
-    },
-    "devDependencies": {
-        "@types/lodash": "^4.14.191",
-        "@types/node": "^20.4.2",
-        "@typescript-eslint/eslint-plugin": "^5.56.0",
-        "@typescript-eslint/parser": "^5.56.0",
-        "@vitest/coverage-istanbul": "^0.29.3",
-        "@vitest/ui": "^0.29.3",
-        "cross-env": "^7.0.3",
-        "eslint": "^8.36.0",
-        "vitest": "^0.29.3"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/fookiejs/core.git"
-    },
-    "homepage": "https://github.com/fookiejs/core.git#readme"
+  "name": "fookie-ts-2",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
+    "lodash": "^4.17.21",
+    "moment": "^2.30.1",
+    "reflect-metadata": "^0.2.1",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.17.0",
+    "@types/uuid": "^9.0.8",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.2",
+    "vitest": "^1.4.0"
+  }
 }
