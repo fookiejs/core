@@ -2,13 +2,13 @@ import * as lodash from "lodash";
 import { LifecycleFunction } from "../../../lifecycle-function";
 
 export default LifecycleFunction.new({
-    key: "unique_group",
+    key: "uniqueGroup",
     execute: async function (payload) {
         const fields = lodash.keys(payload.body);
         let groups = [];
         for (const field of fields) {
-            if (payload.schema[field].unique_group) {
-                groups = lodash.uniq(groups.concat(payload.schema[field].unique_group));
+            if (payload.schema[field].uniqueGroup) {
+                groups = lodash.uniq(groups.concat(payload.schema[field].uniqueGroup));
             }
         }
 
@@ -16,23 +16,19 @@ export default LifecycleFunction.new({
             const filter = {};
             for (const field of lodash.keys(payload.schema)) {
                 if (
-                    payload.schema[field].unique_group &&
-                    payload.schema[field].unique_group.includes(group) &&
+                    payload.schema[field].uniqueGroup &&
+                    payload.schema[field].uniqueGroup.includes(group) &&
                     payload.body[field]
                 ) {
                     filter[field] = { equals: payload.body[field] };
                 }
             }
 
-            const res = await run({
-                token: process.env.SYSTEM_TOKEN,
-                model: payload.model,
-                method: Count,
-                query: {
-                    filter,
-                },
+            const res = await payload.modelClass.count({
+                filter,
             });
-            return res.data == 0;
+
+            return res == 0;
         }
 
         return true;

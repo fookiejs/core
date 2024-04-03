@@ -8,17 +8,13 @@ export default LifecycleFunction.new({
         const fields = lodash.keys(payload.body);
         for (const field of fields) {
             if (payload.schema[field].unique) {
-                const res = await run({
-                    token: process.env.SYSTEM_TOKEN,
-                    model: payload.model,
-                    method: "count",
-                    query: {
-                        filter: {
-                            [field]: { equals: payload.body[field] },
-                        },
+                const res = await payload.modelClass.count({
+                    filter: {
+                        [field]: { equals: payload.body[field] },
                     },
                 });
-                if (res.data > trash_old) {
+
+                if (res > trash_old) {
                     return false;
                 }
             }
