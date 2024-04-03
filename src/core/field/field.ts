@@ -10,7 +10,7 @@ export class Field {
     unique?: boolean;
     uniqueGroup?: string[];
     default?: unknown;
-    validators?: [(value: any) => Promise<boolean>];
+    validators?: [(value: any) => boolean | string];
     onlyClient?: boolean;
     onlyServer?: boolean;
     relation?: typeof Model;

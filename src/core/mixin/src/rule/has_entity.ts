@@ -6,17 +6,13 @@ export default LifecycleFunction.new({
     execute: async function (payload) {
         for (const key of lodash.keys(payload.body)) {
             if (lodash.has(payload.schema[key], "relation")) {
-                const res = await run({
-                    token: process.env.SYSTEM_TOKEN,
-                    model: payload.schema[key].relation,
-                    method: Count,
-                    query: {
-                        filter: {
-                            pk: { equals: payload.body[key] },
-                        },
+                const res = await payload.schema[key].relation.count({
+                    filter: {
+                        id: { equals: payload.body[key] },
                     },
                 });
-                if (res.data === 0) {
+
+                if (res === 0) {
                     return false;
                 }
             }

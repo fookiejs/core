@@ -11,12 +11,12 @@ export default LifecycleFunction.new({
                 for (const validator of field.validators) {
                     const value = payload.body[field_name];
                     const is_valid = await validator(value);
-                    if (!is_valid) {
+                    if (!lodash.isBoolean(is_valid)) {
                         flag = false;
-                        if (!lodash.has(payload.response.validation_error, field_name)) {
-                            payload.response.validation_error[field_name] = [];
+                        if (!lodash.has(payload.error.validationErrors, field_name)) {
+                            payload.error.validationErrors[field_name] = [];
                         }
-                        payload.response.validation_error[field_name].push(validator.key);
+                        payload.error.validationErrors[field_name].push(is_valid);
                     }
                 }
             }
