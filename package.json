@@ -1,6 +1,6 @@
 {
-  "name": "fookie-ts-2",
-  "version": "1.0.0",
+  "name": "fookie",
+  "version": "0.9999.1",
   "description": "",
   "main": "index.js",
   "scripts": {
