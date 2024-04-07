@@ -11,6 +11,7 @@ import cascade_prepare from "../modify/cascade_prepare";
 import todo from "../effect/todo";
 import reactives from "../effect/reactives";
 import drop from "../effect/drop";
+import attributes from "../filter/attributes";
 import need_field_in_options from "../rule/need_field_in_options";
 import validate_body from "../rule/validate_body";
 import { BindsType } from "../../../model/model";
@@ -21,14 +22,14 @@ export const after: BindsType = {
         rule: [has_entity, check_required, validate_body],
         preRule: [can_write],
         role: [],
-        filter: [],
+        filter: [attributes],
         effect: [db_disconnect, drop],
     },
     read: {
         modify: [filter_fields],
         rule: [validate_query],
         preRule: [has_method, validate_attributes],
-        filter: [],
+        filter: [attributes],
         effect: [db_disconnect],
         role: [],
     },

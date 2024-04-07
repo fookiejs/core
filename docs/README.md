@@ -205,8 +205,6 @@ Fields are used to define how each field in the model behaves. Here are some pro
 | unique | Indicates whether the field is unique or not. |
 | default | Indicates the default value for the field. |
 | unique_group | Specifies the uniqueness groups. |
-| only_client | Specifies whether the value is provided only by the client. |
-| only_server | Specifies whether the value is provided only by the server. |
 | relation | Specifies the relationship with other models. |
 | read | Specifies which roles can read the information in this field. |
 | write | Information in this field specifies which roles can write. |

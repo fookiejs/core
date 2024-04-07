@@ -53,6 +53,7 @@ export class Model {
     static Decorator(model: ModelType) {
         return function <T extends typeof Model>(constructor: T) {
             const schema = Reflect.getMetadata("schema", constructor);
+
             const filledModel = fillModel(model);
 
             const methods = filledModel.database.modify<T>(filledModel, schema);
@@ -105,8 +106,8 @@ export type BindsType = {
 export type QueryType<T> = {
     limit?: number;
     offset?: number;
-    attributes?: string[];
-    filter?: {
+    attributes: string[];
+    filter: {
         [key in keyof Partial<T>]: {
             gte?: any;
             gt?: any;

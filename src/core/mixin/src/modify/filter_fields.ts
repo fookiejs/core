@@ -1,21 +1,23 @@
 import * as lodash from "lodash";
 import { LifecycleFunction } from "../../../lifecycle-function";
+import { Field } from "../../../field/field";
 
 export default LifecycleFunction.new({
     key: "filter_fields",
     execute: async function (payload) {
-        for (const field of payload.query.attributes) {
-            const attr_roles = lodash.has(payload.schema[field], "read")
-                ? payload.schema[field].read
-                : [];
+        for (const key of payload.query.attributes) {
+            const field = payload.schema[key as keyof typeof payload.schema] as Field;
+
             let show = true;
 
-            for (const role of attr_roles) {
-                const res = await role(payload);
+            for (const role of field.read || []) {
+                const res = await role.execute(payload);
+
                 show = show && !!res;
             }
+
             if (!show) {
-                payload.query.attributes = lodash.pull(payload.query.attributes, field);
+                payload.query.attributes = lodash.pull(payload.query.attributes, key);
             }
         }
     },
