@@ -37,11 +37,9 @@ yarn-error.log
 /example
 
 # tests
-/test
 /benchmarks/memory
 /coverage
 /.nyc_output
-/packages/graphql
 /benchmarks/memory
 build/config\.gypi
 

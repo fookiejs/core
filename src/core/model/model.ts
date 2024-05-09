@@ -1,12 +1,17 @@
-import { ClassConstructor } from "class-transformer";
-import { BaseClass } from "../base-class.ts";
 import { Database } from "../database.ts";
-import { Lifecycle } from "../lifecycle.ts";
 import { LifecycleFunction } from "../lifecycle-function.ts";
 import { Method } from "../method.ts";
 import { fillModel } from "./utils/create-model.ts";
 import { countRun, createRun, deleteRun, readRun, sumRun, updateRun } from "../run/run.ts";
 import { FookieError } from "../error.ts";
+import { SchemaType } from "../schema.ts";
+
+export const models: {
+    schema: SchemaType<typeof Model>;
+    database: Database;
+    binds?: BindsType | undefined;
+    modelClass: typeof Model;
+}[] = [];
 
 export class Model {
     id: string;
@@ -52,7 +57,7 @@ export class Model {
 
     static Decorator(model: ModelType) {
         return function <T extends typeof Model>(constructor: T) {
-            const schema = Reflect.getMetadata("schema", constructor);
+            const schema: SchemaType<T> = Reflect.getMetadata("schema", constructor);
 
             const filledModel = fillModel(model);
 
@@ -71,6 +76,10 @@ export class Model {
             constructor.sum = sumRun(model, schema, constructor, methods.sum);
 
             Reflect.defineMetadata("model", model, constructor);
+
+            //@ts-ignore
+            const m = { modelClass: constructor, ...model, schema: schema };
+            models.push(m);
         };
     }
 }
@@ -106,7 +115,7 @@ export type BindsType = {
 export type QueryType<T> = {
     limit?: number;
     offset?: number;
-    attributes: string[];
+    attributes?: string[];
     filter: {
         [key in keyof Partial<T>]: {
             gte?: any;
