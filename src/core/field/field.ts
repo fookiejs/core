@@ -16,12 +16,6 @@ export class Field {
     read?: LifecycleFunction<any, any>[];
     write?: LifecycleFunction<any, any>[];
     cascadeDelete?: boolean;
-    reactiveDelete?: boolean;
-    reactives?: {
-        to: string;
-        from: string;
-        compute: Function;
-    }[];
 
     static Decorator = function (field: Field) {
         return (target: any, property: any) => {
