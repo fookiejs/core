@@ -5,18 +5,21 @@ export default LifecycleFunction.new({
     key: "drop",
     execute: async function (payload) {
         if (lodash.has(payload.options, "drop")) {
-            setTimeout(async function () {
-                await run({
-                    token: payload.token,
-                    model: payload.model,
-                    method: Delete,
-                    query: {
+            if (payload.options.drop! > 0) {
+                setTimeout(async function () {
+                    await payload.modelClass.delete({
                         filter: {
-                            pk: { equals: payload.response.data[payload.model.database.pk] },
+                            id: { equals: payload.response.id },
                         },
+                    });
+                }, payload.options.drop);
+            } else {
+                await payload.modelClass.delete({
+                    filter: {
+                        id: { equals: payload.response.id },
                     },
                 });
-            }, payload.options.drop);
+            }
         }
     },
 });

@@ -1,4 +1,6 @@
 export class Options {
-    test: boolean;
+    test?: boolean;
+    drop?: number;
+    token?: string;
     [key: string]: unknown;
 }

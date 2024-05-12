@@ -9,7 +9,7 @@ describe("Relation", () => {
     })
     class RelationExistParent extends Model {
         @Field.Decorator({ type: defaults.type.text })
-        name?: string;
+        name: string;
     }
 
     @Model.Decorator({
@@ -28,7 +28,6 @@ describe("Relation", () => {
     });
 
     it("Create a child for an not existing parent", async () => {
-        const entity = await RelationExistParent.create({ name: "John Doe" });
         const response = await RelationExistChild.create({ parent: v4() });
 
         expect(response instanceof FookieError).toBe(true);
