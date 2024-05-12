@@ -3,10 +3,8 @@ import * as lodash from "lodash";
 
 export const text = Type.new({
     key: "string",
-    validate: function (value: unknown): boolean {
-        return lodash.isString(value);
-    },
-    example: "hi",
+    validate: lodash.isString,
+    example: "abc",
     queryController: {
         equals: {
             key: "string",
@@ -35,11 +33,11 @@ export const text = Type.new({
             validate: lodash.isString,
         },
         isNull: {
-            key: "string",
+            key: "boolean",
             validate: lodash.isBoolean,
         },
         isNotNull: {
-            key: "string",
+            key: "boolean",
             validate: lodash.isBoolean,
         },
     },

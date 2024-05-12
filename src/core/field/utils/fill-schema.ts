@@ -4,7 +4,7 @@ import * as lodash from "lodash";
 import { Field } from "../field.ts";
 
 export function fillSchema(field: Field): Field {
-    if (lodash.has(field, "type")) {
+    if (!lodash.has(field, "type")) {
         field.type = text;
     }
 

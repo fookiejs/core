@@ -25,7 +25,7 @@ test("Model methods must be working.", async () => {
         @Field.Decorator({ required: true, type: defaults.type.text })
         email: string;
 
-        @Field.Decorator({ required: true, type: defaults.type.number })
+        @Field.Decorator({ required: true, type: defaults.type.integer })
         usage: number;
     }
 
@@ -33,6 +33,7 @@ test("Model methods must be working.", async () => {
         email: "test@fookiejs.com",
         usage: 3,
     });
+
     expect(createResponse instanceof User).toEqual(true);
 
     const readResponse = await User.read({});

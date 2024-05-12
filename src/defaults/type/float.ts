@@ -1,28 +1,33 @@
 import { Type } from "../../core/type";
 import * as lodash from "lodash";
 
-export const number = Type.new({
-    key: "number",
+export const float = Type.new({
+    key: "float",
     validate: function (value: unknown): boolean {
         return lodash.isNumber(value);
     },
     example: 1,
     queryController: {
         equals: {
-            key: "number",
+            key: "float",
             validate: lodash.isNumber,
         },
         notEquals: {
-            key: "number",
+            key: "float",
             validate: lodash.isNumber,
         },
+
+        gte: { key: "float", validate: lodash.isNumber },
+        gt: { key: "float", validate: lodash.isNumber },
+        lte: { key: "float", validate: lodash.isNumber },
+        lt: { key: "float", validate: lodash.isNumber },
         in: {
-            key: "number",
+            key: "float",
             validate: lodash.isNumber,
             isArray: true,
         },
         notIn: {
-            key: "number",
+            key: "float",
             validate: lodash.isNumber,
             isArray: true,
         },

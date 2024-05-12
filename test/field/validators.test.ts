@@ -8,7 +8,7 @@ test("Field with a validator passing validation", async () => {
     })
     class ValidatorModel extends Model {
         @Field.Decorator({
-            type: defaults.type.number,
+            type: defaults.type.integer,
             validators: [
                 (value) => {
                     return value >= 10 && value <= 20;
@@ -28,7 +28,7 @@ test("Field with a validator failing validation", async () => {
     })
     class ValidatorModel extends Model {
         @Field.Decorator({
-            type: defaults.type.number,
+            type: defaults.type.integer,
             validators: [
                 (value) => {
                     const isValid = value >= 10 && value <= 20;
@@ -40,6 +40,7 @@ test("Field with a validator failing validation", async () => {
     }
 
     const invalidResponse = await ValidatorModel.create({ myNumber: 25 });
+
     expect(invalidResponse instanceof FookieError).toBe(true);
     if (invalidResponse instanceof FookieError) {
         expect(invalidResponse.key === "validate_body").toBe(true);

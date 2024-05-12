@@ -4,5 +4,13 @@ export class Type extends BaseClass {
     key: string;
     validate: (value: unknown) => boolean;
     example: unknown;
-    queryController: any;
+    queryController: {
+        [key: string]: QueryValidator;
+    };
+}
+
+class QueryValidator {
+    key: string;
+    validate: (value: unknown) => boolean;
+    isArray?: boolean;
 }

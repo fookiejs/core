@@ -1,11 +1,11 @@
 import { store } from "./database/store";
 import { text } from "./type/text";
-import { number } from "./type/number";
+import { integer } from "./type/integer";
 
 export const defaults = {
     type: {
+        integer,
         text,
-        number,
     },
     database: {
         store,
