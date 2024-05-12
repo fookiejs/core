@@ -1,45 +1,47 @@
-import { expect, test } from "vitest";
+import { expect, it } from "vitest";
 import * as lodash from "lodash";
 import { Model, Field, defaults, LifecycleFunction } from "../../src/exports.ts";
 
-test("Model methods must be working.", async () => {
-    @Model.Decorator({
-        database: defaults.database.store,
-        binds: {
-            read: {
-                role: [],
-            },
-            create: {
-                role: [
-                    LifecycleFunction.new({
-                        key: "example-lifecycle",
-                        execute: async function (payload) {
-                            return true;
-                        },
-                    }),
-                ],
-            },
+@Model.Decorator({
+    database: defaults.database.store,
+    binds: {
+        read: {
+            role: [],
         },
-    })
-    class User extends Model {
-        @Field.Decorator({ required: true, type: defaults.type.text })
-        email: string;
+        create: {
+            role: [
+                LifecycleFunction.new({
+                    key: "example-lifecycle",
+                    execute: async function (payload) {
+                        return true;
+                    },
+                }),
+            ],
+        },
+    },
+})
+class User extends Model {
+    @Field.Decorator({ required: true, type: defaults.type.text })
+    email: string;
 
-        @Field.Decorator({ required: true, type: defaults.type.integer })
-        usage: number;
-    }
+    @Field.Decorator({ required: true, type: defaults.type.integer })
+    usage: number;
+}
 
+it("should create a user correctly", async () => {
     const createResponse = await User.create({
         email: "test@fookiejs.com",
         usage: 3,
     });
-
     expect(createResponse instanceof User).toEqual(true);
+});
 
+it("should read users correctly", async () => {
     const readResponse = await User.read({});
-
     expect(lodash.isArray(readResponse)).toEqual(true);
+});
 
+it("should update a user correctly", async () => {
     const updateResponse = await User.update(
         {
             filter: {
@@ -53,7 +55,9 @@ test("Model methods must be working.", async () => {
         },
     );
     expect(updateResponse).toEqual(true);
+});
 
+it("should delete a user correctly", async () => {
     const deleteResponse = await User.delete({
         filter: {
             id: {
@@ -62,7 +66,9 @@ test("Model methods must be working.", async () => {
         },
     });
     expect(deleteResponse).toEqual(true);
+});
 
+it("should count users correctly", async () => {
     const countResponse = await User.count({
         filter: {
             id: {
@@ -70,9 +76,10 @@ test("Model methods must be working.", async () => {
             },
         },
     });
-
     expect(countResponse).toEqual(0);
+});
 
+it("should sum user usage correctly", async () => {
     const sumResponse = await User.sum(
         {
             filter: {
@@ -83,6 +90,5 @@ test("Model methods must be working.", async () => {
         },
         "usage",
     );
-
     expect(sumResponse).toEqual(0);
 });
