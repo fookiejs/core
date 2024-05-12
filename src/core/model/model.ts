@@ -5,6 +5,7 @@ import { fillModel } from "./utils/create-model.ts";
 import { countRun, createRun, deleteRun, readRun, sumRun, updateRun } from "../run/run.ts";
 import { FookieError } from "../error.ts";
 import { SchemaType } from "../schema.ts";
+import { Options } from "../option.ts";
 
 export const models: {
     schema: SchemaType<typeof Model>;
@@ -19,11 +20,12 @@ export class Model {
     static async create<T extends Model>(
         this: new () => T,
         body: Omit<T, "id">,
+        options?: Options,
     ): Promise<T | FookieError> {
         throw Error("Not implemented");
     }
 
-    static async read<T extends Model>(this: new () => T, query: QueryType<T>): Promise<T[]> {
+    static async read<T extends Model>(this: new () => T, query?: QueryType<T>): Promise<T[]> {
         throw Error("Not implemented");
     }
 
@@ -31,19 +33,24 @@ export class Model {
         this: new () => T,
         query: QueryType<T>,
         body: Partial<Omit<T, "id">>,
+        options?: Options,
     ): Promise<boolean> {
         throw Error("Not implemented");
     }
 
-    static async delete<T extends Model>(this: new () => T, query: QueryType<T>): Promise<boolean> {
+    static async delete<T extends Model>(
+        this: new () => T,
+        query: QueryType<T>,
+        options?: Options,
+    ): Promise<boolean> {
         throw Error("Not implemented");
     }
 
-    static async test() {
-        throw Error("Not implemented");
-    }
-
-    static async count<T extends Model>(this: new () => T, query: QueryType<T>): Promise<T[]> {
+    static async count<T extends Model>(
+        this: new () => T,
+        query: QueryType<T>,
+        options?: Options,
+    ): Promise<T[]> {
         throw Error("Not implemented");
     }
 
@@ -51,6 +58,7 @@ export class Model {
         this: new () => T,
         query: QueryType<T>,
         field: string,
+        options?: Options,
     ): Promise<number> {
         throw Error("Not implemented");
     }
@@ -116,7 +124,7 @@ export type QueryType<T> = {
     limit?: number;
     offset?: number;
     attributes?: string[];
-    filter: {
+    filter?: {
         [key in keyof Partial<T>]: {
             gte?: any;
             gt?: any;
