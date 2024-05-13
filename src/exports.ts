@@ -8,4 +8,5 @@ export * from "./core/lifecycle.ts";
 export * from "./core/method.ts";
 export * from "./core/model/model.ts";
 export * from "./core/type.ts";
+export * from "./core/config.ts";
 export * from "./defaults/exports.ts";

@@ -1,10 +1,17 @@
 import { describe, it, expect } from "vitest";
-import { Field, Model, defaults } from "../../src/exports";
+import { Config, Field, LifecycleFunction, Model, defaults } from "../../src/exports";
 import { v4 } from "uuid";
+import { Payload } from "../../src/core/payload";
+import { system } from "../../src/defaults/role/system";
 
 describe("Relation", () => {
     @Model.Decorator({
         database: defaults.database.store,
+        binds: {
+            delete: {
+                role: [system],
+            },
+        },
     })
     class Drop extends Model {
         @Field.Decorator({ type: defaults.type.text })
