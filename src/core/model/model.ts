@@ -6,6 +6,7 @@ import { countRun, createRun, deleteRun, readRun, sumRun, updateRun } from "../r
 import { FookieError } from "../error.ts";
 import { SchemaType } from "../schema.ts";
 import { Options } from "../option.ts";
+import { Mixin } from "../mixin/index.ts";
 
 export const models: {
     schema: SchemaType<typeof Model>;
@@ -99,6 +100,7 @@ export class Model {
 export type ModelType = {
     database: Database;
     binds?: BindsType;
+    mixins: Mixin[];
 };
 
 export type BindsType = {

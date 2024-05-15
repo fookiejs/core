@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, it } from "vitest";
 import { Model, Field, defaults, LifecycleFunction } from "../../src/exports.ts";
 import { FookieError } from "../../src/core/error.ts";
 
@@ -34,7 +34,7 @@ describe("Define a field with read role", async () => {
         secret?: string;
     }
 
-    test("Write field error", async () => {
+    it("Write field error", async () => {
         const response = (await SecureWriteModel.create({
             name: "John Doe",
             password: "123456",
@@ -43,7 +43,7 @@ describe("Define a field with read role", async () => {
         expect(response instanceof FookieError).toBe(true);
     });
 
-    test("Write Field Error", async () => {
+    it("Write Field Error", async () => {
         const response = (await SecureWriteModel.create({
             name: "John Doe",
             secret: "123456",
@@ -52,7 +52,7 @@ describe("Define a field with read role", async () => {
         expect(response instanceof FookieError).toBe(true);
     });
 
-    test("Write Field Error", async () => {
+    it("Write Field Error", async () => {
         const response = (await SecureWriteModel.create({
             name: "John Doe",
             secret: "123456",
@@ -62,7 +62,7 @@ describe("Define a field with read role", async () => {
         expect(response instanceof FookieError).toBe(true);
     });
 
-    test("Write Field Error", async () => {
+    it("Write Field Error", async () => {
         const response = (await SecureWriteModel.create({
             name: "John Doe",
         })) as SecureWriteModel;

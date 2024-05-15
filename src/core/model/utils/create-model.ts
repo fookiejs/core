@@ -6,6 +6,7 @@ import { lifecycles } from "../../lifecycle";
 
 export function fillModel(model: Partial<ModelType>): ModelType {
     model.binds = lodash.isObject(model.binds) ? model.binds : ({} as BindsType);
+    model.mixins = lodash.isArray(model.mixins) ? model.mixins : ([] as BindsType[]);
 
     for (const method of methods) {
         if (!lodash.isObject(model.binds[method])) {
@@ -25,6 +26,26 @@ export function fillModel(model: Partial<ModelType>): ModelType {
             if (!lodash.isArray(model.binds[method][lifecycle])) {
                 //@ts-ignore
                 model.binds[method][lifecycle] = [];
+            }
+        }
+    }
+
+    if (model.mixins.length > 0) {
+        for (const mixin of model.mixins) {
+            if (lodash.isObject(mixin)) {
+                for (const method of methods) {
+                    if (lodash.isObject(mixin.binds[method])) {
+                        model.binds[method] = lodash.mergeWith(
+                            model.binds[method],
+                            mixin.binds[method],
+                            (objValue, srcValue) => {
+                                if (lodash.isArray(objValue)) {
+                                    return objValue.concat(srcValue);
+                                }
+                            },
+                        );
+                    }
+                }
             }
         }
     }
