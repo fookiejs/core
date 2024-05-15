@@ -9,6 +9,7 @@ import { timestamp } from "./type/timestamp";
 import { time } from "./type/time";
 import { float } from "./type/float";
 import { boolean } from "./type/boolean";
+import { array } from "./type/array";
 
 export const defaults = {
     type: {
@@ -19,6 +20,7 @@ export const defaults = {
         time,
         float,
         boolean,
+        array,
     },
     database: {
         store,
