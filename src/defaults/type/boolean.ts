@@ -18,9 +18,5 @@ export const boolean = Type.new({
             key: "boolean",
             validate: lodash.isBoolean,
         },
-        isNotNull: {
-            key: "boolean",
-            validate: lodash.isBoolean,
-        },
     },
 });

@@ -5,6 +5,14 @@ import { FookieError } from "../../src/core/error.ts";
 describe("Define a field with read role", async () => {
     @Model.Decorator({
         database: defaults.database.store,
+        binds: {
+            create: {
+                role: [],
+            },
+            read: {
+                role: [],
+            },
+        },
     })
     class SecureModel extends Model {
         @Field.Decorator({ type: defaults.type.text })

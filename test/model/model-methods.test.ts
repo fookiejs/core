@@ -1,11 +1,23 @@
 import { expect, it } from "vitest";
 import * as lodash from "lodash";
-import { Model, Field, defaults, LifecycleFunction } from "../../src/exports.ts";
+import { Model, Field, defaults, LifecycleFunction, Config } from "../../src/exports.ts";
 
 @Model.Decorator({
     database: defaults.database.store,
     binds: {
         read: {
+            role: [],
+        },
+        update: {
+            role: [],
+        },
+        delete: {
+            role: [],
+        },
+        count: {
+            role: [],
+        },
+        sum: {
             role: [],
         },
         create: {
@@ -76,6 +88,7 @@ it("should count users correctly", async () => {
             },
         },
     });
+
     expect(countResponse).toEqual(0);
 });
 
@@ -89,6 +102,9 @@ it("should sum user usage correctly", async () => {
             },
         },
         "usage",
+        {
+            token: Config.get("SYSTEM_TOKEN"),
+        },
     );
     expect(sumResponse).toEqual(0);
 });

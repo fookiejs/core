@@ -6,6 +6,14 @@ import { FookieError } from "../../src/core/error";
 describe("Relation", () => {
     @Model.Decorator({
         database: defaults.database.store,
+        binds: {
+            create: {
+                role: [],
+            },
+            read: {
+                role: [],
+            },
+        },
     })
     class RelationExistParent extends Model {
         @Field.Decorator({ type: defaults.type.text })
@@ -14,6 +22,11 @@ describe("Relation", () => {
 
     @Model.Decorator({
         database: defaults.database.store,
+        binds: {
+            create: {
+                role: [],
+            },
+        },
     })
     class RelationExistChild extends Model {
         @Field.Decorator({ relation: RelationExistParent })

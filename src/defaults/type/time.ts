@@ -31,11 +31,19 @@ export const time = Type.new({
             validate: isTime,
             isArray: true,
         },
-        before: {
+        lt: {
             key: "time",
             validate: isTime,
         },
-        after: {
+        lte: {
+            key: "time",
+            validate: isTime,
+        },
+        gt: {
+            key: "time",
+            validate: isTime,
+        },
+        gte: {
             key: "time",
             validate: isTime,
         },

@@ -4,6 +4,11 @@ import { Field, Model, defaults } from "../../src/exports";
 describe("Cascase", () => {
     @Model.Decorator({
         database: defaults.database.store,
+        binds: {
+            read: { role: [] },
+            create: { role: [] },
+            delete: { role: [] },
+        },
     })
     class User extends Model {
         @Field.Decorator({ type: defaults.type.text })
@@ -12,6 +17,10 @@ describe("Cascase", () => {
 
     @Model.Decorator({
         database: defaults.database.store,
+        binds: {
+            read: { role: [] },
+            create: { role: [] },
+        },
     })
     class Order extends Model {
         @Field.Decorator({ relation: User, cascadeDelete: true })

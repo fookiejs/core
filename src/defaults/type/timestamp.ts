@@ -1,40 +1,50 @@
 import { Type } from "../../core/type";
 import * as lodash from "lodash";
 
+function isTimestamp(value: unknown) {
+    if (!lodash.isString(value)) return false;
+    const timestampPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
+    return timestampPattern.test(value);
+}
+
 export const timestamp = Type.new({
     key: "timestamp",
-    validate: function (value: unknown) {
-        if (!lodash.isString(value)) return false;
-        const timestampPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
-        return timestampPattern.test(value);
-    },
+    validate: isTimestamp,
     example: new Date().toISOString(),
     queryController: {
         equals: {
             key: "timestamp",
-            validate: (value: unknown) => !isNaN(Date.parse(value as string)),
+            validate: isTimestamp,
         },
         notEquals: {
             key: "timestamp",
-            validate: (value: unknown) => !isNaN(Date.parse(value as string)),
+            validate: isTimestamp,
         },
         in: {
             key: "timestamp",
-            validate: (value: unknown) => !isNaN(Date.parse(value as string)),
+            validate: isTimestamp,
             isArray: true,
         },
         notIn: {
             key: "timestamp",
-            validate: (value: unknown) => !isNaN(Date.parse(value as string)),
+            validate: isTimestamp,
             isArray: true,
         },
-        before: {
+        lt: {
             key: "timestamp",
-            validate: (value: unknown) => !isNaN(Date.parse(value as string)),
+            validate: isTimestamp,
         },
-        after: {
+        lte: {
             key: "timestamp",
-            validate: (value: unknown) => !isNaN(Date.parse(value as string)),
+            validate: isTimestamp,
+        },
+        gt: {
+            key: "timestamp",
+            validate: isTimestamp,
+        },
+        gte: {
+            key: "timestamp",
+            validate: isTimestamp,
         },
     },
 });

@@ -1,3 +1,5 @@
+import { v4 } from "uuid";
+
 export class Config {
     private static env: Record<string, string> = {};
 
@@ -6,6 +8,10 @@ export class Config {
             if (process.env.hasOwnProperty(key)) {
                 this.env[key] = process.env[key] as string;
             }
+        }
+
+        if (!this.env.hasOwnProperty("SYSTEM_TOKEN")) {
+            this.env["SYSTEM_TOKEN"] = v4();
         }
     }
 

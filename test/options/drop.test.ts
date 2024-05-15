@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { Config, Field, LifecycleFunction, Model, defaults } from "../../src/exports";
 import { v4 } from "uuid";
-import { Payload } from "../../src/core/payload";
+
 import { system } from "../../src/defaults/role/system";
 
 describe("Relation", () => {
@@ -10,6 +10,12 @@ describe("Relation", () => {
         binds: {
             delete: {
                 role: [system],
+            },
+            read: {
+                role: [],
+            },
+            create: {
+                role: [],
             },
         },
     })
@@ -25,6 +31,7 @@ describe("Relation", () => {
                 drop: 0,
             },
         );
+
         expect(entity instanceof Drop).toBe(true);
 
         const entities = await Drop.read();

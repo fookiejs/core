@@ -1,5 +1,6 @@
 import * as lodash from "lodash";
 import { LifecycleFunction } from "../../../lifecycle-function";
+import { Config } from "../../../config";
 
 export default LifecycleFunction.new({
     key: "uniqueGroup",
@@ -24,9 +25,14 @@ export default LifecycleFunction.new({
                 }
             }
 
-            const res = await payload.modelClass.count({
-                filter,
-            });
+            const res = await payload.modelClass.count(
+                {
+                    filter,
+                },
+                {
+                    token: Config.get("SYSTEM_TOKEN"),
+                },
+            );
 
             return res == 0;
         }

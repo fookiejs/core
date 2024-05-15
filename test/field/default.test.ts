@@ -5,6 +5,11 @@ import { FookieError } from "../../src/core/error.ts";
 test("Define a field with a default value", async () => {
     @Model.Decorator({
         database: defaults.database.store,
+        binds: {
+            create: {
+                role: [],
+            },
+        },
     })
     class DefaultFieldModel extends Model {
         @Field.Decorator({ type: defaults.type.text, default: "defaultVal" })

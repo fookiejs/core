@@ -4,6 +4,10 @@ import { FookieError } from "../../src/core/error";
 
 @Model.Decorator({
     database: defaults.database.store,
+    binds: {
+        create: { role: [] },
+        read: { role: [] },
+    },
 })
 class QueryTypeModel extends Model {
     @Field.Decorator({ type: defaults.type.integer })

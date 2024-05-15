@@ -5,6 +5,10 @@ import { FookieError } from "../../src/core/error.ts";
 test("Define a unique field with Error", async () => {
     @Model.Decorator({
         database: defaults.database.store,
+        binds: {
+            read: { role: [] },
+            create: { role: [] },
+        },
     })
     class UniqueField extends Model {
         @Field.Decorator({ unique: true, type: defaults.type.text })

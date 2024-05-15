@@ -1,5 +1,6 @@
 import * as lodash from "lodash";
-import { Database, QueryType } from "../../exports.ts";
+import { Database, ModelType, QueryType } from "../../exports.ts";
+import { SchemaType } from "../../core/schema.ts";
 
 export const store = Database.new({
     key: "store",
@@ -77,7 +78,7 @@ function poolFilter(pool: any[], filter: QueryType<any>["filter"]) {
             if (value.equals !== undefined && entity[field] !== value.equals) {
                 return false;
             }
-            if (value.notEquals !== undefined && entity[field] === value.not) {
+            if (value.notEquals !== undefined && entity[field] === value.notEquals) {
                 return false;
             }
             if (value.in && !value.in.includes(entity[field])) {
@@ -98,14 +99,16 @@ function poolFilter(pool: any[], filter: QueryType<any>["filter"]) {
             if (value.gte !== undefined && entity[field] < value.gte) {
                 return false;
             }
-            if (value.contains && !entity[field].includes(value.contains)) {
+            if (value.like && !new RegExp(value.like.replace(/%/g, ".*")).test(entity[field])) {
                 return false;
             }
-            if (value.include && !value.include.every((val: any) => entity[field].includes(val))) {
-                return false;
-            }
-            if (value.exclude && value.exclude.some((val: any) => entity[field].includes(val))) {
-                return false;
+            if (value.isNull !== undefined) {
+                if (value.isNull && entity[field] !== null) {
+                    return false;
+                }
+                if (!value.isNull && entity[field] === null) {
+                    return false;
+                }
             }
         }
         return true;

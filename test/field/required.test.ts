@@ -5,6 +5,7 @@ import { FookieError } from "../../src/core/error.ts";
 test("Define a required field with Error", async () => {
     @Model.Decorator({
         database: defaults.database.store,
+        binds: { create: { role: [] } },
     })
     class RequiredField extends Model {
         @Field.Decorator({ required: true, type: defaults.type.text })
@@ -21,6 +22,7 @@ test("Define a required field with Error", async () => {
 test("Define a required field with Success", async () => {
     @Model.Decorator({
         database: defaults.database.store,
+        binds: { create: { role: [] } },
     })
     class RequiredField extends Model {
         @Field.Decorator({ required: true, type: defaults.type.text })

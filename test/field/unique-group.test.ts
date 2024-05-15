@@ -5,6 +5,9 @@ import { FookieError } from "../../src/core/error.ts";
 test("Define a unique group field with Error", async () => {
     @Model.Decorator({
         database: defaults.database.store,
+        binds: {
+            create: { role: [] },
+        },
     })
     class UniqueGroupField extends Model {
         @Field.Decorator({ uniqueGroup: ["groupId", "itemName"], type: defaults.type.text })

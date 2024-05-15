@@ -1,11 +1,14 @@
 import * as lodash from "lodash";
 import { LifecycleFunction } from "../../../lifecycle-function";
 import { models } from "../../../model/model";
+import { Config } from "../../../config";
 
 export default LifecycleFunction.new({
     key: "cascade_prepare",
     execute: async function (payload) {
-        const entities = await payload.modelClass.read(payload.query);
+        const entities = await payload.modelClass.read(payload.query, {
+            token: Config.get("SYSTEM_TOKEN"),
+        });
 
         const cascade_delete_ids = entities.map(function (e) {
             return e.id;
@@ -19,11 +22,16 @@ export default LifecycleFunction.new({
                     model.schema[field].relation === payload.modelClass
                 ) {
                     const fn = async function () {
-                        await model.modelClass.delete({
-                            filter: {
-                                id: cascade_delete_ids,
+                        await model.modelClass.delete(
+                            {
+                                filter: {
+                                    id: cascade_delete_ids,
+                                },
                             },
-                        });
+                            {
+                                token: Config.get("SYSTEM_TOKEN"),
+                            },
+                        );
                     };
 
                     payload.state.todo.push(fn);

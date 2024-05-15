@@ -25,7 +25,11 @@ export class Model {
         throw Error("Not implemented");
     }
 
-    static async read<T extends Model>(this: new () => T, query?: QueryType<T>): Promise<T[]> {
+    static async read<T extends Model>(
+        this: new () => T,
+        query?: QueryType<T>,
+        options?: Options,
+    ): Promise<T[]> {
         throw Error("Not implemented");
     }
 

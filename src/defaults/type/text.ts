@@ -28,10 +28,6 @@ export const text = Type.new({
             key: "string",
             validate: lodash.isString,
         },
-        notLike: {
-            key: "string",
-            validate: lodash.isString,
-        },
         isNull: {
             key: "boolean",
             validate: lodash.isBoolean,

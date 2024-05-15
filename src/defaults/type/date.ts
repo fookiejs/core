@@ -30,11 +30,19 @@ export const date = Type.new({
             validate: isDate,
             isArray: true,
         },
-        before: {
+        lt: {
             key: "date",
             validate: isDate,
         },
-        after: {
+        lte: {
+            key: "date",
+            validate: isDate,
+        },
+        gt: {
+            key: "date",
+            validate: isDate,
+        },
+        gte: {
             key: "date",
             validate: isDate,
         },

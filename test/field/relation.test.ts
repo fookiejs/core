@@ -5,6 +5,14 @@ import { FookieError } from "../../src/core/error.ts";
 describe("relation", () => {
     @Model.Decorator({
         database: defaults.database.store,
+        binds: {
+            read: {
+                role: [],
+            },
+            create: {
+                role: [],
+            },
+        },
     })
     class RelationAddressModel extends Model {
         @Field.Decorator({ type: defaults.type.text })
@@ -16,6 +24,14 @@ describe("relation", () => {
 
     @Model.Decorator({
         database: defaults.database.store,
+        binds: {
+            read: {
+                role: [],
+            },
+            create: {
+                role: [],
+            },
+        },
     })
     class RelationUserModel extends Model {
         @Field.Decorator({ type: defaults.type.text })

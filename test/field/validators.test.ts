@@ -5,6 +5,9 @@ import { FookieError } from "../../src/core/error.ts";
 test("Field with a validator passing validation", async () => {
     @Model.Decorator({
         database: defaults.database.store,
+        binds: {
+            create: { role: [] },
+        },
     })
     class ValidatorModel extends Model {
         @Field.Decorator({
@@ -25,6 +28,9 @@ test("Field with a validator passing validation", async () => {
 test("Field with a validator failing validation", async () => {
     @Model.Decorator({
         database: defaults.database.store,
+        binds: {
+            create: { role: [] },
+        },
     })
     class ValidatorModel extends Model {
         @Field.Decorator({
