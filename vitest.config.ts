@@ -5,7 +5,8 @@ export default () => {
         test: {
             include: ["test/**/*.test.ts"],
             coverage: {
-                provider: "istanbul", // or 'c8'
+                provider: "v8",
+                reporter: ["text", "html"],
             },
         },
     });

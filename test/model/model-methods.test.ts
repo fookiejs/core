@@ -54,11 +54,12 @@ it("should read users correctly", async () => {
 });
 
 it("should update a user correctly", async () => {
+    const users = await User.read({});
     const updateResponse = await User.update(
         {
             filter: {
                 id: {
-                    equals: "example-id",
+                    in: users.map((u) => u.id),
                 },
             },
         },
