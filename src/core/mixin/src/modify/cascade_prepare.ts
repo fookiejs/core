@@ -9,7 +9,6 @@ export default LifecycleFunction.new({
         const entities = await payload.modelClass.read(payload.query, {
             token: Config.get("SYSTEM_TOKEN"),
         });
-
         const cascade_delete_ids = entities.map(function (e) {
             return e.id;
         });
@@ -19,13 +18,13 @@ export default LifecycleFunction.new({
                 if (
                     model.schema[field].cascadeDelete &&
                     model.schema[field].relation &&
-                    model.schema[field].relation === payload.modelClass
+                    lodash.isEqual(model.schema[field].relation["name"], payload.modelClass["name"])
                 ) {
                     const fn = async function () {
                         await model.modelClass.delete(
                             {
                                 filter: {
-                                    id: cascade_delete_ids,
+                                    [field]: { in: cascade_delete_ids },
                                 },
                             },
                             {

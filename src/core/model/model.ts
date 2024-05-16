@@ -100,7 +100,7 @@ export class Model {
 export type ModelType = {
     database: Database;
     binds?: BindsType;
-    mixins: Mixin[];
+    mixins?: Mixin[];
 };
 
 export type BindsType = {

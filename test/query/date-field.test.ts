@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { Model, Field, defaults } from "../../src/exports";
+import { FookieError } from "../../src/core/error";
 
 describe("QueryDateModel Query Tests", async () => {
     @Model.Decorator({
@@ -136,5 +137,14 @@ describe("QueryDateModel Query Tests", async () => {
         expect(results.map((r) => r.dateField)).toEqual(
             expect.arrayContaining(["2024-05-14", "2024-05-15"]),
         );
+    });
+
+    it("notExist query", async () => {
+        const results = await QueryDateModel.read({
+            filter: {
+                dateField: { notExist: false },
+            },
+        });
+        expect(results instanceof FookieError).toBeTruthy();
     });
 });

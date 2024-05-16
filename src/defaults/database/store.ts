@@ -81,6 +81,7 @@ function poolFilter(pool: any[], filter: QueryType<any>["filter"]) {
             if (value.notEquals !== undefined && entity[field] === value.notEquals) {
                 return false;
             }
+
             if (value.in && !value.in.includes(entity[field])) {
                 return false;
             }

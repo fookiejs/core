@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { Model, Field, defaults } from "../../src/exports";
+import { FookieError } from "../../src/core/error";
 
 describe("QueryTimeModel Query Tests", async () => {
     @Model.Decorator({
@@ -137,5 +138,14 @@ describe("QueryTimeModel Query Tests", async () => {
         expect(results.map((r) => r.timeField)).toEqual(
             expect.arrayContaining(["13:00:00", "14:00:00"]),
         );
+    });
+
+    it("notExist query", async () => {
+        const results = await QueryTimeModel.read({
+            filter: {
+                timeField: { notExist: false },
+            },
+        });
+        expect(results instanceof FookieError).toBeTruthy();
     });
 });

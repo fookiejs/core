@@ -46,5 +46,9 @@ export const timestamp = Type.new({
             key: "timestamp",
             validate: isTimestamp,
         },
+        isNull: {
+            key: "boolean",
+            validate: lodash.isBoolean,
+        },
     },
 });

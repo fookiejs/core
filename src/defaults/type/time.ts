@@ -47,5 +47,9 @@ export const time = Type.new({
             key: "time",
             validate: isTime,
         },
+        isNull: {
+            key: "boolean",
+            validate: lodash.isBoolean,
+        },
     },
 });

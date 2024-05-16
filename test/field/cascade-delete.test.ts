@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { Field, Model, defaults } from "../../src/exports";
+import { equals } from "class-validator";
 
 describe("Cascase", () => {
     @Model.Decorator({
@@ -20,6 +21,7 @@ describe("Cascase", () => {
         binds: {
             read: { role: [] },
             create: { role: [] },
+            delete: { role: [] },
         },
     })
     class Order extends Model {
@@ -32,9 +34,21 @@ describe("Cascase", () => {
         await Order.create({ userId: user.id });
         await Order.create({ userId: user.id });
 
-        await User.delete({ id: user.id });
+        await User.delete({
+            filter: {
+                id: {
+                    equals: user.id,
+                },
+            },
+        });
 
-        const remainingOrders = await Order.read({ userId: user.id });
+        const remainingOrders = await Order.read({
+            filter: {
+                userId: {
+                    equals: user.id,
+                },
+            },
+        });
 
         expect(remainingOrders.length).toBe(0);
     });

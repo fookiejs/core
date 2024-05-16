@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { Model, Field, defaults } from "../../src/exports";
+import { FookieError } from "../../src/core/error";
 
 describe("QueryIntModel Query Tests", async () => {
     @Model.Decorator({
@@ -127,5 +128,14 @@ describe("QueryIntModel Query Tests", async () => {
             },
         });
         expect(results).toHaveLength(3);
+    });
+
+    it("notExist query", async () => {
+        const results = await QueryIntModel.read({
+            filter: {
+                intField: { notExist: false },
+            },
+        });
+        expect(results instanceof FookieError).toBeTruthy();
     });
 });
