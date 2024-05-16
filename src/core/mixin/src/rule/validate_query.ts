@@ -1,35 +1,39 @@
 import * as lodash from "lodash";
 import { LifecycleFunction } from "../../../lifecycle-function";
-import { Field } from "../../../field/field";
-import { SchemaType } from "../../../schema";
 import { Type } from "../../../type";
+
+function isValidFilterKey(type: Type, currentKey: string, value: any): boolean {
+    if (type.queryController[currentKey].isArray) {
+        return value.every((val: any) => type.queryController[currentKey].validate(val));
+    }
+    return type.queryController[currentKey].validate(value);
+}
 
 export default LifecycleFunction.new({
     key: "validate_query",
     execute: async function (payload) {
-        const filter_keys = lodash.keys(payload.query.filter);
-        const model_keys = lodash.keys(payload.schema);
+        const filterKeys = lodash.keys(payload.query.filter);
+        const modelKeys = lodash.keys(payload.schema);
 
-        if (lodash.has(payload.query, "filter") && !lodash.isObject(payload.query.filter)) {
-            return false;
-        }
-        if (lodash.has(payload.query, "limit") && !lodash.isNumber(payload.query.limit)) {
-            return false;
-        }
-        if (lodash.has(payload.query, "offset") && !lodash.isNumber(payload.query.offset)) {
-            return false;
-        }
-        if (lodash.difference(filter_keys, [...model_keys]).length > 0) {
-            return false;
-        }
+        const isValidObject = (key: string, validator: (val: any) => boolean) =>
+            lodash.has(payload.query, key) && !validator(payload.query[key]);
 
-        for (const filter_key of filter_keys) {
-            const type: Type = payload.schema[filter_key].type;
+        if (isValidObject("filter", lodash.isObject)) return false;
+        if (isValidObject("limit", lodash.isNumber)) return false;
+        if (isValidObject("offset", lodash.isNumber)) return false;
+
+        if (lodash.difference(filterKeys, modelKeys).length > 0) return false;
+
+        for (const filterKey of filterKeys) {
+            const currentKeys = lodash.keys(payload.query.filter[filterKey]);
+            const type: Type = payload.schema[filterKey].type;
             const availableFilterKeys = lodash.keys(type.queryController);
-            const currentKeys = lodash.keys(payload.query.filter[filter_key]);
 
-            if (lodash.difference(currentKeys, availableFilterKeys).length !== 0) {
-                return false;
+            if (lodash.difference(currentKeys, availableFilterKeys).length !== 0) return false;
+
+            for (const currentKey of currentKeys) {
+                const value = payload.query.filter[filterKey][currentKey];
+                if (!isValidFilterKey(type, currentKey, value)) return false;
             }
         }
 
