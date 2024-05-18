@@ -16,7 +16,7 @@ describe("QueryTimestampModel Query Tests", async () => {
     })
     class QueryTimestampModel extends Model {
         @Field.Decorator({ type: defaults.type.timestamp })
-        timestampField!: string;
+        timestampField: string | null;
     }
 
     await QueryTimestampModel.create({ timestampField: "2024-05-14T10:00:00Z" });
@@ -146,5 +146,16 @@ describe("QueryTimestampModel Query Tests", async () => {
             },
         });
         expect(results instanceof FookieError).toBeTruthy();
+    });
+
+    it("isNull query", async () => {
+        await QueryTimestampModel.create({ timestampField: null });
+
+        const results = await QueryTimestampModel.read({
+            filter: {
+                timestampField: { isNull: false },
+            },
+        });
+        expect(results.length).toBe(3);
     });
 });

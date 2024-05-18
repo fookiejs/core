@@ -103,7 +103,7 @@ function poolFilter(pool: any[], filter: QueryType<any>["filter"]) {
             if (value.like && !new RegExp(value.like.replace(/%/g, ".*")).test(entity[field])) {
                 return false;
             }
-            if (value.isNull !== undefined) {
+            if (lodash.isBoolean(value.isNull)) {
                 if (value.isNull && entity[field] !== null) {
                     return false;
                 }

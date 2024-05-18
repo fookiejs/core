@@ -9,7 +9,7 @@ describe("ArrayFieldModel Tests", () => {
         binds: { create: { role: [] } },
     })
     class ArrayFieldModel extends Model {
-        @Field.Decorator({ type: defaults.type.array(defaults.type.text) })
+        @Field.Decorator({ type: defaults.type.array(defaults.type.text), required: true })
         field!: string[];
     }
 

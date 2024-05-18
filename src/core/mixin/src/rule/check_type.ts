@@ -6,7 +6,7 @@ export default LifecycleFunction.new({
     execute: async function (payload) {
         for (const field in payload.body) {
             const type = payload.schema[field].type;
-            if (!type.validate(payload.body[field])) {
+            if (!lodash.isNull(payload.body[field]) && !type.validate(payload.body[field])) {
                 return false;
             }
         }
