@@ -15,7 +15,7 @@ export default LifecycleFunction.new({
                             },
                         },
                         {
-                            token: Config.get("SYSTEM_TOKEN"),
+                            token: payload.options.token,
                         },
                     );
                 }, payload.options.drop);
@@ -27,7 +27,7 @@ export default LifecycleFunction.new({
                         },
                     },
                     {
-                        token: Config.get("SYSTEM_TOKEN"),
+                        token: payload.options.token,
                     },
                 );
             }

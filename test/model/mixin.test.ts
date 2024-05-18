@@ -1,7 +1,5 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { Model, Field, defaults, LifecycleFunction } from "../../src/exports.ts";
-import { Payload } from "../../src/core/payload.ts";
-import { Mixin } from "../../src/core/mixin/index.ts";
+import { describe, it, expect } from "vitest";
+import { Model, Field, defaults, LifecycleFunction, Mixin, Payload } from "../../src/exports.ts";
 
 // Mixin tanımlama
 let createFlag = false;

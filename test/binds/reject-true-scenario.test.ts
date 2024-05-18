@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { Model, Field, defaults, LifecycleFunction } from "../../src/exports";
 
 // Accept Lifecycle Function

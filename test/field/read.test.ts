@@ -1,6 +1,5 @@
 import { describe, expect, test } from "vitest";
 import { Model, Field, defaults, LifecycleFunction } from "../../src/exports.ts";
-import { FookieError } from "../../src/core/error.ts";
 
 describe("Define a field with read role", async () => {
     @Model.Decorator({

@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import { Field, Model, defaults } from "../../src/exports";
-import { equals } from "class-validator";
 
 describe("Cascase", () => {
     @Model.Decorator({

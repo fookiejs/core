@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { Model, Field, defaults, LifecycleFunction } from "../../src/exports";
-import { FookieError } from "../../src/core/error";
+import { Model, Field, defaults, LifecycleFunction, FookieError } from "../../src/exports";
 
 // Accept Lifecycle Function
 const flag1 = { called: false };

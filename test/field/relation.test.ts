@@ -1,6 +1,5 @@
 import { expect, test, describe } from "vitest";
-import { Model, Field, defaults } from "../../src/exports.ts";
-import { FookieError } from "../../src/core/error.ts";
+import { Model, Field, defaults, FookieError } from "../../src/exports.ts";
 
 describe("relation", () => {
     @Model.Decorator({

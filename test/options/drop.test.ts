@@ -1,15 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { Config, Field, LifecycleFunction, Model, defaults } from "../../src/exports";
+import { Field, Model, defaults } from "../../src/exports";
 import { v4 } from "uuid";
-
-import { system } from "../../src/defaults/role/system";
 
 describe("Relation", () => {
     @Model.Decorator({
         database: defaults.database.store,
         binds: {
             delete: {
-                role: [system],
+                role: [],
             },
             read: {
                 role: [],
@@ -36,6 +34,24 @@ describe("Relation", () => {
 
         const entities = await Drop.read();
 
+        expect(entities.length).toBe(0);
+    });
+
+    it("Drop an entity after a delay", async () => {
+        const entity = await Drop.create(
+            { name: v4() },
+            {
+                drop: 10,
+            },
+        );
+
+        expect(entity instanceof Drop).toBe(true);
+
+        let entities = await Drop.read();
+        expect(entities.length).toBe(1);
+
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        entities = await Drop.read();
         expect(entities.length).toBe(0);
     });
 });

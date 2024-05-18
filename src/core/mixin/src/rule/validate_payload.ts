@@ -8,7 +8,11 @@ export default LifecycleFunction.new({
             return false;
         }
 
-        if (lodash.has(payload.options, "token") && !lodash.isString(payload.options.token)) {
+        if (
+            lodash.has(payload.options, "token") &&
+            !lodash.isNil(payload.options.token) &&
+            !lodash.isString(payload.options.token)
+        ) {
             return false;
         }
 

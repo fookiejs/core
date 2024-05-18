@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { Model, Field, defaults } from "../../src/exports";
-import { FookieError } from "../../src/core/error";
+import { Model, Field, defaults, FookieError } from "../../src/exports";
 
 describe("QueryFloatModel Query Tests", async () => {
     @Model.Decorator({

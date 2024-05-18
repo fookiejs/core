@@ -1,7 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { Model, Field, defaults } from "../../src/exports";
-import * as lodash from "lodash";
-import { FookieError } from "../../src/core/error";
+import { Model, Field, defaults, FookieError } from "../../src/exports";
 
 // Model Tanımlama
 @Model.Decorator({
