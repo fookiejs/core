@@ -23,14 +23,17 @@ export class Model {
         body: Omit<T, "id">,
         options?: Options,
     ): Promise<T | FookieError> {
+        body
+        options
         throw Error("Not implemented")
     }
-
     static async read<T extends Model>(
         this: new () => T,
         query?: QueryType<T>,
         options?: Options,
     ): Promise<T[]> {
+        query
+        options
         throw Error("Not implemented")
     }
 
@@ -40,6 +43,9 @@ export class Model {
         body: Partial<Omit<T, "id">>,
         options?: Options,
     ): Promise<boolean> {
+        query
+        body
+        options
         throw Error("Not implemented")
     }
 
@@ -48,6 +54,8 @@ export class Model {
         query: QueryType<T>,
         options?: Options,
     ): Promise<boolean> {
+        query
+        options
         throw Error("Not implemented")
     }
 
@@ -56,6 +64,8 @@ export class Model {
         query: QueryType<T>,
         options?: Options,
     ): Promise<T[]> {
+        query
+        options
         throw Error("Not implemented")
     }
 
@@ -65,6 +75,9 @@ export class Model {
         field: string,
         options?: Options,
     ): Promise<number> {
+        query
+        field
+        options
         throw Error("Not implemented")
     }
 
