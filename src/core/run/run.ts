@@ -1,18 +1,18 @@
-import * as moment from "moment";
-import { Model, ModelType, QueryType } from "../model/model";
-import { SchemaType } from "../schema";
-import { Options } from "../option";
-import { State } from "../state";
-import pre_rule from "./lifecycles/pre-rule";
-import modify from "./lifecycles/modify";
-import role from "./lifecycles/role";
-import rule from "./lifecycles/rule";
-import effect from "./lifecycles/effect";
-import { Payload } from "../payload";
-import * as lodash from "lodash";
-import filter from "./lifecycles/filter";
-import { FookieError } from "../error";
-import { plainToClass } from "class-transformer";
+import * as moment from "moment"
+import { Model, ModelType, QueryType } from "../model/model"
+import { SchemaType } from "../schema"
+import { Options } from "../option"
+import { State } from "../state"
+import pre_rule from "./lifecycles/pre-rule"
+import modify from "./lifecycles/modify"
+import role from "./lifecycles/role"
+import rule from "./lifecycles/rule"
+import effect from "./lifecycles/effect"
+import { Payload } from "../payload"
+import * as lodash from "lodash"
+import filter from "./lifecycles/filter"
+import { FookieError } from "../error"
+import { plainToClass } from "class-transformer"
 
 function createPayload<T extends typeof Model, R>(
     payload: Omit<Payload<T, R>, "state" | "response">,
@@ -31,31 +31,31 @@ function createPayload<T extends typeof Model, R>(
             },
             todo: [],
         },
-    };
+    }
 }
 
 function finalizeState(state: State) {
-    state.metrics.end = moment.utc().toDate();
+    state.metrics.end = moment.utc().toDate()
 }
 
 async function runLifecycle<T extends typeof Model, R>(payload: Payload<T, R>) {
     if (await pre_rule(payload)) {
-        await modify(payload);
+        await modify(payload)
 
         if (await role(payload)) {
             if (await rule(payload)) {
                 if (payload.options?.test !== true && lodash.isNil(payload.response)) {
-                    payload.response = await payload.methodFunction(payload);
+                    payload.response = await payload.methodFunction(payload)
                 }
-                await filter(payload);
-                await effect(payload);
-                finalizeState(payload.state);
-                return plainToClass(payload.modelClass, payload.response);
+                await filter(payload)
+                await effect(payload)
+                finalizeState(payload.state)
+                return plainToClass(payload.modelClass, payload.response)
             }
         }
     }
 
-    return payload.error;
+    return payload.error
 }
 
 export function createRun<T extends typeof Model>(
@@ -79,9 +79,9 @@ export function createRun<T extends typeof Model>(
             }),
             modelClass: modelClass,
             query: {},
-        });
-        return runLifecycle(payload);
-    };
+        })
+        return runLifecycle(payload)
+    }
 }
 
 export function readRun<T extends typeof Model>(
@@ -105,9 +105,9 @@ export function readRun<T extends typeof Model>(
             }),
             modelClass: modelClass,
             body: {},
-        });
-        return runLifecycle(payload);
-    };
+        })
+        return runLifecycle(payload)
+    }
 }
 
 export function updateRun<T extends typeof Model>(
@@ -132,9 +132,9 @@ export function updateRun<T extends typeof Model>(
                 validationErrors: {},
             }),
             modelClass: modelClass,
-        });
-        return runLifecycle(payload);
-    };
+        })
+        return runLifecycle(payload)
+    }
 }
 
 export function deleteRun<T extends typeof Model>(
@@ -158,9 +158,9 @@ export function deleteRun<T extends typeof Model>(
             }),
             modelClass: modelClass,
             body: {},
-        });
-        return runLifecycle(payload);
-    };
+        })
+        return runLifecycle(payload)
+    }
 }
 
 export function countRun<T extends typeof Model>(
@@ -185,9 +185,9 @@ export function countRun<T extends typeof Model>(
             }),
             modelClass: modelClass,
             body: {},
-        });
-        return runLifecycle(payload);
-    };
+        })
+        return runLifecycle(payload)
+    }
 }
 
 export function sumRun<T extends typeof Model>(
@@ -212,8 +212,8 @@ export function sumRun<T extends typeof Model>(
             }),
             modelClass: modelClass,
             body: {},
-        });
+        })
 
-        return runLifecycle(payload);
-    };
+        return runLifecycle(payload)
+    }
 }

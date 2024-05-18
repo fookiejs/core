@@ -1,6 +1,6 @@
-import { expect, it } from "vitest";
-import * as lodash from "lodash";
-import { Model, Field, defaults, LifecycleFunction, Config } from "../../src/exports.ts";
+import { expect, it } from "vitest"
+import * as lodash from "lodash"
+import { Model, Field, defaults, LifecycleFunction, Config } from "../../src/exports"
 
 @Model.Decorator({
     database: defaults.database.store,
@@ -25,7 +25,7 @@ import { Model, Field, defaults, LifecycleFunction, Config } from "../../src/exp
                 LifecycleFunction.new({
                     key: "example-lifecycle",
                     execute: async function (payload) {
-                        return true;
+                        return true
                     },
                 }),
             ],
@@ -34,27 +34,27 @@ import { Model, Field, defaults, LifecycleFunction, Config } from "../../src/exp
 })
 class User extends Model {
     @Field.Decorator({ required: true, type: defaults.type.text })
-    email: string;
+    email: string
 
     @Field.Decorator({ required: true, type: defaults.type.integer })
-    usage: number;
+    usage: number
 }
 
 it("should create a user correctly", async () => {
     const createResponse = await User.create({
         email: "test@fookiejs.com",
         usage: 3,
-    });
-    expect(createResponse instanceof User).toEqual(true);
-});
+    })
+    expect(createResponse instanceof User).toEqual(true)
+})
 
 it("should read users correctly", async () => {
-    const readResponse = await User.read({});
-    expect(lodash.isArray(readResponse)).toEqual(true);
-});
+    const readResponse = await User.read({})
+    expect(lodash.isArray(readResponse)).toEqual(true)
+})
 
 it("should update a user correctly", async () => {
-    const users = await User.read({});
+    const users = await User.read({})
     const updateResponse = await User.update(
         {
             filter: {
@@ -66,9 +66,9 @@ it("should update a user correctly", async () => {
         {
             email: "tester@fookiejs.com",
         },
-    );
-    expect(updateResponse).toEqual(true);
-});
+    )
+    expect(updateResponse).toEqual(true)
+})
 
 it("should delete a user correctly", async () => {
     const deleteResponse = await User.delete({
@@ -77,9 +77,9 @@ it("should delete a user correctly", async () => {
                 equals: "example-id",
             },
         },
-    });
-    expect(deleteResponse).toEqual(true);
-});
+    })
+    expect(deleteResponse).toEqual(true)
+})
 
 it("should count users correctly", async () => {
     const countResponse = await User.count({
@@ -88,10 +88,10 @@ it("should count users correctly", async () => {
                 equals: "example-id",
             },
         },
-    });
+    })
 
-    expect(countResponse).toEqual(0);
-});
+    expect(countResponse).toEqual(0)
+})
 
 it("should sum user usage correctly", async () => {
     const sumResponse = await User.sum(
@@ -106,6 +106,6 @@ it("should sum user usage correctly", async () => {
         {
             token: Config.get("SYSTEM_TOKEN"),
         },
-    );
-    expect(sumResponse).toEqual(0);
-});
+    )
+    expect(sumResponse).toEqual(0)
+})

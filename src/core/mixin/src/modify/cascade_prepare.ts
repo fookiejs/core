@@ -1,17 +1,17 @@
-import * as lodash from "lodash";
-import { LifecycleFunction } from "../../../lifecycle-function";
-import { models } from "../../../model/model";
-import { Config } from "../../../config";
+import * as lodash from "lodash"
+import { LifecycleFunction } from "../../../lifecycle-function"
+import { models } from "../../../model/model"
+import { Config } from "../../../config"
 
 export default LifecycleFunction.new({
     key: "cascade_prepare",
     execute: async function (payload) {
         const entities = await payload.modelClass.read(payload.query, {
             token: Config.get("SYSTEM_TOKEN"),
-        });
+        })
         const cascade_delete_ids = entities.map(function (e) {
-            return e.id;
-        });
+            return e.id
+        })
 
         for (const model of models) {
             for (const field in model.schema) {
@@ -30,12 +30,12 @@ export default LifecycleFunction.new({
                             {
                                 token: Config.get("SYSTEM_TOKEN"),
                             },
-                        );
-                    };
+                        )
+                    }
 
-                    payload.state.todo.push(fn);
+                    payload.state.todo.push(fn)
                 }
             }
         }
     },
-});
+})

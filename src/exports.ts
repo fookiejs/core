@@ -1,16 +1,16 @@
-import "reflect-metadata";
+import "reflect-metadata"
 
-export * from "./core/config.ts";
-export * from "./core/error.ts";
-export * from "./core/base-class.ts";
-export * from "./core/database.ts";
-export * from "./core/field/field.ts";
-export * from "./core/lifecycle-function.ts";
-export * from "./core/lifecycle.ts";
-export * from "./core/method.ts";
-export * from "./core/model/model.ts";
-export * from "./core/type.ts";
-export * from "./core/payload.ts";
-export * from "./core/mixin/index.ts";
+export * from "./core/config"
+export * from "./core/error"
+export * from "./core/base-class"
+export * from "./core/database"
+export * from "./core/field/field"
+export * from "./core/lifecycle-function"
+export * from "./core/lifecycle"
+export * from "./core/method"
+export * from "./core/model/model"
+export * from "./core/type"
+export * from "./core/payload"
+export * from "./core/mixin/index"
 
-export * from "./defaults/exports.ts";
+export * from "./defaults/exports"

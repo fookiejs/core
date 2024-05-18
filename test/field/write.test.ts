@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { Model, Field, defaults, LifecycleFunction, FookieError } from "../../src/exports.ts";
+import { describe, expect, it } from "vitest"
+import { Model, Field, defaults, LifecycleFunction, FookieError } from "../../src/exports"
 
 describe("Define a field with read role", async () => {
     @Model.Decorator({
@@ -8,7 +8,7 @@ describe("Define a field with read role", async () => {
     })
     class SecureWriteModel extends Model {
         @Field.Decorator({ type: defaults.type.text })
-        name?: string;
+        name?: string
 
         @Field.Decorator({
             type: defaults.type.text,
@@ -19,7 +19,7 @@ describe("Define a field with read role", async () => {
                 }),
             ],
         })
-        password?: string;
+        password?: string
 
         @Field.Decorator({
             type: defaults.type.text,
@@ -30,42 +30,42 @@ describe("Define a field with read role", async () => {
                 }),
             ],
         })
-        secret?: string;
+        secret?: string
     }
 
     it("Write field error", async () => {
         const response = (await SecureWriteModel.create({
             name: "John Doe",
             password: "123456",
-        })) as SecureWriteModel;
+        })) as SecureWriteModel
 
-        expect(response instanceof FookieError).toBe(true);
-    });
+        expect(response instanceof FookieError).toBe(true)
+    })
 
     it("Write Field Error", async () => {
         const response = (await SecureWriteModel.create({
             name: "John Doe",
             secret: "123456",
-        })) as SecureWriteModel;
+        })) as SecureWriteModel
 
-        expect(response instanceof FookieError).toBe(true);
-    });
+        expect(response instanceof FookieError).toBe(true)
+    })
 
     it("Write Field Error", async () => {
         const response = (await SecureWriteModel.create({
             name: "John Doe",
             secret: "123456",
             password: "123456",
-        })) as SecureWriteModel;
+        })) as SecureWriteModel
 
-        expect(response instanceof FookieError).toBe(true);
-    });
+        expect(response instanceof FookieError).toBe(true)
+    })
 
     it("Write Field Error", async () => {
         const response = (await SecureWriteModel.create({
             name: "John Doe",
-        })) as SecureWriteModel;
+        })) as SecureWriteModel
 
-        expect(response instanceof SecureWriteModel).toBe(true);
-    });
-});
+        expect(response instanceof SecureWriteModel).toBe(true)
+    })
+})

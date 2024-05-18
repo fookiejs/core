@@ -1,25 +1,24 @@
 {
-  "compilerOptions": {
-    "target": "es2020",
-    "module": "commonjs",
-    "lib": ["ESNext","DOM"],
-    "strict": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "skipLibCheck": true,
-    "outDir": "./dist",
-    "strictNullChecks": true,
-    "strictPropertyInitialization": false,
-    "strictFunctionTypes": true,
-    "noImplicitAny": true,
-    "noImplicitReturns": true,
-    "noImplicitThis": true,
-    "alwaysStrict": true,
-    "allowImportingTsExtensions":true,
-    "noEmit": true
-  },
-
-
+    "compilerOptions": {
+        "target": "es2020",
+        "module": "commonjs",
+        "lib": ["ESNext", "DOM"],
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+        "skipLibCheck": true,
+        "outDir": "./dist",
+        "strictNullChecks": true,
+        "strictPropertyInitialization": false,
+        "strictFunctionTypes": true,
+        "noImplicitAny": true,
+        "noImplicitReturns": true,
+        "noImplicitThis": true,
+        "noEmitOnError": false, // Hataları göz ardı etmek için
+        "declaration": true, // .d.ts dosyalarını oluşturmak için
+        "declarationMap": true // Kaynak haritası oluşturmak için
+    },
+    "include": ["src/**/*"],
+    "exclude": ["test", "node_modules"]
 }

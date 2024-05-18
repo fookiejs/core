@@ -1,6 +1,6 @@
-import * as lodash from "lodash";
-import { v4 } from "uuid";
-import { LifecycleFunction } from "../../../lifecycle-function";
+import * as lodash from "lodash"
+import { v4 } from "uuid"
+import { LifecycleFunction } from "../../../lifecycle-function"
 
 export default LifecycleFunction.new({
     key: "defalut_payload",
@@ -12,24 +12,24 @@ export default LifecycleFunction.new({
                 attributes: [],
             },
             id: v4().replace("-", ""),
-        });
+        })
 
         if (!lodash.has(newPayload.query, "filter")) {
-            newPayload.query.filter = {};
+            newPayload.query.filter = {}
         }
 
         for (const key in newPayload) {
-            payload[key] = newPayload[key];
+            payload[key] = newPayload[key]
         }
 
         if (!lodash.has(payload.query, "offset")) {
-            payload.query.offset = 0;
+            payload.query.offset = 0
         }
         if (!lodash.has(payload.query, "limit")) {
-            payload.query.limit = Infinity;
+            payload.query.limit = Infinity
         }
         if (payload.query.attributes.length == 0) {
-            payload.query.attributes = lodash.keys(payload.schema);
+            payload.query.attributes = lodash.keys(payload.schema)
         }
     },
-});
+})

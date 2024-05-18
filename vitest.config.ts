@@ -1,4 +1,4 @@
-import { defineConfig, loadEnv } from "vite";
+import { defineConfig } from "vite"
 
 export default () => {
     return defineConfig({
@@ -9,5 +9,5 @@ export default () => {
                 reporter: ["text", "html"],
             },
         },
-    });
-};
+    })
+}

@@ -1,10 +1,10 @@
-import { Type } from "../../core/type";
-import * as lodash from "lodash";
+import { Type } from "../../core/type"
+import * as lodash from "lodash"
 
 function isTimestamp(value: unknown) {
-    if (!lodash.isString(value)) return false;
-    const timestampPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
-    return timestampPattern.test(value);
+    if (!lodash.isString(value)) return false
+    const timestampPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/
+    return timestampPattern.test(value)
 }
 
 export const timestamp = Type.new({
@@ -51,4 +51,4 @@ export const timestamp = Type.new({
             validate: lodash.isBoolean,
         },
     },
-});
+})

@@ -1,16 +1,16 @@
-import { BaseClass } from "./base-class.ts";
+import { BaseClass } from "./base-class"
 
 export class Type extends BaseClass {
-    key: string;
-    validate: (value: unknown) => boolean;
-    example: unknown;
+    key: string
+    validate: (value: unknown) => boolean
+    example: unknown
     queryController: {
-        [key: string]: QueryValidator;
-    };
+        [key: string]: QueryValidator
+    }
 }
 
 class QueryValidator {
-    key: string;
-    validate: (value: unknown) => boolean;
-    isArray?: boolean;
+    key: string
+    validate: (value: unknown) => boolean
+    isArray?: boolean
 }

@@ -1,11 +1,11 @@
-import { Type } from "../../core/type";
-import * as lodash from "lodash";
+import { Type } from "../../core/type"
+import * as lodash from "lodash"
 
 function isTime(value: unknown) {
-    if (!lodash.isString(value)) return false;
-    const timePatternFull = /^\d{2}:\d{2}:\d{2}$/; // Saat, dakika ve saniye
-    const timePatternShort = /^\d{2}:\d{2}$/; // Sadece saat ve dakika
-    return timePatternFull.test(value) || timePatternShort.test(value);
+    if (!lodash.isString(value)) return false
+    const timePatternFull = /^\d{2}:\d{2}:\d{2}$/ // Saat, dakika ve saniye
+    const timePatternShort = /^\d{2}:\d{2}$/ // Sadece saat ve dakika
+    return timePatternFull.test(value) || timePatternShort.test(value)
 }
 
 export const time = Type.new({
@@ -52,4 +52,4 @@ export const time = Type.new({
             validate: lodash.isBoolean,
         },
     },
-});
+})

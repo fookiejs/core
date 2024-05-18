@@ -1,10 +1,10 @@
-import { Type } from "../../core/type";
-import * as lodash from "lodash";
+import { Type } from "../../core/type"
+import * as lodash from "lodash"
 
 export const integer = Type.new({
     key: "int",
     validate: function (value: unknown): boolean {
-        return lodash.isInteger(value);
+        return lodash.isInteger(value)
     },
     example: 1,
     queryController: {
@@ -40,4 +40,4 @@ export const integer = Type.new({
             validate: lodash.isBoolean,
         },
     },
-});
+})

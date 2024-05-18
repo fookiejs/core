@@ -1,18 +1,18 @@
-import db_disconnect from "../effect/db_disconnect";
-import validate_query from "../rule/validate_query";
-import filter_fields from "../modify/filter_fields";
-import has_method from "../rule/has_method";
-import validate_attributes from "../rule/validate_attributes";
-import has_entity from "../rule/has_entity";
-import check_required from "../rule/check_required";
-import can_write from "../rule/can_write";
-import cascade_prepare from "../modify/cascade_prepare";
-import todo from "../effect/todo";
-import drop from "../effect/drop";
-import attributes from "../filter/attributes";
-import need_field_in_options from "../rule/need_field_in_options";
-import validate_body from "../rule/validate_body";
-import { BindsType } from "../../../model/model";
+import db_disconnect from "../effect/db_disconnect"
+import validate_query from "../rule/validate_query"
+import filter_fields from "../modify/filter_fields"
+import has_method from "../rule/has_method"
+import validate_attributes from "../rule/validate_attributes"
+import has_entity from "../rule/has_entity"
+import check_required from "../rule/check_required"
+import can_write from "../rule/can_write"
+import cascade_prepare from "../modify/cascade_prepare"
+import todo from "../effect/todo"
+import drop from "../effect/drop"
+import attributes from "../filter/attributes"
+import need_field_in_options from "../rule/need_field_in_options"
+import validate_body from "../rule/validate_body"
+import { BindsType } from "../../../model/model"
 
 export const after: BindsType = {
     create: {
@@ -63,4 +63,4 @@ export const after: BindsType = {
         role: [],
         effect: [db_disconnect],
     },
-};
+}

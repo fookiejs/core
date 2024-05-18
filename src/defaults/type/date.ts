@@ -1,10 +1,10 @@
-import { Type } from "../../core/type";
-import * as lodash from "lodash";
-import moment from "moment";
+import { Type } from "../../core/type"
+import * as lodash from "lodash"
+import moment from "moment"
 
 function isDate(value: unknown) {
-    if (!lodash.isString(value)) return false;
-    return moment(value, "YYYY-MM-DD", true).isValid();
+    if (!lodash.isString(value)) return false
+    return moment(value, "YYYY-MM-DD", true).isValid()
 }
 
 export const date = Type.new({
@@ -51,4 +51,4 @@ export const date = Type.new({
             validate: lodash.isBoolean,
         },
     },
-});
+})

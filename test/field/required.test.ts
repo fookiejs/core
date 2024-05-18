@@ -1,5 +1,5 @@
-import { expect, test } from "vitest";
-import { Model, Field, defaults, FookieError } from "../../src/exports.ts";
+import { expect, test } from "vitest"
+import { Model, Field, defaults, FookieError } from "../../src/exports"
 
 test("Define a required field with Error", async () => {
     @Model.Decorator({
@@ -8,15 +8,15 @@ test("Define a required field with Error", async () => {
     })
     class RequiredField extends Model {
         @Field.Decorator({ required: true, type: defaults.type.text })
-        field?: string;
+        field?: string
     }
 
-    const response = await RequiredField.create({});
-    expect(response instanceof FookieError).toBe(true);
+    const response = await RequiredField.create({})
+    expect(response instanceof FookieError).toBe(true)
     if (response instanceof FookieError) {
-        expect(response.key === "check_required").toBe(true);
+        expect(response.key === "check_required").toBe(true)
     }
-});
+})
 
 test("Define a required field with Success", async () => {
     @Model.Decorator({
@@ -25,14 +25,14 @@ test("Define a required field with Success", async () => {
     })
     class RequiredField extends Model {
         @Field.Decorator({ required: true, type: defaults.type.text })
-        field: string;
+        field: string
     }
 
     const response = await RequiredField.create({
         field: "fookie",
-    });
-    expect(response instanceof RequiredField).toBe(true);
+    })
+    expect(response instanceof RequiredField).toBe(true)
     if (response instanceof RequiredField) {
-        expect(response.field === "fookie").toBe(true);
+        expect(response.field === "fookie").toBe(true)
     }
-});
+})

@@ -1,5 +1,5 @@
-import { Type } from "../../core/type";
-import * as lodash from "lodash";
+import { Type } from "../../core/type"
+import * as lodash from "lodash"
 
 export const boolean = Type.new({
     key: "boolean",
@@ -19,4 +19,4 @@ export const boolean = Type.new({
             validate: lodash.isBoolean,
         },
     },
-});
+})

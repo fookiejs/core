@@ -1,4 +1,4 @@
-export type Lifecycle = "preRule" | "modify" | "role" | "rule" | "method" | "filter" | "effect";
+export type Lifecycle = "preRule" | "modify" | "role" | "rule" | "method" | "filter" | "effect"
 export const lifecycles = [
     "preRule",
     "modify",
@@ -7,4 +7,4 @@ export const lifecycles = [
     "method",
     "filter",
     "effect",
-] as const;
+] as const

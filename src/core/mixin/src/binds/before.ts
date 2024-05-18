@@ -1,17 +1,17 @@
-import validate_payload from "../rule/validate_payload";
-import default_payload from "../modify/default_payload";
-import has_method from "../rule/has_method";
-import validate_attributes from "../rule/validate_attributes";
-import db_connect from "../rule/db_connect";
-import set_default from "../modify/set_default";
-import uniqueGroup from "../rule/uniqueGroup";
-import unique from "../rule/unique";
-import check_type from "../rule/check_type";
-import has_field from "../rule/has_field";
-import has_body from "../rule/has_body";
-import set_id from "../modify/set-id.ts";
-import need_field_in_options from "../rule/need_field_in_options";
-import { BindsType } from "../../../model/model";
+import validate_payload from "../rule/validate_payload"
+import default_payload from "../modify/default_payload"
+import has_method from "../rule/has_method"
+import validate_attributes from "../rule/validate_attributes"
+import db_connect from "../rule/db_connect"
+import set_default from "../modify/set_default"
+import uniqueGroup from "../rule/uniqueGroup"
+import unique from "../rule/unique"
+import check_type from "../rule/check_type"
+import has_field from "../rule/has_field"
+import has_body from "../rule/has_body"
+import set_id from "../modify/set-id"
+import need_field_in_options from "../rule/need_field_in_options"
+import { BindsType } from "../../../model/model"
 
 export const before: BindsType = {
     create: {
@@ -62,4 +62,4 @@ export const before: BindsType = {
         filter: [],
         effect: [],
     },
-};
+}

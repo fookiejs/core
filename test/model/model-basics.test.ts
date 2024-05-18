@@ -1,5 +1,5 @@
-import { test } from "vitest";
-import { Model, Field, defaults, LifecycleFunction } from "../../src/exports.ts";
+import { test } from "vitest"
+import { Model, Field, defaults, LifecycleFunction } from "../../src/exports"
 
 test("Define a simple model", async () => {
     @Model.Decorator({
@@ -13,7 +13,7 @@ test("Define a simple model", async () => {
                     LifecycleFunction.new({
                         key: "example-lifecycle",
                         execute: async function (payload) {
-                            return true;
+                            return true
                         },
                     }),
                 ],
@@ -22,9 +22,9 @@ test("Define a simple model", async () => {
     })
     class User extends Model {
         @Field.Decorator({ required: true, type: defaults.type.text })
-        email: string;
+        email: string
     }
-});
+})
 
 test("Define a model with relations.", async () => {
     @Model.Decorator({
@@ -33,7 +33,7 @@ test("Define a model with relations.", async () => {
     })
     class Address extends Model {
         @Field.Decorator({ required: true, type: defaults.type.text, unique: true })
-        city: string;
+        city: string
     }
 
     @Model.Decorator({
@@ -42,6 +42,6 @@ test("Define a model with relations.", async () => {
     })
     class Place extends Model {
         @Field.Decorator({ required: true, type: defaults.type.text, relation: Address })
-        address: string;
+        address: string
     }
-});
+})

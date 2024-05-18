@@ -1,10 +1,10 @@
-import { Type } from "../../core/type";
-import * as lodash from "lodash";
+import { Type } from "../../core/type"
+import * as lodash from "lodash"
 
 export const float = Type.new({
     key: "float",
     validate: function (value: unknown): boolean {
-        return lodash.isNumber(value);
+        return lodash.isNumber(value)
     },
     example: 1,
     queryController: {
@@ -36,4 +36,4 @@ export const float = Type.new({
             validate: lodash.isBoolean,
         },
     },
-});
+})

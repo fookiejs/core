@@ -1,6 +1,6 @@
-import { Config } from "../../../config";
-import { LifecycleFunction } from "../../../lifecycle-function";
-import * as lodash from "lodash";
+import { Config } from "../../../config"
+import { LifecycleFunction } from "../../../lifecycle-function"
+import * as lodash from "lodash"
 
 export default LifecycleFunction.new({
     key: "has_entity",
@@ -16,13 +16,13 @@ export default LifecycleFunction.new({
                     {
                         token: Config.get("SYSTEM_TOKEN"),
                     },
-                );
+                )
 
                 if (res === 0) {
-                    return false;
+                    return false
                 }
             }
         }
-        return true;
+        return true
     },
-});
+})

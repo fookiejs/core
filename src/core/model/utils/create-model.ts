@@ -1,12 +1,12 @@
-import * as lodash from "lodash";
-import { BindsType, ModelType } from "../model";
-import { Method, methods } from "../../method";
-import { system } from "../../../defaults/role/system";
-import { lifecycles } from "../../lifecycle";
+import * as lodash from "lodash"
+import { BindsType, ModelType } from "../model"
+import { methods } from "../../method"
+import { system } from "../../../defaults/role/system"
+import { lifecycles } from "../../lifecycle"
 
 export function fillModel(model: Partial<ModelType>): ModelType {
-    model.binds = lodash.isObject(model.binds) ? model.binds : ({} as BindsType);
-    model.mixins = lodash.isArray(model.mixins) ? model.mixins : ([] as BindsType[]);
+    model.binds = lodash.isObject(model.binds) ? model.binds : ({} as BindsType)
+    model.mixins = lodash.isArray(model.mixins) ? model.mixins : []
 
     for (const method of methods) {
         if (!lodash.isObject(model.binds[method])) {
@@ -19,13 +19,11 @@ export function fillModel(model: Partial<ModelType>): ModelType {
                 effect: [],
                 accept: {},
                 reject: {},
-            };
+            }
         }
         for (const lifecycle of lifecycles) {
-            //@ts-ignore
             if (!lodash.isArray(model.binds[method][lifecycle])) {
-                //@ts-ignore
-                model.binds[method][lifecycle] = [];
+                model.binds[method][lifecycle] = []
             }
         }
     }
@@ -40,15 +38,15 @@ export function fillModel(model: Partial<ModelType>): ModelType {
                             mixin.binds[method],
                             (objValue, srcValue) => {
                                 if (lodash.isArray(objValue)) {
-                                    return objValue.concat(srcValue);
+                                    return objValue.concat(srcValue)
                                 }
                             },
-                        );
+                        )
                     }
                 }
             }
         }
     }
 
-    return model as ModelType;
+    return model as ModelType
 }

@@ -1,6 +1,5 @@
-import { Config } from "../../../config";
-import { LifecycleFunction } from "../../../lifecycle-function";
-import * as lodash from "lodash";
+import { LifecycleFunction } from "../../../lifecycle-function"
+import * as lodash from "lodash"
 
 export default LifecycleFunction.new({
     key: "drop",
@@ -17,8 +16,8 @@ export default LifecycleFunction.new({
                         {
                             token: payload.options.token,
                         },
-                    );
-                }, payload.options.drop);
+                    )
+                }, payload.options.drop)
             } else {
                 await payload.modelClass.delete(
                     {
@@ -29,8 +28,8 @@ export default LifecycleFunction.new({
                     {
                         token: payload.options.token,
                     },
-                );
+                )
             }
         }
     },
-});
+})

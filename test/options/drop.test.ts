@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { Field, Model, defaults } from "../../src/exports";
-import { v4 } from "uuid";
+import { describe, it, expect } from "vitest"
+import { Field, Model, defaults } from "../../src/exports"
+import { v4 } from "uuid"
 
 describe("Relation", () => {
     @Model.Decorator({
@@ -19,7 +19,7 @@ describe("Relation", () => {
     })
     class Drop extends Model {
         @Field.Decorator({ type: defaults.type.text })
-        name: string;
+        name: string
     }
 
     it("Drop an entity after creation", async () => {
@@ -28,14 +28,14 @@ describe("Relation", () => {
             {
                 drop: 0,
             },
-        );
+        )
 
-        expect(entity instanceof Drop).toBe(true);
+        expect(entity instanceof Drop).toBe(true)
 
-        const entities = await Drop.read();
+        const entities = await Drop.read()
 
-        expect(entities.length).toBe(0);
-    });
+        expect(entities.length).toBe(0)
+    })
 
     it("Drop an entity after a delay", async () => {
         const entity = await Drop.create(
@@ -43,15 +43,15 @@ describe("Relation", () => {
             {
                 drop: 10,
             },
-        );
+        )
 
-        expect(entity instanceof Drop).toBe(true);
+        expect(entity instanceof Drop).toBe(true)
 
-        let entities = await Drop.read();
-        expect(entities.length).toBe(1);
+        let entities = await Drop.read()
+        expect(entities.length).toBe(1)
 
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        entities = await Drop.read();
-        expect(entities.length).toBe(0);
-    });
-});
+        await new Promise((resolve) => setTimeout(resolve, 300))
+        entities = await Drop.read()
+        expect(entities.length).toBe(0)
+    })
+})

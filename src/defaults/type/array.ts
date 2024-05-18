@@ -1,5 +1,5 @@
-import * as lodash from "lodash";
-import { Type } from "../../core/type";
+import * as lodash from "lodash"
+import { Type } from "../../core/type"
 
 export const array = (innerType: Type) => {
     return Type.new({
@@ -7,5 +7,5 @@ export const array = (innerType: Type) => {
         validate: (value) => lodash.isArray(value) && value.every(innerType.validate),
         example: [innerType.example],
         queryController: {},
-    });
-};
+    })
+}

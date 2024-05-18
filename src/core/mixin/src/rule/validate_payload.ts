@@ -1,11 +1,11 @@
-import * as lodash from "lodash";
-import { LifecycleFunction } from "../../../lifecycle-function";
+import * as lodash from "lodash"
+import { LifecycleFunction } from "../../../lifecycle-function"
 
 export default LifecycleFunction.new({
     key: "validate_payload",
     execute: async function (payload) {
         if (lodash.has(payload, "options") && !lodash.isObject(payload.options)) {
-            return false;
+            return false
         }
 
         if (
@@ -13,19 +13,19 @@ export default LifecycleFunction.new({
             !lodash.isNil(payload.options.token) &&
             !lodash.isString(payload.options.token)
         ) {
-            return false;
+            return false
         }
 
         if (lodash.has(payload, "body") && !lodash.isObject(payload.body)) {
-            return false;
+            return false
         }
 
         if (lodash.has(payload, "query") && !lodash.isObject(payload.query)) {
-            return false;
+            return false
         }
 
         if (lodash.has(payload.options, "drop") && !lodash.isNumber(payload.options.drop)) {
-            return false;
+            return false
         }
 
         const avaible_keys = [
@@ -43,8 +43,8 @@ export default LifecycleFunction.new({
             "query",
             "id",
             "fieldName",
-        ];
+        ]
 
-        return lodash.without(lodash.keys(payload), ...avaible_keys).length === 0;
+        return lodash.without(lodash.keys(payload), ...avaible_keys).length === 0
     },
-});
+})

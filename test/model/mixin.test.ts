@@ -1,8 +1,8 @@
-import { describe, it, expect } from "vitest";
-import { Model, Field, defaults, LifecycleFunction, Mixin, Payload } from "../../src/exports.ts";
+import { describe, it, expect } from "vitest"
+import { Model, Field, defaults, LifecycleFunction, Mixin, Payload } from "../../src/exports"
 
 // Mixin tanımlama
-let createFlag = false;
+let createFlag = false
 
 const sampleMixin = Mixin.new({
     key: "flag",
@@ -12,13 +12,13 @@ const sampleMixin = Mixin.new({
                 LifecycleFunction.new({
                     key: "mixin_flag",
                     execute: function (payload: Payload<typeof Model, unknown>) {
-                        createFlag = true;
+                        createFlag = true
                     },
                 }),
             ],
         },
     },
-});
+})
 
 // Testler
 describe("fillModel Function Tests", () => {
@@ -29,12 +29,12 @@ describe("fillModel Function Tests", () => {
     })
     class TestModel extends Model {
         @Field.Decorator({ type: defaults.type.text, required: true })
-        name!: string;
+        name!: string
     }
 
     it("should merge mixin binds into model binds correctly", async () => {
-        await TestModel.create({ name: "Test Name" });
+        await TestModel.create({ name: "Test Name" })
 
-        expect(createFlag).toBe(true);
-    });
-});
+        expect(createFlag).toBe(true)
+    })
+})

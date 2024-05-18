@@ -15,6 +15,7 @@ docs
 yarn.lock
 npm-debug.log
 coverage
+src
 .github
 .prettierrc.yaml
 vitest.config

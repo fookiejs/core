@@ -1,5 +1,5 @@
-import { expect, test, describe } from "vitest";
-import { Model, Field, defaults, FookieError } from "../../src/exports.ts";
+import { expect, test, describe } from "vitest"
+import { Model, Field, defaults, FookieError } from "../../src/exports"
 
 describe("relation", () => {
     @Model.Decorator({
@@ -15,10 +15,10 @@ describe("relation", () => {
     })
     class RelationAddressModel extends Model {
         @Field.Decorator({ type: defaults.type.text })
-        street?: string;
+        street?: string
 
         @Field.Decorator({ type: defaults.type.text })
-        city?: string;
+        city?: string
     }
 
     @Model.Decorator({
@@ -34,40 +34,40 @@ describe("relation", () => {
     })
     class RelationUserModel extends Model {
         @Field.Decorator({ type: defaults.type.text })
-        name?: string;
+        name?: string
 
         @Field.Decorator({ relation: RelationAddressModel })
-        address?: string;
+        address?: string
     }
 
     test("Create an address and relate it to a user successfully", async () => {
         const addressResponse = await RelationAddressModel.create({
             street: "street",
             city: "city",
-        });
+        })
 
-        expect(addressResponse instanceof RelationAddressModel).toBe(true);
+        expect(addressResponse instanceof RelationAddressModel).toBe(true)
 
         const userResponse = await RelationUserModel.create({
             name: "John Doe",
             address: addressResponse.id,
-        });
-        expect(userResponse instanceof RelationUserModel).toBe(true);
+        })
+        expect(userResponse instanceof RelationUserModel).toBe(true)
 
         if (userResponse instanceof RelationUserModel) {
-            expect(addressResponse.id === userResponse.address).toBe(true);
+            expect(addressResponse.id === userResponse.address).toBe(true)
         }
-    });
+    })
 
     test("Create an address and relate it to a user error", async () => {
         const userResponse = await RelationUserModel.create({
             name: "John Doe",
             address: "wrong-id",
-        });
-        expect(userResponse instanceof FookieError).toBe(true);
+        })
+        expect(userResponse instanceof FookieError).toBe(true)
 
         if (userResponse instanceof FookieError) {
-            expect(userResponse.key === "has_entity").toBeTruthy();
+            expect(userResponse.key === "has_entity").toBeTruthy()
         }
-    });
-});
+    })
+})

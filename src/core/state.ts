@@ -1,18 +1,15 @@
-import { BaseClass } from "./base-class";
-import { LifecycleFunction } from "./lifecycle-function";
-import { Method } from "./method";
-import { Model, ModelType } from "./model/model";
-import { SchemaType } from "./schema";
+import { LifecycleFunction } from "./lifecycle-function"
+import { Model } from "./model/model"
 
 export class State {
     metrics: {
-        start: Date;
-        end?: Date | null;
+        start: Date
+        end?: Date | null
         lifecycle: {
-            name: string;
-            ms: number;
-        }[];
-    };
-    test?: boolean;
-    todo: LifecycleFunction[];
+            name: string
+            ms: number
+        }[]
+    }
+    test?: boolean
+    todo: LifecycleFunction<typeof Model, unknown>[]
 }
