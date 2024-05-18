@@ -75,22 +75,26 @@ export class Model {
             const filledModel = fillModel(model)
 
             const methods = filledModel.database.modify<T>(filledModel, schema)
-            //@ts-ignore
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            //@ts-expect-error
             constructor.create = createRun<T>(model, schema, constructor, methods.create)
-            //@ts-ignore
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            //@ts-expect-error
             constructor.read = readRun(model, schema, constructor, methods.read)
-            //@ts-ignore
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            //@ts-expect-error
             constructor.update = updateRun(model, schema, constructor, methods.update)
-            //@ts-ignore
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            //@ts-expect-error
             constructor.delete = deleteRun(model, schema, constructor, methods.del)
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             //@ts-ignore
             constructor.count = countRun(model, schema, constructor, methods.count)
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             //@ts-ignore
             constructor.sum = sumRun(model, schema, constructor, methods.sum)
 
             Reflect.defineMetadata("model", model, constructor)
-
-            //@ts-ignore
             const m = { modelClass: constructor, ...model, schema: schema }
             models.push(m)
         }
@@ -105,22 +109,22 @@ export type ModelType = {
 
 export type BindsType = {
     [ls in Method]?: {
-        preRule?: LifecycleFunction<any, unknown>[]
-        modify?: LifecycleFunction<any, unknown>[]
-        role?: LifecycleFunction<any, unknown>[]
-        rule?: LifecycleFunction<any, unknown>[]
-        filter?: LifecycleFunction<any, unknown>[]
-        effect?: LifecycleFunction<any, unknown>[]
+        preRule?: LifecycleFunction<typeof Model, unknown>[]
+        modify?: LifecycleFunction<typeof Model, unknown>[]
+        role?: LifecycleFunction<typeof Model, unknown>[]
+        rule?: LifecycleFunction<typeof Model, unknown>[]
+        filter?: LifecycleFunction<typeof Model, unknown>[]
+        effect?: LifecycleFunction<typeof Model, unknown>[]
         accept?: {
             [key: string]: {
-                modify: LifecycleFunction<any, unknown>[]
-                rule: LifecycleFunction<any, unknown>[]
+                modify: LifecycleFunction<typeof Model, unknown>[]
+                rule: LifecycleFunction<typeof Model, unknown>[]
             }
         }
         reject?: {
             [key: string]: {
-                modify: LifecycleFunction<any, unknown>[]
-                rule: LifecycleFunction<any, unknown>[]
+                modify: LifecycleFunction<typeof Model, unknown>[]
+                rule: LifecycleFunction<typeof Model, unknown>[]
             }
         }
     }
@@ -132,14 +136,14 @@ export type QueryType<T> = {
     attributes?: string[]
     filter?: {
         [key in keyof Partial<T>]: {
-            gte?: any
-            gt?: any
-            lte?: any
-            lt?: any
-            equals?: any
-            notEquals?: any
-            in?: any[]
-            notIn?: any[]
+            gte?: number | string
+            gt?: number | string
+            lte?: number | string
+            lt?: number | string
+            equals?: number | string
+            notEquals?: number | string
+            in?: number | string[]
+            notIn?: number | string[]
             like?: string
             notLike?: string
             isNull?: boolean
