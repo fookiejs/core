@@ -1,5 +1,5 @@
 import * as lodash from "lodash"
-import { Database, QueryType } from "../../exports"
+import { Database, Model, QueryType } from "../../exports"
 
 export const store = Database.new({
     key: "store",
@@ -9,8 +9,8 @@ export const store = Database.new({
     disconnect: async function () {
         return
     },
-    modify: function () {
-        let pool: any[] = []
+    modify: function Partial<T extends Model>() {
+        let pool: T[] = []
 
         return {
             create: async (payload) => {
@@ -18,26 +18,18 @@ export const store = Database.new({
                 return payload.body
             },
             read: async (payload) => {
-                const filter = payload.query.filter
+                const attributes = ["id"].concat(payload.query.attributes ?? [])
 
-                const attributes = ["id"].concat(payload.query.attributes)
+                let res = poolFilter(pool, payload.query)
 
-                let res = poolFilter(pool, filter)
-
-                res = res.map(function (entity: any) {
+                res = res.map(function (entity: T) {
                     return lodash.pick(entity, attributes)
                 })
-
-                res = lodash.slice(
-                    res,
-                    payload.query.offset,
-                    payload.query.offset + payload.query.limit,
-                )
 
                 return res
             },
             update: async (payload) => {
-                const ids = poolFilter(pool, payload.query.filter).map(function (i: any) {
+                const ids = poolFilter(pool, payload.query).map(function (i: T) {
                     return i.id
                 })
                 for (const item of pool) {
@@ -50,7 +42,7 @@ export const store = Database.new({
                 return true
             },
             del: async (payload) => {
-                const filtered = poolFilter(pool, payload.query.filter).map(function (f) {
+                const filtered = poolFilter(pool, payload.query).map(function (f) {
                     return f.id
                 })
                 const rejected = lodash.reject(pool, function (entity) {
@@ -60,19 +52,19 @@ export const store = Database.new({
                 return true
             },
             sum: async (payload) => {
-                return poolFilter(pool, payload.query.filter).length
+                return poolFilter(pool, payload.query).length
             },
             count: async function (payload) {
-                return poolFilter(pool, payload.query.filter).length
+                return poolFilter(pool, payload.query).length
             },
         }
     },
 })
 
-function poolFilter(pool: any[], filter: QueryType<any>["filter"]) {
-    return pool.filter(function (entity) {
-        for (const field in filter) {
-            const value = filter[field]
+function poolFilter(pool: any[], query: QueryType<unknown>["filter"]) {
+    const results = pool.filter(function (entity) {
+        for (const field in query!.filter) {
+            const value = query.filter[field]
 
             if (value.equals !== undefined && entity[field] !== value.equals) {
                 return false
@@ -113,4 +105,5 @@ function poolFilter(pool: any[], filter: QueryType<any>["filter"]) {
         }
         return true
     })
+    return lodash.slice(results, query.offset, query.offset + query.limit)
 }

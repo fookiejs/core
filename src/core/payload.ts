@@ -8,7 +8,7 @@ export class Payload<T extends typeof Model, R> {
     query: QueryType<T>
     body: InstanceType<T> | Partial<InstanceType<T>>
     method: Method
-    model: Required<ModelType>
+    model: ModelType
     schema: SchemaType<T>
     options: Options
     response: R | null

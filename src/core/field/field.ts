@@ -11,14 +11,14 @@ export class Field {
     unique?: boolean
     uniqueGroup?: string[]
     default?: unknown
-    validators?: [(value: any) => boolean | string]
+    validators?: [(value: unknown) => boolean | string]
     relation?: typeof Model
-    read?: LifecycleFunction<any, any>[]
-    write?: LifecycleFunction<any, any>[]
+    read?: LifecycleFunction<typeof Model, unknown>[]
+    write?: LifecycleFunction<typeof Model, unknown>[]
     cascadeDelete?: boolean
 
     static Decorator = function (field: Field) {
-        return (target: any, property: any) => {
+        return (target: any, property: string) => {
             const metadata = Reflect.getMetadata("schema", target.constructor) || {}
 
             if (!lodash.has(metadata, "id")) {

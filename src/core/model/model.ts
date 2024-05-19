@@ -27,6 +27,7 @@ export class Model {
         options
         throw Error("Not implemented")
     }
+
     static async read<T extends Model>(
         this: new () => T,
         query?: QueryType<T>,
@@ -63,7 +64,7 @@ export class Model {
         this: new () => T,
         query: QueryType<T>,
         options?: Options,
-    ): Promise<T[]> {
+    ): Promise<number> {
         query
         options
         throw Error("Not implemented")
@@ -88,24 +89,13 @@ export class Model {
             const filledModel = fillModel(model)
 
             const methods = filledModel.database.modify<T>(filledModel, schema)
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            //@ts-expect-error
+
             constructor.create = createRun<T>(model, schema, constructor, methods.create)
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            //@ts-expect-error
-            constructor.read = readRun(model, schema, constructor, methods.read)
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            //@ts-expect-error
-            constructor.update = updateRun(model, schema, constructor, methods.update)
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            //@ts-expect-error
-            constructor.delete = deleteRun(model, schema, constructor, methods.del)
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            //@ts-ignore
-            constructor.count = countRun(model, schema, constructor, methods.count)
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            //@ts-ignore
-            constructor.sum = sumRun(model, schema, constructor, methods.sum)
+            constructor.read = readRun<T>(model, schema, constructor, methods.read)
+            constructor.update = updateRun<T>(model, schema, constructor, methods.update)
+            constructor.delete = deleteRun<T>(model, schema, constructor, methods.del)
+            constructor.count = countRun<T>(model, schema, constructor, methods.count)
+            constructor.sum = sumRun<T>(model, schema, constructor, methods.sum)
 
             Reflect.defineMetadata("model", model, constructor)
             const m = { modelClass: constructor, ...model, schema: schema }
@@ -149,16 +139,16 @@ export type QueryType<T> = {
     attributes?: string[]
     filter?: {
         [key in keyof Partial<T>]: {
-            gte?: number | string
-            gt?: number | string
-            lte?: number | string
-            lt?: number | string
-            equals?: number | string
-            notEquals?: number | string
-            in?: number | string[]
-            notIn?: number | string[]
-            like?: string
-            notLike?: string
+            gte?: number | string | Date
+            gt?: number | string | Date
+            lte?: number | string | Date
+            lt?: number | string | Date
+            equals?: number | string | Date
+            notEquals?: number | string | Date
+            in?: number[] | string[]
+            notIn?: number[] | string[]
+            like?: string | Date
+            notLike?: string | Date
             isNull?: boolean
             isNotNull?: boolean
             [keyword: string]: any

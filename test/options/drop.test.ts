@@ -44,7 +44,6 @@ describe("Relation", () => {
                 drop: 10,
             },
         )
-
         expect(entity instanceof Drop).toBe(true)
 
         let entities = await Drop.read()
