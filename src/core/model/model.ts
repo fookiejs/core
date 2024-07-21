@@ -92,12 +92,12 @@ export class Model {
 
             const methods = filled.database.modify<ModelClass>(filled, schema)
 
-            //@ts-ignore
-            constructor.create = createRun(filled, schema, methods.create) //@ts-ignore
-            constructor.read = readRun(filled, schema, methods.read) //@ts-ignore
-            constructor.update = updateRun(filled, schema, methods.update) //@ts-ignore
-            constructor.delete = deleteRun(filled, schema, methods.del) //@ts-ignore
-            constructor.count = countRun(filled, schema, methods.count) //@ts-ignore
+            //@ts-expect-error: TODO
+            constructor.create = createRun(filled, schema, methods.create) //@ts-expect-error: TODO
+            constructor.read = readRun(filled, schema, methods.read) //@ts-expect-error: TODO
+            constructor.update = updateRun(filled, schema, methods.update) //@ts-expect-error: TODO
+            constructor.delete = deleteRun(filled, schema, methods.del) // @ts-expect-error: TODO
+            constructor.count = countRun(filled, schema, methods.count) // @ts-expect-error: TODO
             constructor.sum = sumRun(filled, schema, methods.sum)
 
             Reflect.defineMetadata("model", model, constructor)

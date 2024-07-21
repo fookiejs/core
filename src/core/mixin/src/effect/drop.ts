@@ -10,7 +10,7 @@ export default LifecycleFunction.new({
                     await payload.modelClass.delete(
                         {
                             filter: {
-                                //@ts-ignore
+                                // @ts-expect-error: TODO
                                 id: { equals: payload.response.id },
                             },
                         },
@@ -23,7 +23,7 @@ export default LifecycleFunction.new({
                 await payload.modelClass.delete(
                     {
                         filter: {
-                            //@ts-ignore
+                            // @ts-expect-error: Explain why this line is expected to have an error
                             id: { equals: payload.response.id },
                         },
                     },
