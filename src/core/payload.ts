@@ -13,7 +13,7 @@ export class Payload<ModelClass extends Model, ResponseType> {
     options: Options
     response: ResponseType | null
     state: State
-    fieldName?: string
+    fieldName: string
     error: FookieError
     modelClass: typeof Model
     methodFunction: (payload: Payload<ModelClass, ResponseType>) => Promise<ResponseType>

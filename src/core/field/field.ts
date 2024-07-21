@@ -13,8 +13,8 @@ export class Field {
     default?: unknown
     validators?: [(value: unknown) => boolean | string]
     relation?: typeof Model
-    read?: LifecycleFunction<typeof Model, unknown>[]
-    write?: LifecycleFunction<typeof Model, unknown>[]
+    read?: LifecycleFunction<any, unknown>[]
+    write?: LifecycleFunction<any, unknown>[]
     cascadeDelete?: boolean
 
     static Decorator(field: Field) {

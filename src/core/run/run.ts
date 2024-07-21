@@ -65,7 +65,7 @@ export function createRun<ModelClass extends Model>(
     schema: SchemaType<ModelClass>,
     methodFunction: (payload: Payload<ModelClass, ModelClass>) => Promise<ModelClass>,
 ) {
-    return async function (this: new () => ModelClass, body: ModelClass, options: Options) {
+    return async function (this: typeof Model, body: ModelClass, options: Options) {
         const payload: Payload<ModelClass, ModelClass> = createPayload({
             method: "create",
             model: model,
@@ -92,11 +92,7 @@ export function readRun<ModelClass extends Model>(
 
     methodFunction: (payload: Payload<ModelClass, ModelClass[]>) => Promise<ModelClass[]>,
 ) {
-    return async function (
-        this: { new (...args): ModelClass },
-        query: QueryType<ModelClass>,
-        options: Options,
-    ) {
+    return async function (this: typeof Model, query: QueryType<ModelClass>, options: Options) {
         const payload: Payload<ModelClass, ModelClass[]> = createPayload({
             method: "read",
             model: model,
@@ -123,7 +119,7 @@ export function updateRun<ModelClass extends Model>(
     methodFunction: (payload: Payload<ModelClass, boolean>) => Promise<boolean>,
 ) {
     return async function (
-        this: { new (...args): ModelClass },
+        this: typeof Model,
         query: QueryType<ModelClass>,
         body: Partial<ModelClass>,
         options: Options,
@@ -153,11 +149,7 @@ export function deleteRun<ModelClass extends Model>(
     schema: SchemaType<ModelClass>,
     methodFunction: (payload: Payload<ModelClass, boolean>) => Promise<boolean>,
 ) {
-    return async function (
-        this: { new (...args): ModelClass },
-        query: QueryType<ModelClass>,
-        options: Options,
-    ) {
+    return async function (this: typeof Model, query: QueryType<ModelClass>, options: Options) {
         const payload: Payload<ModelClass, boolean> = createPayload({
             method: "delete",
             model: model,
@@ -183,11 +175,7 @@ export function countRun<ModelClass extends Model>(
     schema: SchemaType<ModelClass>,
     methodFunction: (payload: Payload<ModelClass, number>) => Promise<number>,
 ) {
-    return async function (
-        this: { new (...args): ModelClass },
-        query: QueryType<ModelClass>,
-        options: Options,
-    ) {
+    return async function (this: typeof Model, query: QueryType<ModelClass>, options: Options) {
         const payload: Payload<ModelClass, number> = createPayload({
             method: "count",
             model: model,
@@ -214,7 +202,7 @@ export function sumRun<ModelClass extends Model>(
     methodFunction: (payload: Payload<ModelClass, number>) => Promise<number>,
 ) {
     return async function (
-        this: { new (...args): ModelClass },
+        this: typeof Model,
         query: QueryType<ModelClass>,
         fieldName: string,
         options: Options,
