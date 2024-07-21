@@ -10,6 +10,7 @@ export default LifecycleFunction.new({
                     await payload.modelClass.delete(
                         {
                             filter: {
+                                //@ts-ignore
                                 id: { equals: payload.response.id },
                             },
                         },
@@ -22,6 +23,7 @@ export default LifecycleFunction.new({
                 await payload.modelClass.delete(
                     {
                         filter: {
+                            //@ts-ignore
                             id: { equals: payload.response.id },
                         },
                     },

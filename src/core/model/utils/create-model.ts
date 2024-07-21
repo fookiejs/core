@@ -38,7 +38,9 @@ export function fillModel(model: Optional<ModelType, "binds" | "mixins">): Model
                             mixin.binds[method],
                             (objValue, srcValue) => {
                                 if (lodash.isArray(objValue)) {
-                                    return objValue.concat(srcValue)
+                                    return objValue.concat(objValue, srcValue)
+                                } else {
+                                    return objValue
                                 }
                             },
                         )

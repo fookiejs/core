@@ -14,7 +14,7 @@ export const models: {
     schema: SchemaType<Model>
     database: Database
     binds?: BindsType | undefined
-    modelClass: new () => Model
+    modelClass: typeof Model
 }[] = []
 
 export class Model {
@@ -85,7 +85,7 @@ export class Model {
     }
 
     static Decorator<ModelClass extends Model>(model: Optional<ModelType, "binds" | "mixins">) {
-        return function (constructor: new () => ModelClass) {
+        return function (constructor: typeof Model) {
             const schema: SchemaType<ModelClass> = Reflect.getMetadata("schema", constructor)
 
             const filled = fillModel(model)

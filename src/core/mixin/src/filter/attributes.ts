@@ -4,7 +4,7 @@ import { LifecycleFunction } from "../../../lifecycle-function"
 export default LifecycleFunction.new({
     key: "attributes",
     execute: async function (payload) {
-        if (payload.method === "read") {
+        if (payload.method === "read" && Array.isArray(payload.response)) {
             payload.response = payload.response.map((entity) =>
                 lodash.pick(entity, payload.query.attributes),
             )

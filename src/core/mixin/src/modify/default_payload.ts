@@ -30,7 +30,9 @@ export default LifecycleFunction.new({
         }
 
         if (payload.query.attributes.length == 0) {
-            payload.query.attributes = lodash.keys(payload.schema).concat(["id"])
+            payload.query.attributes = lodash.keys(payload.schema) as Array<
+                keyof typeof payload.schema
+            >
         }
     },
 })
