@@ -21,6 +21,8 @@ export const before: BindsType = {
         rule: [has_body, has_field, check_type, unique, uniqueGroup],
         filter: [],
         effect: [],
+        accept: {},
+        reject: {},
     },
     read: {
         preRule: [validate_payload, default_payload, has_method, validate_attributes, db_connect],
@@ -29,6 +31,8 @@ export const before: BindsType = {
         rule: [],
         filter: [],
         effect: [],
+        accept: {},
+        reject: {},
     },
     update: {
         preRule: [validate_payload, default_payload, has_method, has_body, db_connect],
@@ -37,6 +41,8 @@ export const before: BindsType = {
         rule: [has_body, has_field, check_type, unique],
         filter: [],
         effect: [],
+        accept: {},
+        reject: {},
     },
     delete: {
         preRule: [validate_payload, default_payload, has_method, db_connect],
@@ -45,6 +51,8 @@ export const before: BindsType = {
         rule: [],
         filter: [],
         effect: [],
+        accept: {},
+        reject: {},
     },
     count: {
         preRule: [validate_payload, default_payload, has_method, db_connect],
@@ -53,6 +61,8 @@ export const before: BindsType = {
         rule: [],
         filter: [],
         effect: [],
+        accept: {},
+        reject: {},
     },
     sum: {
         preRule: [validate_payload, default_payload, has_method, need_field_in_options],
@@ -61,5 +71,7 @@ export const before: BindsType = {
         rule: [has_field],
         filter: [],
         effect: [],
+        accept: {},
+        reject: {},
     },
 }

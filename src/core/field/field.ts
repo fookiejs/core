@@ -7,7 +7,7 @@ import { fillSchema } from "./utils/fill-schema"
 
 export class Field {
     required?: boolean
-    type?: Type
+    type: Type
     unique?: boolean
     uniqueGroup?: string[]
     default?: unknown
@@ -17,8 +17,8 @@ export class Field {
     write?: LifecycleFunction<typeof Model, unknown>[]
     cascadeDelete?: boolean
 
-    static Decorator = function (field: Field) {
-        return (target: any, property: string) => {
+    static Decorator(field: Field) {
+        return function (target: any, propertyKey: string) {
             const metadata = Reflect.getMetadata("schema", target.constructor) || {}
 
             if (!lodash.has(metadata, "id")) {
@@ -27,7 +27,7 @@ export class Field {
                 })
             }
 
-            metadata[property] = fillSchema(field)
+            metadata[propertyKey as string] = fillSchema(field)
 
             Reflect.defineMetadata("schema", metadata, target.constructor)
         }

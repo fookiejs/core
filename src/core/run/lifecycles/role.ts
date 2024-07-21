@@ -10,7 +10,7 @@ const role = async function (payload: Payload<any, any>) {
         ...after[payload.method].role,
     ]
 
-    let error = null
+    let error: null | string = null
 
     if (roles.length === 0) {
         return true
@@ -23,14 +23,14 @@ const role = async function (payload: Payload<any, any>) {
         const field = payload.model.binds[payload.method]
         if (res) {
             if (lodash.has(field, `accept.${role.key}.modify`)) {
-                const modifies = payload.model.binds[payload.method].accept[role.key].modify!
+                const modifies = payload.model.binds[payload.method].accept![role.key].modify!
                 for (const modify of modifies) {
                     await modify.execute(payload)
                 }
             }
 
             if (lodash.has(field, `accept.${role.key}.rule`)) {
-                const extra_rules = payload.model.binds[payload.method]["accept"][role.key].rule!
+                const extra_rules = payload.model.binds[payload.method]["accept"]![role.key].rule!
                 for (const rule of extra_rules) {
                     const extra_rule_response = await rule.execute(payload)
                     if (!extra_rule_response) {
@@ -42,16 +42,17 @@ const role = async function (payload: Payload<any, any>) {
             return true
         } else {
             if (lodash.has(field, "reject") && lodash.has(field.reject, role.key)) {
-                if (lodash.has(field.reject[role.key], "modify")) {
-                    const modifies = payload.model.binds[payload.method]["reject"][role.key].modify!
+                if (lodash.has(field.reject![role.key], "modify")) {
+                    const modifies =
+                        payload.model.binds[payload.method]["reject"]![role.key].modify!
                     for (const modify of modifies) {
                         await modify.execute(payload)
                     }
                 }
 
-                if (lodash.has(field.reject[role.key], "rule")) {
+                if (lodash.has(field.reject![role.key], "rule")) {
                     const extra_rules =
-                        payload.model.binds[payload.method]["reject"][role.key].rule!
+                        payload.model.binds[payload.method]["reject"]![role.key].rule!
                     for (const rule of extra_rules) {
                         const extra_rule_response = await rule.execute(payload)
                         if (!extra_rule_response) {
@@ -67,7 +68,7 @@ const role = async function (payload: Payload<any, any>) {
         }
     }
 
-    payload.error.key = error
+    payload.error.key = error as string
 
     return false
 }

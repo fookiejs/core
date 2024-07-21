@@ -1,10 +1,10 @@
 import * as lodash from "lodash"
-import { BindsType, ModelType } from "../model"
+import { BindsType, ModelType, Optional } from "../model"
 import { methods } from "../../method"
 import { system } from "../../../defaults/role/system"
 import { lifecycles } from "../../lifecycle"
 
-export function fillModel(model: Partial<ModelType>): ModelType {
+export function fillModel(model: Optional<ModelType, "binds" | "mixins">): ModelType {
     model.binds = lodash.isObject(model.binds) ? model.binds : ({} as BindsType)
     model.mixins = lodash.isArray(model.mixins) ? model.mixins : []
 

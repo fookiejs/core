@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { Field, LifecycleFunction, Model, defaults, FookieError } from "../../src/exports";
-import { v4 } from "uuid";
+import { describe, it, expect } from "vitest"
+import { Field, LifecycleFunction, Model, defaults, FookieError } from "../../src/exports"
+import { v4 } from "uuid"
 
 describe("Relation", () => {
     @Model.Decorator({
@@ -11,7 +11,7 @@ describe("Relation", () => {
                     LifecycleFunction.new({
                         key: "token_role",
                         execute: async function (payload) {
-                            return payload.options.token === "token";
+                            return payload.options.token === "token"
                         },
                     }),
                 ],
@@ -20,7 +20,7 @@ describe("Relation", () => {
     })
     class Token extends Model {
         @Field.Decorator({ type: defaults.type.text })
-        name: string;
+        name: string
     }
 
     it("should create an entity with valid token", async () => {
@@ -29,10 +29,10 @@ describe("Relation", () => {
             {
                 token: "token",
             },
-        );
+        )
 
-        expect(entity instanceof Token).toBe(true);
-    });
+        expect(entity instanceof Token).toBe(true)
+    })
 
     it("should fail to create an entity with invalid token", async () => {
         const entity = await Token.create(
@@ -40,8 +40,8 @@ describe("Relation", () => {
             {
                 token: "invalid_token",
             },
-        );
+        )
 
-        expect(entity instanceof FookieError).toBe(true);
-    });
-});
+        expect(entity instanceof FookieError).toBe(true)
+    })
+})

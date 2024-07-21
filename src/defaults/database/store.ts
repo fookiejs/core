@@ -9,36 +9,34 @@ export const store = Database.new({
     disconnect: async function () {
         return
     },
-    modify: function Partial<T extends Model>() {
-        let pool: T[] = []
+    modify: function <ModelClass extends Model>() {
+        let pool: ModelClass[] = []
 
         return {
             create: async (payload) => {
-                pool.push(payload.body)
+                pool.push(payload.body as any)
                 return payload.body
             },
             read: async (payload) => {
-                const attributes = ["id"].concat(payload.query.attributes ?? [])
+                const attributes = payload.query.attributes
 
                 let res = poolFilter(pool, payload.query)
 
-                res = res.map(function (entity: T) {
+                res = res.map(function (entity) {
                     return lodash.pick(entity, attributes)
-                })
+                }) as ModelClass[]
 
                 return res
             },
             update: async (payload) => {
-                const ids = poolFilter(pool, payload.query).map(function (i: T) {
-                    return i.id
+                const entities = poolFilter(pool, payload.query)
+
+                entities.forEach((entity) => {
+                    Object.keys(payload.body).forEach((key) => {
+                        entity[key] = payload.body[key]
+                    })
                 })
-                for (const item of pool) {
-                    for (const key in payload.body) {
-                        if (ids.includes(item.id)) {
-                            item[key] = payload.body[key]
-                        }
-                    }
-                }
+
                 return true
             },
             del: async (payload) => {
@@ -52,7 +50,15 @@ export const store = Database.new({
                 return true
             },
             sum: async (payload) => {
-                return poolFilter(pool, payload.query).length
+                const filteredItems = poolFilter(pool, payload.query)
+                const sum = filteredItems.reduce((acc, item) => {
+                    if (typeof item[payload.fieldName] === "number") {
+                        return acc + item[payload.fieldName]
+                    }
+                    return acc
+                }, 0)
+
+                return sum
             },
             count: async function (payload) {
                 return poolFilter(pool, payload.query).length
@@ -61,9 +67,12 @@ export const store = Database.new({
     },
 })
 
-function poolFilter(pool: any[], query: QueryType<unknown>["filter"]) {
+function poolFilter<ModelClass extends Model>(
+    pool: ModelClass[],
+    query: QueryType<ModelClass | any>,
+) {
     const results = pool.filter(function (entity) {
-        for (const field in query!.filter) {
+        for (const field of Object.keys(query.filter) as Array<keyof ModelClass>) {
             const value = query.filter[field]
 
             if (value.equals !== undefined && entity[field] !== value.equals) {
@@ -73,10 +82,10 @@ function poolFilter(pool: any[], query: QueryType<unknown>["filter"]) {
                 return false
             }
 
-            if (value.in && !value.in.includes(entity[field])) {
+            if (value.in && !value.in.includes(entity[field] as never)) {
                 return false
             }
-            if (value.notIn && value.notIn.includes(entity[field])) {
+            if (value.notIn && value.notIn.includes(entity[field] as never)) {
                 return false
             }
             if (value.lt !== undefined && entity[field] >= value.lt) {
@@ -91,7 +100,10 @@ function poolFilter(pool: any[], query: QueryType<unknown>["filter"]) {
             if (value.gte !== undefined && entity[field] < value.gte) {
                 return false
             }
-            if (value.like && !new RegExp(value.like.replace(/%/g, ".*")).test(entity[field])) {
+            if (
+                value.like &&
+                !new RegExp(value.like.replace(/%/g, ".*")).test(entity[field] as string)
+            ) {
                 return false
             }
             if (lodash.isBoolean(value.isNull)) {

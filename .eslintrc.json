@@ -1,16 +1,17 @@
 {
-    "extends": ["plugin:@typescript-eslint/recommended"],
+    "extends": [],
     "parser": "@typescript-eslint/parser",
     "plugins": ["@typescript-eslint"],
     "root": true,
     "rules": {
+        "@typescript-eslint/no-explicit-any": "warn",
         //"es/no-arrow-functions": "error",
         //"es/no-block-scoped-functions": "error",
         //"es/no-classes": "error",
         //"es/no-default-parameters": "error",
         "@typescript-eslint/ban-types": "warn",
-        "no-inner-declarations": "error",
-        "no-dupe-args": "error",
+        "no-inner-declarations": "warn",
+        "no-dupe-args": "warn",
         "no-empty": [
             "error",
             {

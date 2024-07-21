@@ -8,40 +8,42 @@ import { SchemaType } from "../schema"
 import { Options } from "../option"
 import { Mixin } from "../mixin/index"
 
+export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
+
 export const models: {
-    schema: SchemaType<typeof Model>
+    schema: SchemaType<Model>
     database: Database
     binds?: BindsType | undefined
-    modelClass: typeof Model
+    modelClass: new () => Model
 }[] = []
 
 export class Model {
     id: string
 
-    static async create<T extends Model>(
-        this: new () => T,
-        body: Omit<T, "id">,
+    static async create<ModelClass extends Model>(
+        this: new () => ModelClass,
+        body: Omit<ModelClass, "id">,
         options?: Options,
-    ): Promise<T | FookieError> {
+    ): Promise<ModelClass | FookieError> {
         body
         options
         throw Error("Not implemented")
     }
 
-    static async read<T extends Model>(
-        this: new () => T,
-        query?: QueryType<T>,
+    static async read<ModelClass extends Model>(
+        this: new () => ModelClass,
+        query?: QueryType<ModelClass>,
         options?: Options,
-    ): Promise<T[]> {
+    ): Promise<ModelClass[]> {
         query
         options
         throw Error("Not implemented")
     }
 
-    static async update<T extends Model>(
-        this: new () => T,
-        query: QueryType<T>,
-        body: Partial<Omit<T, "id">>,
+    static async update<ModelClass extends Model>(
+        this: new () => ModelClass,
+        query: QueryType<ModelClass>,
+        body: Partial<Omit<ModelClass, "id">>,
         options?: Options,
     ): Promise<boolean> {
         query
@@ -50,9 +52,9 @@ export class Model {
         throw Error("Not implemented")
     }
 
-    static async delete<T extends Model>(
-        this: new () => T,
-        query: QueryType<T>,
+    static async delete<ModelClass extends Model>(
+        this: new () => ModelClass,
+        query: QueryType<ModelClass>,
         options?: Options,
     ): Promise<boolean> {
         query
@@ -60,9 +62,9 @@ export class Model {
         throw Error("Not implemented")
     }
 
-    static async count<T extends Model>(
-        this: new () => T,
-        query: QueryType<T>,
+    static async count<ModelClass extends Model>(
+        this: new () => ModelClass,
+        query: QueryType<ModelClass>,
         options?: Options,
     ): Promise<number> {
         query
@@ -70,9 +72,9 @@ export class Model {
         throw Error("Not implemented")
     }
 
-    static async sum<T extends Model>(
-        this: new () => T,
-        query: QueryType<T>,
+    static async sum<ModelClass extends Model>(
+        this: new () => ModelClass,
+        query: QueryType<ModelClass>,
         field: string,
         options?: Options,
     ): Promise<number> {
@@ -82,20 +84,20 @@ export class Model {
         throw Error("Not implemented")
     }
 
-    static Decorator(model: ModelType) {
-        return function <T extends typeof Model>(constructor: T) {
-            const schema: SchemaType<T> = Reflect.getMetadata("schema", constructor)
+    static Decorator(model: Optional<ModelType, "binds" | "mixins">) {
+        return function <ModelClass extends Model>(constructor: new () => ModelClass) {
+            const schema: SchemaType<ModelClass> = Reflect.getMetadata("schema", constructor)
 
-            const filledModel = fillModel(model)
+            const filled = fillModel(model)
 
-            const methods = filledModel.database.modify<T>(filledModel, schema)
+            const methods = filled.database.modify<ModelClass>(filled, schema)
 
-            constructor.create = createRun<T>(model, schema, constructor, methods.create)
-            constructor.read = readRun<T>(model, schema, constructor, methods.read)
-            constructor.update = updateRun<T>(model, schema, constructor, methods.update)
-            constructor.delete = deleteRun<T>(model, schema, constructor, methods.del)
-            constructor.count = countRun<T>(model, schema, constructor, methods.count)
-            constructor.sum = sumRun<T>(model, schema, constructor, methods.sum)
+            constructor.create = createRun<ModelClass>(filled, schema, constructor, methods.create)
+            constructor.read = readRun<ModelClass>(filled, schema, constructor, methods.read)
+            constructor.update = updateRun<ModelClass>(filled, schema, constructor, methods.update)
+            constructor.delete = deleteRun<ModelClass>(filled, schema, constructor, methods.del)
+            constructor.count = countRun<ModelClass>(filled, schema, constructor, methods.count)
+            constructor.sum = sumRun<ModelClass>(filled, schema, constructor, methods.sum)
 
             Reflect.defineMetadata("model", model, constructor)
             const m = { modelClass: constructor, ...model, schema: schema }
@@ -106,39 +108,40 @@ export class Model {
 
 export type ModelType = {
     database: Database
-    binds?: BindsType
-    mixins?: Mixin[]
+    binds: BindsType
+    mixins: Mixin[]
 }
 
 export type BindsType = {
-    [ls in Method]?: {
-        preRule?: LifecycleFunction<typeof Model, unknown>[]
-        modify?: LifecycleFunction<typeof Model, unknown>[]
-        role?: LifecycleFunction<typeof Model, unknown>[]
-        rule?: LifecycleFunction<typeof Model, unknown>[]
-        filter?: LifecycleFunction<typeof Model, unknown>[]
-        effect?: LifecycleFunction<typeof Model, unknown>[]
+    [ls in Method]: {
+        preRule: LifecycleFunction<Model, unknown>[]
+        modify: LifecycleFunction<Model, unknown>[]
+        role: LifecycleFunction<Model, unknown>[]
+        rule: LifecycleFunction<Model, unknown>[]
+        filter: LifecycleFunction<Model, unknown>[]
+        effect: LifecycleFunction<Model, unknown>[]
         accept?: {
             [key: string]: {
-                modify: LifecycleFunction<typeof Model, unknown>[]
-                rule: LifecycleFunction<typeof Model, unknown>[]
+                modify: LifecycleFunction<Model, unknown>[]
+                rule: LifecycleFunction<Model, unknown>[]
             }
         }
         reject?: {
             [key: string]: {
-                modify: LifecycleFunction<typeof Model, unknown>[]
-                rule: LifecycleFunction<typeof Model, unknown>[]
+                modify: LifecycleFunction<Model, unknown>[]
+                rule: LifecycleFunction<Model, unknown>[]
             }
         }
     }
 }
 
-export type QueryType<T> = {
-    limit?: number
-    offset?: number
-    attributes?: string[]
-    filter?: {
-        [key in keyof Partial<T>]: {
+export class QueryType<ModelClass extends Model> {
+    limit: number
+    offset: number
+    attributes: (keyof ModelClass)[]
+    filter: Record<
+        keyof ModelClass,
+        {
             gte?: number | string | Date
             gt?: number | string | Date
             lte?: number | string | Date
@@ -147,11 +150,11 @@ export type QueryType<T> = {
             notEquals?: number | string | Date
             in?: number[] | string[]
             notIn?: number[] | string[]
-            like?: string | Date
+            like?: string
             notLike?: string | Date
             isNull?: boolean
             isNotNull?: boolean
-            [keyword: string]: any
+            [keyword: string]: unknown
         }
-    }
+    >
 }

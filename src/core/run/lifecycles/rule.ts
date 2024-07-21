@@ -4,8 +4,8 @@ import { Payload } from "../../payload"
 
 const rule = async function (payload: Payload<any, any>) {
     const rules = [
-        ...before[payload.method]!.rule!,
-        ...payload.model.binds[payload.method].rule,
+        ...before[payload.method].rule,
+        ...payload.model.binds![payload.method].rule,
         ...after[payload.method].rule,
     ]
 

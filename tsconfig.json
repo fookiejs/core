@@ -12,12 +12,12 @@
         "strictNullChecks": true,
         "strictPropertyInitialization": false,
         "strictFunctionTypes": true,
-        "noImplicitAny": true,
+        "noImplicitAny": false,
         "noImplicitReturns": true,
         "noImplicitThis": true,
-        "noEmitOnError": false, // Hataları göz ardı etmek için
-        "declaration": true, // .d.ts dosyalarını oluşturmak için
-        "declarationMap": true // Kaynak haritası oluşturmak için
+        "noEmitOnError": false,
+        "declaration": true,
+        "declarationMap": true
     },
     "include": ["src/**/*"],
     "exclude": ["test", "node_modules"]

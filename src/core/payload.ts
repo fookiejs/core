@@ -4,17 +4,17 @@ import { Options } from "./option"
 import { SchemaType } from "./schema"
 import { State } from "./state"
 
-export class Payload<T extends typeof Model, R> {
-    query: QueryType<T>
-    body: InstanceType<T> | Partial<InstanceType<T>>
+export class Payload<ModelClass extends Model, ResponseType> {
+    query: QueryType<ModelClass>
+    body: ModelClass
     method: Method
-    model: ModelType
-    schema: SchemaType<T>
+    model: Required<ModelType>
+    schema: SchemaType<ModelClass>
     options: Options
-    response: R | null
+    response: ResponseType | null
     state: State
-    fieldName?: string
+    fieldName: string
     error: FookieError
-    modelClass: T
-    methodFunction: (payload: Payload<T, R>) => Promise<R>
+    modelClass: (new () => Model) & (new () => ModelClass)
+    methodFunction: (payload: Payload<ModelClass, ResponseType>) => Promise<ResponseType>
 }

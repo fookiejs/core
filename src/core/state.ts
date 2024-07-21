@@ -11,5 +11,5 @@ export class State {
         }[]
     }
     test?: boolean
-    todo: LifecycleFunction<typeof Model, unknown>[]
+    todo: LifecycleFunction<Model, unknown>[]
 }

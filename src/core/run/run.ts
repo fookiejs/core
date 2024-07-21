@@ -12,11 +12,11 @@ import { Payload } from "../payload"
 import * as lodash from "lodash"
 import filter from "./lifecycles/filter"
 import { FookieError } from "../error"
-import { plainToClass } from "class-transformer"
+import { plainToInstance } from "class-transformer"
 
-function createPayload<T extends typeof Model, R>(
-    payload: Omit<Payload<T, R>, "state" | "response">,
-): Payload<T, R> {
+function createPayload<ModelClass extends Model, R>(
+    payload: Omit<Payload<ModelClass, R>, "state" | "response">,
+): Payload<ModelClass, R> {
     return {
         ...payload,
         response: null,
@@ -38,7 +38,9 @@ function finalizeState(state: State) {
     state.metrics.end = moment.utc().toDate()
 }
 
-async function runLifecycle<T extends typeof Model, R>(payload: Payload<T, R>) {
+async function runLifecycle<ModelClass extends Model, ResponseType>(
+    payload: Payload<ModelClass, ResponseType>,
+) {
     if (await pre_rule(payload)) {
         await modify(payload)
 
@@ -50,7 +52,7 @@ async function runLifecycle<T extends typeof Model, R>(payload: Payload<T, R>) {
                 await filter(payload)
                 await effect(payload)
                 finalizeState(payload.state)
-                return plainToClass(payload.modelClass, payload.response)
+                return plainToInstance(payload.modelClass, payload.response)
             }
         }
     }
@@ -58,14 +60,14 @@ async function runLifecycle<T extends typeof Model, R>(payload: Payload<T, R>) {
     return payload.error
 }
 
-export function createRun<T extends typeof Model>(
-    model: ModelType,
-    schema: SchemaType<T>,
-    modelClass: T,
-    methodFunction: (payload: Payload<T, T>) => Promise<T>,
+export function createRun<ModelClass extends Model>(
+    model: Required<ModelType>,
+    schema: SchemaType<ModelClass>,
+    modelClass: { new (...args): ModelClass },
+    methodFunction: (payload: Payload<ModelClass, ModelClass>) => Promise<ModelClass>,
 ) {
-    return async function (body: InstanceType<T>, options: Options) {
-        const payload: Payload<T, T> = createPayload({
+    return async function (body: ModelClass, options: Options) {
+        const payload: Payload<ModelClass, ModelClass> = createPayload({
             method: "create",
             model: model,
             schema: schema,
@@ -78,20 +80,21 @@ export function createRun<T extends typeof Model>(
                 validationErrors: {},
             }),
             modelClass: modelClass,
-            query: {},
+            query: {} as QueryType<ModelClass>,
+            fieldName: "",
         })
         return runLifecycle(payload)
     }
 }
 
-export function readRun<T extends typeof Model>(
-    model: ModelType,
-    schema: SchemaType<T>,
-    modelClass: T,
-    methodFunction: (payload: Payload<T, T[]>) => Promise<T[]>,
+export function readRun<ModelClass extends Model>(
+    model: Required<ModelType>,
+    schema: SchemaType<ModelClass>,
+    modelClass: { new (...args): ModelClass },
+    methodFunction: (payload: Payload<ModelClass, ModelClass[]>) => Promise<ModelClass[]>,
 ) {
-    return async function (query: QueryType<T>, options: Options) {
-        const payload: Payload<T, T[]> = createPayload({
+    return async function (query: QueryType<ModelClass>, options: Options) {
+        const payload: Payload<ModelClass, ModelClass[]> = createPayload({
             method: "read",
             model: model,
             schema: schema,
@@ -104,26 +107,31 @@ export function readRun<T extends typeof Model>(
                 validationErrors: {},
             }),
             modelClass: modelClass,
-            body: {},
+            body: {} as ModelClass,
+            fieldName: "",
         })
         return runLifecycle(payload)
     }
 }
 
-export function updateRun<T extends typeof Model>(
-    model: ModelType,
-    schema: SchemaType<T>,
-    modelClass: T,
+export function updateRun<ModelClass extends Model>(
+    model: Required<ModelType>,
+    schema: SchemaType<ModelClass>,
+    modelClass: { new (...args): ModelClass },
 
-    methodFunction: (payload: Payload<T, boolean>) => Promise<boolean>,
+    methodFunction: (payload: Payload<ModelClass, boolean>) => Promise<boolean>,
 ) {
-    return async function (query: QueryType<T>, body: Partial<InstanceType<T>>, options: Options) {
-        const payload: Payload<T, boolean> = createPayload({
+    return async function (
+        query: QueryType<ModelClass>,
+        body: Partial<ModelClass>,
+        options: Options,
+    ) {
+        const payload: Payload<ModelClass, boolean> = createPayload({
             method: "update",
             model: model,
             schema: schema,
             query: query,
-            body: body,
+            body: body as ModelClass,
             options: options,
             methodFunction,
             error: FookieError.new({
@@ -132,19 +140,20 @@ export function updateRun<T extends typeof Model>(
                 validationErrors: {},
             }),
             modelClass: modelClass,
+            fieldName: "",
         })
         return runLifecycle(payload)
     }
 }
 
-export function deleteRun<T extends typeof Model>(
-    model: ModelType,
-    schema: SchemaType<T>,
-    modelClass: T,
-    methodFunction: (payload: Payload<T, boolean>) => Promise<boolean>,
+export function deleteRun<ModelClass extends Model>(
+    model: Required<ModelType>,
+    schema: SchemaType<ModelClass>,
+    modelClass: { new (...args): ModelClass },
+    methodFunction: (payload: Payload<ModelClass, boolean>) => Promise<boolean>,
 ) {
-    return async function (query: QueryType<T>, options: Options) {
-        const payload: Payload<T, boolean> = createPayload({
+    return async function (query: QueryType<ModelClass>, options: Options) {
+        const payload: Payload<ModelClass, boolean> = createPayload({
             method: "delete",
             model: model,
             schema: schema,
@@ -157,21 +166,22 @@ export function deleteRun<T extends typeof Model>(
                 validationErrors: {},
             }),
             modelClass: modelClass,
-            body: {},
+            body: {} as ModelClass,
+            fieldName: "",
         })
         return runLifecycle(payload)
     }
 }
 
-export function countRun<T extends typeof Model>(
-    model: ModelType,
-    schema: SchemaType<T>,
-    modelClass: T,
+export function countRun<ModelClass extends Model>(
+    model: Required<ModelType>,
+    schema: SchemaType<ModelClass>,
+    modelClass: { new (...args): ModelClass },
 
-    methodFunction: (payload: Payload<T, number>) => Promise<number>,
+    methodFunction: (payload: Payload<ModelClass, number>) => Promise<number>,
 ) {
-    return async function (query: QueryType<T>, options: Options) {
-        const payload: Payload<T, number> = createPayload({
+    return async function (query: QueryType<ModelClass>, options: Options) {
+        const payload: Payload<ModelClass, number> = createPayload({
             method: "count",
             model: model,
             schema: schema,
@@ -184,20 +194,21 @@ export function countRun<T extends typeof Model>(
                 validationErrors: {},
             }),
             modelClass: modelClass,
-            body: {},
+            body: {} as ModelClass,
+            fieldName: "",
         })
         return runLifecycle(payload)
     }
 }
 
-export function sumRun<T extends typeof Model>(
-    model: ModelType,
-    schema: SchemaType<T>,
-    modelClass: T,
-    methodFunction: (payload: Payload<T, number>) => Promise<number>,
+export function sumRun<ModelClass extends Model>(
+    model: Required<ModelType>,
+    schema: SchemaType<ModelClass>,
+    modelClass: { new (...args): ModelClass },
+    methodFunction: (payload: Payload<ModelClass, number>) => Promise<number>,
 ) {
-    return async function (query: QueryType<T>, fieldName: string, options: Options) {
-        const payload: Payload<T, number> = createPayload({
+    return async function (query: QueryType<ModelClass>, fieldName: string, options: Options) {
+        const payload: Payload<ModelClass, number> = createPayload({
             method: "sum",
             model: model,
             schema: schema,
@@ -211,7 +222,7 @@ export function sumRun<T extends typeof Model>(
                 validationErrors: {},
             }),
             modelClass: modelClass,
-            body: {},
+            body: {} as ModelClass,
         })
 
         return runLifecycle(payload)

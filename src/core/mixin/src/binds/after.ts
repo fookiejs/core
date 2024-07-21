@@ -22,6 +22,8 @@ export const after: BindsType = {
         role: [],
         filter: [attributes],
         effect: [db_disconnect, drop],
+        accept: {},
+        reject: {},
     },
     read: {
         modify: [filter_fields],
@@ -30,6 +32,8 @@ export const after: BindsType = {
         filter: [attributes],
         effect: [db_disconnect],
         role: [],
+        accept: {},
+        reject: {},
     },
     update: {
         preRule: [can_write],
@@ -38,6 +42,8 @@ export const after: BindsType = {
         filter: [],
         effect: [db_disconnect],
         role: [],
+        accept: {},
+        reject: {},
     },
     delete: {
         modify: [cascade_prepare],
@@ -46,6 +52,8 @@ export const after: BindsType = {
         filter: [],
         effect: [db_disconnect, todo],
         role: [],
+        accept: {},
+        reject: {},
     },
     count: {
         modify: [],
@@ -54,6 +62,8 @@ export const after: BindsType = {
         filter: [],
         effect: [db_disconnect],
         role: [],
+        accept: {},
+        reject: {},
     },
     sum: {
         preRule: [need_field_in_options],
@@ -62,5 +72,7 @@ export const after: BindsType = {
         filter: [],
         role: [],
         effect: [db_disconnect],
+        accept: {},
+        reject: {},
     },
 }
