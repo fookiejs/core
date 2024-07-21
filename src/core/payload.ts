@@ -8,13 +8,13 @@ export class Payload<ModelClass extends Model, ResponseType> {
     query: QueryType<ModelClass>
     body: ModelClass
     method: Method
-    model: Required<ModelType>
+    model: ModelType
     schema: SchemaType<ModelClass>
     options: Options
     response: ResponseType | null
     state: State
-    fieldName: string
+    fieldName?: string
     error: FookieError
-    modelClass: (new () => Model) & (new () => ModelClass)
+    modelClass: typeof Model
     methodFunction: (payload: Payload<ModelClass, ResponseType>) => Promise<ResponseType>
 }

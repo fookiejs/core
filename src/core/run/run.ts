@@ -63,10 +63,9 @@ async function runLifecycle<ModelClass extends Model, ResponseType>(
 export function createRun<ModelClass extends Model>(
     model: Required<ModelType>,
     schema: SchemaType<ModelClass>,
-    modelClass: { new (...args): ModelClass },
     methodFunction: (payload: Payload<ModelClass, ModelClass>) => Promise<ModelClass>,
 ) {
-    return async function (body: ModelClass, options: Options) {
+    return async function (this: new () => ModelClass, body: ModelClass, options: Options) {
         const payload: Payload<ModelClass, ModelClass> = createPayload({
             method: "create",
             model: model,
@@ -79,7 +78,7 @@ export function createRun<ModelClass extends Model>(
                 description: "",
                 validationErrors: {},
             }),
-            modelClass: modelClass,
+            modelClass: this,
             query: {} as QueryType<ModelClass>,
             fieldName: "",
         })
@@ -90,10 +89,14 @@ export function createRun<ModelClass extends Model>(
 export function readRun<ModelClass extends Model>(
     model: Required<ModelType>,
     schema: SchemaType<ModelClass>,
-    modelClass: { new (...args): ModelClass },
+
     methodFunction: (payload: Payload<ModelClass, ModelClass[]>) => Promise<ModelClass[]>,
 ) {
-    return async function (query: QueryType<ModelClass>, options: Options) {
+    return async function (
+        this: { new (...args): ModelClass },
+        query: QueryType<ModelClass>,
+        options: Options,
+    ) {
         const payload: Payload<ModelClass, ModelClass[]> = createPayload({
             method: "read",
             model: model,
@@ -106,7 +109,7 @@ export function readRun<ModelClass extends Model>(
                 description: "",
                 validationErrors: {},
             }),
-            modelClass: modelClass,
+            modelClass: this,
             body: {} as ModelClass,
             fieldName: "",
         })
@@ -117,11 +120,10 @@ export function readRun<ModelClass extends Model>(
 export function updateRun<ModelClass extends Model>(
     model: Required<ModelType>,
     schema: SchemaType<ModelClass>,
-    modelClass: { new (...args): ModelClass },
-
     methodFunction: (payload: Payload<ModelClass, boolean>) => Promise<boolean>,
 ) {
     return async function (
+        this: { new (...args): ModelClass },
         query: QueryType<ModelClass>,
         body: Partial<ModelClass>,
         options: Options,
@@ -139,7 +141,7 @@ export function updateRun<ModelClass extends Model>(
                 description: "",
                 validationErrors: {},
             }),
-            modelClass: modelClass,
+            modelClass: this,
             fieldName: "",
         })
         return runLifecycle(payload)
@@ -149,10 +151,13 @@ export function updateRun<ModelClass extends Model>(
 export function deleteRun<ModelClass extends Model>(
     model: Required<ModelType>,
     schema: SchemaType<ModelClass>,
-    modelClass: { new (...args): ModelClass },
     methodFunction: (payload: Payload<ModelClass, boolean>) => Promise<boolean>,
 ) {
-    return async function (query: QueryType<ModelClass>, options: Options) {
+    return async function (
+        this: { new (...args): ModelClass },
+        query: QueryType<ModelClass>,
+        options: Options,
+    ) {
         const payload: Payload<ModelClass, boolean> = createPayload({
             method: "delete",
             model: model,
@@ -165,7 +170,7 @@ export function deleteRun<ModelClass extends Model>(
                 description: "",
                 validationErrors: {},
             }),
-            modelClass: modelClass,
+            modelClass: this,
             body: {} as ModelClass,
             fieldName: "",
         })
@@ -176,11 +181,13 @@ export function deleteRun<ModelClass extends Model>(
 export function countRun<ModelClass extends Model>(
     model: Required<ModelType>,
     schema: SchemaType<ModelClass>,
-    modelClass: { new (...args): ModelClass },
-
     methodFunction: (payload: Payload<ModelClass, number>) => Promise<number>,
 ) {
-    return async function (query: QueryType<ModelClass>, options: Options) {
+    return async function (
+        this: { new (...args): ModelClass },
+        query: QueryType<ModelClass>,
+        options: Options,
+    ) {
         const payload: Payload<ModelClass, number> = createPayload({
             method: "count",
             model: model,
@@ -193,7 +200,7 @@ export function countRun<ModelClass extends Model>(
                 description: "",
                 validationErrors: {},
             }),
-            modelClass: modelClass,
+            modelClass: this,
             body: {} as ModelClass,
             fieldName: "",
         })
@@ -204,10 +211,14 @@ export function countRun<ModelClass extends Model>(
 export function sumRun<ModelClass extends Model>(
     model: Required<ModelType>,
     schema: SchemaType<ModelClass>,
-    modelClass: { new (...args): ModelClass },
     methodFunction: (payload: Payload<ModelClass, number>) => Promise<number>,
 ) {
-    return async function (query: QueryType<ModelClass>, fieldName: string, options: Options) {
+    return async function (
+        this: { new (...args): ModelClass },
+        query: QueryType<ModelClass>,
+        fieldName: string,
+        options: Options,
+    ) {
         const payload: Payload<ModelClass, number> = createPayload({
             method: "sum",
             model: model,
@@ -221,7 +232,7 @@ export function sumRun<ModelClass extends Model>(
                 description: "",
                 validationErrors: {},
             }),
-            modelClass: modelClass,
+            modelClass: this,
             body: {} as ModelClass,
         })
 

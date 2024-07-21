@@ -28,6 +28,7 @@ export default LifecycleFunction.new({
         if (!lodash.has(payload.query, "limit")) {
             payload.query.limit = Infinity
         }
+
         if (payload.query.attributes.length == 0) {
             payload.query.attributes = lodash.keys(payload.schema).concat(["id"])
         }

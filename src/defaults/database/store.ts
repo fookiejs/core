@@ -73,7 +73,7 @@ function poolFilter<ModelClass extends Model>(
 ) {
     const results = pool.filter(function (entity) {
         for (const field of Object.keys(query.filter) as Array<keyof ModelClass>) {
-            const value = query.filter[field]
+            const value = query.filter[field]!
 
             if (value.equals !== undefined && entity[field] !== value.equals) {
                 return false
