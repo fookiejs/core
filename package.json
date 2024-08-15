@@ -1,6 +1,6 @@
 {
   "name": "fookie",
-  "version": "0.9999.2",
+  "version": "0.9999.3",
   "description": "",
   "main": "dist/exports.js",
   "types": "dist/exports.d.ts",
