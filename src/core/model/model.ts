@@ -84,7 +84,7 @@ export class Model {
         throw Error("Not implemented")
     }
 
-    static Decorator<ModelClass extends Model>(model: Optional<ModelType, "binds" | "mixins">) {
+    static Decorator<ModelClass extends Model>(model: ModelTypeInput) {
         return function (constructor: typeof Model) {
             const schema: SchemaType<ModelClass> = Reflect.getMetadata("schema", constructor)
 
@@ -100,38 +100,46 @@ export class Model {
             constructor.count = countRun(filled, schema, methods.count) // @ts-expect-error: TODO
             constructor.sum = sumRun(filled, schema, methods.sum)
 
-            Reflect.defineMetadata("model", model, constructor)
-            const m = { modelClass: constructor, ...model, schema: schema }
+            Reflect.defineMetadata("model", filled, constructor)
+            const m = { modelClass: constructor, ...filled, schema: schema }
             models.push(m)
         }
     }
 }
 
-export type ModelType = {
+export type ModelTypeInput = {
+    database: Database
+    binds?: { [ls in Method]?: Partial<BindsTypeField> }
+    mixins?: Mixin[]
+}
+
+export type ModelTypeOutput = {
     database: Database
     binds: BindsType
     mixins: Mixin[]
 }
 
 export type BindsType = {
-    [ls in Method]: {
-        preRule: LifecycleFunction<Model, unknown>[]
-        modify: LifecycleFunction<Model, unknown>[]
-        role: LifecycleFunction<Model, unknown>[]
-        rule: LifecycleFunction<Model, unknown>[]
-        filter: LifecycleFunction<Model, unknown>[]
-        effect: LifecycleFunction<Model, unknown>[]
-        accept?: {
-            [key: string]: {
-                modify: LifecycleFunction<Model, unknown>[]
-                rule: LifecycleFunction<Model, unknown>[]
-            }
+    [ls in Method]: BindsTypeField
+}
+
+export type BindsTypeField = {
+    preRule: LifecycleFunction<Model, unknown>[]
+    modify: LifecycleFunction<Model, unknown>[]
+    role: LifecycleFunction<Model, unknown>[]
+    rule: LifecycleFunction<Model, unknown>[]
+    filter: LifecycleFunction<Model, unknown>[]
+    effect: LifecycleFunction<Model, unknown>[]
+    accept?: {
+        [key: string]: {
+            modify: LifecycleFunction<Model, unknown>[]
+            rule: LifecycleFunction<Model, unknown>[]
         }
-        reject?: {
-            [key: string]: {
-                modify: LifecycleFunction<Model, unknown>[]
-                rule: LifecycleFunction<Model, unknown>[]
-            }
+    }
+    reject?: {
+        [key: string]: {
+            modify: LifecycleFunction<Model, unknown>[]
+            rule: LifecycleFunction<Model, unknown>[]
         }
     }
 }

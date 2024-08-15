@@ -1,10 +1,10 @@
 import * as lodash from "lodash"
-import { BindsType, ModelType, Optional } from "../model"
+import { BindsType, ModelTypeInput, ModelTypeOutput } from "../model"
 import { methods } from "../../method"
 import { system } from "../../../defaults/role/system"
 import { lifecycles } from "../../lifecycle"
 
-export function fillModel(model: Optional<ModelType, "binds" | "mixins">): ModelType {
+export function fillModel(model: ModelTypeInput): ModelTypeOutput {
     model.binds = lodash.isObject(model.binds) ? model.binds : ({} as BindsType)
     model.mixins = lodash.isArray(model.mixins) ? model.mixins : []
 
@@ -50,5 +50,5 @@ export function fillModel(model: Optional<ModelType, "binds" | "mixins">): Model
         }
     }
 
-    return model as ModelType
+    return model as ModelTypeOutput
 }

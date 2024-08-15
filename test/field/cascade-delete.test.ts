@@ -1,5 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { Field, Model, defaults } from "../../src/exports";
+/* eslint-disable indent */
+import { describe, it, expect } from "vitest"
+import { Field, Model, defaults } from "../../src/exports"
 
 describe("Cascase", () => {
     @Model.Decorator({
@@ -12,7 +13,7 @@ describe("Cascase", () => {
     })
     class User extends Model {
         @Field.Decorator({ type: defaults.type.text })
-        name?: string;
+        name?: string
     }
 
     @Model.Decorator({
@@ -25,13 +26,13 @@ describe("Cascase", () => {
     })
     class Order extends Model {
         @Field.Decorator({ relation: User, cascadeDelete: true })
-        userId?: string;
+        userId?: string
     }
 
     it("Cascade delete should remove all related orders when a user is deleted", async () => {
-        const user = (await User.create({ name: "John Doe" })) as User;
-        await Order.create({ userId: user.id });
-        await Order.create({ userId: user.id });
+        const user = (await User.create({ name: "John Doe" })) as User
+        await Order.create({ userId: user.id })
+        await Order.create({ userId: user.id })
 
         await User.delete({
             filter: {
@@ -39,7 +40,7 @@ describe("Cascase", () => {
                     equals: user.id,
                 },
             },
-        });
+        })
 
         const remainingOrders = await Order.read({
             filter: {
@@ -47,8 +48,8 @@ describe("Cascase", () => {
                     equals: user.id,
                 },
             },
-        });
+        })
 
-        expect(remainingOrders.length).toBe(0);
-    });
-});
+        expect(remainingOrders.length).toBe(0)
+    })
+})

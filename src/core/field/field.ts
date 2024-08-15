@@ -4,10 +4,11 @@ import { LifecycleFunction } from "../lifecycle-function"
 import { Model } from "../model/model"
 import { Type } from "../type"
 import { fillSchema } from "./utils/fill-schema"
+import "reflect-metadata" // Ensure reflect-metadata is imported
 
 export class Field {
     required?: boolean
-    type: Type
+    type?: Type
     unique?: boolean
     uniqueGroup?: string[]
     default?: unknown
@@ -18,7 +19,7 @@ export class Field {
     cascadeDelete?: boolean
 
     static Decorator(field: Field) {
-        return function (target: any, propertyKey: string) {
+        return function (target: any, propertyKey: any) {
             const metadata = Reflect.getMetadata("schema", target.constructor) || {}
 
             if (!lodash.has(metadata, "id")) {

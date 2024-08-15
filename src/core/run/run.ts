@@ -1,5 +1,5 @@
 import * as moment from "moment"
-import { Model, ModelType, QueryType } from "../model/model"
+import { Model, ModelTypeOutput, QueryType } from "../model/model"
 import { SchemaType } from "../schema"
 import { Options } from "../option"
 import { State } from "../state"
@@ -61,7 +61,7 @@ async function runLifecycle<ModelClass extends Model, ResponseType>(
 }
 
 export function createRun<ModelClass extends Model>(
-    model: Required<ModelType>,
+    model: Required<ModelTypeOutput>,
     schema: SchemaType<ModelClass>,
     methodFunction: (payload: Payload<ModelClass, ModelClass>) => Promise<ModelClass>,
 ) {
@@ -87,7 +87,7 @@ export function createRun<ModelClass extends Model>(
 }
 
 export function readRun<ModelClass extends Model>(
-    model: Required<ModelType>,
+    model: Required<ModelTypeOutput>,
     schema: SchemaType<ModelClass>,
 
     methodFunction: (payload: Payload<ModelClass, ModelClass[]>) => Promise<ModelClass[]>,
@@ -114,7 +114,7 @@ export function readRun<ModelClass extends Model>(
 }
 
 export function updateRun<ModelClass extends Model>(
-    model: Required<ModelType>,
+    model: Required<ModelTypeOutput>,
     schema: SchemaType<ModelClass>,
     methodFunction: (payload: Payload<ModelClass, boolean>) => Promise<boolean>,
 ) {
@@ -145,7 +145,7 @@ export function updateRun<ModelClass extends Model>(
 }
 
 export function deleteRun<ModelClass extends Model>(
-    model: Required<ModelType>,
+    model: Required<ModelTypeOutput>,
     schema: SchemaType<ModelClass>,
     methodFunction: (payload: Payload<ModelClass, boolean>) => Promise<boolean>,
 ) {
@@ -171,7 +171,7 @@ export function deleteRun<ModelClass extends Model>(
 }
 
 export function countRun<ModelClass extends Model>(
-    model: Required<ModelType>,
+    model: Required<ModelTypeOutput>,
     schema: SchemaType<ModelClass>,
     methodFunction: (payload: Payload<ModelClass, number>) => Promise<number>,
 ) {
@@ -197,7 +197,7 @@ export function countRun<ModelClass extends Model>(
 }
 
 export function sumRun<ModelClass extends Model>(
-    model: Required<ModelType>,
+    model: Required<ModelTypeOutput>,
     schema: SchemaType<ModelClass>,
     methodFunction: (payload: Payload<ModelClass, number>) => Promise<number>,
 ) {

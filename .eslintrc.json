@@ -19,7 +19,6 @@
             }
         ],
         "no-unused-vars": "off",
-        "indent": ["error", 4],
         "quotes": [
             "error",
             "double",

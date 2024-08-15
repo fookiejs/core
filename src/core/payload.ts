@@ -1,4 +1,4 @@
-import { Method, Model, ModelType, QueryType } from "../exports"
+import { Method, Model, ModelTypeOutput, QueryType } from "../exports"
 import { FookieError } from "./error"
 import { Options } from "./option"
 import { SchemaType } from "./schema"
@@ -8,7 +8,7 @@ export class Payload<ModelClass extends Model, ResponseType> {
     query: QueryType<ModelClass>
     body: ModelClass
     method: Method
-    model: ModelType
+    model: ModelTypeOutput
     schema: SchemaType<ModelClass>
     options: Options
     response: ResponseType | null

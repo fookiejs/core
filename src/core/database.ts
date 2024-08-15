@@ -1,10 +1,10 @@
-import { Model, BaseClass, ModelType } from "../exports"
+import { Model, BaseClass, ModelTypeOutput } from "../exports"
 import { Payload } from "./payload"
 import { SchemaType } from "./schema"
 
 export class Database extends BaseClass {
     modify: <ModelClass extends Model>(
-        model: ModelType,
+        model: ModelTypeOutput,
         schema: SchemaType<ModelClass>,
     ) => {
         create: (payload: Payload<ModelClass, ModelClass>) => Promise<ModelClass>
