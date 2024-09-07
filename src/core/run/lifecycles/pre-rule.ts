@@ -1,7 +1,6 @@
 import { Payload } from "../../payload"
-
 import { FookieError } from "../../error"
-import { preRules } from "../../mixin/src/binds/global"
+import { preRules } from "../../mixin/binds/global"
 
 const preRule = async function (payload: Payload<any>, error: FookieError): Promise<boolean> {
     for (const preRule of preRules) {

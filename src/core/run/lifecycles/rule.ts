@@ -1,6 +1,6 @@
 import { FookieError } from "../../error"
-import { after } from "../../mixin/src/binds/after"
-import { before } from "../../mixin/src/binds/before"
+import { after } from "../../mixin/binds/after"
+import { before } from "../../mixin/binds/before"
 import { Payload } from "../../payload"
 
 const rule = async function (payload: Payload<any>, error: FookieError): Promise<boolean> {
