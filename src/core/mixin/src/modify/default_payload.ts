@@ -1,8 +1,8 @@
 import * as lodash from "lodash"
 import { v4 } from "uuid"
-import { LifecycleFunction } from "../../../lifecycle-function"
+import { PreRule } from "../../../lifecycle-function"
 
-export default LifecycleFunction.new({
+export default PreRule.new({
     key: "defalut_payload",
     execute: async function (payload) {
         const newPayload = lodash.merge(payload, {
@@ -34,5 +34,6 @@ export default LifecycleFunction.new({
                 keyof typeof payload.schema
             >
         }
+        return true
     },
 })

@@ -1,7 +1,8 @@
 import { Payload } from "../../payload"
 import { after, before } from "../../mixin/index"
+import { FookieError } from "../../error"
 
-const preRule = async function (payload: Payload<any, any>) {
+const preRule = async function (payload: Payload<any>, error: FookieError): Promise<boolean> {
     const allPreRules = [
         ...before[payload.method].preRule,
         ...payload.model.binds[payload.method].preRule,
@@ -11,7 +12,7 @@ const preRule = async function (payload: Payload<any, any>) {
     for (const preRule of allPreRules) {
         const start = Date.now()
 
-        const res = await preRule.execute(payload)
+        const res = await preRule.execute(payload, error)
 
         payload.state.metrics.lifecycle.push({
             name: preRule.key,
@@ -19,7 +20,7 @@ const preRule = async function (payload: Payload<any, any>) {
         })
 
         if (res === false) {
-            payload.error.key = preRule.key
+            error.key = preRule.key
             return false
         }
     }

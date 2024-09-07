@@ -1,7 +1,7 @@
 import * as lodash from "lodash"
-import { LifecycleFunction } from "../../../lifecycle-function"
+import { Rule } from "../../../lifecycle-function"
 
-export default LifecycleFunction.new({
+export default Rule.new({
     key: "has_body",
     execute: async function (payload) {
         return lodash.has(payload, "body")

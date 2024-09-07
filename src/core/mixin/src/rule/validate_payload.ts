@@ -1,7 +1,7 @@
 import * as lodash from "lodash"
-import { LifecycleFunction } from "../../../lifecycle-function"
+import { Rule } from "../../../lifecycle-function"
 
-export default LifecycleFunction.new({
+export default Rule.new({
     key: "validate_payload",
     execute: async function (payload) {
         if (lodash.has(payload, "options") && !lodash.isObject(payload.options)) {
@@ -30,9 +30,6 @@ export default LifecycleFunction.new({
 
         const avaible_keys = [
             "schema",
-            "methodFunction",
-            "error",
-            "response",
             "state",
             "method",
             "model",

@@ -1,6 +1,6 @@
-import { LifecycleFunction } from "../../../lifecycle-function"
+import { Effect } from "../../../lifecycle-function"
 
-export default LifecycleFunction.new({
+export default Effect.new({
     key: "todo",
     execute: async function (payload) {
         for (const fn of payload.state.todo) {

@@ -1,9 +1,9 @@
 import * as lodash from "lodash"
-import { LifecycleFunction } from "../../../lifecycle-function"
+import { Modify } from "../../../lifecycle-function"
 import { models } from "../../../model/model"
 import { Config } from "../../../config"
 
-export default LifecycleFunction.new({
+export default Modify.new({
     key: "cascade_prepare",
     execute: async function (payload) {
         const entities = await payload.modelClass.read(payload.query, {

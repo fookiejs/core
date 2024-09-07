@@ -1,5 +1,5 @@
 import * as lodash from "lodash"
-import { LifecycleFunction } from "../../../lifecycle-function"
+import { Rule } from "../../../lifecycle-function"
 import { Type } from "../../../type"
 
 function isValidFilterKey(type: Type, currentKey: string, value: any): boolean {
@@ -9,7 +9,7 @@ function isValidFilterKey(type: Type, currentKey: string, value: any): boolean {
     return type.queryController[currentKey].validate(value)
 }
 
-export default LifecycleFunction.new({
+export default Rule.new({
     key: "validate_query",
     execute: async function (payload) {
         const filterKeys = lodash.keys(payload.query.filter)

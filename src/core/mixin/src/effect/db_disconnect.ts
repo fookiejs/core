@@ -1,6 +1,6 @@
-import { LifecycleFunction } from "../../../lifecycle-function"
+import { Effect } from "../../../lifecycle-function"
 
-export default LifecycleFunction.new({
+export default Effect.new({
     key: "db_disconnect",
     execute: async function (payload) {
         await payload.model.database.disconnect()

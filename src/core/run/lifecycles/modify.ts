@@ -2,7 +2,7 @@ import { after } from "../../mixin/src/binds/after"
 import { before } from "../../mixin/src/binds/before"
 import { Payload } from "../../payload"
 
-const modify = async function (payload: Payload<any, any>) {
+const modify = async function (payload: Payload<any>): Promise<void> {
     const modifies = [
         ...before[payload.method].modify,
         ...payload.model.binds[payload.method].modify,

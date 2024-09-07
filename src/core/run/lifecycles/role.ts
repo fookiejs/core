@@ -2,15 +2,14 @@ import * as lodash from "lodash"
 import { Payload } from "../../payload"
 import { before } from "../../mixin/src/binds/before"
 import { after } from "../../mixin/src/binds/after"
+import { FookieError } from "../../error"
 
-const role = async function (payload: Payload<any, any>) {
+const role = async function (payload: Payload<any>, error: FookieError) {
     const roles = [
         ...before[payload.method].role,
         ...payload.model.binds[payload.method].role,
         ...after[payload.method].role,
     ]
-
-    let error: null | string = null
 
     if (roles.length === 0) {
         return true
@@ -19,7 +18,7 @@ const role = async function (payload: Payload<any, any>) {
     for (let i = 0; i < roles.length; i++) {
         const role = roles[i]
 
-        const res = await role.execute(payload)
+        const res = await role.execute(payload, error)
         const field = payload.model.binds[payload.method]
         if (res) {
             if (lodash.has(field, `accept.${role.key}.modify`)) {
@@ -32,9 +31,9 @@ const role = async function (payload: Payload<any, any>) {
             if (lodash.has(field, `accept.${role.key}.rule`)) {
                 const extra_rules = payload.model.binds[payload.method]["accept"]![role.key].rule!
                 for (const rule of extra_rules) {
-                    const extra_rule_response = await rule.execute(payload)
+                    const extra_rule_response = await rule.execute(payload, error)
                     if (!extra_rule_response) {
-                        payload.error.key = rule.key
+                        error.key = rule.key
                         return false
                     }
                 }
@@ -54,9 +53,9 @@ const role = async function (payload: Payload<any, any>) {
                     const extra_rules =
                         payload.model.binds[payload.method]["reject"]![role.key].rule!
                     for (const rule of extra_rules) {
-                        const extra_rule_response = await rule.execute(payload)
+                        const extra_rule_response = await rule.execute(payload, error)
                         if (!extra_rule_response) {
-                            error = rule.key
+                            error.key = rule.key
                             return false
                         }
                     }
@@ -64,11 +63,9 @@ const role = async function (payload: Payload<any, any>) {
 
                 return true
             }
-            error = role.key
+            error.key = role.key
         }
     }
-
-    payload.error.key = error as string
 
     return false
 }

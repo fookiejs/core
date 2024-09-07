@@ -1,5 +1,5 @@
 import { test } from "vitest"
-import { Model, Field, defaults, LifecycleFunction } from "../../src/exports"
+import { Model, Field, defaults, Role } from "../../src/exports"
 
 test("Define a simple model", async () => {
     @Model.Decorator({
@@ -10,9 +10,9 @@ test("Define a simple model", async () => {
             },
             create: {
                 role: [
-                    LifecycleFunction.new({
+                    Role.new({
                         key: "example-lifecycle",
-                        execute: async function (payload) {
+                        execute: async function () {
                             return true
                         },
                     }),
@@ -24,6 +24,7 @@ test("Define a simple model", async () => {
         @Field.Decorator({ required: true, type: defaults.type.text })
         email: string
     }
+    User
 })
 
 test("Define a model with relations.", async () => {
@@ -44,4 +45,5 @@ test("Define a model with relations.", async () => {
         @Field.Decorator({ required: true, type: defaults.type.text, relation: Address })
         address: string
     }
+    Place
 })

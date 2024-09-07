@@ -1,8 +1,8 @@
 import * as lodash from "lodash"
-import { LifecycleFunction } from "../../../lifecycle-function"
+import { Modify } from "../../../lifecycle-function"
 import { Field } from "../../../field/field"
 
-export default LifecycleFunction.new({
+export default Modify.new({
     key: "filter_fields",
     execute: async function (payload) {
         for (const key of payload.query.attributes) {

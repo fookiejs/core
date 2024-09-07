@@ -2,24 +2,22 @@ import * as moment from "moment"
 import { Model, ModelTypeOutput, QueryType } from "../model/model"
 import { SchemaType } from "../schema"
 import { Options } from "../option"
-import { State } from "../state"
 import pre_rule from "./lifecycles/pre-rule"
 import modify from "./lifecycles/modify"
 import role from "./lifecycles/role"
 import rule from "./lifecycles/rule"
 import effect from "./lifecycles/effect"
 import { Payload } from "../payload"
-import * as lodash from "lodash"
 import filter from "./lifecycles/filter"
 import { FookieError } from "../error"
 import { plainToInstance } from "class-transformer"
+import { Method } from "../method"
 
-function createPayload<ModelClass extends Model, R>(
-    payload: Omit<Payload<ModelClass, R>, "state" | "response">,
-): Payload<ModelClass, R> {
+function createPayload<ModelClass extends Model>(
+    payload: Omit<Payload<ModelClass>, "state" | "response">,
+): Payload<ModelClass> {
     return {
         ...payload,
-        response: null,
         options: payload.options ?? {},
         body: payload.body ?? {},
         query: payload.query ?? {},
@@ -34,50 +32,49 @@ function createPayload<ModelClass extends Model, R>(
     }
 }
 
-function finalizeState(state: State) {
-    state.metrics.end = moment.utc().toDate()
-}
+async function runLifecycle<ModelClass extends Model>(payload: Payload<ModelClass>) {
+    const error = FookieError.new({
+        description: "run",
+        validationErrors: {},
+        key: "run",
+    })
 
-async function runLifecycle<ModelClass extends Model, ResponseType>(
-    payload: Payload<ModelClass, ResponseType>,
-) {
-    if (await pre_rule(payload)) {
-        await modify(payload)
-
-        if (await role(payload)) {
-            if (await rule(payload)) {
-                if (payload.options?.test !== true && lodash.isNil(payload.response)) {
-                    payload.response = await payload.methodFunction(payload)
-                }
-                await filter(payload)
-                await effect(payload)
-                finalizeState(payload.state)
-                return plainToInstance(payload.modelClass, payload.response)
-            }
-        }
+    if (!(await pre_rule(payload, error))) {
+        return error
     }
 
-    return payload.error
+    await modify(payload)
+
+    if (!(await role(payload, error))) {
+        return error
+    }
+
+    if (!(await rule(payload, error))) {
+        return error
+    }
+
+    if (payload.options?.test !== true) {
+        const methods = Reflect.getMetadata("methods", payload.modelClass)
+        const response = await methods[payload.method](payload, error)
+
+        await filter(payload, response)
+        await effect(payload, response)
+        payload.state.metrics.end = moment.utc().toDate()
+        return plainToInstance(payload.modelClass, response)
+    }
 }
 
 export function createRun<ModelClass extends Model>(
     model: Required<ModelTypeOutput>,
     schema: SchemaType<ModelClass>,
-    methodFunction: (payload: Payload<ModelClass, ModelClass>) => Promise<ModelClass>,
 ) {
     return async function (this: typeof Model, body: ModelClass, options: Options) {
-        const payload: Payload<ModelClass, ModelClass> = createPayload({
-            method: "create",
+        const payload: Payload<ModelClass> = createPayload({
+            method: Method.CREATE,
             model: model,
             schema: schema,
             body: body,
             options: options,
-            methodFunction,
-            error: FookieError.new({
-                key: "",
-                description: "",
-                validationErrors: {},
-            }),
             modelClass: this,
             query: {} as QueryType<ModelClass>,
             fieldName: "",
@@ -89,22 +86,14 @@ export function createRun<ModelClass extends Model>(
 export function readRun<ModelClass extends Model>(
     model: Required<ModelTypeOutput>,
     schema: SchemaType<ModelClass>,
-
-    methodFunction: (payload: Payload<ModelClass, ModelClass[]>) => Promise<ModelClass[]>,
 ) {
     return async function (this: typeof Model, query: QueryType<ModelClass>, options: Options) {
-        const payload: Payload<ModelClass, ModelClass[]> = createPayload({
-            method: "read",
+        const payload: Payload<ModelClass> = createPayload({
+            method: Method.READ,
             model: model,
             schema: schema,
             query: query,
             options: options,
-            methodFunction,
-            error: FookieError.new({
-                key: "",
-                description: "",
-                validationErrors: {},
-            }),
             modelClass: this,
             body: {} as ModelClass,
             fieldName: "",
@@ -116,7 +105,6 @@ export function readRun<ModelClass extends Model>(
 export function updateRun<ModelClass extends Model>(
     model: Required<ModelTypeOutput>,
     schema: SchemaType<ModelClass>,
-    methodFunction: (payload: Payload<ModelClass, boolean>) => Promise<boolean>,
 ) {
     return async function (
         this: typeof Model,
@@ -124,19 +112,13 @@ export function updateRun<ModelClass extends Model>(
         body: Partial<ModelClass>,
         options: Options,
     ) {
-        const payload: Payload<ModelClass, boolean> = createPayload({
-            method: "update",
+        const payload: Payload<ModelClass> = createPayload({
+            method: Method.UPDATE,
             model: model,
             schema: schema,
             query: query,
             body: body as ModelClass,
             options: options,
-            methodFunction,
-            error: FookieError.new({
-                key: "",
-                description: "",
-                validationErrors: {},
-            }),
             modelClass: this,
             fieldName: "",
         })
@@ -147,21 +129,14 @@ export function updateRun<ModelClass extends Model>(
 export function deleteRun<ModelClass extends Model>(
     model: Required<ModelTypeOutput>,
     schema: SchemaType<ModelClass>,
-    methodFunction: (payload: Payload<ModelClass, boolean>) => Promise<boolean>,
 ) {
     return async function (this: typeof Model, query: QueryType<ModelClass>, options: Options) {
-        const payload: Payload<ModelClass, boolean> = createPayload({
-            method: "delete",
+        const payload: Payload<ModelClass> = createPayload({
+            method: Method.DELETE,
             model: model,
             schema: schema,
             query: query,
             options: options,
-            methodFunction,
-            error: FookieError.new({
-                key: "",
-                description: "",
-                validationErrors: {},
-            }),
             modelClass: this,
             body: {} as ModelClass,
             fieldName: "",
@@ -173,21 +148,14 @@ export function deleteRun<ModelClass extends Model>(
 export function countRun<ModelClass extends Model>(
     model: Required<ModelTypeOutput>,
     schema: SchemaType<ModelClass>,
-    methodFunction: (payload: Payload<ModelClass, number>) => Promise<number>,
 ) {
     return async function (this: typeof Model, query: QueryType<ModelClass>, options: Options) {
-        const payload: Payload<ModelClass, number> = createPayload({
-            method: "count",
+        const payload: Payload<ModelClass> = createPayload({
+            method: Method.COUNT,
             model: model,
             schema: schema,
             query: query,
             options: options,
-            methodFunction,
-            error: FookieError.new({
-                key: "",
-                description: "",
-                validationErrors: {},
-            }),
             modelClass: this,
             body: {} as ModelClass,
             fieldName: "",
@@ -199,7 +167,6 @@ export function countRun<ModelClass extends Model>(
 export function sumRun<ModelClass extends Model>(
     model: Required<ModelTypeOutput>,
     schema: SchemaType<ModelClass>,
-    methodFunction: (payload: Payload<ModelClass, number>) => Promise<number>,
 ) {
     return async function (
         this: typeof Model,
@@ -207,19 +174,13 @@ export function sumRun<ModelClass extends Model>(
         fieldName: string,
         options: Options,
     ) {
-        const payload: Payload<ModelClass, number> = createPayload({
-            method: "sum",
+        const payload: Payload<ModelClass> = createPayload({
+            method: Method.SUM,
             model: model,
             schema: schema,
             query: query,
             options: options,
-            methodFunction,
             fieldName: fieldName,
-            error: FookieError.new({
-                key: "",
-                description: "",
-                validationErrors: {},
-            }),
             modelClass: this,
             body: {} as ModelClass,
         })

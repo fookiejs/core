@@ -1,7 +1,7 @@
 import * as lodash from "lodash"
-import { LifecycleFunction } from "../../../lifecycle-function"
+import { Modify } from "../../../lifecycle-function"
 
-export default LifecycleFunction.new({
+export default Modify.new({
     key: "set_default",
     execute: async function (payload) {
         const pureDefaults = lodash.mapValues(payload.schema, function (o) {

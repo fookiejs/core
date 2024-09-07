@@ -1,7 +1,7 @@
 import * as lodash from "lodash"
-import { LifecycleFunction } from "../../../lifecycle-function"
+import { Rule } from "../../../lifecycle-function"
 
-export default LifecycleFunction.new({
+export default Rule.new({
     key: "has_field",
     execute: async function (payload) {
         const body_keys = lodash.keys(payload.body)

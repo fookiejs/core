@@ -1,20 +1,16 @@
 import { Method, Model, ModelTypeOutput, QueryType } from "../exports"
-import { FookieError } from "./error"
 import { Options } from "./option"
 import { SchemaType } from "./schema"
 import { State } from "./state"
 
-export class Payload<ModelClass extends Model, ResponseType> {
+export class Payload<ModelClass extends Model> {
     query: QueryType<ModelClass>
     body: ModelClass
     method: Method
     model: ModelTypeOutput
     schema: SchemaType<ModelClass>
     options: Options
-    response: ResponseType | null
     state: State
     fieldName: string
-    error: FookieError
     modelClass: typeof Model
-    methodFunction: (payload: Payload<ModelClass, ResponseType>) => Promise<ResponseType>
 }

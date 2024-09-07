@@ -1,8 +1,8 @@
 import * as lodash from "lodash"
-import { LifecycleFunction } from "../../../lifecycle-function"
+import { Rule } from "../../../lifecycle-function"
 import { Config } from "../../../config"
 
-export default LifecycleFunction.new({
+export default Rule.new({
     key: "uniqueGroup",
     execute: async function (payload) {
         const fields = lodash.keys(payload.body)

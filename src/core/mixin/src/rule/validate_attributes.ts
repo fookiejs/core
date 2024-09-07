@@ -1,7 +1,7 @@
 import * as lodash from "lodash"
-import { LifecycleFunction } from "../../../lifecycle-function"
+import { Rule } from "../../../lifecycle-function"
 
-export default LifecycleFunction.new({
+export default Rule.new({
     key: "validate_attributes",
     execute: async function (payload) {
         const keys = lodash.keys(payload.schema).concat(["id"])

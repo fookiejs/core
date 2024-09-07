@@ -1,7 +1,7 @@
 import * as lodash from "lodash"
-import { LifecycleFunction } from "../../../lifecycle-function"
+import { Rule } from "../../../lifecycle-function"
 
-export default LifecycleFunction.new({
+export default Rule.new({
     key: "check_type",
     execute: async function (payload) {
         for (const field in payload.body) {

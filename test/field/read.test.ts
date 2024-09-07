@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest"
-import { Model, Field, defaults, LifecycleFunction } from "../../src/exports"
+import { Model, Field, defaults, Role } from "../../src/exports"
 
 describe("Define a field with read role", async () => {
     @Model.Decorator({
@@ -20,22 +20,22 @@ describe("Define a field with read role", async () => {
         @Field.Decorator({
             type: defaults.type.text,
             read: [
-                LifecycleFunction.new({
+                Role.new({
                     key: "SecureModelTestFalse",
                     execute: async () => false,
                 }),
             ],
         })
-        password?: string
+        userPw?: string
     }
 
     test("Attempt to write to a field with read restrictions", async () => {
         const response = (await SecureModel.create({
             name: "John Doe",
-            password: "123456",
+            userPw: "dont-see-me",
         })) as SecureModel
 
-        expect(response.password).toBeUndefined()
+        expect(response.userPw).toBeUndefined()
     })
 
     test("Attempt to write to a field with write restrictions", async () => {

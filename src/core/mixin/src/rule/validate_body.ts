@@ -1,9 +1,9 @@
 import * as lodash from "lodash"
-import { LifecycleFunction } from "../../../lifecycle-function"
+import { Rule } from "../../../lifecycle-function"
 
-export default LifecycleFunction.new({
+export default Rule.new({
     key: "validate_body",
-    execute: async function (payload) {
+    execute: async function (payload, error) {
         let flag = true
         for (const field_name in payload.body) {
             const field = payload.schema[field_name]
@@ -13,10 +13,10 @@ export default LifecycleFunction.new({
                     const is_valid = await validator(value)
                     if (!lodash.isBoolean(is_valid)) {
                         flag = false
-                        if (!lodash.has(payload.error.validationErrors, field_name)) {
-                            payload.error.validationErrors[field_name] = []
+                        if (!lodash.has(error.validationErrors, field_name)) {
+                            error.validationErrors[field_name] = []
                         }
-                        payload.error.validationErrors[field_name].push(is_valid)
+                        error.validationErrors[field_name].push(is_valid)
                     }
                 }
             }

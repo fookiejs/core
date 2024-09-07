@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { Model, Field, defaults, LifecycleFunction, FookieError } from "../../src/exports"
+import { Model, Field, defaults, FookieError, Role } from "../../src/exports"
 
 describe("Define a field with read role", async () => {
     @Model.Decorator({
@@ -13,7 +13,7 @@ describe("Define a field with read role", async () => {
         @Field.Decorator({
             type: defaults.type.text,
             write: [
-                LifecycleFunction.new({
+                Role.new({
                     key: "SecureModelTestFalse",
                     execute: async () => false,
                 }),
@@ -24,7 +24,7 @@ describe("Define a field with read role", async () => {
         @Field.Decorator({
             type: defaults.type.text,
             write: [
-                LifecycleFunction.new({
+                Role.new({
                     key: "SecureModelTestFalse",
                     execute: async () => false,
                 }),

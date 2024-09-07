@@ -47,6 +47,7 @@ describe("Relation", () => {
         expect(entity instanceof Drop).toBe(true)
 
         let entities = await Drop.read()
+
         expect(entities.length).toBe(1)
 
         await new Promise((resolve) => setTimeout(resolve, 300))

@@ -1,6 +1,6 @@
 import * as lodash from "lodash"
 import { text } from "../../defaults/type/text"
-import { LifecycleFunction } from "../lifecycle-function"
+import { Role } from "../lifecycle-function"
 import { Model } from "../model/model"
 import { Type } from "../type"
 import { fillSchema } from "./utils/fill-schema"
@@ -14,8 +14,8 @@ export class Field {
     default?: unknown
     validators?: [(value: unknown) => boolean | string]
     relation?: typeof Model
-    read?: LifecycleFunction<any, unknown>[]
-    write?: LifecycleFunction<any, unknown>[]
+    read?: Role<any>[]
+    write?: Role<any>[]
     cascadeDelete?: boolean
 
     static Decorator(field: Field) {

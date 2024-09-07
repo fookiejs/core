@@ -1,8 +1,8 @@
 import { Config } from "../../../config"
-import { LifecycleFunction } from "../../../lifecycle-function"
+import { Rule } from "../../../lifecycle-function"
 import * as lodash from "lodash"
 
-export default LifecycleFunction.new({
+export default Rule.new({
     key: "has_entity",
     execute: async function (payload) {
         for (const key of lodash.keys(payload.body)) {

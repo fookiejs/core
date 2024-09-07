@@ -1,5 +1,5 @@
 import { Database } from "../database"
-import { LifecycleFunction } from "../lifecycle-function"
+import { Effect, Filter, Modify, PreRule, Role, Rule } from "../lifecycle-function"
 import { Method } from "../method"
 import { fillModel } from "./utils/create-model"
 import { countRun, createRun, deleteRun, readRun, sumRun, updateRun } from "../run/run"
@@ -13,7 +13,7 @@ export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
 export const models: {
     schema: SchemaType<Model>
     database: Database
-    binds?: BindsType | undefined
+    binds: BindsType
     modelClass: typeof Model
 }[] = []
 
@@ -32,7 +32,7 @@ export class Model {
 
     static async read<ModelClass extends Model>(
         this: new () => ModelClass,
-        query: Partial<QueryType<ModelClass>>,
+        query?: Partial<QueryType<ModelClass>>,
         options?: Optional<Options, "drop" | "test" | "token">,
     ): Promise<ModelClass[]> {
         query
@@ -92,15 +92,16 @@ export class Model {
 
             const methods = filled.database.modify<ModelClass>(filled, schema)
 
-            //@ts-expect-error: TODO
-            constructor.create = createRun(filled, schema, methods.create) //@ts-expect-error: TODO
-            constructor.read = readRun(filled, schema, methods.read) //@ts-expect-error: TODO
-            constructor.update = updateRun(filled, schema, methods.update) //@ts-expect-error: TODO
-            constructor.delete = deleteRun(filled, schema, methods.del) // @ts-expect-error: TODO
-            constructor.count = countRun(filled, schema, methods.count) // @ts-expect-error: TODO
-            constructor.sum = sumRun(filled, schema, methods.sum)
+            Reflect.defineMetadata("methods", methods, constructor)
 
-            Reflect.defineMetadata("model", filled, constructor)
+            //@ts-expect-error: TODO
+            constructor.create = createRun(filled, schema) //@ts-expect-error: TODO
+            constructor.read = readRun(filled, schema) //@ts-expect-error: TODO
+            constructor.update = updateRun(filled, schema) //@ts-expect-error: TODO
+            constructor.delete = deleteRun(filled, schema) // @ts-expect-error: TODO
+            constructor.count = countRun(filled, schema) // @ts-expect-error: TODO
+            constructor.sum = sumRun(filled, schema)
+
             const m = { modelClass: constructor, ...filled, schema: schema }
             models.push(m)
         }
@@ -124,22 +125,22 @@ export type BindsType = {
 }
 
 export type BindsTypeField = {
-    preRule: LifecycleFunction<Model, unknown>[]
-    modify: LifecycleFunction<Model, unknown>[]
-    role: LifecycleFunction<Model, unknown>[]
-    rule: LifecycleFunction<Model, unknown>[]
-    filter: LifecycleFunction<Model, unknown>[]
-    effect: LifecycleFunction<Model, unknown>[]
+    preRule: PreRule<Model>[]
+    modify: Modify<Model>[]
+    role: Role<Model>[]
+    rule: Rule<Model>[]
+    filter: Filter<Model>[]
+    effect: Effect<Model>[]
     accept?: {
         [key: string]: {
-            modify: LifecycleFunction<Model, unknown>[]
-            rule: LifecycleFunction<Model, unknown>[]
+            modify: Modify<Model>[]
+            rule: Rule<Model>[]
         }
     }
     reject?: {
         [key: string]: {
-            modify: LifecycleFunction<Model, unknown>[]
-            rule: LifecycleFunction<Model, unknown>[]
+            modify: Modify<Model>[]
+            rule: Rule<Model>[]
         }
     }
 }

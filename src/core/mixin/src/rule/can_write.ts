@@ -1,9 +1,9 @@
 import * as lodash from "lodash"
-import { LifecycleFunction } from "../../../lifecycle-function"
+import { Rule } from "../../../lifecycle-function"
 
-export default LifecycleFunction.new({
+export default Rule.new({
     key: "can_write",
-    execute: async function (payload) {
+    execute: async function (payload, error) {
         const filtered_schema = lodash.pick(payload.schema, lodash.keys(payload.body))
 
         const writes = lodash.map(filtered_schema, function (i) {
@@ -15,7 +15,7 @@ export default LifecycleFunction.new({
 
         for (const role of roles) {
             if (role) {
-                const res = await role.execute(payload)
+                const res = await role.execute(payload, error)
                 if (!res) {
                     return false
                 }

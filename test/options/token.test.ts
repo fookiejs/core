@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { Field, LifecycleFunction, Model, defaults, FookieError } from "../../src/exports"
+import { Field, Model, defaults, FookieError, Role } from "../../src/exports"
 import { v4 } from "uuid"
 
 describe("Relation", () => {
@@ -8,7 +8,7 @@ describe("Relation", () => {
         binds: {
             create: {
                 role: [
-                    LifecycleFunction.new({
+                    Role.new({
                         key: "token_role",
                         execute: async function (payload) {
                             return payload.options.token === "token"

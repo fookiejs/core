@@ -1,7 +1,7 @@
 import { v4 } from "uuid"
-import { LifecycleFunction } from "../../../lifecycle-function"
+import { Modify } from "../../../lifecycle-function"
 
-export default LifecycleFunction.new({
+export default Modify.new({
     key: "set_id",
     execute: async function (payload) {
         payload.body.id = v4()

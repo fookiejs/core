@@ -1,4 +1,4 @@
-import { Model, BaseClass, ModelTypeOutput } from "../exports"
+import { Model, BaseClass, ModelTypeOutput, Method } from "../exports"
 import { Payload } from "./payload"
 import { SchemaType } from "./schema"
 
@@ -7,12 +7,12 @@ export class Database extends BaseClass {
         model: ModelTypeOutput,
         schema: SchemaType<ModelClass>,
     ) => {
-        create: (payload: Payload<ModelClass, ModelClass>) => Promise<ModelClass>
-        read: (payload: Payload<ModelClass, ModelClass[]>) => Promise<ModelClass[]>
-        update: (payload: Payload<ModelClass, boolean>) => Promise<boolean>
-        del: (payload: Payload<ModelClass, boolean>) => Promise<boolean>
-        sum: (payload: Payload<ModelClass, number>) => Promise<number>
-        count: (payload: Payload<ModelClass, number>) => Promise<number>
+        [Method.CREATE]: (payload: Payload<ModelClass>) => Promise<ModelClass>
+        [Method.READ]: (payload: Payload<ModelClass>) => Promise<ModelClass[]>
+        [Method.UPDATE]: (payload: Payload<ModelClass>) => Promise<boolean>
+        [Method.DELETE]: (payload: Payload<ModelClass>) => Promise<boolean>
+        [Method.SUM]: (payload: Payload<ModelClass>) => Promise<number>
+        [Method.COUNT]: (payload: Payload<ModelClass>) => Promise<number>
     }
     connect: () => Promise<void>
     disconnect: () => Promise<void>

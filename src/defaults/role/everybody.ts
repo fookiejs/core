@@ -1,6 +1,6 @@
-import { LifecycleFunction } from "../../exports"
+import { Role } from "../../exports"
 
-export const everybody = LifecycleFunction.new({
+export const everybody = Role.new({
     key: "everybody",
     execute: () => true,
 })

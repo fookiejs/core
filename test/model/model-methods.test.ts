@@ -1,6 +1,6 @@
 import { expect, it } from "vitest"
 import * as lodash from "lodash"
-import { Model, Field, defaults, LifecycleFunction, Config } from "../../src/exports"
+import { Model, Field, defaults, Config, Role } from "../../src/exports"
 
 @Model.Decorator({
     database: defaults.database.store,
@@ -22,9 +22,9 @@ import { Model, Field, defaults, LifecycleFunction, Config } from "../../src/exp
         },
         create: {
             role: [
-                LifecycleFunction.new({
+                Role.new({
                     key: "example-lifecycle",
-                    execute: async function (payload) {
+                    execute: async function () {
                         return true
                     },
                 }),

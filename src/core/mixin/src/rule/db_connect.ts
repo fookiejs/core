@@ -1,8 +1,9 @@
-import { LifecycleFunction } from "../../../lifecycle-function"
+import { PreRule } from "../../../lifecycle-function"
 
-export default LifecycleFunction.new({
+export default PreRule.new({
     key: "db_connect",
     execute: async function (payload) {
-        return await payload.model.database.connect()
+        await payload.model.database.connect()
+        return true
     },
 })

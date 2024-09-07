@@ -1,2 +1,17 @@
-export type Method = "create" | "read" | "update" | "delete" | "count" | "sum"
-export const methods: Method[] = ["create", "read", "update", "delete", "count", "sum"] as const
+export enum Method {
+    CREATE = "create",
+    READ = "read",
+    UPDATE = "update",
+    DELETE = "delete",
+    COUNT = "count",
+    SUM = "sum",
+}
+
+export const methods: Method[] = [
+    Method.CREATE,
+    Method.READ,
+    Method.UPDATE,
+    Method.DELETE,
+    Method.COUNT,
+    Method.SUM,
+] as const

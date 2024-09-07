@@ -1,17 +1,16 @@
-import { LifecycleFunction } from "../../../lifecycle-function"
+import { Effect } from "../../../lifecycle-function"
 import * as lodash from "lodash"
 
-export default LifecycleFunction.new({
+export default Effect.new({
     key: "drop",
-    execute: async function (payload) {
+    execute: async function (payload, response) {
         if (lodash.has(payload.options, "drop")) {
             if (payload.options.drop! > 0) {
                 setTimeout(async function () {
                     await payload.modelClass.delete(
                         {
                             filter: {
-                                // @ts-expect-error: TODO
-                                id: { equals: payload.response.id },
+                                id: { equals: response.id },
                             },
                         },
                         {
@@ -23,8 +22,7 @@ export default LifecycleFunction.new({
                 await payload.modelClass.delete(
                     {
                         filter: {
-                            // @ts-expect-error: Explain why this line is expected to have an error
-                            id: { equals: payload.response.id },
+                            id: { equals: response.id },
                         },
                     },
                     {

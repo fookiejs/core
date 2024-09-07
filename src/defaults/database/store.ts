@@ -39,7 +39,7 @@ export const store = Database.new({
 
                 return true
             },
-            del: async (payload) => {
+            delete: async (payload) => {
                 const filtered = poolFilter(pool, payload.query).map(function (f) {
                     return f.id
                 })
