@@ -2,8 +2,12 @@ import { globalEffects } from "../../mixin"
 import { Payload } from "../../payload"
 import * as lodash from "lodash"
 import * as moment from "moment"
+import { FookieResponse } from "../../response"
 
-const globalEffect = async function (payload: Payload<any>, response?: any): Promise<void> {
+const globalEffect = async function (
+    payload: Payload<any>,
+    response?: FookieResponse<unknown>,
+): Promise<void> {
     payload.state.metrics.end = moment.utc().toDate()
 
     const promises = lodash.reverse(globalEffects).map(async (effect) => {

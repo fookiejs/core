@@ -6,7 +6,7 @@ import {
     PreRule,
     Role,
     Rule,
-    addPreRule,
+    addGlobalPreRule,
     preRules,
 } from "../../src/exports"
 import * as lodash from "lodash"
@@ -23,7 +23,7 @@ describe("Base Class", async () => {
 
     it("add pre rule", async () => {
         const key = "test-pre-rule-base-class"
-        addPreRule(
+        addGlobalPreRule(
             PreRule.new({
                 key: key,
                 execute: async function () {

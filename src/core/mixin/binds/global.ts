@@ -23,7 +23,7 @@ export const preRules: PreRule<any>[] = [
 
 export const globalEffects: Effect<any>[] = [db_disconnect] as const
 
-export function addPreRule(preRule) {
+export function addGlobalPreRule(preRule) {
     preRules.push(preRule)
 }
 
