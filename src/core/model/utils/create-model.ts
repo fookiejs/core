@@ -11,7 +11,6 @@ export function fillModel(model: ModelTypeInput): ModelTypeOutput {
     for (const method of methods) {
         if (!lodash.isObject(model.binds[method])) {
             model.binds[method] = {
-                preRule: [],
                 modify: [],
                 role: [system],
                 rule: [],

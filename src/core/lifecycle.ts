@@ -1,5 +1,4 @@
 export enum Lifecycle {
-    PRE_RULE = "preRule",
     MODIFY = "modify",
     ROLE = "role",
     RULE = "rule",
@@ -9,7 +8,6 @@ export enum Lifecycle {
 }
 
 export const lifecycles: Lifecycle[] = [
-    Lifecycle.PRE_RULE,
     Lifecycle.MODIFY,
     Lifecycle.ROLE,
     Lifecycle.RULE,

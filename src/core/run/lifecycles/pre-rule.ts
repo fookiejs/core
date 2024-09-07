@@ -1,15 +1,10 @@
 import { Payload } from "../../payload"
-import { after, before } from "../../mixin/index"
+
 import { FookieError } from "../../error"
+import { preRules } from "../../mixin/src/binds/pre_rules"
 
 const preRule = async function (payload: Payload<any>, error: FookieError): Promise<boolean> {
-    const allPreRules = [
-        ...before[payload.method].preRule,
-        ...payload.model.binds[payload.method].preRule,
-        ...after[payload.method].preRule,
-    ]
-
-    for (const preRule of allPreRules) {
+    for (const preRule of preRules) {
         const start = Date.now()
 
         const res = await preRule.execute(payload, error)

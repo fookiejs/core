@@ -1,5 +1,5 @@
 import { Database } from "../database"
-import { Effect, Filter, Modify, PreRule, Role, Rule } from "../lifecycle-function"
+import { Effect, Filter, Modify, Role, Rule } from "../lifecycle-function"
 import { Method } from "../method"
 import { fillModel } from "./utils/create-model"
 import { countRun, createRun, deleteRun, readRun, sumRun, updateRun } from "../run/run"
@@ -125,7 +125,6 @@ export type BindsType = {
 }
 
 export type BindsTypeField = {
-    preRule: PreRule<Model>[]
     modify: Modify<Model>[]
     role: Role<Model>[]
     rule: Rule<Model>[]

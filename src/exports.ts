@@ -11,6 +11,6 @@ export * from "./core/method"
 export * from "./core/model/model"
 export * from "./core/type"
 export * from "./core/payload"
-export * from "./core/mixin/index"
+export * from "./core/mixin"
 
 export * from "./defaults/exports"

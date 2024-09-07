@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { Model, Field, defaults, Mixin, PreRule } from "../../src/exports"
+import { Model, Field, defaults, Mixin, Role } from "../../src/exports"
 
 // Mixin tanımlama
 let createFlag = false
@@ -8,8 +8,8 @@ const sampleMixin = Mixin.new({
     key: "flag",
     binds: {
         create: {
-            preRule: [
-                PreRule.new({
+            role: [
+                Role.new({
                     key: "mixin_flag",
                     execute: async function () {
                         createFlag = true
