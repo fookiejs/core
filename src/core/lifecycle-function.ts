@@ -5,7 +5,7 @@ import { Payload } from "./payload"
 
 export class PreRule<ModelClass extends Model> extends BaseClass {
     key: string
-    execute: (payload: Payload<ModelClass>, error?: FookieError) => Promise<boolean>
+    execute: (payload: Payload<ModelClass>, error: FookieError) => Promise<boolean>
 }
 
 export class Modify<ModelClass extends Model> extends BaseClass {
@@ -15,12 +15,12 @@ export class Modify<ModelClass extends Model> extends BaseClass {
 
 export class Rule<ModelClass extends Model> extends BaseClass {
     key: string
-    execute: (payload: Payload<ModelClass>, error?: FookieError) => Promise<boolean>
+    execute: (payload: Payload<ModelClass>, error: FookieError) => Promise<boolean>
 }
 
 export class Role<ModelClass extends Model> extends BaseClass {
     key: string
-    execute: (payload: Payload<ModelClass>, error?: FookieError) => Promise<boolean>
+    execute: (payload: Payload<ModelClass>, error: FookieError) => Promise<boolean>
 }
 
 export class Filter<ModelClass extends Model> extends BaseClass {
