@@ -8,7 +8,7 @@ export default Rule.new({
         if (!(payload.method === Method.CREATE || payload.method === Method.UPDATE)) {
             return true
         }
-        const filtered_schema = lodash.pick(payload.schema, lodash.keys(payload.body))
+        const filtered_schema = lodash.pick(payload.modelClass.schema(), lodash.keys(payload.body))
 
         const writes = lodash.map(filtered_schema, function (i) {
             return i?.write

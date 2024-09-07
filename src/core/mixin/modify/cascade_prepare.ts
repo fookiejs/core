@@ -14,14 +14,15 @@ export default Modify.new({
         })
 
         for (const model of models) {
-            for (const field in model.schema) {
+            const schema = model.schema()
+            for (const field in schema) {
                 if (
-                    model.schema[field].cascadeDelete &&
-                    model.schema[field].relation &&
-                    lodash.isEqual(model.schema[field].relation["name"], payload.modelClass["name"])
+                    schema[field].cascadeDelete &&
+                    schema[field].relation &&
+                    lodash.isEqual(schema[field].relation["name"], payload.modelClass["name"])
                 ) {
                     const fn = async function () {
-                        await model.modelClass.delete(
+                        await model.delete(
                             {
                                 filter: {
                                     [field]: { in: cascade_delete_ids },

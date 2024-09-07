@@ -1,6 +1,5 @@
 import * as moment from "moment"
-import { Model, ModelTypeOutput, QueryType } from "../model/model"
-import { SchemaType } from "../schema"
+import { Model, QueryType } from "../model/model"
 import { Options } from "../option"
 import pre_rule from "./lifecycles/pre-rule"
 import modify from "./lifecycles/modify"
@@ -55,7 +54,7 @@ async function runLifecycle<ModelClass extends Model>(payload: Payload<ModelClas
     }
 
     if (payload.options?.test === true) {
-        endRun(payload)
+        await globalEffect(payload)
         return true
     }
 
@@ -66,25 +65,15 @@ async function runLifecycle<ModelClass extends Model>(payload: Payload<ModelClas
 
     await filter(payload, response)
     await effect(payload, response)
+    await globalEffect(payload, response)
 
-    endRun(payload)
     return response
 }
 
-async function endRun(payload: Payload<any>, response?) {
-    payload.state.metrics.end = moment.utc().toDate()
-    await globalEffect(payload, response)
-}
-
-export function createRun<ModelClass extends Model>(
-    model: Required<ModelTypeOutput>,
-    schema: SchemaType<ModelClass>,
-) {
+export function createRun<ModelClass extends Model>() {
     return async function (this: typeof Model, body: ModelClass, options: Options) {
         const payload: Payload<ModelClass> = createPayload({
             method: Method.CREATE,
-            model: model,
-            schema: schema,
             body: body,
             options: options,
             modelClass: this,
@@ -95,15 +84,10 @@ export function createRun<ModelClass extends Model>(
     }
 }
 
-export function readRun<ModelClass extends Model>(
-    model: Required<ModelTypeOutput>,
-    schema: SchemaType<ModelClass>,
-) {
+export function readRun<ModelClass extends Model>() {
     return async function (this: typeof Model, query: QueryType<ModelClass>, options: Options) {
         const payload: Payload<ModelClass> = createPayload({
             method: Method.READ,
-            model: model,
-            schema: schema,
             query: query,
             options: options,
             modelClass: this,
@@ -114,10 +98,7 @@ export function readRun<ModelClass extends Model>(
     }
 }
 
-export function updateRun<ModelClass extends Model>(
-    model: Required<ModelTypeOutput>,
-    schema: SchemaType<ModelClass>,
-) {
+export function updateRun<ModelClass extends Model>() {
     return async function (
         this: typeof Model,
         query: QueryType<ModelClass>,
@@ -126,8 +107,6 @@ export function updateRun<ModelClass extends Model>(
     ) {
         const payload: Payload<ModelClass> = createPayload({
             method: Method.UPDATE,
-            model: model,
-            schema: schema,
             query: query,
             body: body as ModelClass,
             options: options,
@@ -138,15 +117,10 @@ export function updateRun<ModelClass extends Model>(
     }
 }
 
-export function deleteRun<ModelClass extends Model>(
-    model: Required<ModelTypeOutput>,
-    schema: SchemaType<ModelClass>,
-) {
+export function deleteRun<ModelClass extends Model>() {
     return async function (this: typeof Model, query: QueryType<ModelClass>, options: Options) {
         const payload: Payload<ModelClass> = createPayload({
             method: Method.DELETE,
-            model: model,
-            schema: schema,
             query: query,
             options: options,
             modelClass: this,
@@ -157,15 +131,10 @@ export function deleteRun<ModelClass extends Model>(
     }
 }
 
-export function countRun<ModelClass extends Model>(
-    model: Required<ModelTypeOutput>,
-    schema: SchemaType<ModelClass>,
-) {
+export function countRun<ModelClass extends Model>() {
     return async function (this: typeof Model, query: QueryType<ModelClass>, options: Options) {
         const payload: Payload<ModelClass> = createPayload({
             method: Method.COUNT,
-            model: model,
-            schema: schema,
             query: query,
             options: options,
             modelClass: this,
@@ -176,10 +145,7 @@ export function countRun<ModelClass extends Model>(
     }
 }
 
-export function sumRun<ModelClass extends Model>(
-    model: Required<ModelTypeOutput>,
-    schema: SchemaType<ModelClass>,
-) {
+export function sumRun<ModelClass extends Model>() {
     return async function (
         this: typeof Model,
         query: QueryType<ModelClass>,
@@ -188,8 +154,6 @@ export function sumRun<ModelClass extends Model>(
     ) {
         const payload: Payload<ModelClass> = createPayload({
             method: Method.SUM,
-            model: model,
-            schema: schema,
             query: query,
             options: options,
             fieldName: fieldName,

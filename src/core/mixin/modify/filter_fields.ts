@@ -1,6 +1,5 @@
 import * as lodash from "lodash"
 import { Modify } from "../../lifecycle-function"
-import { Field } from "../../field/field"
 import { FookieError } from "../../error"
 
 export default Modify.new({
@@ -12,7 +11,7 @@ export default Modify.new({
         })
 
         for (const key of payload.query.attributes) {
-            const field = payload.schema[key as keyof typeof payload.schema] as Field
+            const field = payload.modelClass.schema()[key]
 
             let show = true
 

@@ -30,9 +30,7 @@ export default PreRule.new({
         }
 
         if (payload.query.attributes.length == 0) {
-            payload.query.attributes = lodash.keys(payload.schema) as Array<
-                keyof typeof payload.schema
-            >
+            payload.query.attributes = lodash.keys(payload.modelClass.schema())
         }
         return true
     },

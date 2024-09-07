@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest"
+import { describe, it, expect } from "vitest"
 import { Model, Field, defaults, Role, Rule, FookieError } from "../../src/exports"
 
 // Accept Lifecycle Function
@@ -15,7 +15,7 @@ const admin = Role.new({
 
 const rule_false = Rule.new({
     key: "rule_false",
-    execute: async function (payload) {
+    execute: async function () {
         flag2.called = true
         return false
     },

@@ -13,7 +13,7 @@ export default Rule.new({
     key: "validate_query",
     execute: async function (payload) {
         const filterKeys = lodash.keys(payload.query.filter)
-        const modelKeys = lodash.keys(payload.schema)
+        const modelKeys = lodash.keys(payload.modelClass.schema())
 
         const isValidObject = (key: string, validator: (val: any) => boolean) =>
             lodash.has(payload.query, key) && !validator(payload.query[key])
@@ -26,7 +26,7 @@ export default Rule.new({
 
         for (const filterKey of filterKeys) {
             const currentKeys = lodash.keys(payload.query.filter[filterKey])
-            const type: Type = payload.schema[filterKey].type
+            const type: Type = payload.modelClass.schema()[filterKey].type
             const availableFilterKeys = lodash.keys(type.queryController)
 
             if (lodash.difference(currentKeys, availableFilterKeys).length !== 0) return false

@@ -10,12 +10,7 @@ import { Mixin } from "../mixin/index"
 
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
 
-export const models: {
-    schema: SchemaType<Model>
-    database: Database
-    binds: BindsType
-    modelClass: typeof Model
-}[] = []
+export const models: (typeof Model)[] = []
 
 export class Model {
     id: string
@@ -84,26 +79,42 @@ export class Model {
         throw Error("Not implemented")
     }
 
+    static schema<ModelClass extends Model>(this: new () => ModelClass): SchemaType<ModelClass> {
+        return Reflect.getMetadata("schema", this)
+    }
+    static binds<ModelClass extends Model>(this: new () => ModelClass): BindsType {
+        return Reflect.getMetadata("binds", this)
+    }
+    static database<ModelClass extends Model>(this: new () => ModelClass): Database {
+        return Reflect.getMetadata("database", this)
+    }
+    static mixins<ModelClass extends Model>(this: new () => ModelClass): Mixin[] {
+        return Reflect.getMetadata("mixins", this)
+    }
+
     static Decorator<ModelClass extends Model>(model: ModelTypeInput) {
         return function (constructor: typeof Model) {
             const schema: SchemaType<ModelClass> = Reflect.getMetadata("schema", constructor)
 
-            const filled = fillModel(model)
+            const filledModel = fillModel(model)
 
-            const methods = filled.database.modify<ModelClass>(filled, schema)
+            const methods = filledModel.database.modify<ModelClass>(filledModel, schema)
 
             Reflect.defineMetadata("methods", methods, constructor)
+            Reflect.defineMetadata("schema", schema, constructor)
+            Reflect.defineMetadata("binds", filledModel.binds, constructor)
+            Reflect.defineMetadata("database", filledModel.database, constructor)
+            Reflect.defineMetadata("mixins", filledModel.mixins, constructor)
 
             //@ts-expect-error: TODO
-            constructor.create = createRun(filled, schema) //@ts-expect-error: TODO
-            constructor.read = readRun(filled, schema) //@ts-expect-error: TODO
-            constructor.update = updateRun(filled, schema) //@ts-expect-error: TODO
-            constructor.delete = deleteRun(filled, schema) // @ts-expect-error: TODO
-            constructor.count = countRun(filled, schema) // @ts-expect-error: TODO
-            constructor.sum = sumRun(filled, schema)
+            constructor.create = createRun() //@ts-expect-error: TODO
+            constructor.read = readRun() //@ts-expect-error: TODO
+            constructor.update = updateRun() //@ts-expect-error: TODO
+            constructor.delete = deleteRun() // @ts-expect-error: TODO
+            constructor.count = countRun() // @ts-expect-error: TODO
+            constructor.sum = sumRun()
 
-            const m = { modelClass: constructor, ...filled, schema: schema }
-            models.push(m)
+            models.push(constructor)
         }
     }
 }
@@ -147,7 +158,7 @@ export type BindsTypeField = {
 export class QueryType<ModelClass extends Model> {
     limit: number
     offset: number
-    attributes: Array<keyof ModelClass>
+    attributes: string[]
     filter: Partial<
         Record<
             keyof ModelClass,

@@ -2,15 +2,18 @@ import { FookieError } from "../../error"
 import { after } from "../../mixin/binds/after"
 import { before } from "../../mixin/binds/before"
 import { Payload } from "../../payload"
+import * as moment from "moment"
 
 const rule = async function (payload: Payload<any>, error: FookieError): Promise<boolean> {
     const rules = [
         ...before[payload.method].rule,
-        ...payload.model.binds![payload.method].rule,
+        ...payload.modelClass.binds()![payload.method].rule,
         ...after[payload.method].rule,
     ]
 
     for (const rule of rules) {
+        payload.state.metrics.end = moment.utc().toDate()
+
         const start = Date.now()
         const res = await rule.execute(payload, error)
         payload.state.metrics.lifecycle.push({

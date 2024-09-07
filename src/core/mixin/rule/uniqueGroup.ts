@@ -8,17 +8,17 @@ export default Rule.new({
         const fields = lodash.keys(payload.body)
         let groups = []
         for (const field of fields) {
-            if (payload.schema[field].uniqueGroup) {
-                groups = lodash.uniq(groups.concat(payload.schema[field].uniqueGroup))
+            if (payload.modelClass.schema()[field].uniqueGroup) {
+                groups = lodash.uniq(groups.concat(payload.modelClass.schema()[field].uniqueGroup))
             }
         }
 
         for (const group of groups) {
             const filter = {}
-            for (const field of lodash.keys(payload.schema)) {
+            for (const field of lodash.keys(payload.modelClass.schema())) {
                 if (
-                    payload.schema[field].uniqueGroup &&
-                    payload.schema[field].uniqueGroup.includes(group) &&
+                    payload.modelClass.schema()[field].uniqueGroup &&
+                    payload.modelClass.schema()[field].uniqueGroup.includes(group) &&
                     payload.body[field]
                 ) {
                     filter[field] = { equals: payload.body[field] }

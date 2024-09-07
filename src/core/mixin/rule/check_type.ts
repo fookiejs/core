@@ -5,7 +5,7 @@ export default Rule.new({
     key: "check_type",
     execute: async function (payload) {
         for (const field in payload.body) {
-            const type = payload.schema[field].type
+            const type = payload.modelClass.schema()[field].type
             if (!lodash.isNull(payload.body[field]) && !type.validate(payload.body[field])) {
                 return false
             }

@@ -6,8 +6,8 @@ export default Rule.new({
     key: "has_entity",
     execute: async function (payload) {
         for (const key of lodash.keys(payload.body)) {
-            if (lodash.has(payload.schema[key], "relation")) {
-                const res = await payload.schema[key].relation.count(
+            if (lodash.has(payload.modelClass.schema()[key], "relation")) {
+                const res = await payload.modelClass.schema()[key].relation.count(
                     {
                         filter: {
                             id: { equals: payload.body[key] },
