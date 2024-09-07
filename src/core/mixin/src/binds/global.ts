@@ -1,4 +1,5 @@
-import { PreRule } from "../../../lifecycle-function"
+import { Effect, PreRule } from "../../../lifecycle-function"
+import db_disconnect from "../effect/db_disconnect"
 import default_payload from "../modify/default_payload"
 import can_write from "../rule/can_write"
 import db_connect from "../rule/db_connect"
@@ -20,6 +21,12 @@ export const preRules: PreRule<any>[] = [
     can_write,
 ] as const
 
+export const globalEffects: Effect<any>[] = [db_disconnect] as const
+
 export function addPreRule(preRule) {
     preRules.push(preRule)
+}
+
+export function addGlobalEffect(preRule) {
+    globalEffects.push(preRule)
 }

@@ -1,4 +1,3 @@
-import db_disconnect from "../effect/db_disconnect"
 import validate_query from "../rule/validate_query"
 import filter_fields from "../modify/filter_fields"
 import has_entity from "../rule/has_entity"
@@ -16,7 +15,7 @@ export const after: BindsType = {
         rule: [has_entity, check_required, validate_body],
         role: [],
         filter: [attributes],
-        effect: [db_disconnect, drop],
+        effect: [drop],
         accept: {},
         reject: {},
     },
@@ -24,7 +23,7 @@ export const after: BindsType = {
         modify: [filter_fields],
         rule: [validate_query],
         filter: [attributes],
-        effect: [db_disconnect],
+        effect: [],
         role: [],
         accept: {},
         reject: {},
@@ -33,7 +32,7 @@ export const after: BindsType = {
         modify: [],
         rule: [has_entity, validate_query, check_required, validate_body],
         filter: [],
-        effect: [db_disconnect],
+        effect: [],
         role: [],
         accept: {},
         reject: {},
@@ -42,7 +41,7 @@ export const after: BindsType = {
         modify: [cascade_prepare],
         rule: [validate_query],
         filter: [],
-        effect: [db_disconnect, todo],
+        effect: [todo],
         role: [],
         accept: {},
         reject: {},
@@ -51,7 +50,7 @@ export const after: BindsType = {
         modify: [],
         rule: [validate_query],
         filter: [],
-        effect: [db_disconnect],
+        effect: [],
         role: [],
         accept: {},
         reject: {},
@@ -61,7 +60,7 @@ export const after: BindsType = {
         rule: [validate_query],
         filter: [],
         role: [],
-        effect: [db_disconnect],
+        effect: [],
         accept: {},
         reject: {},
     },

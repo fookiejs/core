@@ -12,6 +12,7 @@ import filter from "./lifecycles/filter"
 import { FookieError } from "../error"
 import { plainToInstance } from "class-transformer"
 import { Method } from "../method"
+import globalEffect from "./lifecycles/global_effect"
 
 function createPayload<ModelClass extends Model>(
     payload: Omit<Payload<ModelClass>, "state" | "response">,
@@ -53,15 +54,25 @@ async function runLifecycle<ModelClass extends Model>(payload: Payload<ModelClas
         return error
     }
 
-    if (payload.options?.test !== true) {
-        const methods = Reflect.getMetadata("methods", payload.modelClass)
-        const response = await methods[payload.method](payload, error)
-
-        await filter(payload, response)
-        await effect(payload, response)
-        payload.state.metrics.end = moment.utc().toDate()
-        return plainToInstance(payload.modelClass, response)
+    if (payload.options?.test === true) {
+        await globalEffect(payload)
+        return true
     }
+
+    const methods = Reflect.getMetadata("methods", payload.modelClass)
+    const response = plainToInstance(
+        payload.modelClass,
+        await methods[payload.method](payload, error),
+    )
+
+    await filter(payload, response)
+
+    await effect(payload, response)
+
+    payload.state.metrics.end = moment.utc().toDate()
+
+    await globalEffect(payload, response)
+    return response
 }
 
 export function createRun<ModelClass extends Model>(
