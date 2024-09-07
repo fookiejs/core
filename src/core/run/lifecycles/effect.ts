@@ -9,7 +9,7 @@ const effect = async function (payload: Payload<any>, response: any): Promise<vo
         ...after[payload.method].effect,
     ]
 
-    for (const effect of effects) {
+    const promises = effects.map(async (effect) => {
         const start = Date.now()
         await effect.execute(payload, response)
 
@@ -17,7 +17,9 @@ const effect = async function (payload: Payload<any>, response: any): Promise<vo
             name: effect.key,
             ms: Date.now() - start,
         })
-    }
+    })
+
+    await Promise.all(promises)
 }
 
 export default effect

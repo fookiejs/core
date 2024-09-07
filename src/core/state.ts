@@ -1,7 +1,7 @@
 export class State {
     metrics: {
         start: Date
-        end?: Date
+        end: Date
         lifecycle: {
             name: string
             ms: number

@@ -25,7 +25,7 @@ function createPayload<ModelClass extends Model>(
         state: {
             metrics: {
                 start: moment.utc().toDate(),
-                end: null,
+                end: moment.utc().toDate(),
                 lifecycle: [],
             },
             todo: [],
@@ -55,24 +55,25 @@ async function runLifecycle<ModelClass extends Model>(payload: Payload<ModelClas
     }
 
     if (payload.options?.test === true) {
-        await globalEffect(payload)
+        endRun(payload)
         return true
     }
 
-    const methods = Reflect.getMetadata("methods", payload.modelClass)
     const response = plainToInstance(
         payload.modelClass,
-        await methods[payload.method](payload, error),
+        await Reflect.getMetadata("methods", payload.modelClass)[payload.method](payload, error),
     )
 
     await filter(payload, response)
-
     await effect(payload, response)
 
-    payload.state.metrics.end = moment.utc().toDate()
-
-    await globalEffect(payload, response)
+    endRun(payload)
     return response
+}
+
+async function endRun(payload: Payload<any>, response?) {
+    payload.state.metrics.end = moment.utc().toDate()
+    await globalEffect(payload, response)
 }
 
 export function createRun<ModelClass extends Model>(
