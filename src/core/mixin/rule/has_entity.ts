@@ -14,10 +14,10 @@ export default Rule.new({
                         },
                     },
                     {
-                        token: Config.get("SYSTEM_TOKEN"),
+                        token: Config.SYSTEM_TOKEN
                     },
                 )
-
+                    
                 if (res === 0) {
                     return false
                 }

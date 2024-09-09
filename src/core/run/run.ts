@@ -32,7 +32,7 @@ function createPayload<ModelClass extends Model>(
     }
 }
 
-async function runLifecycle<ModelClass extends Model>(payload: Payload<ModelClass>) {
+async function runLifecycle<ModelClass extends Model>(payload: Payload<ModelClass>,method:Function) {
     const error = FookieError.new({
         description: "run",
         validationErrors: {},
@@ -60,7 +60,7 @@ async function runLifecycle<ModelClass extends Model>(payload: Payload<ModelClas
 
     const response = plainToInstance(
         payload.modelClass,
-        await Reflect.getMetadata("methods", payload.modelClass)[payload.method](payload, error),
+        await method(payload, error),
     )
 
     await filter(payload, response)
@@ -70,7 +70,7 @@ async function runLifecycle<ModelClass extends Model>(payload: Payload<ModelClas
     return response
 }
 
-export function createRun<ModelClass extends Model>() {
+export function createRun<ModelClass extends Model>(method:Function) {
     return async function (this: typeof Model, body: ModelClass, options: Options) {
         const payload: Payload<ModelClass> = createPayload({
             method: Method.CREATE,
@@ -80,11 +80,11 @@ export function createRun<ModelClass extends Model>() {
             query: {} as QueryType<ModelClass>,
             fieldName: "",
         })
-        return runLifecycle(payload)
+        return runLifecycle(payload,method)
     }
 }
 
-export function readRun<ModelClass extends Model>() {
+export function readRun<ModelClass extends Model>(method:Function) {
     return async function (this: typeof Model, query: QueryType<ModelClass>, options: Options) {
         const payload: Payload<ModelClass> = createPayload({
             method: Method.READ,
@@ -94,11 +94,12 @@ export function readRun<ModelClass extends Model>() {
             body: {} as ModelClass,
             fieldName: "",
         })
-        return runLifecycle(payload)
+                return runLifecycle(payload,method)
+
     }
 }
 
-export function updateRun<ModelClass extends Model>() {
+export function updateRun<ModelClass extends Model>(method:Function) {
     return async function (
         this: typeof Model,
         query: QueryType<ModelClass>,
@@ -113,11 +114,12 @@ export function updateRun<ModelClass extends Model>() {
             modelClass: this,
             fieldName: "",
         })
-        return runLifecycle(payload)
+                return runLifecycle(payload,method)
+
     }
 }
 
-export function deleteRun<ModelClass extends Model>() {
+export function deleteRun<ModelClass extends Model>(method:Function) {
     return async function (this: typeof Model, query: QueryType<ModelClass>, options: Options) {
         const payload: Payload<ModelClass> = createPayload({
             method: Method.DELETE,
@@ -127,11 +129,12 @@ export function deleteRun<ModelClass extends Model>() {
             body: {} as ModelClass,
             fieldName: "",
         })
-        return runLifecycle(payload)
+                return runLifecycle(payload,method)
+
     }
 }
 
-export function countRun<ModelClass extends Model>() {
+export function countRun<ModelClass extends Model>(method:Function) {
     return async function (this: typeof Model, query: QueryType<ModelClass>, options: Options) {
         const payload: Payload<ModelClass> = createPayload({
             method: Method.COUNT,
@@ -141,11 +144,12 @@ export function countRun<ModelClass extends Model>() {
             body: {} as ModelClass,
             fieldName: "",
         })
-        return runLifecycle(payload)
+                return runLifecycle(payload,method)
+
     }
 }
 
-export function sumRun<ModelClass extends Model>() {
+export function sumRun<ModelClass extends Model>(method:Function) {
     return async function (
         this: typeof Model,
         query: QueryType<ModelClass>,
@@ -161,6 +165,7 @@ export function sumRun<ModelClass extends Model>() {
             body: {} as ModelClass,
         })
 
-        return runLifecycle(payload)
+                return runLifecycle(payload,method)
+
     }
 }

@@ -12,7 +12,7 @@ test("Field with a validator passing validation", async () => {
         @Field.Decorator({
             type: defaults.type.integer,
             validators: [
-                (value) => {
+                (value:any) => {
                     return value >= 10 && value <= 20
                 },
             ],

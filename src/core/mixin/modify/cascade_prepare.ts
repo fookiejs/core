@@ -7,7 +7,7 @@ export default Modify.new({
     key: "cascade_prepare",
     execute: async function (payload) {
         const entities = await payload.modelClass.read(payload.query, {
-            token: Config.get("SYSTEM_TOKEN"),
+            token: Config.SYSTEM_TOKEN
         })
         const cascade_delete_ids = entities.map(function (e) {
             return e.id
@@ -29,7 +29,7 @@ export default Modify.new({
                                 },
                             },
                             {
-                                token: Config.get("SYSTEM_TOKEN"),
+                                token: Config.SYSTEM_TOKEN
                             },
                         )
                     }

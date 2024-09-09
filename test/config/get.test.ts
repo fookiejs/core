@@ -4,7 +4,7 @@ import { Config } from "../../src/exports";
 // Testler
 describe("Config", async () => {
     it("t1", async () => {
-        Config.get("SYSTEM_TOKEN");
+        Config.SYSTEM_TOKEN
     });
 
     it("t2", async () => {

@@ -104,7 +104,7 @@ it("should sum user usage correctly", async () => {
         },
         "usage",
         {
-            token: Config.get("SYSTEM_TOKEN"),
+            token: Config.SYSTEM_TOKEN,
         },
     )
     expect(sumResponse).toEqual(0)

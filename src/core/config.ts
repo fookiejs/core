@@ -1,7 +1,8 @@
-import { v4 } from "uuid"
 import * as lodash from "lodash"
 export class Config {
     private static env: Record<string, string> = {}
+
+    static SYSTEM_TOKEN = Symbol("SYSTEM_TOKEN")
 
     static {
         for (const key in process.env) {
@@ -10,9 +11,7 @@ export class Config {
             }
         }
 
-        if (!lodash.has(this.env, "SYSTEM_TOKEN")) {
-            this.env["SYSTEM_TOKEN"] = v4()
-        }
+      
     }
 
     static get(key: string): string {

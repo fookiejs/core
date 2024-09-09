@@ -12,6 +12,11 @@ export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
 
 export const models: (typeof Model)[] = []
 
+export const schemaSymbol = Symbol("schema")
+const bindsSymbol =Symbol("binds")
+const databaseSymbol =Symbol("database")
+const mixinsSymbol =Symbol("mixins")
+
 export class Model {
     id: string
 
@@ -80,39 +85,40 @@ export class Model {
     }
 
     static schema<ModelClass extends Model>(this: new () => ModelClass): SchemaType<ModelClass> {
-        return Reflect.getMetadata("schema", this)
+        return Reflect.getMetadata(schemaSymbol, this)
     }
     static binds<ModelClass extends Model>(this: new () => ModelClass): BindsType {
-        return Reflect.getMetadata("binds", this)
+        return Reflect.getMetadata(bindsSymbol, this)
     }
     static database<ModelClass extends Model>(this: new () => ModelClass): Database {
-        return Reflect.getMetadata("database", this)
+        return Reflect.getMetadata(databaseSymbol, this)
     }
     static mixins<ModelClass extends Model>(this: new () => ModelClass): Mixin[] {
-        return Reflect.getMetadata("mixins", this)
+        return Reflect.getMetadata(mixinsSymbol, this)
     }
 
     static Decorator<ModelClass extends Model>(model: ModelTypeInput) {
-        return function (constructor: typeof Model) {
-            const schema: SchemaType<ModelClass> = Reflect.getMetadata("schema", constructor)
+        return function (constructor: typeof Model,_:any) {
+          
+            
+            const schema: SchemaType<ModelClass> = Reflect.getMetadata(schemaSymbol, constructor)
 
             const filledModel = fillModel(model)
 
             const methods = filledModel.database.modify<ModelClass>(filledModel, schema)
 
-            Reflect.defineMetadata("methods", methods, constructor)
-            Reflect.defineMetadata("schema", schema, constructor)
-            Reflect.defineMetadata("binds", filledModel.binds, constructor)
-            Reflect.defineMetadata("database", filledModel.database, constructor)
-            Reflect.defineMetadata("mixins", filledModel.mixins, constructor)
+            Reflect.defineMetadata(schemaSymbol, schema, constructor)
+            Reflect.defineMetadata(bindsSymbol, filledModel.binds, constructor)
+            Reflect.defineMetadata(databaseSymbol, filledModel.database, constructor)
+            Reflect.defineMetadata(mixinsSymbol, filledModel.mixins, constructor)
 
             //@ts-expect-error: TODO
-            constructor.create = createRun() //@ts-expect-error: TODO
-            constructor.read = readRun() //@ts-expect-error: TODO
-            constructor.update = updateRun() //@ts-expect-error: TODO
-            constructor.delete = deleteRun() // @ts-expect-error: TODO
-            constructor.count = countRun() // @ts-expect-error: TODO
-            constructor.sum = sumRun()
+            constructor.create = createRun(methods.create) //@ts-expect-error: TODO
+            constructor.read = readRun(methods.read) //@ts-expect-error: TODO
+            constructor.update = updateRun(methods.update) //@ts-expect-error: TODO
+            constructor.delete = deleteRun(methods.delete) // @ts-expect-error: TODO
+            constructor.count = countRun(methods.count) // @ts-expect-error: TODO
+            constructor.sum = sumRun(methods.sum)
 
             models.push(constructor)
         }

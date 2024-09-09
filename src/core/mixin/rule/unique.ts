@@ -15,7 +15,7 @@ export default Rule.new({
                             [field]: { equals: payload.body[field] },
                         },
                     },
-                    { token: Config.get("SYSTEM_TOKEN") },
+                    { token: Config.SYSTEM_TOKEN },
                 )
 
                 if (res > trash_old) {

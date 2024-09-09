@@ -1,7 +1,7 @@
 import * as lodash from "lodash"
 import { text } from "../../defaults/type/text"
 import { Role } from "../lifecycle-function"
-import { Model } from "../model/model"
+import { Model, schemaSymbol } from "../model/model"
 import { Type } from "../type"
 import { fillSchema } from "./utils/fill-schema"
 import "reflect-metadata" // Ensure reflect-metadata is imported
@@ -20,7 +20,7 @@ export class Field {
 
     static Decorator(field: Field) {
         return function (target: any, propertyKey: any) {
-            const metadata = Reflect.getMetadata("schema", target.constructor) || {}
+            const metadata = Reflect.getMetadata(schemaSymbol, target.constructor) || {}
 
             if (!lodash.has(metadata, "id")) {
                 metadata["id"] = fillSchema({
@@ -30,7 +30,7 @@ export class Field {
 
             metadata[propertyKey as string] = fillSchema(field)
 
-            Reflect.defineMetadata("schema", metadata, target.constructor)
+            Reflect.defineMetadata(schemaSymbol, metadata, target.constructor)
         }
     }
 }
