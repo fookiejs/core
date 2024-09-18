@@ -1,4 +1,11 @@
 import * as lodash from "lodash"
+
+export enum Environment {
+    LOCAL="local",
+    TEST="test",
+    DEVELOPMENT="development",
+    PRODUCTION="production",
+}
 export class Config {
     private static env: Record<string, string> = {}
 
@@ -20,4 +27,10 @@ export class Config {
         }
         return this.env[key]
     }
+
+
+    
+    static environment = Environment[process.env.NODE_ENV?? Environment.DEVELOPMENT ]
 }
+
+
