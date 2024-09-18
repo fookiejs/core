@@ -4,7 +4,6 @@ import { Role } from "../lifecycle-function"
 import { Model, schemaSymbol } from "../model/model"
 import { Type } from "../type"
 import { fillSchema } from "./utils/fill-schema"
-import "reflect-metadata" // Ensure reflect-metadata is imported
 
 export class Field {
     required?: boolean
@@ -17,6 +16,7 @@ export class Field {
     read?: Role<any>[]
     write?: Role<any>[]
     cascadeDelete?: boolean
+    features?: symbol[]
 
     static Decorator(field: Field) {
         return function (target: any, propertyKey: any) {
@@ -34,3 +34,7 @@ export class Field {
         }
     }
 }
+
+export const Required = Symbol()
+export const Unique = Symbol()
+export const CascadeDelete = Symbol()

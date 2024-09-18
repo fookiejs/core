@@ -65,7 +65,6 @@ describe("relation", () => {
             address: "wrong-id",
         })
 
-        
         expect(userResponse instanceof FookieError).toBe(true)
 
         if (userResponse instanceof FookieError) {

@@ -1,6 +1,6 @@
 import { expect, it } from "vitest"
 import * as lodash from "lodash"
-import { Model, Field, defaults, Config, Role } from "../../src/exports"
+import { Model, Field, defaults, Config, Role, Required } from "../../src/exports"
 
 @Model.Decorator({
     database: defaults.database.store,
@@ -33,10 +33,10 @@ import { Model, Field, defaults, Config, Role } from "../../src/exports"
     },
 })
 class User extends Model {
-    @Field.Decorator({ required: true, type: defaults.type.text })
+    @Field.Decorator({ features: [Required], type: defaults.type.text })
     email: string
 
-    @Field.Decorator({ required: true, type: defaults.type.integer })
+    @Field.Decorator({ features: [Required], type: defaults.type.integer })
     usage: number
 }
 

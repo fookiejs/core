@@ -6,7 +6,8 @@ import {
     addGlobalEffect,
     Effect,
     Payload,
-    addGlobalPreRule,
+    addGlobalRule,
+    Required,
 } from "../../src/exports"
 import { CreateResponse, ReadResponse } from "../../src/core/response"
 
@@ -20,7 +21,7 @@ describe("fillModel Function Tests", () => {
         mixins: [],
     })
     class TestModel extends Model {
-        @Field.Decorator({ type: defaults.type.text, required: true })
+        @Field.Decorator({ type: defaults.type.text, features: [Required] })
         exampleField: string
     }
 
@@ -38,7 +39,7 @@ describe("fillModel Function Tests", () => {
         }),
     )
 
-    addGlobalPreRule(
+    addGlobalRule(
         Effect.new({
             key: "global-test-flag-pre-rule",
             execute: async function (

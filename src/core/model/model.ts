@@ -13,9 +13,9 @@ export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
 export const models: (typeof Model)[] = []
 
 export const schemaSymbol = Symbol("schema")
-const bindsSymbol =Symbol("binds")
-const databaseSymbol =Symbol("database")
-const mixinsSymbol =Symbol("mixins")
+const bindsSymbol = Symbol("binds")
+const databaseSymbol = Symbol("database")
+const mixinsSymbol = Symbol("mixins")
 
 export class Model {
     id: string
@@ -98,9 +98,7 @@ export class Model {
     }
 
     static Decorator<ModelClass extends Model>(model: ModelTypeInput) {
-        return function (constructor: typeof Model,_:any) {
-          
-            
+        return function (constructor: typeof Model) {
             const schema: SchemaType<ModelClass> = Reflect.getMetadata(schemaSymbol, constructor)
 
             const filledModel = fillModel(model)

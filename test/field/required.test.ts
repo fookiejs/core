@@ -1,5 +1,5 @@
 import { expect, test } from "vitest"
-import { Model, Field, defaults, FookieError } from "../../src/exports"
+import { Model, Field, defaults, FookieError, Required } from "../../src/exports"
 
 test("Define a required field with Error", async () => {
     @Model.Decorator({
@@ -7,7 +7,7 @@ test("Define a required field with Error", async () => {
         binds: { create: { role: [] } },
     })
     class RequiredField extends Model {
-        @Field.Decorator({ required: true, type: defaults.type.text })
+        @Field.Decorator({ features: [Required], type: defaults.type.text })
         field?: string
     }
 
@@ -24,7 +24,7 @@ test("Define a required field with Success", async () => {
         binds: { create: { role: [] } },
     })
     class RequiredField extends Model {
-        @Field.Decorator({ required: true, type: defaults.type.text })
+        @Field.Decorator({ features: [Required], type: defaults.type.text })
         field: string
     }
 

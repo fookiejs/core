@@ -1,5 +1,5 @@
 import { test } from "vitest"
-import { Model, Field, defaults, Role } from "../../src/exports"
+import { Model, Field, defaults, Role, Unique, Required } from "../../src/exports"
 
 test("Define a simple model", async () => {
     @Model.Decorator({
@@ -21,7 +21,7 @@ test("Define a simple model", async () => {
         },
     })
     class User extends Model {
-        @Field.Decorator({ required: true, type: defaults.type.text })
+        @Field.Decorator({ features: [Required], type: defaults.type.text })
         email: string
     }
     User
@@ -33,7 +33,7 @@ test("Define a model with relations.", async () => {
         binds: {},
     })
     class Address extends Model {
-        @Field.Decorator({ required: true, type: defaults.type.text, unique: true })
+        @Field.Decorator({ type: defaults.type.text, features: [Unique, Required] })
         city: string
     }
 
@@ -42,7 +42,7 @@ test("Define a model with relations.", async () => {
         binds: {},
     })
     class Place extends Model {
-        @Field.Decorator({ required: true, type: defaults.type.text, relation: Address })
+        @Field.Decorator({ type: defaults.type.text, relation: Address, features: [Required] })
         address: string
     }
     Place

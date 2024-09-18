@@ -1,5 +1,5 @@
 import { expect, test } from "vitest"
-import { Model, Field, defaults, FookieError } from "../../src/exports"
+import { Model, Field, defaults, FookieError, Unique } from "../../src/exports"
 
 test("Define a unique field with Error", async () => {
     @Model.Decorator({
@@ -10,7 +10,7 @@ test("Define a unique field with Error", async () => {
         },
     })
     class UniqueField extends Model {
-        @Field.Decorator({ unique: true, type: defaults.type.text })
+        @Field.Decorator({ features: [Unique], type: defaults.type.text })
         username: string
     }
 

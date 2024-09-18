@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { Model, Field, defaults, FookieError } from "../../src/exports"
+import { Model, Field, defaults, FookieError, Required } from "../../src/exports"
 
 describe("ArrayFieldModel Tests", () => {
     // Model tanımlama
@@ -8,7 +8,7 @@ describe("ArrayFieldModel Tests", () => {
         binds: { create: { role: [] } },
     })
     class ArrayFieldModel extends Model {
-        @Field.Decorator({ type: defaults.type.array(defaults.type.text), required: true })
+        @Field.Decorator({ type: defaults.type.array(defaults.type.text), features: [Required] })
         field!: string[]
     }
 

@@ -3,11 +3,6 @@ import { FookieError } from "./error"
 import { Model } from "./model/model"
 import { Payload } from "./payload"
 
-export class PreRule<ModelClass extends Model> extends BaseClass {
-    key: string
-    execute: (payload: Payload<ModelClass>, error: FookieError) => Promise<boolean>
-}
-
 export class Modify<ModelClass extends Model> extends BaseClass {
     key: string
     execute: (payload: Payload<ModelClass>) => Promise<void>

@@ -1,5 +1,6 @@
 import * as lodash from "lodash"
 import { Rule } from "../../lifecycle-function"
+import { Required } from "../../field/field"
 
 export default Rule.new({
     key: "check_required",
@@ -10,7 +11,7 @@ export default Rule.new({
                 ? lodash.keys(payload.modelClass.schema())
                 : lodash.keys(payload.body)
         for (const key of keys) {
-            if (payload.modelClass.schema()[key].required == true) {
+            if (lodash.includes(payload.modelClass.schema()[key].features, Required)) {
                 if (search.includes(payload.body[key])) {
                     return false
                 }

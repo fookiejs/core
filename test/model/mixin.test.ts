@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { Model, Field, defaults, Mixin, Role } from "../../src/exports"
+import { Model, Field, defaults, Mixin, Role, Required } from "../../src/exports"
 
 // Mixin tanımlama
 let createFlag = false
@@ -29,7 +29,7 @@ describe("fillModel Function Tests", () => {
         mixins: [sampleMixin],
     })
     class TestModel extends Model {
-        @Field.Decorator({ type: defaults.type.text, required: true })
+        @Field.Decorator({ type: defaults.type.text, features: [Required] })
         name!: string
     }
 

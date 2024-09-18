@@ -10,8 +10,13 @@ export function fillSchema(field: Field): Field {
     if (!lodash.has(field, "read")) {
         field.read = []
     }
+
     if (!lodash.has(field, "write")) {
         field.write = []
+    }
+
+    if (!lodash.has(field, "features")) {
+        field.features = []
     }
 
     if (field.relation) {

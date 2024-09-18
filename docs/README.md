@@ -24,7 +24,6 @@ import { Dictionary, Builder, Database, Method, Mixin, Role, Type, Types, use, r
         schema: {
             title: {
                 type: Fookie.Dictionary.Type.text,
-                required: true,
             },
             status: {
                 type: Fookie.Dictionary.Type.text,
@@ -169,10 +168,9 @@ import { init_redis } from "fookie_redis";
         database: Database.store,
         mixins: [mixin_cache],
         schema: {
-            name: { type: Fookie.Dictionary.Type.text, required: true, unique: true },
+            name: { type: Fookie.Dictionary.Type.text },
             stock: {
                 type: Fookie.Dictionary.Type.integer,
-                required: true,
                 validators: [positive_integer],
             },
             color: { type: Fookie.Dictionary.Type.integer },
@@ -301,9 +299,9 @@ import * as lodash from "lodash";
         name: "article",
         database: Database.store,
         schema: {
-            title: { type: Fookie.Dictionary.Type.text, required: true },
-            content: { type: Fookie.Dictionary.Type.text, required: true },
-            status: { type: Fookie.Dictionary.Type.text, required: true },
+            title: { type: Fookie.Dictionary.Type.text },
+            content: { type: Fookie.Dictionary.Type.text },
+            status: { type: Fookie.Dictionary.Type.text },
         },
         bind: {
             read: {
@@ -493,13 +491,10 @@ import {
         schema: {
             email: {
                 type: Fookie.Dictionary.Type.text,
-                required: true,
-                unique: true,
                 validators: [is_email],
             },
             password: {
                 type: Fookie.Dictionary.Type.text,
-                required: true,
                 validators: [is_strong_password],
             },
         },

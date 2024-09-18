@@ -1,4 +1,4 @@
-import { Effect, PreRule } from "../../lifecycle-function"
+import { Effect, Rule } from "../../lifecycle-function"
 import db_disconnect from "../effect/db_disconnect"
 import default_payload from "../modify/default_payload"
 import can_write from "../rule/can_write"
@@ -9,7 +9,7 @@ import need_field_in_options from "../rule/need_field_in_options"
 import validate_attributes from "../rule/validate_attributes"
 import validate_payload from "../rule/validate_payload"
 
-export const preRules: PreRule<any>[] = [
+export const globalRules: Rule<any>[] = [
     validate_payload,
     default_payload,
     validate_payload,
@@ -23,10 +23,10 @@ export const preRules: PreRule<any>[] = [
 
 export const globalEffects: Effect<any>[] = [db_disconnect] as const
 
-export function addGlobalPreRule(preRule) {
-    preRules.push(preRule)
+export function addGlobalRule(rule) {
+    globalRules.push(rule)
 }
 
-export function addGlobalEffect(preRule) {
-    globalEffects.push(preRule)
+export function addGlobalEffect(effect) {
+    globalEffects.push(effect)
 }
