@@ -145,18 +145,29 @@ export type BindsTypeField = {
     rule: Rule<Model>[]
     filter: Filter<Model>[]
     effect: Effect<Model>[]
-    accept?: {
-        [key: string]: {
-            modify: Modify<Model>[]
-            rule: Rule<Model>[]
-        }
-    }
-    reject?: {
-        [key: string]: {
-            modify: Modify<Model>[]
-            rule: Rule<Model>[]
-        }
-    }
+    accepts:
+        | [
+              [
+                  Role<Model>,
+                  {
+                      modify: Modify<Model>[]
+                      rule: Rule<Model>[]
+                  },
+              ],
+          ]
+        | []
+
+    rejects:
+        | [
+              [
+                  Role<Model>,
+                  {
+                      modify: Modify<Model>[]
+                      rule: Rule<Model>[]
+                  },
+              ],
+          ]
+        | []
 }
 
 export class QueryType<ModelClass extends Model> {

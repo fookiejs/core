@@ -4,6 +4,7 @@ import { before } from "../../mixin/binds/before"
 import { after } from "../../mixin/binds/after"
 import { FookieError } from "../../error"
 import * as moment from "moment"
+import { BindsTypeField } from "../../model/model"
 
 const role = async function (payload: Payload<any>, error: FookieError) {
     const roles = [
@@ -20,59 +21,58 @@ const role = async function (payload: Payload<any>, error: FookieError) {
         payload.state.metrics.end = moment.utc().toDate()
 
         const role = roles[i]
-
         const res = await role.execute(payload, error)
-        const field = payload.modelClass.binds()[payload.method]
+        const field = payload.modelClass.binds()[payload.method] as BindsTypeField
+
         if (res) {
-            if (lodash.has(field, `accept.${role.key}.modify`)) {
-                const modifies =
-                    payload.modelClass.binds()[payload.method].accept![role.key].modify!
-                for (const modify of modifies) {
-                    await modify.execute(payload)
+            const modifies = lodash.flatten(
+                field.accepts.filter((r) => r[0] === role)?.map((item) => item[1].modify),
+            )
+
+            for (const modify of modifies) {
+                await modify.execute(payload)
+            }
+
+            const extra_rules = lodash.flatten(
+                field.accepts.filter((r) => r[0] === role)?.map((item) => item[1].rule),
+            )
+
+            for (const rule of extra_rules) {
+                const extra_rule_response = await rule.execute(payload, error)
+                if (!extra_rule_response) {
+                    error.key = rule.key
+                    return false
                 }
             }
 
-            if (lodash.has(field, `accept.${role.key}.rule`)) {
-                const extra_rules =
-                    payload.modelClass.binds()[payload.method]["accept"]![role.key].rule!
-                for (const rule of extra_rules) {
-                    const extra_rule_response = await rule.execute(payload, error)
-                    if (!extra_rule_response) {
-                        error.key = rule.key
-                        return false
-                    }
-                }
-            }
-            return true
+            break
         } else {
-            if (lodash.has(field, "reject") && lodash.has(field.reject, role.key)) {
-                if (lodash.has(field.reject![role.key], "modify")) {
-                    const modifies =
-                        payload.modelClass.binds()[payload.method]["reject"]![role.key].modify!
-                    for (const modify of modifies) {
-                        await modify.execute(payload)
-                    }
-                }
+            let pass = false
 
-                if (lodash.has(field.reject![role.key], "rule")) {
-                    const extra_rules =
-                        payload.modelClass.binds()[payload.method]["reject"]![role.key].rule!
-                    for (const rule of extra_rules) {
-                        const extra_rule_response = await rule.execute(payload, error)
-                        if (!extra_rule_response) {
-                            error.key = rule.key
-                            return false
-                        }
-                    }
-                }
+            const modifies = lodash.flatten(
+                field.rejects.filter((r) => r[0] === role)?.map((item) => item[1].modify),
+            )
+            for (const modify of modifies) {
+                await modify.execute(payload)
+            }
 
-                return true
+            const extra_rules = lodash.flatten(
+                field.rejects.filter((r) => r[0] === role)?.map((item) => item[1].rule),
+            )
+
+            for (const rule of extra_rules) {
+                const extra_rule_response = await rule.execute(payload, error)
+                if (extra_rule_response) {
+                    pass = true || pass
+                }
             }
             error.key = role.key
+
+            return pass
         }
     }
 
-    return false
+    return true
 }
 
 export default role

@@ -26,12 +26,15 @@ const rule = Rule.new({
     binds: {
         read: {
             role: [defaults.lifecycle.nobody],
-            reject: {
-                nobody: {
-                    modify: [rejectModify],
-                    rule: [rule],
-                },
-            },
+            rejects: [
+                [
+                    defaults.lifecycle.nobody,
+                    {
+                        modify: [rejectModify],
+                        rule: [rule],
+                    },
+                ],
+            ],
         },
         create: {
             role: [],

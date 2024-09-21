@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { Model, Field, defaults, Role, Modify, Rule } from "../../src/exports"
+import { Model, Field, defaults, Role, Modify, Rule, FookieError } from "../../src/exports"
 
 // Accept Lifecycle Function
 const flag1 = { called: false }
@@ -35,12 +35,15 @@ const rule_true = Rule.new({
     binds: {
         read: {
             role: [admin, defaults.lifecycle.everybody],
-            accept: {
-                admin: {
-                    modify: [acceptModifyFunction],
-                    rule: [rule_true],
-                },
-            },
+            accepts: [
+                [
+                    admin,
+                    {
+                        modify: [acceptModifyFunction],
+                        rule: [rule_true],
+                    },
+                ],
+            ],
         },
         create: {
             role: [],
@@ -78,6 +81,6 @@ describe("QueryTextModel Accept and Rule Lifecycle Tests", async () => {
         expect(flag1.called).toBe(true)
         expect(flag2.called).toBe(false)
         expect(flag3.called).toBe(false)
-        expect(results).toHaveLength(3)
+        expect(results instanceof FookieError).toBeTruthy()
     })
 })

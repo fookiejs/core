@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest"
 import { Model, Field, defaults, Modify, Rule } from "../../src/exports"
+import {} from "../../src/defaults/role/nobody"
 
 // Accept Lifecycle Function
 const flag1 = { called: false }
@@ -26,12 +27,15 @@ const rule_true = Rule.new({
     binds: {
         read: {
             role: [defaults.lifecycle.nobody],
-            reject: {
-                nobody: {
-                    modify: [rejectModify],
-                    rule: [rule_true],
-                },
-            },
+            rejects: [
+                [
+                    defaults.lifecycle.nobody,
+                    {
+                        modify: [rejectModify],
+                        rule: [rule_true],
+                    },
+                ],
+            ],
         },
         create: {
             role: [],

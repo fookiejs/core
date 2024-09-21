@@ -8,18 +8,26 @@ export function fillModel(model: ModelTypeInput): ModelTypeOutput {
     model.binds = lodash.isObject(model.binds) ? model.binds : ({} as BindsType)
     model.mixins = lodash.isArray(model.mixins) ? model.mixins : []
 
+    const defaultBinds = {
+        modify: [],
+        role: [system],
+        rule: [],
+        filter: [],
+        effect: [],
+        accepts: [],
+        rejects: [],
+    }
+
     for (const method of methods) {
-        if (!lodash.isObject(model.binds[method])) {
-            model.binds[method] = {
-                modify: [],
-                role: [system],
-                rule: [],
-                filter: [],
-                effect: [],
-                accept: {},
-                reject: {},
-            }
+        model.binds[method] = lodash.isObject(model.binds[method])
+            ? model.binds[method]
+            : { ...defaultBinds }
+
+        model.binds[method] = {
+            ...defaultBinds,
+            ...model.binds[method],
         }
+
         for (const lifecycle of lifecycles) {
             if (!lodash.isArray(model.binds[method][lifecycle])) {
                 model.binds[method][lifecycle] = []

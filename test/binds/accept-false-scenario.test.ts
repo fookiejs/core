@@ -26,12 +26,15 @@ const rule_false = Rule.new({
     binds: {
         read: {
             role: [admin],
-            accept: {
-                admin: {
-                    modify: [],
-                    rule: [rule_false],
-                },
-            },
+            accepts: [
+                [
+                    admin,
+                    {
+                        modify: [],
+                        rule: [rule_false],
+                    },
+                ],
+            ],
         },
         create: {
             role: [],
