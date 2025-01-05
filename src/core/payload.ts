@@ -1,12 +1,17 @@
 import { Model } from "./model"
-import { Create, Read, Update, Delete } from "./method"
+import { Methods } from "./method"
 import { Query } from "./query"
+import { BaseClass } from "./base-class"
 
-export class Payload {
-    model: typeof Model
-    method: typeof Create | typeof Read | typeof Update | typeof Delete
-    body: any
-    query: Query
+export class Payload<Entity extends Model> extends BaseClass {
+    model: new () => Entity
+    method:
+        | typeof Methods.CREATE
+        | typeof Methods.READ
+        | typeof Methods.UPDATE
+        | typeof Methods.DELETE
+    body: Entity
+    query: Query<Entity>
     options: {
         token: string
     }

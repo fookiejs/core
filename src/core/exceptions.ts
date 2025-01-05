@@ -1,7 +1,8 @@
 import { BaseClass } from "./base-class"
-import { Modify, Role } from "./lifecycle"
+import { Modify, Role, Rule } from "./lifecycle"
+import { Model } from "./model"
 
-export class Exception extends BaseClass {
-    lifecycle: Role
-    func: Modify
+export class Exception<Entity extends Model> extends BaseClass {
+    role: Role<Entity>
+    execute: Modify<Entity> | Rule<Entity>
 }

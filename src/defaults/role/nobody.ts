@@ -1,4 +1,4 @@
-import { Role } from "../../core/lifecycle-function"
+import { Role } from "../../core/lifecycle"
 
 export const nobody = Role.new({
     key: "nobody",

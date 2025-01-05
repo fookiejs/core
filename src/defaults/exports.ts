@@ -2,7 +2,6 @@ import { store } from "./database/store"
 import { text } from "./type/text"
 import { integer } from "./type/integer"
 import { nobody } from "./role/nobody"
-import { system } from "./role/system"
 import { everybody } from "./role/everybody"
 import { date } from "./type/date"
 import { timestamp } from "./type/timestamp"
@@ -25,9 +24,8 @@ export const defaults = {
     database: {
         store,
     },
-    lifecycle: {
+    role: {
         nobody,
-        system,
         everybody,
     },
 }

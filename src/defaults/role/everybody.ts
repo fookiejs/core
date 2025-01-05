@@ -1,6 +1,8 @@
-import { Role } from "../../core/lifecycle-function"
+import { Role } from "../../core/lifecycle"
 
 export const everybody = Role.new({
     key: "everybody",
-    execute: async () => true,
+    execute: async function () {
+        return true
+    },
 })

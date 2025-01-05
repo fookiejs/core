@@ -1,3 +1,3 @@
 import { BaseClass } from "./base-class"
 
-export class Type extends BaseClass {}
+export class Config extends BaseClass {}

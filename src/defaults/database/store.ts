@@ -1,5 +1,5 @@
 import * as lodash from "lodash"
-import { Database, Model, QueryType } from "../.."
+import { Database, Model } from "../.."
 
 export const store = Database.new({
     key: "store",
@@ -9,7 +9,7 @@ export const store = Database.new({
     disconnect: async function () {
         return
     },
-    modify: function <ModelClass extends Model>() {
+    init: function <ModelClass extends Model>() {
         let pool: ModelClass[] = []
 
         return {
@@ -48,20 +48,6 @@ export const store = Database.new({
                 })
                 pool = rejected
                 return true
-            },
-            sum: async (payload) => {
-                const filteredItems = poolFilter(pool, payload.query)
-                const sum = filteredItems.reduce((acc, item) => {
-                    if (typeof item[payload.fieldName] === "number") {
-                        return acc + item[payload.fieldName]
-                    }
-                    return acc
-                }, 0)
-
-                return sum
-            },
-            count: async function (payload) {
-                return poolFilter(pool, payload.query).length
             },
         }
     },

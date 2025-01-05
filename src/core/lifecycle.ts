@@ -1,32 +1,36 @@
-export class Rule {
+import { BaseClass } from "./base-class"
+import { Model } from "./model"
+import { Payload } from "./payload"
+
+export class Rule<Entity extends Model> extends BaseClass {
     key: string
-    func: () => true
+    execute: (payload: Payload<Entity>) => Promise<boolean>
 }
 
-export class Role {
+export class Role<Entity extends Model> extends BaseClass {
     key: string
-    func: () => true
+    execute: (payload: Payload<Entity>) => Promise<boolean>
 }
 
-export class Modify {
+export class Modify<Entity extends Model> extends BaseClass {
     key: string
-    func: () => void
+    execute: (payload: Payload<Entity>) => Promise<void>
 }
 
-export class Effect {
+export class Effect<Entity extends Model> extends BaseClass {
     key: string
-    func: () => void
+    execute: (payload: Payload<Entity>) => Promise<void>
 }
 
-export class Filter {
+export class Filter<Entity extends Model> extends BaseClass {
     key: string
-    func: () => void
+    execute: (payload: Payload<Entity>) => Promise<void>
 }
 
 export const Lifecycle = {
-    Rule: Symbol(),
-    Role: Symbol(),
-    Modify: Symbol(),
-    Effect: Symbol(),
-    Filter: Symbol(),
+    RULE: Symbol(),
+    ROLE: Symbol(),
+    MODIFY: Symbol(),
+    EFFECT: Symbol(),
+    FILTER: Symbol(),
 }
