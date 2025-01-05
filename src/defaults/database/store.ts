@@ -1,5 +1,5 @@
 import * as lodash from "lodash"
-import { Database, Model, QueryType } from "../../exports"
+import { Database, Model, QueryType } from "../.."
 
 export const store = Database.new({
     key: "store",

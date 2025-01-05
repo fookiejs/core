@@ -1,17 +1,4 @@
-export enum Method {
-    CREATE = "create",
-    READ = "read",
-    UPDATE = "update",
-    DELETE = "delete",
-    COUNT = "count",
-    SUM = "sum",
-}
-
-export const methods: Method[] = [
-    Method.CREATE,
-    Method.READ,
-    Method.UPDATE,
-    Method.DELETE,
-    Method.COUNT,
-    Method.SUM,
-] as const
+export const Create = Symbol()
+export const Read = Symbol()
+export const Update = Symbol()
+export const Delete = Symbol()

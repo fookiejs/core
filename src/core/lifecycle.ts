@@ -1,17 +1,32 @@
-export enum Lifecycle {
-    MODIFY = "modify",
-    ROLE = "role",
-    RULE = "rule",
-    METHOD = "method",
-    FILTER = "filter",
-    EFFECT = "effect",
+export class Rule {
+    key: string
+    func: () => true
 }
 
-export const lifecycles: Lifecycle[] = [
-    Lifecycle.MODIFY,
-    Lifecycle.ROLE,
-    Lifecycle.RULE,
-    Lifecycle.METHOD,
-    Lifecycle.FILTER,
-    Lifecycle.EFFECT,
-] as const
+export class Role {
+    key: string
+    func: () => true
+}
+
+export class Modify {
+    key: string
+    func: () => void
+}
+
+export class Effect {
+    key: string
+    func: () => void
+}
+
+export class Filter {
+    key: string
+    func: () => void
+}
+
+export const Lifecycle = {
+    Rule: Symbol(),
+    Role: Symbol(),
+    Modify: Symbol(),
+    Effect: Symbol(),
+    Filter: Symbol(),
+}

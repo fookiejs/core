@@ -1,14 +1,13 @@
-import { Method, Model, QueryType } from "../exports"
-import { Options } from "./option"
+import { Model } from "./model"
+import { Create, Read, Update, Delete } from "./method"
+import { Query } from "./query"
 
-import { State } from "./state"
-
-export class Payload<ModelClass extends Model> {
-    query: QueryType<ModelClass>
-    body: ModelClass
-    method: Method
-    options: Options
-    state: State
-    fieldName: string
-    modelClass: typeof Model
+export class Payload {
+    model: typeof Model
+    method: typeof Create | typeof Read | typeof Update | typeof Delete
+    body: any
+    query: Query
+    options: {
+        token: string
+    }
 }
