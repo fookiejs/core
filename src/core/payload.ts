@@ -1,17 +1,35 @@
 import { Model } from "./model"
-import { Methods } from "./method"
-import { Query } from "./query"
-import { BaseClass } from "./base-class"
+import * as Methods from "./method"
 
-export class Payload<Entity extends Model> extends BaseClass {
-    model: new () => Entity
+import { BaseClass } from "./base-class"
+import { Field } from "./field"
+
+export class Payload<T extends typeof Model> extends BaseClass {
+    model: T
     method:
         | typeof Methods.CREATE
         | typeof Methods.READ
         | typeof Methods.UPDATE
         | typeof Methods.DELETE
-    body: Entity
-    query: Query<Entity>
+    body: any
+    query: {
+        filter: {
+            [key in keyof T]?: {
+                equals: undefined
+                notEquals: undefined
+                like: boolean
+                gte?: T[key]
+                lte?: T[key]
+                gt?: T[key]
+                lt?: T[key]
+                in?: T[key][]
+                notIn?: T[key][]
+            }
+        }
+        offset: number
+        limit: number
+        attributes: Field[]
+    }
     options: {
         token: string
     }

@@ -1,107 +1,23 @@
-import * as lodash from "lodash"
-import { Database, Model } from "../.."
+import { Database } from "../../core/database"
+import * as Methods from "../../core/method"
 
 export const store = Database.new({
-    key: "store",
-    connect: async function () {
-        return
-    },
-    disconnect: async function () {
-        return
-    },
-    init: function <ModelClass extends Model>() {
-        let pool: ModelClass[] = []
-
+    init: function (Model) {
         return {
-            create: async (payload) => {
-                pool.push(payload.body as any)
-                return payload.body
+            [Methods.CREATE]: async () => {
+                const entity = new Model()
+                entity.id
+                return entity
             },
-            read: async (payload) => {
-                const attributes = payload.query.attributes
-
-                let res = poolFilter(pool, payload.query)
-
-                res = res.map(function (entity) {
-                    return lodash.pick(entity, attributes)
-                }) as ModelClass[]
-
-                return res
+            [Methods.READ]: async () => {
+                return []
             },
-            update: async (payload) => {
-                const entities = poolFilter(pool, payload.query)
-
-                entities.forEach((entity) => {
-                    Object.keys(payload.body).forEach((key) => {
-                        entity[key] = payload.body[key]
-                    })
-                })
-
+            [Methods.UPDATE]: async () => {
                 return true
             },
-            delete: async (payload) => {
-                const filtered = poolFilter(pool, payload.query).map(function (f) {
-                    return f.id
-                })
-                const rejected = lodash.reject(pool, function (entity) {
-                    return filtered.includes(entity.id)
-                })
-                pool = rejected
+            [Methods.DELETE]: async () => {
                 return true
             },
         }
     },
 })
-
-function poolFilter<ModelClass extends Model>(
-    pool: ModelClass[],
-    query: QueryType<ModelClass | any>,
-) {
-    const results = pool.filter(function (entity) {
-        for (const field of Object.keys(query.filter) as Array<keyof ModelClass>) {
-            const value = query.filter[field]!
-
-            if (value.equals !== undefined && entity[field] !== value.equals) {
-                return false
-            }
-            if (value.notEquals !== undefined && entity[field] === value.notEquals) {
-                return false
-            }
-
-            if (value.in && !value.in.includes(entity[field] as never)) {
-                return false
-            }
-            if (value.notIn && value.notIn.includes(entity[field] as never)) {
-                return false
-            }
-            if (value.lt !== undefined && entity[field] >= value.lt) {
-                return false
-            }
-            if (value.lte !== undefined && entity[field] > value.lte) {
-                return false
-            }
-            if (value.gt !== undefined && entity[field] <= value.gt) {
-                return false
-            }
-            if (value.gte !== undefined && entity[field] < value.gte) {
-                return false
-            }
-            if (
-                value.like &&
-                !new RegExp(value.like.replace(/%/g, ".*")).test(entity[field] as string)
-            ) {
-                return false
-            }
-            if (lodash.isBoolean(value.isNull)) {
-                if (value.isNull && entity[field] !== null) {
-                    return false
-                }
-                if (!value.isNull && entity[field] === null) {
-                    return false
-                }
-            }
-        }
-        return true
-    })
-    return lodash.slice(results, query.offset, query.offset + query.limit)
-}

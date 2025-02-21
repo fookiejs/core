@@ -1,17 +1,17 @@
 import { test } from "vitest"
-import { Database, Model, defaults } from "../../src"
-import { Exception } from "../../src/core/exceptions"
+import { Model, defaults } from "../../src"
+import { Exception, ExceptionType } from "../../src/core/exceptions"
 import { Rule } from "../../src/core/lifecycle"
+import { store } from "../../src/defaults/database/store"
 
 test("Define a simple model with addException methods", async () => {
-    const User = Model.new({
-        database: Database.new({}),
-    })
+    class User extends Model {}
 
-    await User.read()
+    User.addDatabase(store)
 
-    User.addAcceptException(
+    User.addException(
         Exception.new({
+            type: ExceptionType.ACCEPT,
             role: defaults.role.everybody,
             execute: Rule.new({
                 key: "test-modify",
@@ -23,9 +23,10 @@ test("Define a simple model with addException methods", async () => {
         }),
     )
 
-    User.addRejectException(
+    User.addException(
         Exception.new({
-            role: defaults.role.everybody,
+            type: ExceptionType.REJECT,
+            role: defaults.role.nobody,
             execute: Rule.new({
                 key: "reject-modify",
                 execute: async function () {
@@ -34,4 +35,6 @@ test("Define a simple model with addException methods", async () => {
             }),
         }),
     )
+
+    await User.read()
 })

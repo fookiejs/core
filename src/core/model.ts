@@ -1,12 +1,14 @@
 import { Database } from "./database"
-import { Exception } from "./exceptions"
+import { Exception, ExceptionType } from "./exceptions"
 import { Field } from "./field"
 import { Lifecycle } from "./lifecycle"
-import { Methods } from "./method"
+import * as Methods from "./method"
+import { Query } from "./query"
 
 export class Model {
-    database: Database
-    private lifecycle = {
+    static database: Database
+    id: string
+    static lifecycle = {
         [Methods.CREATE]: {
             [Lifecycle.RULE]: [],
             [Lifecycle.ROLE]: [],
@@ -37,50 +39,48 @@ export class Model {
         },
     }
 
-    private fields: Field[] = []
-    private exception: {
-        accepts: Exception<Model>[]
-        rejects: Exception<Model>[]
-    } = {
-        accepts: [],
-        rejects: [],
-    }
+    static fields: Field[] = []
 
-    static new(model: { database: Database }): Model {
-        const instance = new this()
-        instance.database = model.database
-        return instance
-    }
+    static exceptions = new Map<
+        (typeof ExceptionType)[keyof typeof ExceptionType],
+        Exception<Model>[]
+    >([
+        [ExceptionType.ACCEPT, []],
+        [ExceptionType.REJECT, []],
+    ])
 
-    create() {
+    static create() {
         console.log("Default create method executed")
     }
 
-    read() {
+    static read(query: Query, options: Options) {
         console.log("Default read method executed")
     }
 
-    update() {
+    static update() {
         console.log("Default update method executed")
     }
 
-    delete() {
+    static delete() {
         console.log("Default delete method executed")
     }
 
-    addLifecycle(method: keyof typeof Methods, type: keyof typeof Lifecycle, handler: any) {
+    static addLifecycle(method: keyof typeof Methods, type: keyof typeof Lifecycle, handler: any) {
         this.lifecycle[method][type].push(handler)
     }
 
-    addAcceptException(exception: Exception<Model>) {
-        this.exception.accepts.push(exception)
+    static addException(exception: Exception<Model>) {
+        this.exceptions.get(exception.type)!.push(exception)
     }
 
-    addRejectException(exception: Exception<Model>) {
-        this.exception.rejects.push(exception)
-    }
-
-    addField(field: Field) {
+    static addField(field: Field) {
         this.fields.push(field)
+    }
+    static addDatabase(database: Database) {
+        this.database = database
+
+        const modelOperations = database.init(this)
+
+        console.log(modelOperations)
     }
 }
