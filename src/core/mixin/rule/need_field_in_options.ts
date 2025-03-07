@@ -11,7 +11,7 @@ export default Rule.new({
         return (
             lodash.has(payload, "fieldName") &&
             typeof payload.fieldName == "string" &&
-            lodash.keys(payload.modelClass.schema()).concat("id").includes(payload.fieldName)
+            lodash.keys(payload.model.schema()).concat("id").includes(payload.fieldName)
         )
     },
 })

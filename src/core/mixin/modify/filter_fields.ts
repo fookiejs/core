@@ -11,7 +11,7 @@ export default Modify.new({
         })
 
         for (const key of payload.query.attributes) {
-            const field = payload.modelClass.schema()[key]
+            const field = payload.model.schema()[key]
 
             let show = true
 

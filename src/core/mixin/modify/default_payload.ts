@@ -11,7 +11,7 @@ export default Rule.new({
             query: {
                 attributes: [],
             },
-            id: v4().replace("-", ""),
+            runId: "run:" + v4().replace("-", ""),
         })
 
         if (!lodash.has(newPayload.query, "filter")) {
@@ -30,7 +30,7 @@ export default Rule.new({
         }
 
         if (payload.query.attributes.length == 0) {
-            payload.query.attributes = lodash.keys(payload.modelClass.schema())
+            payload.query.attributes = lodash.keys(payload.model.schema())
         }
         return true
     },

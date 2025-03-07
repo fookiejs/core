@@ -9,10 +9,10 @@ test("Define a unique group field with Error", async () => {
         },
     })
     class UniqueGroupField extends Model {
-        @Field.Decorator({ uniqueGroup: ["groupId", "itemName"], type: defaults.type.text })
+        @Field.Decorator({ uniqueGroup: ["groupId", "itemName"], type: defaults.type.string })
         itemName?: string
 
-        @Field.Decorator({ type: defaults.type.text })
+        @Field.Decorator({ type: defaults.type.string })
         groupId?: string
     }
 

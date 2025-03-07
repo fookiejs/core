@@ -14,11 +14,11 @@ describe("Define a field with read role", async () => {
         },
     })
     class SecureModel extends Model {
-        @Field.Decorator({ type: defaults.type.text })
+        @Field.Decorator({ type: defaults.type.string })
         name?: string
 
         @Field.Decorator({
-            type: defaults.type.text,
+            type: defaults.type.string,
             read: [
                 Role.new({
                     key: "SecureModelTestFalse",

@@ -18,7 +18,7 @@ describe("Relation", () => {
         },
     })
     class Drop extends Model {
-        @Field.Decorator({ type: defaults.type.text })
+        @Field.Decorator({ type: defaults.type.string })
         name: string
     }
 

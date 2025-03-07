@@ -20,30 +20,30 @@ const mixinsSymbol = Symbol("mixins")
 export class Model {
     id: string
 
-    static async create<ModelClass extends Model>(
-        this: new () => ModelClass,
-        body: Omit<ModelClass, "id">,
+    static async create<model extends Model>(
+        this: new () => model,
+        body: Omit<model, "id">,
         options?: Optional<Options, "drop" | "test" | "token">,
-    ): Promise<ModelClass | FookieError> {
+    ): Promise<model | FookieError> {
         body
         options
         throw Error("Not implemented")
     }
 
-    static async read<ModelClass extends Model>(
-        this: new () => ModelClass,
-        query?: Partial<QueryType<ModelClass>>,
+    static async read<model extends Model>(
+        this: new () => model,
+        query?: Partial<QueryType<model>>,
         options?: Optional<Options, "drop" | "test" | "token">,
-    ): Promise<ModelClass[]> {
+    ): Promise<model[]> {
         query
         options
         throw Error("Not implemented")
     }
 
-    static async update<ModelClass extends Model>(
-        this: new () => ModelClass,
-        query: QueryType<ModelClass>,
-        body: Partial<Omit<ModelClass, "id">>,
+    static async update<model extends Model>(
+        this: new () => model,
+        query: QueryType<model>,
+        body: Partial<Omit<model, "id">>,
         options?: Optional<Options, "drop" | "test" | "token">,
     ): Promise<boolean> {
         query
@@ -52,9 +52,9 @@ export class Model {
         throw Error("Not implemented")
     }
 
-    static async delete<ModelClass extends Model>(
-        this: new () => ModelClass,
-        query: Partial<QueryType<ModelClass>>,
+    static async delete<model extends Model>(
+        this: new () => model,
+        query: Partial<QueryType<model>>,
         options?: Optional<Options, "drop" | "test" | "token">,
     ): Promise<boolean> {
         query
@@ -62,9 +62,9 @@ export class Model {
         throw Error("Not implemented")
     }
 
-    static async count<ModelClass extends Model>(
-        this: new () => ModelClass,
-        query: Partial<QueryType<ModelClass>>,
+    static async count<model extends Model>(
+        this: new () => model,
+        query: Partial<QueryType<model>>,
         options?: Optional<Options, "drop" | "test" | "token">,
     ): Promise<number> {
         query
@@ -72,9 +72,9 @@ export class Model {
         throw Error("Not implemented")
     }
 
-    static async sum<ModelClass extends Model>(
-        this: new () => ModelClass,
-        query: Partial<QueryType<ModelClass>>,
+    static async sum<model extends Model>(
+        this: new () => model,
+        query: Partial<QueryType<model>>,
         field: string,
         options?: Optional<Options, "drop" | "test" | "token">,
     ): Promise<number> {
@@ -84,26 +84,26 @@ export class Model {
         throw Error("Not implemented")
     }
 
-    static schema<ModelClass extends Model>(this: new () => ModelClass): SchemaType<ModelClass> {
+    static schema<model extends Model>(this: new () => model): SchemaType<model> {
         return Reflect.getMetadata(schemaSymbol, this)
     }
-    static binds<ModelClass extends Model>(this: new () => ModelClass): BindsType {
+    static binds<model extends Model>(this: new () => model): BindsType {
         return Reflect.getMetadata(bindsSymbol, this)
     }
-    static database<ModelClass extends Model>(this: new () => ModelClass): Database {
+    static database<model extends Model>(this: new () => model): Database {
         return Reflect.getMetadata(databaseSymbol, this)
     }
-    static mixins<ModelClass extends Model>(this: new () => ModelClass): Mixin[] {
+    static mixins<model extends Model>(this: new () => model): Mixin[] {
         return Reflect.getMetadata(mixinsSymbol, this)
     }
 
-    static Decorator<ModelClass extends Model>(model: ModelTypeInput) {
+    static Decorator<model extends Model>(model: ModelTypeInput) {
         return function (constructor: typeof Model) {
-            const schema: SchemaType<ModelClass> = Reflect.getMetadata(schemaSymbol, constructor)
+            const schema: SchemaType<model> = Reflect.getMetadata(schemaSymbol, constructor)
 
             const filledModel = fillModel(model)
 
-            const methods = filledModel.database.modify<ModelClass>(filledModel, schema)
+            const methods = filledModel.database.modify<model>(filledModel, schema)
 
             Reflect.defineMetadata(schemaSymbol, schema, constructor)
             Reflect.defineMetadata(bindsSymbol, filledModel.binds, constructor)
@@ -170,20 +170,20 @@ export type BindsTypeField = {
         | []
 }
 
-export class QueryType<ModelClass extends Model> {
+export class QueryType<model extends Model> {
     limit: number
     offset: number
     attributes: string[]
     filter: Partial<
         Record<
-            keyof ModelClass,
+            keyof model,
             {
                 gte?: number | string | Date
                 gt?: number | string | Date
                 lte?: number | string | Date
                 lt?: number | string | Date
-                equals?: number | string | Date
-                notEquals?: number | string | Date
+                equals?: number | string | Date | boolean
+                notEquals?: number | string | Date | boolean
                 in?: number[] | string[]
                 notIn?: number[] | string[]
                 like?: string

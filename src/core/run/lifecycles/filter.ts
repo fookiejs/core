@@ -10,7 +10,7 @@ const filter = async function (
 ): Promise<void> {
     const filters = [
         ...before[payload.method].filter,
-        ...payload.modelClass.binds()[payload.method].filter,
+        ...payload.model.binds()[payload.method].filter,
         ...after[payload.method].filter,
     ]
 

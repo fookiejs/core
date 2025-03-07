@@ -7,7 +7,7 @@ test("Define a required field with Error", async () => {
         binds: { create: { role: [] } },
     })
     class RequiredField extends Model {
-        @Field.Decorator({ features: [Required], type: defaults.type.text })
+        @Field.Decorator({ features: [Required], type: defaults.type.string })
         field?: string
     }
 
@@ -24,7 +24,7 @@ test("Define a required field with Success", async () => {
         binds: { create: { role: [] } },
     })
     class RequiredField extends Model {
-        @Field.Decorator({ features: [Required], type: defaults.type.text })
+        @Field.Decorator({ features: [Required], type: defaults.type.string })
         field: string
     }
 

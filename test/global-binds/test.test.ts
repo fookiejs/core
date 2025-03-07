@@ -21,7 +21,7 @@ describe("fillModel Function Tests", () => {
         mixins: [],
     })
     class TestModel extends Model {
-        @Field.Decorator({ type: defaults.type.text, features: [Required] })
+        @Field.Decorator({ type: defaults.type.string, features: [Required] })
         exampleField: string
     }
 

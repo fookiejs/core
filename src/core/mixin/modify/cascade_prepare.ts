@@ -6,8 +6,8 @@ import { Config } from "../../config"
 export default Modify.new({
     key: "cascade_prepare",
     execute: async function (payload) {
-        const entities = await payload.modelClass.read(payload.query, {
-            token: Config.SYSTEM_TOKEN
+        const entities = await payload.model.read(payload.query, {
+            token: Config.SYSTEM_TOKEN,
         })
         const cascade_delete_ids = entities.map(function (e) {
             return e.id
@@ -19,7 +19,7 @@ export default Modify.new({
                 if (
                     schema[field].cascadeDelete &&
                     schema[field].relation &&
-                    lodash.isEqual(schema[field].relation["name"], payload.modelClass["name"])
+                    lodash.isEqual(schema[field].relation["name"], payload.model["name"])
                 ) {
                     const fn = async function () {
                         await model.delete(
@@ -29,7 +29,7 @@ export default Modify.new({
                                 },
                             },
                             {
-                                token: Config.SYSTEM_TOKEN
+                                token: Config.SYSTEM_TOKEN,
                             },
                         )
                     }

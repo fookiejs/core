@@ -1,24 +1,18 @@
 import { store } from "./database/store"
-import { text } from "./type/text"
-import { integer } from "./type/integer"
+import { string } from "./type/string"
 import { nobody } from "./role/nobody"
 import { system } from "./role/system"
 import { everybody } from "./role/everybody"
 import { date } from "./type/date"
-import { timestamp } from "./type/timestamp"
-import { time } from "./type/time"
-import { float } from "./type/float"
+import { number } from "./type/number"
 import { boolean } from "./type/boolean"
 import { array } from "./type/array"
 
 export const defaults = {
     type: {
-        integer,
-        text,
+        string,
         date,
-        timestamp,
-        time,
-        float,
+        number,
         boolean,
         array,
     },

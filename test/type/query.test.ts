@@ -9,23 +9,17 @@ import { Model, Field, defaults, FookieError } from "../../src/exports"
     },
 })
 class QueryTypeModel extends Model {
-    @Field.Decorator({ type: defaults.type.integer })
+    @Field.Decorator({ type: defaults.type.number })
     intField!: number
 
-    @Field.Decorator({ type: defaults.type.float })
+    @Field.Decorator({ type: defaults.type.number })
     floatField!: number
 
-    @Field.Decorator({ type: defaults.type.text })
+    @Field.Decorator({ type: defaults.type.string })
     textField!: string
 
     @Field.Decorator({ type: defaults.type.date })
     dateField!: string
-
-    @Field.Decorator({ type: defaults.type.time })
-    timeField!: string
-
-    @Field.Decorator({ type: defaults.type.timestamp })
-    timestampField!: string
 }
 
 describe("QueryTypeModel CRUD Operations", () => {
@@ -36,8 +30,6 @@ describe("QueryTypeModel CRUD Operations", () => {
                 floatField: i + 0.1,
                 textField: `test${i}`,
                 dateField: `2024-05-${i < 10 ? "0" + i : i}`,
-                timeField: `14:${i < 10 ? "0" + i : i}:00`,
-                timestampField: `2024-05-${i < 10 ? "0" + i : i}T14:${i < 10 ? "0" + i : i}:00Z`,
             })
 
             if (entity instanceof FookieError) {
@@ -49,10 +41,6 @@ describe("QueryTypeModel CRUD Operations", () => {
             expect(entity.floatField).toBe(i + 0.1)
             expect(entity.textField).toBe(`test${i}`)
             expect(entity.dateField).toBe(`2024-05-${i < 10 ? "0" + i : i}`)
-            expect(entity.timeField).toBe(`14:${i < 10 ? "0" + i : i}:00`)
-            expect(entity.timestampField).toBe(
-                `2024-05-${i < 10 ? "0" + i : i}T14:${i < 10 ? "0" + i : i}:00Z`,
-            )
         }
     })
 
@@ -102,32 +90,6 @@ describe("QueryTypeModel CRUD Operations", () => {
                 new Date("2024-05-10").getTime(),
             )
         })
-
-        // Filter by time less than or equal
-        results = await QueryTypeModel.read({
-            filter: {
-                timeField: { lte: "14:15:00" },
-            },
-        })
-        expect(results.length).toBeGreaterThan(0)
-        results.forEach((entity) => {
-            expect(
-                new Date(`1970-01-01T${(entity as QueryTypeModel).timeField}Z`).getTime(),
-            ).toBeLessThanOrEqual(new Date(`1970-01-01T14:15:00Z`).getTime())
-        })
-
-        // Filter by timestamp less than
-        results = await QueryTypeModel.read({
-            filter: {
-                timestampField: { lt: "2024-05-20T14:20:00Z" },
-            },
-        })
-        expect(results.length).toBeGreaterThan(0)
-        results.forEach((entity) => {
-            expect(new Date((entity as QueryTypeModel).timestampField).getTime()).toBeLessThan(
-                new Date("2024-05-20T14:20:00Z").getTime(),
-            )
-        })
     })
 
     it("should read entities with combined filters", async () => {
@@ -137,8 +99,6 @@ describe("QueryTypeModel CRUD Operations", () => {
                 floatField: { lte: 25.2 },
                 textField: { equals: "test20" },
                 dateField: { lt: "2024-05-30" },
-                timeField: { gt: "13:00:00" },
-                timestampField: { equals: "2024-05-20T14:20:00Z" },
             },
         })
 
@@ -148,7 +108,5 @@ describe("QueryTypeModel CRUD Operations", () => {
         expect(entity.floatField).toBe(20.1)
         expect(entity.textField).toBe("test20")
         expect(entity.dateField).toBe("2024-05-20")
-        expect(entity.timeField).toBe("14:20:00")
-        expect(entity.timestampField).toBe("2024-05-20T14:20:00Z")
     })
 })

@@ -1,11 +1,14 @@
 import * as lodash from "lodash"
 import { Rule } from "../../lifecycle-function"
+import { Model } from "../../model/model"
+import { Method } from "../../method"
 
-export default Rule.new({
+export default Rule.new<Model, Method.CREATE | Method.UPDATE>({
     key: "check_type",
     execute: async function (payload) {
         for (const field in payload.body) {
-            const type = payload.modelClass.schema()[field].type
+            const type = payload.model.schema()[field].type
+
             if (!lodash.isNull(payload.body[field]) && !type.validate(payload.body[field])) {
                 return false
             }

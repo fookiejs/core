@@ -4,7 +4,7 @@ import { Modify } from "../../lifecycle-function"
 export default Modify.new({
     key: "set_default",
     execute: async function (payload) {
-        const pureDefaults = lodash.mapValues(payload.modelClass.schema(), function (o) {
+        const pureDefaults = lodash.mapValues(payload.model.schema(), function (o) {
             return o.default
         })
 

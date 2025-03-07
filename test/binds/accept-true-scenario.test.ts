@@ -51,7 +51,7 @@ const rule_true = Rule.new({
     },
 })
 class TrueQueryTextModel extends Model {
-    @Field.Decorator({ type: defaults.type.text })
+    @Field.Decorator({ type: defaults.type.string })
     textField!: string
 }
 

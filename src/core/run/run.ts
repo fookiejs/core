@@ -13,9 +13,9 @@ import { plainToInstance } from "class-transformer"
 import { Method } from "../method"
 import globalEffect from "./lifecycles/global_effect"
 
-function createPayload<ModelClass extends Model>(
-    payload: Omit<Payload<ModelClass>, "state" | "response">,
-): Payload<ModelClass> {
+function createPayload<model extends Model>(
+    payload: Omit<Payload<model>, "state" | "response">,
+): Payload<model> {
     return {
         ...payload,
         options: payload.options ?? {},
@@ -32,7 +32,7 @@ function createPayload<ModelClass extends Model>(
     }
 }
 
-async function runLifecycle<ModelClass extends Model>(payload: Payload<ModelClass>,method:Function) {
+async function runLifecycle<model extends Model>(payload: Payload<model>, method: Function) {
     const error = FookieError.new({
         description: "run",
         validationErrors: {},
@@ -58,10 +58,7 @@ async function runLifecycle<ModelClass extends Model>(payload: Payload<ModelClas
         return true
     }
 
-    const response = plainToInstance(
-        payload.modelClass,
-        await method(payload, error),
-    )
+    const response = plainToInstance(payload.model, await method(payload, error))
 
     await filter(payload, response)
     await effect(payload, response)
@@ -70,102 +67,97 @@ async function runLifecycle<ModelClass extends Model>(payload: Payload<ModelClas
     return response
 }
 
-export function createRun<ModelClass extends Model>(method:Function) {
-    return async function (this: typeof Model, body: ModelClass, options: Options) {
-        const payload: Payload<ModelClass> = createPayload({
+export function createRun<model extends Model>(method: Function) {
+    return async function (this: typeof Model, body: model, options: Options) {
+        const payload: Payload<model> = createPayload({
             method: Method.CREATE,
             body: body,
             options: options,
-            modelClass: this,
-            query: {} as QueryType<ModelClass>,
+            model: this,
+            query: {} as QueryType<model>,
             fieldName: "",
         })
-        return runLifecycle(payload,method)
+        return runLifecycle(payload, method)
     }
 }
 
-export function readRun<ModelClass extends Model>(method:Function) {
-    return async function (this: typeof Model, query: QueryType<ModelClass>, options: Options) {
-        const payload: Payload<ModelClass> = createPayload({
+export function readRun<model extends Model>(method: Function) {
+    return async function (this: typeof Model, query: QueryType<model>, options: Options) {
+        const payload: Payload<model> = createPayload({
             method: Method.READ,
             query: query,
             options: options,
-            modelClass: this,
-            body: {} as ModelClass,
+            model: this,
+            body: {} as model,
             fieldName: "",
         })
-                return runLifecycle(payload,method)
-
+        return runLifecycle(payload, method)
     }
 }
 
-export function updateRun<ModelClass extends Model>(method:Function) {
+export function updateRun<model extends Model>(method: Function) {
     return async function (
         this: typeof Model,
-        query: QueryType<ModelClass>,
-        body: Partial<ModelClass>,
+        query: QueryType<model>,
+        body: Partial<model>,
         options: Options,
     ) {
-        const payload: Payload<ModelClass> = createPayload({
+        const payload: Payload<model> = createPayload({
             method: Method.UPDATE,
             query: query,
-            body: body as ModelClass,
+            body: body as model,
             options: options,
-            modelClass: this,
+            model: this,
             fieldName: "",
         })
-                return runLifecycle(payload,method)
-
+        return runLifecycle(payload, method)
     }
 }
 
-export function deleteRun<ModelClass extends Model>(method:Function) {
-    return async function (this: typeof Model, query: QueryType<ModelClass>, options: Options) {
-        const payload: Payload<ModelClass> = createPayload({
+export function deleteRun<model extends Model>(method: Function) {
+    return async function (this: typeof Model, query: QueryType<model>, options: Options) {
+        const payload: Payload<model> = createPayload({
             method: Method.DELETE,
             query: query,
             options: options,
-            modelClass: this,
-            body: {} as ModelClass,
+            model: this,
+            body: {} as model,
             fieldName: "",
         })
-                return runLifecycle(payload,method)
-
+        return runLifecycle(payload, method)
     }
 }
 
-export function countRun<ModelClass extends Model>(method:Function) {
-    return async function (this: typeof Model, query: QueryType<ModelClass>, options: Options) {
-        const payload: Payload<ModelClass> = createPayload({
+export function countRun<model extends Model>(method: Function) {
+    return async function (this: typeof Model, query: QueryType<model>, options: Options) {
+        const payload: Payload<model> = createPayload({
             method: Method.COUNT,
             query: query,
             options: options,
-            modelClass: this,
-            body: {} as ModelClass,
+            model: this,
+            body: {} as model,
             fieldName: "",
         })
-                return runLifecycle(payload,method)
-
+        return runLifecycle(payload, method)
     }
 }
 
-export function sumRun<ModelClass extends Model>(method:Function) {
+export function sumRun<model extends Model>(method: Function) {
     return async function (
         this: typeof Model,
-        query: QueryType<ModelClass>,
+        query: QueryType<model>,
         fieldName: string,
         options: Options,
     ) {
-        const payload: Payload<ModelClass> = createPayload({
+        const payload: Payload<model> = createPayload({
             method: Method.SUM,
             query: query,
             options: options,
             fieldName: fieldName,
-            modelClass: this,
-            body: {} as ModelClass,
+            model: this,
+            body: {} as model,
         })
 
-                return runLifecycle(payload,method)
-
+        return runLifecycle(payload, method)
     }
 }

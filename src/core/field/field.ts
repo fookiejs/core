@@ -1,5 +1,5 @@
 import * as lodash from "lodash"
-import { text } from "../../defaults/type/text"
+import { string } from "../../defaults/type/string"
 import { Role } from "../lifecycle-function"
 import { Model, schemaSymbol } from "../model/model"
 import { Type } from "../type"
@@ -24,7 +24,7 @@ export class Field {
 
             if (!lodash.has(metadata, "id")) {
                 metadata["id"] = fillSchema({
-                    type: text,
+                    type: string,
                 })
             }
 

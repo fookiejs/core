@@ -11,7 +11,7 @@ export default Rule.new({
         if (
             lodash.has(payload.options, "token") &&
             !lodash.isNil(payload.options.token) &&
-            !(lodash.isString(payload.options.token) || lodash.isSymbol(payload.options.token) )
+            !(lodash.isString(payload.options.token) || lodash.isSymbol(payload.options.token))
         ) {
             return false
         }
@@ -33,12 +33,12 @@ export default Rule.new({
             "state",
             "method",
             "model",
-            "modelClass",
+            "model",
             "options",
             "token",
             "body",
             "query",
-            "id",
+            "runId",
             "fieldName",
         ]
 

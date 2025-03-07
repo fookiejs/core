@@ -10,7 +10,7 @@ const effect = async function (
 ): Promise<void> {
     const effects = [
         ...before[payload.method].effect,
-        ...payload.modelClass.binds()[payload.method].effect,
+        ...payload.model.binds()[payload.method].effect,
         ...after[payload.method].effect,
     ]
 

@@ -9,7 +9,7 @@ import { BindsTypeField } from "../../model/model"
 const role = async function (payload: Payload<any>, error: FookieError) {
     const roles = [
         ...before[payload.method].role,
-        ...payload.modelClass.binds()[payload.method].role,
+        ...payload.model.binds()[payload.method].role,
         ...after[payload.method].role,
     ]
 
@@ -22,7 +22,7 @@ const role = async function (payload: Payload<any>, error: FookieError) {
 
         const role = roles[i]
         const res = await role.execute(payload, error)
-        const field = payload.modelClass.binds()[payload.method] as BindsTypeField
+        const field = payload.model.binds()[payload.method] as BindsTypeField
 
         if (res) {
             const modifies = lodash.flatten(

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { Model, Field, defaults, Role, Rule, FookieError } from "../../src/exports"
+import { Model, Field, defaults, Role, Rule, FookieError, Method } from "../../src/exports"
 
 // Accept Lifecycle Function
 const flag1 = { called: false }
@@ -13,9 +13,9 @@ const admin = Role.new({
     },
 })
 
-const rule_false = Rule.new({
+const rule_false = Rule.new<TrueQueryTextModel, Method.READ>({
     key: "rule_false",
-    execute: async function () {
+    execute: async function (payload) {
         flag2.called = true
         return false
     },
@@ -42,7 +42,7 @@ const rule_false = Rule.new({
     },
 })
 class TrueQueryTextModel extends Model {
-    @Field.Decorator({ type: defaults.type.text })
+    @Field.Decorator({ type: defaults.type.string })
     textField!: string
 }
 

@@ -1,7 +1,7 @@
 import { Type } from "../../core/type"
 import * as lodash from "lodash"
 
-export const text = Type.new({
+export const string = Type.new({
     key: "string",
     validate: lodash.isString,
     example: "abc",

@@ -21,7 +21,7 @@ test("Define a simple model", async () => {
         },
     })
     class User extends Model {
-        @Field.Decorator({ features: [Required], type: defaults.type.text })
+        @Field.Decorator({ features: [Required], type: defaults.type.string })
         email: string
     }
     User
@@ -33,7 +33,7 @@ test("Define a model with relations.", async () => {
         binds: {},
     })
     class Address extends Model {
-        @Field.Decorator({ type: defaults.type.text, features: [Unique, Required] })
+        @Field.Decorator({ type: defaults.type.string, features: [Unique, Required] })
         city: string
     }
 
@@ -42,7 +42,7 @@ test("Define a model with relations.", async () => {
         binds: {},
     })
     class Place extends Model {
-        @Field.Decorator({ type: defaults.type.text, relation: Address, features: [Required] })
+        @Field.Decorator({ type: defaults.type.string, relation: Address, features: [Required] })
         address: string
     }
     Place

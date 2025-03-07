@@ -9,7 +9,7 @@ export default Rule.new({
             return true
         }
 
-        const keys = lodash.keys(payload.modelClass.schema()).concat(["id"])
+        const keys = lodash.keys(payload.model.schema()).concat(["id"])
         return payload.query.attributes.every(function (k) {
             return keys.includes(k)
         })

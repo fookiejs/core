@@ -6,7 +6,7 @@ export default Rule.new({
     execute: async function (payload) {
         const body_keys = lodash.keys(payload.body)
 
-        const schema_keys = lodash.keys(payload.modelClass.schema())
+        const schema_keys = lodash.keys(payload.model.schema())
         for (const key of body_keys) {
             if (!schema_keys.includes(key)) {
                 return false

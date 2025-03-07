@@ -14,7 +14,7 @@ import { Model, Field, defaults, FookieError } from "../../src/exports"
     },
 })
 class QueryTextModel extends Model {
-    @Field.Decorator({ type: defaults.type.text })
+    @Field.Decorator({ type: defaults.type.string })
     textField: string
 }
 

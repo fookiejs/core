@@ -7,7 +7,7 @@ export default Effect.new({
         if (lodash.has(payload.options, "drop")) {
             if (payload.options.drop! > 0) {
                 setTimeout(async function () {
-                    await payload.modelClass.delete(
+                    await payload.model.delete(
                         {
                             filter: {
                                 id: { equals: response.id },
@@ -19,7 +19,7 @@ export default Effect.new({
                     )
                 }, payload.options.drop)
             } else {
-                await payload.modelClass.delete(
+                await payload.model.delete(
                     {
                         filter: {
                             id: { equals: response.id },

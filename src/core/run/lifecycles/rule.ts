@@ -7,7 +7,7 @@ import * as moment from "moment"
 const rule = async function (payload: Payload<any>, error: FookieError): Promise<boolean> {
     const rules = [
         ...before[payload.method].rule,
-        ...payload.modelClass.binds()![payload.method].rule,
+        ...payload.model.binds()![payload.method].rule,
         ...after[payload.method].rule,
     ]
 

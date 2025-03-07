@@ -1,10 +1,10 @@
-import { text } from "../../../defaults/type/text"
+import { string } from "../../../defaults/type/string"
 import * as lodash from "lodash"
 import { Field } from "../field"
 
 export function fillSchema(field: Field): Field {
     if (!lodash.has(field, "type")) {
-        field.type = text
+        field.type = string
     }
 
     if (!lodash.has(field, "read")) {
@@ -20,7 +20,7 @@ export function fillSchema(field: Field): Field {
     }
 
     if (field.relation) {
-        field.type = text
+        field.type = string
     }
 
     return field

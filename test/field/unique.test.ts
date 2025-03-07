@@ -10,7 +10,7 @@ test("Define a unique field with Error", async () => {
         },
     })
     class UniqueField extends Model {
-        @Field.Decorator({ features: [Unique], type: defaults.type.text })
+        @Field.Decorator({ features: [Unique], type: defaults.type.string })
         username: string
     }
 

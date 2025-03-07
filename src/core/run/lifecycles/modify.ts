@@ -6,7 +6,7 @@ import * as moment from "moment"
 const modify = async function (payload: Payload<any>): Promise<void> {
     const modifies = [
         ...before[payload.method].modify,
-        ...payload.modelClass.binds()[payload.method].modify,
+        ...payload.model.binds()[payload.method].modify,
         ...after[payload.method].modify,
     ]
 

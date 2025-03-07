@@ -23,10 +23,10 @@ import { Dictionary, Builder, Database, Method, Mixin, Role, Type, Types, use, r
         database: Database.store,
         schema: {
             title: {
-                type: Fookie.Dictionary.Type.text,
+                type: Fookie.Dictionary.type.string,
             },
             status: {
-                type: Fookie.Dictionary.Type.text,
+                type: Fookie.Dictionary.type.string,
                 default: "Not Started",
             },
         },
@@ -168,7 +168,7 @@ import { init_redis } from "fookie_redis";
         database: Database.store,
         mixins: [mixin_cache],
         schema: {
-            name: { type: Fookie.Dictionary.Type.text },
+            name: { type: Fookie.Dictionary.type.string },
             stock: {
                 type: Fookie.Dictionary.Type.integer,
                 validators: [positive_integer],
@@ -299,9 +299,9 @@ import * as lodash from "lodash";
         name: "article",
         database: Database.store,
         schema: {
-            title: { type: Fookie.Dictionary.Type.text },
-            content: { type: Fookie.Dictionary.Type.text },
-            status: { type: Fookie.Dictionary.Type.text },
+            title: { type: Fookie.Dictionary.type.string },
+            content: { type: Fookie.Dictionary.type.string },
+            status: { type: Fookie.Dictionary.type.string },
         },
         bind: {
             read: {
@@ -490,11 +490,11 @@ import {
         database: Database.store,
         schema: {
             email: {
-                type: Fookie.Dictionary.Type.text,
+                type: Fookie.Dictionary.type.string,
                 validators: [is_email],
             },
             password: {
-                type: Fookie.Dictionary.Type.text,
+                type: Fookie.Dictionary.type.string,
                 validators: [is_strong_password],
             },
         },

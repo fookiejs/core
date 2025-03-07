@@ -9,8 +9,8 @@ export default Rule.new({
         const trash_old = payload.method === "create" ? 0 : 1
         const fields = lodash.keys(payload.body)
         for (const field of fields) {
-            if (lodash.includes(payload.modelClass.schema()[field].features, Unique)) {
-                const res = await payload.modelClass.count(
+            if (lodash.includes(payload.model.schema()[field].features, Unique)) {
+                const res = await payload.model.count(
                     {
                         filter: {
                             [field]: { equals: payload.body[field] },

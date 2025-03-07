@@ -14,10 +14,10 @@ describe("relation", () => {
         },
     })
     class RelationAddressModel extends Model {
-        @Field.Decorator({ type: defaults.type.text })
+        @Field.Decorator({ type: defaults.type.string })
         street?: string
 
-        @Field.Decorator({ type: defaults.type.text })
+        @Field.Decorator({ type: defaults.type.string })
         city?: string
     }
 
@@ -33,7 +33,7 @@ describe("relation", () => {
         },
     })
     class RelationUserModel extends Model {
-        @Field.Decorator({ type: defaults.type.text })
+        @Field.Decorator({ type: defaults.type.string })
         name?: string
 
         @Field.Decorator({ relation: RelationAddressModel })

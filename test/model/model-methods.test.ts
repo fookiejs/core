@@ -33,10 +33,10 @@ import { Model, Field, defaults, Config, Role, Required } from "../../src/export
     },
 })
 class User extends Model {
-    @Field.Decorator({ features: [Required], type: defaults.type.text })
+    @Field.Decorator({ features: [Required], type: defaults.type.string })
     email: string
 
-    @Field.Decorator({ features: [Required], type: defaults.type.integer })
+    @Field.Decorator({ features: [Required], type: defaults.type.number })
     usage: number
 }
 

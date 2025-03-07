@@ -7,11 +7,11 @@ describe("Define a field with read role", async () => {
         binds: { create: { role: [] } },
     })
     class SecureWriteModel extends Model {
-        @Field.Decorator({ type: defaults.type.text })
+        @Field.Decorator({ type: defaults.type.string })
         name?: string
 
         @Field.Decorator({
-            type: defaults.type.text,
+            type: defaults.type.string,
             write: [
                 Role.new({
                     key: "SecureModelTestFalse",
@@ -22,7 +22,7 @@ describe("Define a field with read role", async () => {
         password?: string
 
         @Field.Decorator({
-            type: defaults.type.text,
+            type: defaults.type.string,
             write: [
                 Role.new({
                     key: "SecureModelTestFalse",

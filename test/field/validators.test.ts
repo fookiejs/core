@@ -10,9 +10,9 @@ test("Field with a validator passing validation", async () => {
     })
     class ValidatorModel extends Model {
         @Field.Decorator({
-            type: defaults.type.integer,
+            type: defaults.type.number,
             validators: [
-                (value:any) => {
+                (value: any) => {
                     return value >= 10 && value <= 20
                 },
             ],
@@ -33,7 +33,7 @@ test("Field with a validator failing validation", async () => {
     })
     class ValidatorModel extends Model {
         @Field.Decorator({
-            type: defaults.type.integer,
+            type: defaults.type.number,
             validators: [
                 (value) => {
                     const isValid = value >= 10 && value <= 20

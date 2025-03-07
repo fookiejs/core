@@ -12,7 +12,7 @@ test("Define a field with a default value", async () => {
     })
     class DefaultFieldModel extends Model {
         @Field.Decorator({
-            type: defaults.type.text,
+            type: defaults.type.string,
             default: "defaultVal",
         })
         myField?: string

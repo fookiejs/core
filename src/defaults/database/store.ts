@@ -9,8 +9,8 @@ export const store = Database.new({
     disconnect: async function () {
         return
     },
-    modify: function <ModelClass extends Model>() {
-        let pool: ModelClass[] = []
+    modify: function <model extends Model>() {
+        let pool: model[] = []
 
         return {
             create: async (payload) => {
@@ -24,7 +24,7 @@ export const store = Database.new({
 
                 res = res.map(function (entity) {
                     return lodash.pick(entity, attributes)
-                }) as ModelClass[]
+                }) as model[]
 
                 return res
             },
@@ -67,12 +67,9 @@ export const store = Database.new({
     },
 })
 
-function poolFilter<ModelClass extends Model>(
-    pool: ModelClass[],
-    query: QueryType<ModelClass | any>,
-) {
+function poolFilter<model extends Model>(pool: model[], query: QueryType<model | any>) {
     const results = pool.filter(function (entity) {
-        for (const field of Object.keys(query.filter) as Array<keyof ModelClass>) {
+        for (const field of Object.keys(query.filter) as Array<keyof model>) {
             const value = query.filter[field]!
 
             if (value.equals !== undefined && entity[field] !== value.equals) {

@@ -8,10 +8,10 @@ export default Rule.new({
         const search = [null, undefined]
         const keys =
             payload.method == "create"
-                ? lodash.keys(payload.modelClass.schema())
+                ? lodash.keys(payload.model.schema())
                 : lodash.keys(payload.body)
         for (const key of keys) {
-            if (lodash.includes(payload.modelClass.schema()[key].features, Required)) {
+            if (lodash.includes(payload.model.schema()[key].features, Required)) {
                 if (search.includes(payload.body[key])) {
                     return false
                 }
