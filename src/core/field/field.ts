@@ -15,7 +15,6 @@ export class Field {
     relation?: typeof Model
     read?: Role<any>[]
     write?: Role<any>[]
-    cascadeDelete?: boolean
     features?: symbol[]
 
     static Decorator(field: Field) {
@@ -37,4 +36,3 @@ export class Field {
 
 export const Required = Symbol()
 export const Unique = Symbol()
-export const CascadeDelete = Symbol()

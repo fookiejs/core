@@ -25,7 +25,6 @@ function createPayload<T extends Model, M extends Method>(
                 end: moment.utc().toDate(),
                 lifecycle: [],
             },
-            todo: [],
         },
     }
 }

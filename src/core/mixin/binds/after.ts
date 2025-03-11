@@ -2,8 +2,6 @@ import validate_query from "../rule/validate_query"
 import filter_fields from "../modify/filter_fields"
 import has_entity from "../rule/has_entity"
 import check_required from "../rule/check_required"
-import cascade_prepare from "../modify/cascade_prepare"
-import todo from "../effect/todo"
 import attributes from "../filter/attributes"
 import validate_body from "../rule/validate_body"
 import { BindsType } from "../../model/model"
@@ -37,10 +35,10 @@ export const after: BindsType = {
         rejects: [],
     },
     delete: {
-        modify: [cascade_prepare],
+        modify: [],
         rule: [validate_query],
         filter: [],
-        effect: [todo],
+        effect: [],
         role: [],
         accepts: [],
         rejects: [],

@@ -8,5 +8,4 @@ export class State {
         }[]
     }
     test?: boolean
-    todo: (() => void)[]
 }

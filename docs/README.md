@@ -208,7 +208,6 @@ Fields are used to define how each field in the model behaves. Here are some pro
 | relation       | Specifies the relationship with other models.                 |
 | read           | Specifies which roles can read the information in this field. |
 | write          | Information in this field specifies which roles can write.    |
-| cascade_delete | Specifies how to delete associated items.                     |
 | minimum        | Specifies minimum limits for numeric values.                  |
 | maximum        | Specifies maximum limits for numeric values.                  |
 | minimum_size   | Specifies size limits for arrays.                             |
