@@ -31,44 +31,44 @@ function createPayload<T extends Model, M extends Method>(
 
 async function runLifecycle<T extends Model, M extends Method>(
     payload: Payload<T, M>,
-    method: (payload: Payload<T, M>, error: FookieError) => Promise<any>,
+    method: (payload: Payload<T, M>) => Promise<any>,
 ) {
-    const error = FookieError.new({
-        description: "run",
-        validationErrors: {},
-        key: "run",
-    })
+    try {
+        if (await pre_rule(payload)) {
+            await modify(payload)
+            if (await role(payload)) {
+                if (await rule(payload)) {
+                    if (payload.options?.test === true) {
+                        return true
+                    }
 
-    if (!(await pre_rule(payload, error))) {
-        return error
+                    const response = plainToInstance(payload.model, await method(payload))
+
+                    await filter(payload, response)
+                    await effect(payload, response)
+                    await globalEffect(payload, response)
+
+                    return response
+                }
+            }
+        }
+    } catch (error) {
+        if (error instanceof FookieError) {
+            return error
+        }
+
+        if (error instanceof Error) {
+            return FookieError.new({
+                key: "unknown",
+                validationErrors: {},
+                description: error.message,
+            })
+        }
     }
-
-    await modify(payload)
-
-    if (!(await role(payload, error))) {
-        return error
-    }
-
-    if (!(await rule(payload, error))) {
-        return error
-    }
-
-    if (payload.options?.test === true) {
-        await globalEffect(payload)
-        return true
-    }
-
-    const response = plainToInstance(payload.model, await method(payload, error))
-
-    await filter(payload, response)
-    await effect(payload, response)
-    await globalEffect(payload, response)
-
-    return response
 }
 
 export function createRun<T extends Model>(
-    method: (payload: Payload<T, Method.CREATE>, error: FookieError) => Promise<T>,
+    method: (payload: Payload<T, Method.CREATE>) => Promise<T>,
 ) {
     return async function (this: typeof Model, body: T, options: Options = {}) {
         const payload = createPayload({
@@ -88,7 +88,7 @@ export function createRun<T extends Model>(
 }
 
 export function readRun<T extends Model>(
-    method: (payload: Payload<T, Method.READ>, error: FookieError) => Promise<T[]>,
+    method: (payload: Payload<T, Method.READ>) => Promise<T[]>,
 ) {
     return async function (this: typeof Model, query: QueryType<T>, options: Options = {}) {
         const payload = createPayload({
@@ -103,7 +103,7 @@ export function readRun<T extends Model>(
 }
 
 export function updateRun<T extends Model>(
-    method: (payload: Payload<T, Method.UPDATE>, error: FookieError) => Promise<boolean>,
+    method: (payload: Payload<T, Method.UPDATE>) => Promise<boolean>,
 ) {
     return async function (
         this: typeof Model,
@@ -123,7 +123,7 @@ export function updateRun<T extends Model>(
 }
 
 export function deleteRun<T extends Model>(
-    method: (payload: Payload<T, Method.DELETE>, error: FookieError) => Promise<boolean>,
+    method: (payload: Payload<T, Method.DELETE>) => Promise<boolean>,
 ) {
     return async function (this: typeof Model, query: QueryType<T>, options: Options = {}) {
         const payload = createPayload({

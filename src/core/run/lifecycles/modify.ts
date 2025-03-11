@@ -1,7 +1,6 @@
 import { after } from "../../mixin/binds/after"
 import { before } from "../../mixin/binds/before"
 import { Payload } from "../../payload"
-import * as moment from "moment"
 import { Method } from "../../method"
 import { Model } from "../../model/model"
 
@@ -13,16 +12,9 @@ const modify = async function (payload: Payload<Model, Method>): Promise<void> {
     ]
 
     for (const modify of modifies) {
-        payload.state.metrics.end = moment.utc().toDate()
-
-        const start = Date.now()
         try {
             await modify.execute(payload)
         } catch (error) {}
-        payload.state.metrics.lifecycle.push({
-            name: modify.key,
-            ms: Date.now() - start,
-        })
     }
 }
 export default modify

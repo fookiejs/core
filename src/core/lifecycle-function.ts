@@ -1,4 +1,3 @@
-import { FookieError } from "./error"
 import { Method } from "./method"
 import { Model } from "./model/model"
 import { Payload } from "./payload"
@@ -18,7 +17,7 @@ export class Modify<T extends Model = Model, M extends Method = Method> {
 
 export class Role<T extends Model = Model, M extends Method = Method> {
     key: string
-    execute: (payload: Payload<T, M>, error: FookieError) => Promise<boolean>
+    execute: (payload: Payload<T, M>) => Promise<boolean>
 
     static new<T extends Model = Model, M extends Method = Method>(data: Role<T, M>): Role<T, M> {
         const instance = new Role<T, M>()
@@ -29,7 +28,7 @@ export class Role<T extends Model = Model, M extends Method = Method> {
 
 export class Rule<T extends Model = Model, M extends Method = Method> {
     key: string
-    execute: (payload: Payload<T, M>, error: FookieError) => Promise<boolean>
+    execute: (payload: Payload<T, M>) => Promise<boolean>
 
     static new<T extends Model = Model, M extends Method = Method>(data: Rule<T, M>): Rule<T, M> {
         const instance = new Rule<T, M>()

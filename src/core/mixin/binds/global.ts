@@ -23,10 +23,10 @@ export const globalRules: Rule<Model, Method>[] = [
 
 export const globalEffects: Effect<Model, Method>[] = [db_disconnect] as const
 
-export function addGlobalRule(rule) {
+export function addGlobalRule(rule: Rule) {
     globalRules.push(rule)
 }
 
-export function addGlobalEffect(effect) {
+export function addGlobalEffect(effect: Effect) {
     globalEffects.push(effect)
 }

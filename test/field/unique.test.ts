@@ -17,6 +17,7 @@ test("Define a unique field with Error", async () => {
     const firstResponse = await UniqueField.create({
         username: "uniqueUser",
     })
+
     expect(firstResponse instanceof UniqueField).toBe(true)
 
     const secondResponse = await UniqueField.create({
@@ -24,6 +25,7 @@ test("Define a unique field with Error", async () => {
     })
 
     expect(secondResponse instanceof FookieError).toBe(true)
+
     if (secondResponse instanceof FookieError) {
         expect(secondResponse.key === "unique").toBe(true)
     }

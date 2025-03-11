@@ -3,11 +3,10 @@ import { Payload } from "../../payload"
 import { before } from "../../mixin/binds/before"
 import { after } from "../../mixin/binds/after"
 import { FookieError } from "../../error"
-import * as moment from "moment"
 import { BindsTypeField, Model } from "../../model/model"
 import { Method } from "../../method"
 
-const role = async function (payload: Payload<Model, Method>, error: FookieError) {
+const role = async function (payload: Payload<Model, Method>) {
     const roles = [
         ...before[payload.method].role,
         ...payload.model.binds()[payload.method].role,
@@ -19,13 +18,13 @@ const role = async function (payload: Payload<Model, Method>, error: FookieError
     }
 
     for (let i = 0; i < roles.length; i++) {
-        payload.state.metrics.end = moment.utc().toDate()
-
         const role = roles[i]
-        const res = await role.execute(payload, error)
+        const res = await role.execute(payload)
         const field = payload.model.binds()[payload.method] as BindsTypeField
 
         if (res) {
+            const extra_rule_responses: boolean[] = []
+
             const modifies = lodash.flatten(
                 field.accepts.filter((r) => r[0] === role)?.map((item) => item[1].modify),
             )
@@ -39,22 +38,32 @@ const role = async function (payload: Payload<Model, Method>, error: FookieError
             )
 
             for (const rule of extra_rules) {
-                const extra_rule_response = await rule.execute(payload, error)
-                if (!extra_rule_response) {
-                    error.key = rule.key
-                    return false
-                }
+                const extra_rule_response = await rule.execute(payload)
+                extra_rule_responses.push(extra_rule_response)
+            }
+
+            if (extra_rule_responses.includes(false)) {
+                throw FookieError.new({
+                    description: "accepts:extra_rule",
+                    validationErrors: {},
+                    key: role.key,
+                })
             }
 
             break
         } else {
-            let pass = false
+            const extra_rule_responses: boolean[] = []
 
             const modifies = lodash.flatten(
                 field.rejects.filter((r) => r[0] === role)?.map((item) => item[1].modify),
             )
+
             for (const modify of modifies) {
                 await modify.execute(payload)
+            }
+
+            if (modifies.length > 0) {
+                extra_rule_responses.push(true)
             }
 
             const extra_rules = lodash.flatten(
@@ -62,14 +71,21 @@ const role = async function (payload: Payload<Model, Method>, error: FookieError
             )
 
             for (const rule of extra_rules) {
-                const extra_rule_response = await rule.execute(payload, error)
-                if (extra_rule_response) {
-                    pass = true || pass
-                }
+                const extra_rule_response = await rule.execute(payload)
+                extra_rule_responses.push(extra_rule_response)
             }
-            error.key = role.key
 
-            return pass
+            if (extra_rule_responses.includes(false) || extra_rule_responses.length === 0) {
+                throw FookieError.new({
+                    description: "rejects:extra_rule",
+                    validationErrors: {},
+                    key: role.key,
+                })
+            }
+
+            if (extra_rule_responses.length === 0) {
+                break
+            }
         }
     }
 

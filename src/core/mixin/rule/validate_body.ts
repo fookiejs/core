@@ -1,10 +1,16 @@
 import * as lodash from "lodash"
 import { Rule } from "../../lifecycle-function"
+import { FookieError } from "../../error"
 
 export default Rule.new({
     key: "validate_body",
-    execute: async function (payload, error) {
+    execute: async function (payload) {
         let flag = true
+        const error = FookieError.new({
+            description: "validate_body",
+            validationErrors: {},
+            key: "validate_body",
+        })
         for (const field_name in payload.body) {
             const field = payload.model.schema()[field_name]
             if (lodash.isArray(field.validators)) {
@@ -21,7 +27,10 @@ export default Rule.new({
                 }
             }
         }
+        if (!flag) {
+            throw error
+        }
 
-        return flag
+        return true
     },
 })

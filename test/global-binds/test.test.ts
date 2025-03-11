@@ -8,8 +8,10 @@ import {
     Payload,
     addGlobalRule,
     Required,
+    Method,
+    Rule,
 } from "../../src/exports"
-import { CreateResponse, ReadResponse } from "../../src/core/response"
+import { CreateResponse } from "../../src/core/response"
 
 describe("fillModel Function Tests", () => {
     let flag1 = false
@@ -29,7 +31,7 @@ describe("fillModel Function Tests", () => {
         Effect.new({
             key: "global-test-flag-effect",
             execute: async function (
-                payload: Payload<TestModel>,
+                payload: Payload<TestModel, Method>,
                 cloneResponse: CreateResponse<TestModel>,
             ): Promise<void> {
                 payload
@@ -40,26 +42,19 @@ describe("fillModel Function Tests", () => {
     )
 
     addGlobalRule(
-        Effect.new({
+        Rule.new({
             key: "global-test-flag-pre-rule",
-            execute: async function (
-                payload: Payload<TestModel>,
-                cloneResponse: ReadResponse<TestModel>,
-            ): Promise<void> {
+            execute: async function (payload: Payload<TestModel, Method>) {
                 payload
-                cloneResponse.length
                 flag2 = true
+                return true
             },
         }),
     )
 
-    it("should merge mixin binds into model binds correctly", async () => {
-        await TestModel.create({ exampleField: "hi" })
-        expect(true).toBe(true)
-    })
-
     it("flag and test global", async () => {
         await TestModel.create({ exampleField: "hi" })
+
         expect(flag1).toBe(true)
     })
 

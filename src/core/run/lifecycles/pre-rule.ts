@@ -1,29 +1,19 @@
 import { Payload } from "../../payload"
 import { FookieError } from "../../error"
 import { globalRules } from "../../mixin/binds/global"
-import * as moment from "moment"
 import { Method } from "../../method"
 import { Model } from "../../model/model"
 
-const preRule = async function (
-    payload: Payload<Model, Method>,
-    error: FookieError,
-): Promise<boolean> {
-    for (const rules of globalRules) {
-        payload.state.metrics.end = moment.utc().toDate()
+const preRule = async function (payload: Payload<Model, Method>): Promise<boolean> {
+    for (const rule of globalRules) {
+        const res = await rule.execute(payload)
 
-        const start = Date.now()
-
-        const res = await rules.execute(payload, error)
-
-        payload.state.metrics.lifecycle.push({
-            name: rules.key,
-            ms: Date.now() - start,
-        })
-
-        if (res === false) {
-            error.key = rules.key
-            return false
+        if (res !== true) {
+            throw FookieError.new({
+                description: "pre-rule",
+                validationErrors: {},
+                key: rule.key,
+            })
         }
     }
 
