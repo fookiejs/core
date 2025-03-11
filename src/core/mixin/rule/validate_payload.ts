@@ -24,23 +24,7 @@ export default Rule.new({
             return false
         }
 
-        if (lodash.has(payload.options, "drop") && !lodash.isNumber(payload.options.drop)) {
-            return false
-        }
-
-        const avaible_keys = [
-            "schema",
-            "state",
-            "method",
-            "model",
-            "model",
-            "options",
-            "token",
-            "body",
-            "query",
-            "runId",
-            "fieldName",
-        ]
+        const avaible_keys = ["state", "method", "model", "options", "body", "query", "runId"]
 
         return lodash.without(lodash.keys(payload), ...avaible_keys).length === 0
     },

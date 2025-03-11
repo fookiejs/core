@@ -1,26 +1,24 @@
-import * as moment from "moment"
-import { Model, QueryType } from "../model/model"
 import { Options } from "../option"
+import { Payload, ConstructorOf } from "../payload"
+import * as moment from "moment"
 import pre_rule from "./lifecycles/pre-rule"
 import modify from "./lifecycles/modify"
 import role from "./lifecycles/role"
 import rule from "./lifecycles/rule"
 import effect from "./lifecycles/effect"
-import { Payload } from "../payload"
 import filter from "./lifecycles/filter"
+import globalEffect from "./lifecycles/global_effect"
 import { FookieError } from "../error"
 import { plainToInstance } from "class-transformer"
+import { Model, QueryType } from "../model/model"
 import { Method } from "../method"
-import globalEffect from "./lifecycles/global_effect"
 
-function createPayload<model extends Model>(
-    payload: Omit<Payload<model>, "state" | "response">,
-): Payload<model> {
+function createPayload<T extends Model, M extends Method>(
+    payload: Omit<Payload<T, M>, "runId" | "state">,
+): Payload<T, M> {
     return {
         ...payload,
-        options: payload.options ?? {},
-        body: payload.body ?? {},
-        query: payload.query ?? {},
+        runId: "abc",
         state: {
             metrics: {
                 start: moment.utc().toDate(),
@@ -32,7 +30,10 @@ function createPayload<model extends Model>(
     }
 }
 
-async function runLifecycle<model extends Model>(payload: Payload<model>, method: Function) {
+async function runLifecycle<T extends Model, M extends Method>(
+    payload: Payload<T, M>,
+    method: (payload: Payload<T, M>, error: FookieError) => Promise<any>,
+) {
     const error = FookieError.new({
         description: "run",
         validationErrors: {},
@@ -67,97 +68,72 @@ async function runLifecycle<model extends Model>(payload: Payload<model>, method
     return response
 }
 
-export function createRun<model extends Model>(method: Function) {
-    return async function (this: typeof Model, body: model, options: Options) {
-        const payload: Payload<model> = createPayload({
+export function createRun<T extends Model>(
+    method: (payload: Payload<T, Method.CREATE>, error: FookieError) => Promise<T>,
+) {
+    return async function (this: typeof Model, body: T, options: Options = {}) {
+        const payload = createPayload({
             method: Method.CREATE,
-            body: body,
-            options: options,
-            model: this,
-            query: {} as QueryType<model>,
-            fieldName: "",
+            body,
+            options,
+            model: this as unknown as ConstructorOf<T>,
+            query: {
+                limit: Infinity,
+                offset: 0,
+                attributes: [],
+                filter: {},
+            },
         })
         return runLifecycle(payload, method)
     }
 }
 
-export function readRun<model extends Model>(method: Function) {
-    return async function (this: typeof Model, query: QueryType<model>, options: Options) {
-        const payload: Payload<model> = createPayload({
+export function readRun<T extends Model>(
+    method: (payload: Payload<T, Method.READ>, error: FookieError) => Promise<T[]>,
+) {
+    return async function (this: typeof Model, query: QueryType<T>, options: Options = {}) {
+        const payload = createPayload({
             method: Method.READ,
-            query: query,
-            options: options,
-            model: this,
-            body: {} as model,
-            fieldName: "",
+            query,
+            options,
+            model: this as unknown as ConstructorOf<T>,
+            body: {},
         })
         return runLifecycle(payload, method)
     }
 }
 
-export function updateRun<model extends Model>(method: Function) {
+export function updateRun<T extends Model>(
+    method: (payload: Payload<T, Method.UPDATE>, error: FookieError) => Promise<boolean>,
+) {
     return async function (
         this: typeof Model,
-        query: QueryType<model>,
-        body: Partial<model>,
-        options: Options,
+        query: QueryType<T>,
+        body: Partial<T>,
+        options: Options = {},
     ) {
-        const payload: Payload<model> = createPayload({
+        const payload = createPayload({
             method: Method.UPDATE,
-            query: query,
-            body: body as model,
-            options: options,
-            model: this,
-            fieldName: "",
+            query,
+            body,
+            options,
+            model: this as unknown as ConstructorOf<T>,
         })
         return runLifecycle(payload, method)
     }
 }
 
-export function deleteRun<model extends Model>(method: Function) {
-    return async function (this: typeof Model, query: QueryType<model>, options: Options) {
-        const payload: Payload<model> = createPayload({
+export function deleteRun<T extends Model>(
+    method: (payload: Payload<T, Method.DELETE>, error: FookieError) => Promise<boolean>,
+) {
+    return async function (this: typeof Model, query: QueryType<T>, options: Options = {}) {
+        const payload = createPayload({
             method: Method.DELETE,
-            query: query,
-            options: options,
-            model: this,
-            body: {} as model,
-            fieldName: "",
+            query,
+            options,
+            model: this as unknown as ConstructorOf<T>,
+            body: {},
         })
-        return runLifecycle(payload, method)
-    }
-}
-
-export function countRun<model extends Model>(method: Function) {
-    return async function (this: typeof Model, query: QueryType<model>, options: Options) {
-        const payload: Payload<model> = createPayload({
-            method: Method.COUNT,
-            query: query,
-            options: options,
-            model: this,
-            body: {} as model,
-            fieldName: "",
-        })
-        return runLifecycle(payload, method)
-    }
-}
-
-export function sumRun<model extends Model>(method: Function) {
-    return async function (
-        this: typeof Model,
-        query: QueryType<model>,
-        fieldName: string,
-        options: Options,
-    ) {
-        const payload: Payload<model> = createPayload({
-            method: Method.SUM,
-            query: query,
-            options: options,
-            fieldName: fieldName,
-            model: this,
-            body: {} as model,
-        })
-
         return runLifecycle(payload, method)
     }
 }

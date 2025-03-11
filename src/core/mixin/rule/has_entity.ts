@@ -1,13 +1,16 @@
 import { Config } from "../../config"
 import { Rule } from "../../lifecycle-function"
 import * as lodash from "lodash"
+import { Method } from "../../method"
+import { Model } from "../../model/model"
 
-export default Rule.new({
+export default Rule.new<Model, Method>({
     key: "has_entity",
     execute: async function (payload) {
-        for (const key of lodash.keys(payload.body)) {
+        for (const key of Object.keys(payload.body) as (keyof Model)[]) {
             if (lodash.has(payload.model.schema()[key], "relation")) {
-                const res = await payload.model.schema()[key].relation.count(
+                payload.model.schema()[key]
+                const res = await payload.model.schema()[key].relation!.read(
                     {
                         filter: {
                             id: { equals: payload.body[key] },
@@ -18,7 +21,7 @@ export default Rule.new({
                     },
                 )
 
-                if (res === 0) {
+                if (res.length === 0) {
                     return false
                 }
             }

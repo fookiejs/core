@@ -4,9 +4,10 @@ import { before } from "../../mixin/binds/before"
 import { after } from "../../mixin/binds/after"
 import { FookieError } from "../../error"
 import * as moment from "moment"
-import { BindsTypeField } from "../../model/model"
+import { BindsTypeField, Model } from "../../model/model"
+import { Method } from "../../method"
 
-const role = async function (payload: Payload<any>, error: FookieError) {
+const role = async function (payload: Payload<Model, Method>, error: FookieError) {
     const roles = [
         ...before[payload.method].role,
         ...payload.model.binds()[payload.method].role,

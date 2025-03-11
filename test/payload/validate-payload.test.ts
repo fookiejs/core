@@ -62,19 +62,6 @@ describe("QueryTextModel validate_payload Tests", async () => {
         expect(results instanceof FookieError).toBeTruthy()
     })
 
-    it("should throw error if options.drop is not a number", async () => {
-        const results = await QueryTextModel.read(
-            {
-                filter: {
-                    textField: { equals: "abc" },
-                },
-            },
-            { drop: "notANumber" },
-        )
-
-        expect(results instanceof FookieError).toBeTruthy()
-    })
-
     it("should throw error if query is not a object", async () => {
         const results = await QueryTextModel.read("invalid_query")
 

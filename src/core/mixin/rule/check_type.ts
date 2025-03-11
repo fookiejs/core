@@ -3,7 +3,7 @@ import { Rule } from "../../lifecycle-function"
 import { Model } from "../../model/model"
 import { Method } from "../../method"
 
-export default Rule.new<Model, Method.CREATE | Method.UPDATE>({
+export default Rule.new<Model, Method>({
     key: "check_type",
     execute: async function (payload) {
         for (const field in payload.body) {

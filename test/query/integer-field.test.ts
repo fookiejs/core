@@ -1,5 +1,4 @@
 import { describe, it, expect } from "vitest"
-import { Model, Field, defaults } from "../../src/exports"
 import { Model, Field, defaults, FookieError } from "../../src/exports"
 
 describe("QueryIntModel Query Tests", async () => {
@@ -39,6 +38,7 @@ describe("QueryIntModel Query Tests", async () => {
                 intField: { notEquals: 1 },
             },
         })
+
         expect(results).toHaveLength(2)
         expect(results[0].intField).not.toBe(1)
     })

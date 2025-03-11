@@ -3,11 +3,11 @@ import { Method } from "./method"
 import { Model } from "./model/model"
 import { Payload } from "./payload"
 
-export class Modify<T extends Model = Model, M extends Method | undefined = undefined> {
+export class Modify<T extends Model = Model, M extends Method = Method> {
     key: string
     execute: (payload: Payload<T, M>) => Promise<void>
 
-    static new<T extends Model = Model, M extends Method | undefined = undefined>(
+    static new<T extends Model = Model, M extends Method = Method>(
         data: Modify<T, M>,
     ): Modify<T, M> {
         const instance = new Modify<T, M>()
@@ -16,26 +16,22 @@ export class Modify<T extends Model = Model, M extends Method | undefined = unde
     }
 }
 
-export class Role<T extends Model = Model, M extends Method | undefined = undefined> {
+export class Role<T extends Model = Model, M extends Method = Method> {
     key: string
     execute: (payload: Payload<T, M>, error: FookieError) => Promise<boolean>
 
-    static new<T extends Model = Model, M extends Method | undefined = undefined>(
-        data: Role<T, M>,
-    ): Role<T, M> {
+    static new<T extends Model = Model, M extends Method = Method>(data: Role<T, M>): Role<T, M> {
         const instance = new Role<T, M>()
         Object.assign(instance, data)
         return instance
     }
 }
 
-export class Rule<T extends Model = Model, M extends Method | undefined = undefined> {
+export class Rule<T extends Model = Model, M extends Method = Method> {
     key: string
     execute: (payload: Payload<T, M>, error: FookieError) => Promise<boolean>
 
-    static new<T extends Model = Model, M extends Method | undefined = undefined>(
-        data: Rule<T, M>,
-    ): Rule<T, M> {
+    static new<T extends Model = Model, M extends Method = Method>(data: Rule<T, M>): Rule<T, M> {
         const instance = new Rule<T, M>()
         instance.key = data.key
         instance.execute = data.execute
@@ -43,11 +39,11 @@ export class Rule<T extends Model = Model, M extends Method | undefined = undefi
     }
 }
 
-export class Filter<T extends Model = Model, M extends Method | undefined = undefined> {
+export class Filter<T extends Model = Model, M extends Method = Method> {
     key: string
     execute: (payload: Payload<T, M>, response: any) => Promise<void>
 
-    static new<T extends Model = Model, M extends Method | undefined = undefined>(
+    static new<T extends Model = Model, M extends Method = Method>(
         data: Filter<T, M>,
     ): Filter<T, M> {
         const instance = new Filter<T, M>()
@@ -57,11 +53,11 @@ export class Filter<T extends Model = Model, M extends Method | undefined = unde
     }
 }
 
-export class Effect<T extends Model = Model, M extends Method | undefined = undefined> {
+export class Effect<T extends Model = Model, M extends Method = Method> {
     key: string
     execute: (payload: Payload<T, M>, cloneResponse: any) => Promise<void>
 
-    static new<T extends Model = Model, M extends Method | undefined = undefined>(
+    static new<T extends Model = Model, M extends Method = Method>(
         data: Effect<T, M>,
     ): Effect<T, M> {
         const instance = new Effect<T, M>()

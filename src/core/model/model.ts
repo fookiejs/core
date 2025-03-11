@@ -2,7 +2,7 @@ import { Database } from "../database"
 import { Effect, Filter, Modify, Role, Rule } from "../lifecycle-function"
 import { Method } from "../method"
 import { fillModel } from "./utils/create-model"
-import { countRun, createRun, deleteRun, readRun, sumRun, updateRun } from "../run/run"
+import { createRun, deleteRun, readRun, updateRun } from "../run/run"
 import { FookieError } from "../error"
 import { SchemaType } from "../schema"
 import { Options } from "../option"
@@ -23,7 +23,7 @@ export class Model {
     static async create<model extends Model>(
         this: new () => model,
         body: Omit<model, "id">,
-        options?: Optional<Options, "drop" | "test" | "token">,
+        options?: Optional<Options, "test" | "token">,
     ): Promise<model | FookieError> {
         body
         options
@@ -33,7 +33,7 @@ export class Model {
     static async read<model extends Model>(
         this: new () => model,
         query?: Partial<QueryType<model>>,
-        options?: Optional<Options, "drop" | "test" | "token">,
+        options?: Optional<Options, "test" | "token">,
     ): Promise<model[]> {
         query
         options
@@ -44,7 +44,7 @@ export class Model {
         this: new () => model,
         query: QueryType<model>,
         body: Partial<Omit<model, "id">>,
-        options?: Optional<Options, "drop" | "test" | "token">,
+        options?: Optional<Options, "test" | "token">,
     ): Promise<boolean> {
         query
         body
@@ -55,31 +55,9 @@ export class Model {
     static async delete<model extends Model>(
         this: new () => model,
         query: Partial<QueryType<model>>,
-        options?: Optional<Options, "drop" | "test" | "token">,
+        options?: Optional<Options, "test" | "token">,
     ): Promise<boolean> {
         query
-        options
-        throw Error("Not implemented")
-    }
-
-    static async count<model extends Model>(
-        this: new () => model,
-        query: Partial<QueryType<model>>,
-        options?: Optional<Options, "drop" | "test" | "token">,
-    ): Promise<number> {
-        query
-        options
-        throw Error("Not implemented")
-    }
-
-    static async sum<model extends Model>(
-        this: new () => model,
-        query: Partial<QueryType<model>>,
-        field: string,
-        options?: Optional<Options, "drop" | "test" | "token">,
-    ): Promise<number> {
-        query
-        field
         options
         throw Error("Not implemented")
     }
@@ -103,7 +81,9 @@ export class Model {
 
             const filledModel = fillModel(model)
 
-            const methods = filledModel.database.modify<model>(filledModel, schema)
+            const methods = filledModel.database.modify<model>(
+                filledModel as unknown as typeof Model,
+            )
 
             Reflect.defineMetadata(schemaSymbol, schema, constructor)
             Reflect.defineMetadata(bindsSymbol, filledModel.binds, constructor)
@@ -114,9 +94,7 @@ export class Model {
             constructor.create = createRun(methods.create) //@ts-expect-error: TODO
             constructor.read = readRun(methods.read) //@ts-expect-error: TODO
             constructor.update = updateRun(methods.update) //@ts-expect-error: TODO
-            constructor.delete = deleteRun(methods.delete) // @ts-expect-error: TODO
-            constructor.count = countRun(methods.count) // @ts-expect-error: TODO
-            constructor.sum = sumRun(methods.sum)
+            constructor.delete = deleteRun(methods.delete)
 
             models.push(constructor)
         }
@@ -146,28 +124,11 @@ export type BindsTypeField = {
     filter: Filter<Model>[]
     effect: Effect<Model>[]
     accepts:
-        | [
-              [
-                  Role<Model>,
-                  {
-                      modify: Modify<Model>[]
-                      rule: Rule<Model>[]
-                  },
-              ],
-          ]
         | []
-
+        | [[Role<Model, Method>, { modify: Modify<Model, Method>[]; rule: Rule<Model, Method>[] }]]
     rejects:
-        | [
-              [
-                  Role<Model>,
-                  {
-                      modify: Modify<Model>[]
-                      rule: Rule<Model>[]
-                  },
-              ],
-          ]
         | []
+        | [[Role<Model, Method>, { modify: Modify<Model, Method>[]; rule: Rule<Model, Method>[] }]]
 }
 
 export class QueryType<model extends Model> {

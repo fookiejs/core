@@ -3,8 +3,13 @@ import { after } from "../../mixin/binds/after"
 import { before } from "../../mixin/binds/before"
 import { Payload } from "../../payload"
 import * as moment from "moment"
+import { Method } from "../../method"
+import { Model } from "../../model/model"
 
-const rule = async function (payload: Payload<any>, error: FookieError): Promise<boolean> {
+const rule = async function (
+    payload: Payload<Model, Method>,
+    error: FookieError,
+): Promise<boolean> {
     const rules = [
         ...before[payload.method].rule,
         ...payload.model.binds()![payload.method].rule,

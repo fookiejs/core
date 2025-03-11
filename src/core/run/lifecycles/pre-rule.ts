@@ -2,8 +2,13 @@ import { Payload } from "../../payload"
 import { FookieError } from "../../error"
 import { globalRules } from "../../mixin/binds/global"
 import * as moment from "moment"
+import { Method } from "../../method"
+import { Model } from "../../model/model"
 
-const preRule = async function (payload: Payload<any>, error: FookieError): Promise<boolean> {
+const preRule = async function (
+    payload: Payload<Model, Method>,
+    error: FookieError,
+): Promise<boolean> {
     for (const rules of globalRules) {
         payload.state.metrics.end = moment.utc().toDate()
 

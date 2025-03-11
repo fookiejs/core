@@ -44,22 +44,4 @@ export const before: BindsType = {
         accepts: [],
         rejects: [],
     },
-    count: {
-        modify: [],
-        role: [],
-        rule: [],
-        filter: [],
-        effect: [],
-        accepts: [],
-        rejects: [],
-    },
-    sum: {
-        modify: [],
-        role: [],
-        rule: [has_field],
-        filter: [],
-        effect: [],
-        accepts: [],
-        rejects: [],
-    },
 }

@@ -14,12 +14,6 @@ import { Model, Field, defaults, Config, Role, Required } from "../../src/export
         delete: {
             role: [],
         },
-        count: {
-            role: [],
-        },
-        sum: {
-            role: [],
-        },
         create: {
             role: [
                 Role.new({
@@ -79,33 +73,4 @@ it("should delete a user correctly", async () => {
         },
     })
     expect(deleteResponse).toEqual(true)
-})
-
-it("should count users correctly", async () => {
-    const countResponse = await User.count({
-        filter: {
-            id: {
-                equals: "example-id",
-            },
-        },
-    })
-
-    expect(countResponse).toEqual(0)
-})
-
-it("should sum user usage correctly", async () => {
-    const sumResponse = await User.sum(
-        {
-            filter: {
-                id: {
-                    equals: "example-id",
-                },
-            },
-        },
-        "usage",
-        {
-            token: Config.SYSTEM_TOKEN,
-        },
-    )
-    expect(sumResponse).toEqual(0)
 })

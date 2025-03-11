@@ -1,19 +1,22 @@
-import { Model, BaseClass, ModelTypeOutput, Method } from "../exports"
+import { Method, Model } from "../exports"
 import { Payload } from "./payload"
-import { SchemaType } from "./schema"
 
-export class Database extends BaseClass {
-    modify: <model extends Model>(
-        model: ModelTypeOutput,
-        schema: SchemaType<model>,
-    ) => {
-        [Method.CREATE]: (payload: Payload<model>) => Promise<model>
-        [Method.READ]: (payload: Payload<model>) => Promise<model[]>
-        [Method.UPDATE]: (payload: Payload<model>) => Promise<boolean>
-        [Method.DELETE]: (payload: Payload<model>) => Promise<boolean>
-        [Method.SUM]: (payload: Payload<model>) => Promise<number>
-        [Method.COUNT]: (payload: Payload<model>) => Promise<number>
-    }
+export class Database {
+    key: string
     connect: () => Promise<void>
     disconnect: () => Promise<void>
+
+    modify: <T extends Model>(
+        model: typeof Model,
+    ) => {
+        [Method.CREATE]: (payload: Payload<T, Method.CREATE>) => Promise<T>
+        [Method.READ]: (payload: Payload<T, Method.READ>) => Promise<T[]>
+        [Method.UPDATE]: (payload: Payload<T, Method.UPDATE>) => Promise<boolean>
+        [Method.DELETE]: (payload: Payload<T, Method.DELETE>) => Promise<boolean>
+    }
+
+    static new(data: Database): Database {
+        const instance = new Database()
+        return Object.assign(instance, data)
+    }
 }

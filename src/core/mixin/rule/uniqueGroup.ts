@@ -25,7 +25,7 @@ export default Rule.new({
                 }
             }
 
-            const res = await payload.model.count(
+            const res = await payload.model.read(
                 {
                     filter,
                 },
@@ -34,7 +34,7 @@ export default Rule.new({
                 },
             )
 
-            return res == 0
+            return res.length == 0
         }
 
         return true

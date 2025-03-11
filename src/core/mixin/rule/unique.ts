@@ -10,7 +10,7 @@ export default Rule.new({
         const fields = lodash.keys(payload.body)
         for (const field of fields) {
             if (lodash.includes(payload.model.schema()[field].features, Unique)) {
-                const res = await payload.model.count(
+                const res = await payload.model.read(
                     {
                         filter: {
                             [field]: { equals: payload.body[field] },
@@ -19,7 +19,7 @@ export default Rule.new({
                     { token: Config.SYSTEM_TOKEN },
                 )
 
-                if (res > trash_old) {
+                if (res.length > trash_old) {
                     return false
                 }
             }

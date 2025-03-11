@@ -1,5 +1,5 @@
 import * as lodash from "lodash"
-import { BindsType, ModelTypeInput, ModelTypeOutput } from "../model"
+import { BindsType, BindsTypeField, ModelTypeInput, ModelTypeOutput } from "../model"
 import { methods } from "../../method"
 import { system } from "../../../defaults/role/system"
 import { lifecycles } from "../../lifecycle"
@@ -8,7 +8,7 @@ export function fillModel(model: ModelTypeInput): ModelTypeOutput {
     model.binds = lodash.isObject(model.binds) ? model.binds : ({} as BindsType)
     model.mixins = lodash.isArray(model.mixins) ? model.mixins : []
 
-    const defaultBinds = {
+    const defaultBinds: BindsTypeField = {
         modify: [],
         role: [system],
         rule: [],

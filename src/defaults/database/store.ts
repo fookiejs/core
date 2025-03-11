@@ -1,5 +1,5 @@
 import * as lodash from "lodash"
-import { Database, Model, QueryType } from "../../exports"
+import { Database, Method, Model, Payload, QueryType } from "../../exports"
 
 export const store = Database.new({
     key: "store",
@@ -9,26 +9,19 @@ export const store = Database.new({
     disconnect: async function () {
         return
     },
-    modify: function <model extends Model>() {
-        let pool: model[] = []
-
+    modify: function <T extends Model>() {
+        let pool: T[] = []
         return {
-            create: async (payload) => {
-                pool.push(payload.body as any)
+            [Method.CREATE]: async (payload: Payload<T, Method.CREATE>) => {
+                pool.push(payload.body)
                 return payload.body
             },
-            read: async (payload) => {
+            [Method.READ]: async (payload: Payload<T, Method.READ>) => {
                 const attributes = payload.query.attributes
-
-                let res = poolFilter(pool, payload.query)
-
-                res = res.map(function (entity) {
-                    return lodash.pick(entity, attributes)
-                }) as model[]
-
-                return res
+                const res = poolFilter<T>(pool, payload.query)
+                return res.map((entity) => lodash.pick(entity, attributes) as T)
             },
-            update: async (payload) => {
+            [Method.UPDATE]: async (payload) => {
                 const entities = poolFilter(pool, payload.query)
 
                 entities.forEach((entity) => {
@@ -39,7 +32,7 @@ export const store = Database.new({
 
                 return true
             },
-            delete: async (payload) => {
+            [Method.DELETE]: async (payload) => {
                 const filtered = poolFilter(pool, payload.query).map(function (f) {
                     return f.id
                 })
@@ -48,20 +41,6 @@ export const store = Database.new({
                 })
                 pool = rejected
                 return true
-            },
-            sum: async (payload) => {
-                const filteredItems = poolFilter(pool, payload.query)
-                const sum = filteredItems.reduce((acc, item) => {
-                    if (typeof item[payload.fieldName] === "number") {
-                        return acc + item[payload.fieldName]
-                    }
-                    return acc
-                }, 0)
-
-                return sum
-            },
-            count: async function (payload) {
-                return poolFilter(pool, payload.query).length
             },
         }
     },

@@ -3,9 +3,11 @@ import { before } from "../../mixin/binds/before"
 import { Payload } from "../../payload"
 import * as moment from "moment"
 import { FookieResponse } from "../../response"
+import { Model } from "../../model/model"
+import { Method } from "../../method"
 
 const effect = async function (
-    payload: Payload<any>,
+    payload: Payload<Model, Method>,
     response: FookieResponse<unknown>,
 ): Promise<void> {
     const effects = [

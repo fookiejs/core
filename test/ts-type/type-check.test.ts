@@ -63,7 +63,7 @@ describe("Payload Type Safety Tests", () => {
         })
     })
 
-    it("TODO", () => {
+    it("type parameter test", () => {
         Rule.new({
             key: "delete_test",
             execute: async (payload) => {
@@ -81,35 +81,5 @@ describe("Payload Type Safety Tests", () => {
                 return true
             },
         })
-
-        for (const model of models) {
-            console.log(model.binds())
-        }
     })
-
-    const sendEmail = Effect.new({
-        key: "send-hello-mail",
-        execute: async function (payload): Payload & {
-            state: {
-                isSent: boolean
-            }
-        } {
-            payload.state.isSent = true
-        },
-    })
-
-    const sentMailCount = Effect.new({
-        key: "send-hello-mail",
-        execute: async function (payload): Payload & {
-            state: {
-                isSent: boolean
-            }
-        } {
-            if (!!payload.state.isSent) {
-                console.log("count is incrased")
-            }
-        },
-    })
-
-    TypeCheckUser.defaultPipeline(Method.CREATE, Lifecycle.EFFECT).sendEmail().sentMailCount()
 })
