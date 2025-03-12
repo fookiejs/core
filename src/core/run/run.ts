@@ -38,10 +38,6 @@ async function runLifecycle<T extends Model, M extends Method>(
             await modify(payload)
             if (await role(payload)) {
                 if (await rule(payload)) {
-                    if (payload.options?.test === true) {
-                        return true
-                    }
-
                     const response = plainToInstance(payload.model, await method(payload))
 
                     await filter(payload, response)
@@ -65,6 +61,12 @@ async function runLifecycle<T extends Model, M extends Method>(
             })
         }
     }
+
+    return FookieError.new({
+        key: "unknown",
+        validationErrors: {},
+        description: "core error",
+    })
 }
 
 export function createRun<T extends Model>(

@@ -34,7 +34,7 @@ export default Rule.new({
                 },
             )
 
-            return res.length == 0
+            return Array.isArray(res) && res.length == 0
         }
 
         return true

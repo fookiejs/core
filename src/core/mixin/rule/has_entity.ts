@@ -21,7 +21,7 @@ export default Rule.new<Model, Method>({
                     },
                 )
 
-                if (res.length === 0) {
+                if (Array.isArray(res) && res.length === 0) {
                     return false
                 }
             }

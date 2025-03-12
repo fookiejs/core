@@ -7,14 +7,6 @@ export function fillSchema(field: Field): Field {
         field.type = string
     }
 
-    if (!lodash.has(field, "read")) {
-        field.read = []
-    }
-
-    if (!lodash.has(field, "write")) {
-        field.write = []
-    }
-
     if (!lodash.has(field, "features")) {
         field.features = []
     }

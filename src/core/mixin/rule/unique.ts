@@ -19,7 +19,7 @@ export default Rule.new({
                     { token: Config.SYSTEM_TOKEN },
                 )
 
-                if (res.length > trash_old) {
+                if (Array.isArray(res) && res.length > trash_old) {
                     return false
                 }
             }
