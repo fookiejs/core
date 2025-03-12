@@ -1,6 +1,5 @@
 import * as lodash from "lodash"
 import { Modify } from "../../lifecycle-function"
-import { FookieError } from "../../error"
 
 export default Modify.new({
     key: "filter_fields",
