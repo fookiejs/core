@@ -1,0 +1,50 @@
+name: CI
+on:
+    push:
+        branches:
+            - main
+        paths-ignore:
+            - "docs/**"
+    pull_request:
+        branches:
+            - main
+        paths-ignore:
+            - "docs/**"
+jobs:
+    build-and-test:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                node-version: [22.14.0]
+        steps:
+            - uses: actions/checkout@v3
+            - uses: actions/setup-node@v3
+              with:
+                  node-version: ${{ matrix.node-version }}
+                  cache: 'npm'
+
+            - run: npm ci
+            - run: npm test
+            - run: npm run build
+
+    publish:
+        needs: build-and-test
+        runs-on: ubuntu-latest
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        steps:
+            - uses: actions/checkout@v3
+              with:
+                  fetch-depth: 0
+            
+            - uses: actions/setup-node@v3
+              with:
+                  node-version: 22.14.0
+                  registry-url: 'https://registry.npmjs.org'
+
+            - run: npm ci
+            - run: npm run build
+
+            - name: Publish to NPM
+              run: npm run publish-packages
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} 
