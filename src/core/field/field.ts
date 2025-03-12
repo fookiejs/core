@@ -1,6 +1,5 @@
 import * as lodash from "lodash"
 import { string } from "../../defaults/type/string"
-import { Role } from "../lifecycle-function"
 import { Model, schemaSymbol } from "../model/model"
 import { Type } from "../type"
 import { fillSchema } from "./utils/fill-schema"
@@ -13,8 +12,6 @@ export class Field {
     default?: unknown
     validators?: [(value: unknown) => boolean | string]
     relation?: typeof Model
-    read?: Role<any>[]
-    write?: Role<any>[]
     features?: symbol[]
 
     static Decorator(field: Field) {

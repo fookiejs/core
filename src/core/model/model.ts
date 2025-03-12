@@ -21,7 +21,7 @@ export class Model {
     id: string
 
     static async create<model extends Model>(
-        this: new () => model,
+        this: typeof Model,
         body: Omit<model, "id">,
         options?: Optional<Options, "test" | "token">,
     ): Promise<model | FookieError> {
@@ -34,7 +34,7 @@ export class Model {
         this: new () => model,
         query?: Partial<QueryType<model>>,
         options?: Optional<Options, "test" | "token">,
-    ): Promise<model[]> {
+    ): Promise<model[] | FookieError> {
         query
         options
         throw Error("Not implemented")
@@ -45,7 +45,7 @@ export class Model {
         query: QueryType<model>,
         body: Partial<Omit<model, "id">>,
         options?: Optional<Options, "test" | "token">,
-    ): Promise<boolean> {
+    ): Promise<boolean | FookieError> {
         query
         body
         options
@@ -56,7 +56,7 @@ export class Model {
         this: new () => model,
         query: Partial<QueryType<model>>,
         options?: Optional<Options, "test" | "token">,
-    ): Promise<boolean> {
+    ): Promise<boolean | FookieError> {
         query
         options
         throw Error("Not implemented")
@@ -90,11 +90,10 @@ export class Model {
             Reflect.defineMetadata(databaseSymbol, filledModel.database, constructor)
             Reflect.defineMetadata(mixinsSymbol, filledModel.mixins, constructor)
 
-            //@ts-expect-error: TODO
-            constructor.create = createRun(methods.create) //@ts-expect-error: TODO
-            constructor.read = readRun(methods.read) //@ts-expect-error: TODO
-            constructor.update = updateRun(methods.update) //@ts-expect-error: TODO
-            constructor.delete = deleteRun(methods.delete)
+            constructor.create = createRun(methods.create) as typeof Model.create
+            constructor.read = readRun(methods.read) as typeof Model.read
+            constructor.update = updateRun(methods.update) as typeof Model.update
+            constructor.delete = deleteRun(methods.delete) as typeof Model.delete
 
             models.push(constructor)
         }

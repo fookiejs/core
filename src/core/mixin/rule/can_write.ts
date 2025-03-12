@@ -4,7 +4,7 @@ import { Method } from "../../method"
 
 export default Rule.new({
     key: "can_write",
-    execute: async function (payload, error) {
+    execute: async function (payload) {
         if (!(payload.method === Method.CREATE || payload.method === Method.UPDATE)) {
             return true
         }
@@ -19,7 +19,7 @@ export default Rule.new({
 
         for (const role of roles) {
             if (role) {
-                const res = await role.execute(payload, error)
+                const res = await role.execute(payload)
                 if (!res) {
                     return false
                 }
