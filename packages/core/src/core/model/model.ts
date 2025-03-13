@@ -113,19 +113,19 @@ export type ModelTypeOutput = {
 }
 
 export type BindsType = {
-    [ls in Method]: BindsTypeField
+    [ls in Method]?: BindsTypeField
 }
 
 export type BindsTypeField = {
-    modify: Modify<Model>[]
-    role: Role<Model>[]
-    rule: Rule<Model>[]
-    filter: Filter<Model>[]
-    effect: Effect<Model>[]
-    accepts:
+    modify?: Modify<Model>[]
+    role?: Role<Model>[]
+    rule?: Rule<Model>[]
+    filter?: Filter<Model>[]
+    effect?: Effect<Model>[]
+    accepts?:
         | []
         | [[Role<Model, Method>, { modify: Modify<Model, Method>[]; rule: Rule<Model, Method>[] }]]
-    rejects:
+    rejects?:
         | []
         | [[Role<Model, Method>, { modify: Modify<Model, Method>[]; rule: Rule<Model, Method>[] }]]
 }

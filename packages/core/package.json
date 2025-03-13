@@ -12,9 +12,9 @@
         "test:watch": "vitest",
         "build": "tsc",
         "dev": "tsc --watch",
-        "lint": "eslint ./src",
+        "lint": "eslint src test --ext .ts",
         "lint:fix": "eslint src --fix",
-        "prettier": "prettier --write 'src/**/*.{js,ts,json,md}'",
+        "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
         "prepublishOnly": "npm run build"
     },
     "keywords": [],

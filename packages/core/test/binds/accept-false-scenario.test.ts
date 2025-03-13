@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { Model, Field, defaults, Role, Rule, FookieError, Method } from "@fookiejs/core"
+import { Model, Field, defaults, Role, Rule, FookieError } from "@fookiejs/core"
 
 // Accept Lifecycle Function
 const flag1 = { called: false }
@@ -13,9 +13,9 @@ const admin = Role.new({
     },
 })
 
-const rule_false = Rule.new<TrueQueryTextModel, Method.READ>({
+const rule_false = Rule.new({
     key: "rule_false",
-    execute: async function (payload) {
+    execute: async function () {
         flag2.called = true
         return false
     },

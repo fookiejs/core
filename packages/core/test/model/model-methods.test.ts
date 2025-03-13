@@ -1,6 +1,6 @@
 import { expect, it } from "vitest"
 import * as lodash from "lodash"
-import { Model, Field, defaults, Config, Role, Required } from "@fookiejs/core"
+import { Model, Field, defaults, Role, Required } from "@fookiejs/core"
 
 @Model.Decorator({
     database: defaults.database.store,

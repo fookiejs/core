@@ -10,12 +10,16 @@
         "dev": "turbo run dev",
         "test": "turbo run test",
         "test:watch": "vitest",
-        "publish-packages": "turbo run build && npm publish --workspaces --access public"
+        "publish-packages": "turbo run build && npm publish --workspaces --access public",
+        "lint": "turbo run lint",
+        "format": "turbo run format"
     },
     "files": [
         "dist"
     ],
     "devDependencies": {
-        "turbo": "^2.4.4"
+        "eslint": "^8.0.0",
+        "prettier": "^3.0.0",
+        "turbo": "latest"
     }
 }

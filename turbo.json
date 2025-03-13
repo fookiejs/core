@@ -10,6 +10,14 @@
             "outputs": ["coverage/**"],
             "inputs": ["src/**/*.ts", "test/**/*.ts"]
         },
+        "lint": {
+            "outputs": [],
+            "inputs": ["src/**/*.ts", "test/**/*.ts"]
+        },
+        "format": {
+            "outputs": [],
+            "inputs": ["src/**/*.ts", "test/**/*.ts"]
+        },
         "test:watch": {
             "cache": false,
             "persistent": true
