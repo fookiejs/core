@@ -1,4 +1,5 @@
 import * as lodash from "lodash"
+import { FookieError } from "./error"
 
 export enum Environment {
     LOCAL = "local",
@@ -21,7 +22,11 @@ export class Config {
 
     static get(key: string): string {
         if (!lodash.has(this.env, key)) {
-            throw new Error(`Environment variable ${key} not found`)
+            throw FookieError.new({
+                key: "missing_config",
+                description: `Environment variable not found`,
+                validationErrors: {},
+            })
         }
         return this.env[key]
     }

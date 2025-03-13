@@ -25,6 +25,10 @@
         "dev": {
             "cache": false,
             "persistent": true
+        },
+        "publish-packages": {
+            "dependsOn": ["build", "test", "lint"],
+            "outputs": []
         }
     }
 }
