@@ -10,6 +10,8 @@ dist/
 coverage/
 
 # Turbo
+.turbo
+**/.turbo
 .turbo/
 **/.turbo/
 
