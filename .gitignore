@@ -1,48 +1,35 @@
+# Dependencies
 node_modules/
-dist
-coverage
-*.env
+.pnp
+.pnp.js
 
-# IDE
-/.idea
-/.awcache
-/.vscode
-/.devcontainer
-*.code-workspace
+# Build
+dist/
 
-# Vim
-[._]*.s[a-v][a-z]
-[._]*.sw[a-p]
-[._]s[a-rt-v][a-z]
-[._]ss[a-gi-z]
-[._]sw[a-p]
+# Testing
+coverage/
 
-# bundle
-packages/**/*.d.ts
-packages/**/*.js
+# Turbo
+.turbo/
+**/.turbo/
 
-# misc
+# Cache
+.cache/
+.npm/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
 .DS_Store
-lerna-debug.log
-npm-debug.log
-yarn-error.log
-/**/npm-debug.log
-/packages/**/.npmignore
-/packages/**/LICENSE
-*.tsbuildinfo
-
-# example
-/quick-start
-/example_dist
-/example
-
-# tests
-/benchmarks/memory
-/coverage
-/.nyc_output
-/benchmarks/memory
-build/config\.gypi
-
-/.fookie
-*.js.map
-*.js
+Thumbs.db
