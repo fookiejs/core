@@ -7,6 +7,7 @@ import { FookieError } from "../error"
 import { SchemaType } from "../schema"
 import { Options } from "../option"
 import { Mixin } from "../mixin/index"
+import { Payload } from "../payload"
 
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
 
@@ -16,6 +17,13 @@ export const schemaSymbol = Symbol("schema")
 const bindsSymbol = Symbol("binds")
 const databaseSymbol = Symbol("database")
 const mixinsSymbol = Symbol("mixins")
+
+interface ModelMethods<model extends Model> {
+    create: (payload: Payload<model, Method.CREATE>) => Promise<model>
+    read: (payload: Payload<model, Method.READ>) => Promise<model[]>
+    update: (payload: Payload<model, Method.UPDATE>) => Promise<boolean>
+    delete: (payload: Payload<model, Method.DELETE>) => Promise<boolean>
+}
 
 export class Model {
     id: string
@@ -86,7 +94,7 @@ export class Model {
             const filledModel = fillModel(model)
             const methods = filledModel.database.modify<model>(
                 filledModel as unknown as typeof Model,
-            )
+            ) as unknown as ModelMethods<model>
 
             Reflect.defineMetadata(schemaSymbol, schema, constructor)
             Reflect.defineMetadata(bindsSymbol, filledModel.binds, constructor)

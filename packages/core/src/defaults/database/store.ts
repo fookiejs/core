@@ -1,5 +1,8 @@
 import * as lodash from "lodash"
-import { Database, Method, Model, Payload, QueryType } from "@fookiejs/core"
+import { Database } from "../../core/database"
+import { Model, QueryType } from "../../core/model/model"
+import { Method } from "../../core/method"
+import { Payload } from "../../core/payload"
 
 export const store = Database.new({
     key: "store",
