@@ -1,0 +1,8 @@
+{
+    "compilerOptions": {
+        "baseUrl": ".",
+        "paths": {
+            "@fookiejs/core": ["packages/core/src/index.ts"]
+        }
+    }
+}

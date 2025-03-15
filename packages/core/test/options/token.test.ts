@@ -11,7 +11,7 @@ describe("Relation", () => {
                     Role.new({
                         key: "token_role",
                         execute: async function (payload) {
-                            return payload.options.token === "token"
+                            return payload.options.sub === "token"
                         },
                     }),
                 ],
@@ -27,7 +27,7 @@ describe("Relation", () => {
         const entity = await Token.create(
             { name: v4() },
             {
-                token: "token",
+                sub: "token",
             },
         )
 
@@ -38,7 +38,7 @@ describe("Relation", () => {
         const entity = await Token.create(
             { name: v4() },
             {
-                token: "invalid_token",
+                sub: "invalid_token",
             },
         )
 

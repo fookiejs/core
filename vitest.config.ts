@@ -9,8 +9,11 @@ export default defineConfig({
         exclude: ["**/node_modules/**", "**/dist/**"],
     },
     resolve: {
-        alias: {
-            "@fookiejs/core": resolve(__dirname, "packages/core/src"),
-        },
+        alias: [
+            {
+                find: "@fookiejs/core",
+                replacement: resolve(__dirname, "packages/core/src/index.ts"),
+            },
+        ],
     },
 })

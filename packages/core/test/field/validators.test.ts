@@ -31,7 +31,7 @@ test("Field with a validator failing validation", async () => {
             create: { role: [] },
         },
     })
-    class ValidatorModel extends Model {
+    class ValidatorModel2 extends Model {
         @Field.Decorator({
             type: defaults.type.number,
             validators: [
@@ -44,7 +44,7 @@ test("Field with a validator failing validation", async () => {
         myNumber?: number
     }
 
-    const invalidResponse = await ValidatorModel.create({ myNumber: 25 })
+    const invalidResponse = await ValidatorModel2.create({ myNumber: 25 })
 
     expect(invalidResponse instanceof FookieError).toBe(true)
 

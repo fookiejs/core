@@ -10,7 +10,7 @@ const admin = Role.new({
     key: "admin",
     execute: async function (payload) {
         flag1.called = true
-        return payload.options.token === "admin"
+        return payload.options.sub === "admin"
     },
 })
 
@@ -64,7 +64,7 @@ describe("QueryTextModel Accept and Rule Lifecycle Tests", async () => {
         flag1.called = false
         flag2.called = false
         flag3.called = false
-        const results = await TrueQueryTextModel.read({}, { token: "admin" })
+        const results = await TrueQueryTextModel.read({}, { sub: "admin" })
         expect(flag1.called).toBe(true)
         expect(flag2.called).toBe(true)
         expect(flag3.called).toBe(true)
@@ -76,7 +76,7 @@ describe("QueryTextModel Accept and Rule Lifecycle Tests", async () => {
         flag2.called = false
         flag3.called = false
 
-        const results = await TrueQueryTextModel.read({}, { token: "user" })
+        const results = await TrueQueryTextModel.read({}, { sub: "user" })
 
         expect(flag1.called).toBe(true)
         expect(flag2.called).toBe(false)

@@ -1,0 +1,4 @@
+{
+    "extends": "./tsconfig.paths.json",
+    "references": [{ "path": "./packages/core" }, { "path": "./packages/cache" }]
+}

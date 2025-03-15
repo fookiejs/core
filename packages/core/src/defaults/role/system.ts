@@ -4,6 +4,6 @@ import { Config } from "../../core/config"
 export const system = Role.new({
     key: "system",
     execute: async function (payload) {
-        return payload.options.token === Config.SYSTEM_TOKEN
+        return payload.options.sub === Config.SYSTEM_TOKEN
     },
 })

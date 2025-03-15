@@ -15,6 +15,9 @@
     "peerDependencies": {
         "@fookiejs/core": "^0.1.0"
     },
+    "devDependencies": {
+        "@fookiejs/core": "^0.1.0"
+    },
     "files": [
         "dist"
     ]

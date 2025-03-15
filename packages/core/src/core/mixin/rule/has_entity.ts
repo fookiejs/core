@@ -17,7 +17,7 @@ export default Rule.new<Model, Method>({
                         },
                     },
                     {
-                        token: Config.SYSTEM_TOKEN,
+                        sub: Config.SYSTEM_TOKEN,
                     },
                 )
 

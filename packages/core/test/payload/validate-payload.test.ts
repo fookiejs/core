@@ -29,11 +29,11 @@ describe("QueryTextModel validate_payload Tests", async () => {
         expect(results instanceof FookieError).toBeTruthy()
     })
 
-    it("should throw error if options.token is not a string", async () => {
+    it("should throw error if options.sub is not a string", async () => {
         const results = await QueryTextModel.read(
             {},
             {
-                token: 1,
+                sub: 1,
             },
         )
 

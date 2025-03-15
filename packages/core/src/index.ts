@@ -1,4 +1,5 @@
 import "reflect-metadata"
+import { v4 } from "uuid"
 
 export * from "./core/config"
 export * from "./core/error"
@@ -14,3 +15,5 @@ export * from "./core/payload"
 export * from "./core/mixin"
 
 export * from "./defaults"
+
+export const instanceId = v4()

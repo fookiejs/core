@@ -1,6 +1,6 @@
 import { Options } from "../option"
 import { Payload, ConstructorOf } from "../payload"
-import * as moment from "moment"
+import * as lodash from "lodash"
 import pre_rule from "./lifecycles/pre-rule"
 import modify from "./lifecycles/modify"
 import role from "./lifecycles/role"
@@ -12,6 +12,7 @@ import { FookieError } from "../error"
 import { plainToInstance } from "class-transformer"
 import { Model, QueryType } from "../model/model"
 import { Method } from "../method"
+import { MethodResponse } from "../response"
 
 function createPayload<T extends Model, M extends Method>(
     payload: Omit<Payload<T, M>, "runId" | "state">,
@@ -19,26 +20,25 @@ function createPayload<T extends Model, M extends Method>(
     return {
         ...payload,
         runId: "abc",
-        state: {
-            metrics: {
-                start: moment.utc().toDate(),
-                end: moment.utc().toDate(),
-                lifecycle: [],
-            },
-        },
+        state: {},
     }
 }
 
 async function runLifecycle<T extends Model, M extends Method>(
     payload: Payload<T, M>,
-    method: (payload: Payload<T, M>) => Promise<any>,
+    method: (payload: Payload<T, M>) => Promise<MethodResponse<T>[M]>,
 ) {
     try {
         if (await pre_rule(payload)) {
             await modify(payload)
             if (await role(payload)) {
                 if (await rule(payload)) {
-                    const response = plainToInstance(payload.model, await method(payload))
+                    const response = plainToInstance(
+                        payload.model,
+                        lodash.isString(payload.state.cachedResponse)
+                            ? JSON.parse(payload.state.cachedResponse)
+                            : await method(payload),
+                    ) as MethodResponse<T>[M]
 
                     await filter(payload, response)
                     await effect(payload, response)

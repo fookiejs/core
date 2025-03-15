@@ -21,7 +21,7 @@ export const store = Database.new({
                 const res = poolFilter<T>(pool, payload.query)
                 return res.map((entity) => lodash.pick(entity, attributes) as T)
             },
-            [Method.UPDATE]: async (payload) => {
+            [Method.UPDATE]: async (payload: Payload<T, Method.UPDATE>) => {
                 const entities = poolFilter(pool, payload.query)
 
                 entities.forEach((entity) => {
@@ -32,7 +32,7 @@ export const store = Database.new({
 
                 return true
             },
-            [Method.DELETE]: async (payload) => {
+            [Method.DELETE]: async (payload: Payload<T, Method.DELETE>) => {
                 const filtered = poolFilter(pool, payload.query).map(function (f) {
                     return f.id
                 })
@@ -46,7 +46,7 @@ export const store = Database.new({
     },
 })
 
-function poolFilter<model extends Model>(pool: model[], query: QueryType<model | any>) {
+function poolFilter<model extends Model>(pool: model[], query: QueryType<model>) {
     const results = pool.filter(function (entity) {
         for (const field of Object.keys(query.filter) as Array<keyof model>) {
             const value = query.filter[field]!

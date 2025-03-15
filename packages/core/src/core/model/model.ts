@@ -23,7 +23,7 @@ export class Model {
     static async create<model extends Model>(
         this: new () => model,
         body: Omit<model, "id">,
-        options?: Optional<Options, "test" | "token">,
+        options?: Optional<Options, "test" | "sub">,
     ): Promise<model | FookieError> {
         body
         options
@@ -33,7 +33,7 @@ export class Model {
     static async read<model extends Model>(
         this: new () => model,
         query?: Partial<QueryType<model>>,
-        options?: Optional<Options, "test" | "token">,
+        options?: Optional<Options, "test" | "sub">,
     ): Promise<model[] | FookieError> {
         query
         options
@@ -44,7 +44,7 @@ export class Model {
         this: new () => model,
         query: QueryType<model>,
         body: Partial<Omit<model, "id">>,
-        options?: Optional<Options, "test" | "token">,
+        options?: Optional<Options, "test" | "sub">,
     ): Promise<boolean | FookieError> {
         query
         body
@@ -55,7 +55,7 @@ export class Model {
     static async delete<model extends Model>(
         this: new () => model,
         query: Partial<QueryType<model>>,
-        options?: Optional<Options, "test" | "token">,
+        options?: Optional<Options, "test" | "sub">,
     ): Promise<boolean | FookieError> {
         query
         options
@@ -77,10 +77,13 @@ export class Model {
 
     static Decorator<model extends Model>(model: ModelTypeInput) {
         return function (constructor: typeof Model) {
+            const existingModel = models.find((m) => m.name === constructor.name)
+            if (existingModel) {
+                throw new Error(`Model "${constructor.name}" already exists`)
+            }
+
             const schema: SchemaType<model> = Reflect.getMetadata(schemaSymbol, constructor)
-
             const filledModel = fillModel(model)
-
             const methods = filledModel.database.modify<model>(
                 filledModel as unknown as typeof Model,
             )

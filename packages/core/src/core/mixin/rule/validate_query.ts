@@ -15,7 +15,7 @@ export default Rule.new({
         const filterKeys = lodash.keys(payload.query.filter)
         const modelKeys = lodash.keys(payload.model.schema())
 
-        const isValidObject = (key: string, validator: (val: any) => boolean) =>
+        const isValidObject = (key: string, validator: (val) => boolean) =>
             lodash.has(payload.query, key) && !validator(payload.query[key])
 
         if (isValidObject("filter", lodash.isObject)) return false

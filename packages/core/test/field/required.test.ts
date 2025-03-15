@@ -23,16 +23,16 @@ test("Define a required field with Success", async () => {
         database: defaults.database.store,
         binds: { create: { role: [] } },
     })
-    class RequiredField extends Model {
+    class RequiredField2 extends Model {
         @Field.Decorator({ features: [Required], type: defaults.type.string })
         field: string
     }
 
-    const response = await RequiredField.create({
+    const response = await RequiredField2.create({
         field: "fookie",
     })
-    expect(response instanceof RequiredField).toBe(true)
-    if (response instanceof RequiredField) {
+    expect(response instanceof RequiredField2).toBe(true)
+    if (response instanceof RequiredField2) {
         expect(response.field === "fookie").toBe(true)
     }
 })

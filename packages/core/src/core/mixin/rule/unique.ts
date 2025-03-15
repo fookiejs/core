@@ -16,7 +16,7 @@ export default Rule.new({
                             [field]: { equals: payload.body[field] },
                         },
                     },
-                    { token: Config.SYSTEM_TOKEN },
+                    { sub: Config.SYSTEM_TOKEN },
                 )
 
                 if (Array.isArray(res) && res.length > trash_old) {

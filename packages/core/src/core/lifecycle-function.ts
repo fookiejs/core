@@ -1,6 +1,7 @@
 import { Method } from "./method"
 import { Model } from "./model/model"
 import { Payload } from "./payload"
+import { MethodResponse } from "./response"
 
 export class Modify<T extends Model = Model, M extends Method = Method> {
     key: string
@@ -40,7 +41,7 @@ export class Rule<T extends Model = Model, M extends Method = Method> {
 
 export class Filter<T extends Model = Model, M extends Method = Method> {
     key: string
-    execute: (payload: Payload<T, M>, response: any) => Promise<void>
+    execute: (payload: Payload<T, M>, response: MethodResponse<T>[M]) => Promise<void>
 
     static new<T extends Model = Model, M extends Method = Method>(
         data: Filter<T, M>,
@@ -54,7 +55,7 @@ export class Filter<T extends Model = Model, M extends Method = Method> {
 
 export class Effect<T extends Model = Model, M extends Method = Method> {
     key: string
-    execute: (payload: Payload<T, M>, cloneResponse: any) => Promise<void>
+    execute: (payload: Payload<T, M>, response: MethodResponse<T>[M]) => Promise<void>
 
     static new<T extends Model = Model, M extends Method = Method>(
         data: Effect<T, M>,

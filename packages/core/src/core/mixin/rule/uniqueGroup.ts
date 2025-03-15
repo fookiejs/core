@@ -30,7 +30,7 @@ export default Rule.new({
                     filter,
                 },
                 {
-                    token: Config.SYSTEM_TOKEN,
+                    sub: Config.SYSTEM_TOKEN,
                 },
             )
 

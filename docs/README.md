@@ -41,7 +41,7 @@ import { Dictionary, Builder, Database, Method, Mixin, Role, Type, Types, use, r
     });
 
     const todo_entity = await Fookie.run({
-        token: process.env.SYSTEM_TOKEN, // Only "system" role can create a todo.
+        sub: process.env.SYSTEM_TOKEN, // Only "system" role can create a todo.
         model: todo_model,
         method: Method.Create,
         body: {
@@ -324,7 +324,7 @@ import * as lodash from "lodash";
 
     for (let i = 0; i < 100; i++) {
         await Fookie.run({
-            token: process.env.SYSTEM_TOKEN,
+            sub: process.env.SYSTEM_TOKEN,
             model: ArticleModel,
             method: Method.Create,
             body: {
@@ -348,7 +348,7 @@ import * as lodash from "lodash";
     );
 
     const response_2 = await Fookie.run({
-        token: process.env.SYSTEM_TOKEN, // system token
+        sub: process.env.SYSTEM_TOKEN, // system token
         model: ArticleModel,
         method: Method.Read,
         query: {},
@@ -405,7 +405,7 @@ In FookieJS, the **`run`** function allows to execute a specific method on a mod
 import { Dictionary, Method, run } from "fookie";
 
 const response = await Fookie.run({
-    token: "some string token",
+    sub: "some string token",
     model: Dictionary.Model.user,
     method: Method.Update,
     query: {

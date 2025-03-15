@@ -24,7 +24,7 @@ export class Field {
                 })
             }
 
-            metadata[propertyKey as string] = fillSchema(field)
+            metadata[propertyKey] = fillSchema(field)
 
             Reflect.defineMetadata(schemaSymbol, metadata, target.constructor)
         }
