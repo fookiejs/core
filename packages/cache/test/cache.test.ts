@@ -12,16 +12,16 @@ const cacheModel = cacheModule.FookieCache
     mixins: [cacheMixin(1 * 1000)],
     binds: {
         [Method.CREATE]: {
-            role: [defaults.lifecycle.everybody],
+            role: [defaults.role.everybody],
         },
         [Method.READ]: {
-            role: [defaults.lifecycle.everybody],
+            role: [defaults.role.everybody],
         },
         [Method.UPDATE]: {
-            role: [defaults.lifecycle.everybody],
+            role: [defaults.role.everybody],
         },
         [Method.DELETE]: {
-            role: [defaults.lifecycle.everybody],
+            role: [defaults.role.everybody],
         },
     },
 })

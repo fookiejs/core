@@ -30,6 +30,3 @@ export class Field {
         }
     }
 }
-
-export const Required = Symbol()
-export const Unique = Symbol()

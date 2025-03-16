@@ -43,16 +43,12 @@ jobs:
 
             - run: npm install
 
-            # Değişiklikleri kontrol et ve changeset oluştur
             - name: Create Changeset
               run: |
-                # Tüm paketleri bul
                 PACKAGES=$(ls -d packages/*/)
                 
-                # Core değişti mi kontrol et
                 CORE_CHANGED=$(git diff --name-only HEAD^ HEAD | grep -q "^packages/core/" && echo "true" || echo "false")
                 
-                # Değişen paketleri bul
                 CHANGED_PACKAGES=""
                 for pkg in $PACKAGES; do
                   if git diff --name-only HEAD^ HEAD | grep -q "^${pkg}"; then
@@ -65,7 +61,6 @@ jobs:
                   fi
                 done
                 
-                # Core değişmişse tüm bağımlı paketleri güncelle
                 if [ "$CORE_CHANGED" = "true" ]; then
                   for pkg in $PACKAGES; do
                     PKG_NAME=$(node -p "require('./${pkg}package.json').name")
@@ -82,12 +77,10 @@ jobs:
                   done
                 fi
                 
-                # Changeset oluştur
                 if [ ! -z "$CHANGED_PACKAGES" ]; then
                   echo -e "---\n${CHANGED_PACKAGES}\n---\n\nAuto update" > .changeset/auto-update.md
                 fi
 
-            # Version güncelle ve publish et
             - name: Version and Publish
               run: |
                 git config --global user.name "github-actions[bot]"

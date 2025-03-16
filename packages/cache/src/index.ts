@@ -10,7 +10,6 @@ import {
     Mixin,
     Model,
     Modify,
-    Required,
 } from "@fookiejs/core"
 
 export function hasher(data: any): string {
@@ -29,41 +28,41 @@ export function initCache(database: Database): CacheModule {
         database: database,
         binds: {
             [Method.CREATE]: {
-                role: [defaults.lifecycle.system],
+                role: [defaults.role.system],
             },
             [Method.READ]: {
-                role: [defaults.lifecycle.system],
+                role: [defaults.role.system],
             },
             [Method.UPDATE]: {
-                role: [defaults.lifecycle.nobody],
+                role: [defaults.role.nobody],
             },
             [Method.DELETE]: {
-                role: [defaults.lifecycle.system],
+                role: [defaults.role.system],
             },
         },
     })
     class FookieCache extends Model {
         @Field.Decorator({
             type: defaults.type.string,
-            features: [Required],
+            features: [defaults.feature.required],
         })
         model: string
 
         @Field.Decorator({
             type: defaults.type.string,
-            features: [Required],
+            features: [defaults.feature.required],
         })
         hash: string
 
         @Field.Decorator({
             type: defaults.type.string,
-            features: [Required],
+            features: [defaults.feature.required],
         })
         data: string
 
         @Field.Decorator({
             type: defaults.type.number,
-            features: [Required],
+            features: [defaults.feature.required],
         })
         expiresAt: number
     }

@@ -34,7 +34,7 @@ const rule_true = Rule.new({
     database: defaults.database.store,
     binds: {
         read: {
-            role: [admin, defaults.lifecycle.everybody],
+            role: [admin, defaults.role.everybody],
             accepts: [
                 [
                     admin,

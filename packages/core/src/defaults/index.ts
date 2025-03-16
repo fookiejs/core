@@ -19,9 +19,13 @@ export const defaults = {
     database: {
         store,
     },
-    lifecycle: {
+    role: {
         nobody,
         system,
         everybody,
+    },
+    feature: {
+        required: Symbol(),
+        unique: Symbol(),
     },
 }

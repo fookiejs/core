@@ -26,10 +26,10 @@ const rule_true = Rule.new({
     database: defaults.database.store,
     binds: {
         read: {
-            role: [defaults.lifecycle.nobody],
+            role: [defaults.role.nobody],
             rejects: [
                 [
-                    defaults.lifecycle.nobody,
+                    defaults.role.nobody,
                     {
                         modify: [rejectModify],
                         rule: [rule_true],

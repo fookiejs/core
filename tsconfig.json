@@ -7,7 +7,8 @@
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
         "experimentalDecorators": true,
-        "emitDecoratorMetadata": true
+        "emitDecoratorMetadata": true,
+        "strictPropertyInitialization": false
     },
     "references": [{ "path": "packages/core" }, { "path": "packages/cache" }]
 }
