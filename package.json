@@ -9,7 +9,10 @@
         "test": "turbo run test",
         "test:watch": "vitest",
         "lint": "turbo run lint",
-        "format": "turbo run format"
+        "format": "turbo run format",
+        "changeset": "changeset",
+        "version-packages": "changeset version",
+        "release": "changeset publish"
     },
     "files": [
         "dist"
