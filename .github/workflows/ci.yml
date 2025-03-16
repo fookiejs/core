@@ -49,15 +49,12 @@ jobs:
                 
                 CORE_CHANGED=$(git diff --name-only HEAD^ HEAD | grep -q "^packages/core/" && echo "true" || echo "false")
                 
-                CHANGED_PACKAGES=""
+                declare -A PACKAGE_MAP
+                
                 for pkg in $PACKAGES; do
                   if git diff --name-only HEAD^ HEAD | grep -q "^${pkg}"; then
                     PKG_NAME=$(node -p "require('./${pkg}package.json').name")
-                    if [ -z "$CHANGED_PACKAGES" ]; then
-                      CHANGED_PACKAGES="\"${PKG_NAME}\": \"patch\""
-                    else
-                      CHANGED_PACKAGES="${CHANGED_PACKAGES},\n\"${PKG_NAME}\": \"patch\""
-                    fi
+                    PACKAGE_MAP[$PKG_NAME]="patch"
                   fi
                 done
                 
@@ -67,18 +64,20 @@ jobs:
                     if [[ "$PKG_NAME" != "@fookiejs/core" ]]; then
                       HAS_CORE_DEP=$(node -p "!!require('./${pkg}package.json').dependencies?.['@fookiejs/core'] || !!require('./${pkg}package.json').peerDependencies?.['@fookiejs/core']" 2>/dev/null)
                       if [ "$HAS_CORE_DEP" = "true" ]; then
-                        if [ -z "$CHANGED_PACKAGES" ]; then
-                          CHANGED_PACKAGES="\"${PKG_NAME}\": \"patch\""
-                        else
-                          CHANGED_PACKAGES="${CHANGED_PACKAGES},\n\"${PKG_NAME}\": \"patch\""
-                        fi
+                        PACKAGE_MAP[$PKG_NAME]="patch"
                       fi
                     fi
                   done
                 fi
                 
-                if [ ! -z "$CHANGED_PACKAGES" ]; then
-                  echo -e "---\n${CHANGED_PACKAGES}\n---\n\nAuto update" > .changeset/auto-update.md
+                if [ ${#PACKAGE_MAP[@]} -gt 0 ]; then
+                  echo "---" > .changeset/auto-update.md
+                  for pkg in "${!PACKAGE_MAP[@]}"; do
+                    echo "\"$pkg\": \"${PACKAGE_MAP[$pkg]}\"" >> .changeset/auto-update.md
+                  done
+                  echo "---" >> .changeset/auto-update.md
+                  echo "" >> .changeset/auto-update.md
+                  echo "Auto update" >> .changeset/auto-update.md
                 fi
 
             - name: Version and Publish
