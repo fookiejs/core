@@ -26,7 +26,6 @@ jobs:
             - run: npm install
             - run: npm test
             - run: npm run lint
-              if: success()
 
     publish:
         needs: test-and-lint
@@ -44,61 +43,51 @@ jobs:
 
             - run: npm install
 
-            # Önce version'ları güncelle
-            - name: Version Packages
-              run: npm run version-packages
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            # Değişiklikleri kontrol et ve changeset oluştur
+            - name: Create Changeset
+              run: |
+                # Tüm paketleri bul
+                PACKAGES=$(ls -d packages/*/)
+                
+                # Core değişti mi kontrol et
+                CORE_CHANGED=$(git diff --name-only HEAD^ HEAD | grep -q "^packages/core/" && echo "true" || echo "false")
+                
+                # Değişen paketleri bul
+                CHANGED_PACKAGES=""
+                for pkg in $PACKAGES; do
+                  if git diff --name-only HEAD^ HEAD | grep -q "^${pkg}"; then
+                    # package.json'dan paket adını al
+                    PKG_NAME=$(node -p "require('./${pkg}package.json').name")
+                    CHANGED_PACKAGES="${CHANGED_PACKAGES}\"${PKG_NAME}\": patch\n"
+                  fi
+                done
+                
+                # Core değişmişse tüm bağımlı paketleri güncelle
+                if [ "$CORE_CHANGED" = "true" ]; then
+                  ALL_PACKAGES=""
+                  for pkg in $PACKAGES; do
+                    PKG_NAME=$(node -p "require('./${pkg}package.json').name")
+                    # Core'u dependency olarak kullanan paketleri bul
+                    HAS_CORE_DEP=$(node -p "!!require('./${pkg}package.json').dependencies?.['@fookiejs/core'] || !!require('./${pkg}package.json').peerDependencies?.['@fookiejs/core']" 2>/dev/null)
+                    if [ "$HAS_CORE_DEP" = "true" ]; then
+                      ALL_PACKAGES="${ALL_PACKAGES}\"${PKG_NAME}\": patch\n"
+                    fi
+                  done
+                  CHANGED_PACKAGES="${CHANGED_PACKAGES}${ALL_PACKAGES}"
+                fi
+                
+                # Changeset oluştur
+                if [ ! -z "$CHANGED_PACKAGES" ]; then
+                  echo -e "---\n${CHANGED_PACKAGES}---\n\nAuto update" > .changeset/auto-update.md
+                fi
 
-            # Sonra publish et
-            - name: Publish to NPM
-              run: npm run release
+            # Version güncelle ve publish et
+            - name: Version and Publish
+              run: |
+                git config --global user.name "github-actions[bot]"
+                git config --global user.email "github-actions[bot]@users.noreply.github.com"
+                npm run version-packages
+                npm run release
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    auto-changeset:
-        runs-on: ubuntu-latest
-        if: "!contains(github.event.head_commit.message, 'Version Packages')"
-        steps:
-            - uses: actions/checkout@v3
-            
-            - name: Create Auto Changeset
-              run: |
-                COMMIT_MSG="${{ github.event.head_commit.message }}"
-                
-                # Her paket için ayrı changeset oluştur
-                if git diff --name-only HEAD^ HEAD | grep -q "^packages/core/"; then
-                  echo "---" > .changeset/core-${GITHUB_SHA}.md
-                  if [[ $COMMIT_MSG == feat:core:* ]]; then
-                    echo "\"@fookiejs/core\": \"minor\"" >> .changeset/core-${GITHUB_SHA}.md
-                  elif [[ $COMMIT_MSG == fix:core:* ]]; then
-                    echo "\"@fookiejs/core\": \"patch\"" >> .changeset/core-${GITHUB_SHA}.md
-                  elif [[ $COMMIT_MSG == breaking:core:* ]]; then
-                    echo "\"@fookiejs/core\": \"major\"" >> .changeset/core-${GITHUB_SHA}.md
-                  fi
-                  echo "---" >> .changeset/core-${GITHUB_SHA}.md
-                  echo "" >> .changeset/core-${GITHUB_SHA}.md
-                  echo "${COMMIT_MSG}" >> .changeset/core-${GITHUB_SHA}.md
-                fi
-
-                if git diff --name-only HEAD^ HEAD | grep -q "^packages/cache/"; then
-                  echo "---" > .changeset/cache-${GITHUB_SHA}.md
-                  if [[ $COMMIT_MSG == feat:cache:* ]]; then
-                    echo "\"@fookiejs/cache\": \"minor\"" >> .changeset/cache-${GITHUB_SHA}.md
-                  elif [[ $COMMIT_MSG == fix:cache:* ]]; then
-                    echo "\"@fookiejs/cache\": \"patch\"" >> .changeset/cache-${GITHUB_SHA}.md
-                  elif [[ $COMMIT_MSG == breaking:cache:* ]]; then
-                    echo "\"@fookiejs/cache\": \"major\"" >> .changeset/cache-${GITHUB_SHA}.md
-                  fi
-                  echo "---" >> .changeset/cache-${GITHUB_SHA}.md
-                  echo "" >> .changeset/cache-${GITHUB_SHA}.md
-                  echo "${COMMIT_MSG}" >> .changeset/cache-${GITHUB_SHA}.md
-                fi
-
-            - name: Create Pull Request
-              uses: peter-evans/create-pull-request@v5
-              with:
-                  title: "chore: auto changeset"
-                  commit-message: "chore: auto changeset"
-                  branch: auto-changeset 
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
