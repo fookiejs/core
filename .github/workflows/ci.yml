@@ -56,29 +56,35 @@ jobs:
                 CHANGED_PACKAGES=""
                 for pkg in $PACKAGES; do
                   if git diff --name-only HEAD^ HEAD | grep -q "^${pkg}"; then
-                    # package.json'dan paket adını al
                     PKG_NAME=$(node -p "require('./${pkg}package.json').name")
-                    CHANGED_PACKAGES="${CHANGED_PACKAGES}\"${PKG_NAME}\": patch\n"
+                    if [ -z "$CHANGED_PACKAGES" ]; then
+                      CHANGED_PACKAGES="\"${PKG_NAME}\": \"patch\""
+                    else
+                      CHANGED_PACKAGES="${CHANGED_PACKAGES},\n\"${PKG_NAME}\": \"patch\""
+                    fi
                   fi
                 done
                 
                 # Core değişmişse tüm bağımlı paketleri güncelle
                 if [ "$CORE_CHANGED" = "true" ]; then
-                  ALL_PACKAGES=""
                   for pkg in $PACKAGES; do
                     PKG_NAME=$(node -p "require('./${pkg}package.json').name")
-                    # Core'u dependency olarak kullanan paketleri bul
-                    HAS_CORE_DEP=$(node -p "!!require('./${pkg}package.json').dependencies?.['@fookiejs/core'] || !!require('./${pkg}package.json').peerDependencies?.['@fookiejs/core']" 2>/dev/null)
-                    if [ "$HAS_CORE_DEP" = "true" ]; then
-                      ALL_PACKAGES="${ALL_PACKAGES}\"${PKG_NAME}\": patch\n"
+                    if [[ "$PKG_NAME" != "@fookiejs/core" ]]; then
+                      HAS_CORE_DEP=$(node -p "!!require('./${pkg}package.json').dependencies?.['@fookiejs/core'] || !!require('./${pkg}package.json').peerDependencies?.['@fookiejs/core']" 2>/dev/null)
+                      if [ "$HAS_CORE_DEP" = "true" ]; then
+                        if [ -z "$CHANGED_PACKAGES" ]; then
+                          CHANGED_PACKAGES="\"${PKG_NAME}\": \"patch\""
+                        else
+                          CHANGED_PACKAGES="${CHANGED_PACKAGES},\n\"${PKG_NAME}\": \"patch\""
+                        fi
+                      fi
                     fi
                   done
-                  CHANGED_PACKAGES="${CHANGED_PACKAGES}${ALL_PACKAGES}"
                 fi
                 
                 # Changeset oluştur
                 if [ ! -z "$CHANGED_PACKAGES" ]; then
-                  echo -e "---\n${CHANGED_PACKAGES}---\n\nAuto update" > .changeset/auto-update.md
+                  echo -e "---\n${CHANGED_PACKAGES}\n---\n\nAuto update" > .changeset/auto-update.md
                 fi
 
             # Version güncelle ve publish et
