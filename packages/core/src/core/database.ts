@@ -1,4 +1,5 @@
-import { Method, Model } from "@fookiejs/core"
+import { Method } from "./method"
+import { Model } from "./model/model"
 import { Payload } from "./payload"
 
 export class Database {
@@ -9,10 +10,10 @@ export class Database {
     modify: <T extends Model>(
         model: typeof Model,
     ) => {
-        [Method.CREATE]: (payload: Payload<T, Method.CREATE>) => Promise<T>
-        [Method.READ]: (payload: Payload<T, Method.READ>) => Promise<T[]>
-        [Method.UPDATE]: (payload: Payload<T, Method.UPDATE>) => Promise<boolean>
-        [Method.DELETE]: (payload: Payload<T, Method.DELETE>) => Promise<boolean>
+        create: (payload: Payload<T, Method.CREATE>) => Promise<T>
+        read: (payload: Payload<T, Method.READ>) => Promise<T[]>
+        update: (payload: Payload<T, Method.UPDATE>) => Promise<boolean>
+        delete: (payload: Payload<T, Method.DELETE>) => Promise<boolean>
     }
 
     static new(data: Database): Database {

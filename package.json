@@ -6,13 +6,8 @@
         "packages/*"
     ],
     "scripts": {
-        "build": "turbo run build",
-        "dev": "turbo run dev",
         "test": "turbo run test",
         "test:watch": "vitest",
-        "changeset": "changeset",
-        "version-packages": "changeset version",
-        "release": "turbo run build && changeset publish",
         "lint": "turbo run lint",
         "format": "turbo run format"
     },

@@ -11,7 +11,7 @@ on:
         paths-ignore:
             - "docs/**"
 jobs:
-    build-and-test:
+    test-and-lint:
         runs-on: ubuntu-latest
         strategy:
             matrix:
@@ -25,13 +25,11 @@ jobs:
 
             - run: npm install
             - run: npm test
-              working-directory: .
-            - run: npm run build
             - run: npm run lint
               if: success()
 
     publish:
-        needs: build-and-test
+        needs: test-and-lint
         runs-on: ubuntu-latest
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         steps:
@@ -45,7 +43,6 @@ jobs:
                   registry-url: 'https://registry.npmjs.org'
 
             - run: npm install
-            - run: npm run build
 
             - name: Create Release Pull Request or Publish
               id: changesets
@@ -62,7 +59,9 @@ jobs:
                 git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
             
             - name: Publish to NPM
-              run: npx turbo run publish-packages
+              run: |
+                cd packages/core && npm publish --access public
+                cd ../cache && npm publish --access public
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
