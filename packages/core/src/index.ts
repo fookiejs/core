@@ -16,4 +16,4 @@ export * from "./core/mixin"
 
 export * from "./defaults"
 
-export const instanceId = v4()
+export const fookieInstanceId = v4()
