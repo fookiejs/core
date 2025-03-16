@@ -76,35 +76,35 @@ jobs:
               run: |
                 COMMIT_MSG="${{ github.event.head_commit.message }}"
                 
-                # Hangi pakette değişiklik olduğunu kontrol et
+                # Her paket için ayrı changeset oluştur
                 if git diff --name-only HEAD^ HEAD | grep -q "^packages/core/"; then
-                  CORE_CHANGED=true
+                  echo "---" > .changeset/core-${GITHUB_SHA}.md
+                  if [[ $COMMIT_MSG == feat:core:* ]]; then
+                    echo "\"@fookiejs/core\": \"minor\"" >> .changeset/core-${GITHUB_SHA}.md
+                  elif [[ $COMMIT_MSG == fix:core:* ]]; then
+                    echo "\"@fookiejs/core\": \"patch\"" >> .changeset/core-${GITHUB_SHA}.md
+                  elif [[ $COMMIT_MSG == breaking:core:* ]]; then
+                    echo "\"@fookiejs/core\": \"major\"" >> .changeset/core-${GITHUB_SHA}.md
+                  fi
+                  echo "---" >> .changeset/core-${GITHUB_SHA}.md
+                  echo "" >> .changeset/core-${GITHUB_SHA}.md
+                  echo "${COMMIT_MSG}" >> .changeset/core-${GITHUB_SHA}.md
                 fi
+
                 if git diff --name-only HEAD^ HEAD | grep -q "^packages/cache/"; then
-                  CACHE_CHANGED=true
+                  echo "---" > .changeset/cache-${GITHUB_SHA}.md
+                  if [[ $COMMIT_MSG == feat:cache:* ]]; then
+                    echo "\"@fookiejs/cache\": \"minor\"" >> .changeset/cache-${GITHUB_SHA}.md
+                  elif [[ $COMMIT_MSG == fix:cache:* ]]; then
+                    echo "\"@fookiejs/cache\": \"patch\"" >> .changeset/cache-${GITHUB_SHA}.md
+                  elif [[ $COMMIT_MSG == breaking:cache:* ]]; then
+                    echo "\"@fookiejs/cache\": \"major\"" >> .changeset/cache-${GITHUB_SHA}.md
+                  fi
+                  echo "---" >> .changeset/cache-${GITHUB_SHA}.md
+                  echo "" >> .changeset/cache-${GITHUB_SHA}.md
+                  echo "${COMMIT_MSG}" >> .changeset/cache-${GITHUB_SHA}.md
                 fi
-                
-                if [[ $COMMIT_MSG == feat:* ]]; then
-                  CHANGE_TYPE="minor"
-                elif [[ $COMMIT_MSG == fix:* ]]; then
-                  CHANGE_TYPE="patch"
-                elif [[ $COMMIT_MSG == breaking:* ]]; then
-                  CHANGE_TYPE="major"
-                else
-                  CHANGE_TYPE="patch"
-                fi
-                
-                echo "---" > .changeset/auto-${GITHUB_SHA}.md
-                if [[ $CORE_CHANGED == true ]]; then
-                  echo "\"@fookiejs/core\": \"${CHANGE_TYPE}\"" >> .changeset/auto-${GITHUB_SHA}.md
-                fi
-                if [[ $CACHE_CHANGED == true ]]; then
-                  echo "\"@fookiejs/cache\": \"${CHANGE_TYPE}\"" >> .changeset/auto-${GITHUB_SHA}.md
-                fi
-                echo "---" >> .changeset/auto-${GITHUB_SHA}.md
-                echo "" >> .changeset/auto-${GITHUB_SHA}.md
-                echo "${COMMIT_MSG}" >> .changeset/auto-${GITHUB_SHA}.md
-                
+
             - name: Create Pull Request
               uses: peter-evans/create-pull-request@v5
               with:
