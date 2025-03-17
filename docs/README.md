@@ -19,49 +19,49 @@ npm install fookie
 ```javascript
 import { Builder, Database, Dictionary, Method, Mixin, Role, run, Type, Types, use } from "fookie"
 ;(async () => {
-  const todo_model = await Builder.model({
-    name: "todo",
-    database: Database.store,
-    schema: {
-      title: {
-        type: Fookie.Dictionary.type.string,
-      },
-      status: {
-        type: Fookie.Dictionary.type.string,
-        default: "Not Started",
-      },
-    },
-    bind: {
-      read: {
-        role: [Lifecycle.everybody],
-      },
-      create: {
-        role: [Lifecycle.system],
-      },
-    },
-  })
+	const todo_model = await Builder.model({
+		name: "todo",
+		database: Database.store,
+		schema: {
+			title: {
+				type: Fookie.Dictionary.type.string,
+			},
+			status: {
+				type: Fookie.Dictionary.type.string,
+				default: "Not Started",
+			},
+		},
+		bind: {
+			read: {
+				role: [Lifecycle.everybody],
+			},
+			create: {
+				role: [Lifecycle.system],
+			},
+		},
+	})
 
-  const todo_entity = await Fookie.run({
-    sub: process.env.SYSTEM_TOKEN, // Only "system" role can create a todo.
-    model: todo_model,
-    method: Method.Create,
-    body: {
-      title: "Example",
-    },
-  })
-  console.log(todo_entity)
+	const todo_entity = await Fookie.run({
+		sub: process.env.SYSTEM_TOKEN, // Only "system" role can create a todo.
+		model: todo_model,
+		method: Method.Create,
+		body: {
+			title: "Example",
+		},
+	})
+	console.log(todo_entity)
 
-  const todo_response = await Fookie.run({
-    model: todo_model,
-    method: Method.Read,
-    query: {
-      filter: {
-        title: "Example",
-      },
-    },
-  })
+	const todo_response = await Fookie.run({
+		model: todo_model,
+		method: Method.Read,
+		query: {
+			filter: {
+				title: "Example",
+			},
+		},
+	})
 
-  console.log(todo_response)
+	console.log(todo_response)
 })()
 /*
 todo_entity
@@ -149,31 +149,31 @@ import { Builder, Database, Dictionary, Method, Mixin, Role, run, Selection, Typ
 import { init_cache } from "fookie_cache"
 import { init_redis } from "fookie_redis"
 ;(async () => {
-  const database_redis = await init_redis()
-  const mixin_cache = await init_cache(database_redis)
+	const database_redis = await init_redis()
+	const mixin_cache = await init_cache(database_redis)
 
-  async function positive_integer(val) {
-    return val > 0
-  }
+	async function positive_integer(val) {
+		return val > 0
+	}
 
-  const product_model = await Builder.model({
-    name: "product",
-    database: Database.store,
-    mixins: [mixin_cache],
-    schema: {
-      name: { type: Fookie.Dictionary.type.string },
-      stock: {
-        type: Fookie.Dictionary.Type.integer,
-        validators: [positive_integer],
-      },
-      color: { type: Fookie.Dictionary.Type.integer },
-    },
-    bind: {
-      read: {
-        role: [Lifecycle.everybody],
-      },
-    },
-  })
+	const product_model = await Builder.model({
+		name: "product",
+		database: Database.store,
+		mixins: [mixin_cache],
+		schema: {
+			name: { type: Fookie.Dictionary.type.string },
+			stock: {
+				type: Fookie.Dictionary.Type.integer,
+				validators: [positive_integer],
+			},
+			color: { type: Fookie.Dictionary.Type.integer },
+		},
+		bind: {
+			read: {
+				role: [Lifecycle.everybody],
+			},
+		},
+	})
 })()
 ```
 
@@ -375,14 +375,15 @@ are some key data types you can define and their brief descriptions
 
 ## | name | description | | --------- |
 
-| ---------------------------------------------------------------------------------------------- | | Text | Used for
-text data. This accepts any string of characters, such as characters of the alphabet, numbers and special characters. |
-| Float | Accepts floating point numbers. | | | Integer | Accepts only integers. | | | Boolean | Accepts true or false
-values. | | | Buffer | Accepts a data buffer (Buffer). Especially used for storing binary data such as file contents. |
-| Plain | Accepts simple objects. | | Char | Accepts only a single character. | | Function | Accepts functions. | | |
-Array | Accepts an array of data of a specific type. | | DateType | Accepts only dates in 'YYYY-MM-DD' format. | | Time
-| Accepts time values containing hours, minutes and seconds. | | DateTime | Accepts timestamp values that contain both
-date and time information. | | Timestamp | Accepts timestamp values. |
+## |
+
+| | Text | Used for text data. This accepts any string of characters, such as characters of the alphabet, numbers and
+special characters. | | Float | Accepts floating point numbers. | | | Integer | Accepts only integers. | | | Boolean |
+Accepts true or false values. | | | Buffer | Accepts a data buffer (Buffer). Especially used for storing binary data
+such as file contents. | | Plain | Accepts simple objects. | | Char | Accepts only a single character. | | Function |
+Accepts functions. | | | Array | Accepts an array of data of a specific type. | | DateType | Accepts only dates in
+'YYYY-MM-DD' format. | | Time | Accepts time values containing hours, minutes and seconds. | | DateTime | Accepts
+timestamp values that contain both date and time information. | | Timestamp | Accepts timestamp values. |
 
 # Query and Response Structure
 
@@ -396,21 +397,21 @@ implementation of CRUD operations (Create, Read, Update, Delete) as well as othe
 import { Dictionary, Method, run } from "fookie"
 
 const response = await Fookie.run({
-  sub: "some string token",
-  model: Dictionary.Model.user,
-  method: Method.Update,
-  query: {
-    limit: 10,
-    offset: 1,
-    filter: {
-      email: {
-        eq: "foo@example-domain.com",
-      },
-    },
-  },
-  body: {
-    email: "bar@example-domain.com",
-  },
+	sub: "some string token",
+	model: Dictionary.Model.user,
+	method: Method.Update,
+	query: {
+		limit: 10,
+		offset: 1,
+		filter: {
+			email: {
+				eq: "foo@example-domain.com",
+			},
+		},
+	},
+	body: {
+		email: "bar@example-domain.com",
+	},
 })
 ```
 
@@ -426,9 +427,9 @@ FookieJS throws error messages for many common error conditions.
 
 ```javascript
 const response = await Fookie.run({
-  model: Dictionary.Model.NOT_EXISTED_MODEL,
-  method: Method.Read,
-  query: {},
+	model: Dictionary.Model.NOT_EXISTED_MODEL,
+	method: Method.Read,
+	query: {},
 })
 console.log(response)
 /*
@@ -449,53 +450,56 @@ not comply with these rules, the system automatically throws a validation error.
 ```javascript
 import { Builder, Database, Dictionary, Method, Mixin, Role, run, Selection, Type, Types, use } from "fookie"
 ;(async () => {
-  async function is_strong_password(password) {
-    var hasLowerCase = /[a-z]/.test(password)
-    var hasUpperCase = /[A-Z]/.test(password)
-    var hasNumbers = /\d/.test(password)
-    var hasSpecialChars = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/.test(password)
+	async function is_strong_password(password) {
+		var hasLowerCase = /[a-z]/.test(password)
+		var hasUpperCase = /[A-Z]/.test(password)
+		var hasNumbers = /\d/.test(password)
+		var hasSpecialChars = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/.test(
+			password,
+		)
 
-    return (
-      password.length >= 8 && hasLowerCase && hasUpperCase && hasNumbers && hasSpecialChars
-    )
-  }
+		return (
+			password.length >= 8 && hasLowerCase && hasUpperCase && hasNumbers &&
+			hasSpecialChars
+		)
+	}
 
-  async function is_email(email) {
-    var regex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/
-    return regex.test(email)
-  }
+	async function is_email(email) {
+		var regex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/
+		return regex.test(email)
+	}
 
-  const account = await Builder.model({
-    name: "account",
-    database: Database.store,
-    schema: {
-      email: {
-        type: Fookie.Dictionary.type.string,
-        validators: [is_email],
-      },
-      password: {
-        type: Fookie.Dictionary.type.string,
-        validators: [is_strong_password],
-      },
-    },
-    bind: {
-      create: {
-        role: [Lifecycle.everybody],
-      },
-    },
-  })
+	const account = await Builder.model({
+		name: "account",
+		database: Database.store,
+		schema: {
+			email: {
+				type: Fookie.Dictionary.type.string,
+				validators: [is_email],
+			},
+			password: {
+				type: Fookie.Dictionary.type.string,
+				validators: [is_strong_password],
+			},
+		},
+		bind: {
+			create: {
+				role: [Lifecycle.everybody],
+			},
+		},
+	})
 
-  const response = await Fookie.run({
-    model: account,
-    method: Method.Create,
-    body: {
-      email: "test",
-      password: "123456",
-    },
-  })
-  console.log(response)
+	const response = await Fookie.run({
+		model: account,
+		method: Method.Create,
+		body: {
+			email: "test",
+			password: "123456",
+		},
+	})
+	console.log(response)
 
-  /*
+	/*
 {
     data: null,
     status: false,

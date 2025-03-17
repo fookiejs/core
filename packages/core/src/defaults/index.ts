@@ -9,23 +9,23 @@ import { boolean } from "./type/boolean.ts"
 import { array } from "./type/array.ts"
 
 export const defaults = {
-  type: {
-    string,
-    date,
-    number,
-    boolean,
-    array,
-  },
-  database: {
-    store,
-  },
-  role: {
-    nobody,
-    system,
-    everybody,
-  },
-  feature: {
-    required: Symbol(),
-    unique: Symbol(),
-  },
+	type: {
+		string,
+		date,
+		number,
+		boolean,
+		array,
+	},
+	database: {
+		store,
+	},
+	role: {
+		nobody,
+		system,
+		everybody,
+	},
+	feature: {
+		required: Symbol(),
+		unique: Symbol(),
+	},
 }

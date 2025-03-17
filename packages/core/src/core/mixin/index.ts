@@ -5,5 +5,5 @@ export * from "./binds/before.ts"
 export * from "./binds/global.ts"
 
 export class Mixin extends BaseClass {
-  binds!: BindsType
+	binds!: BindsType
 }

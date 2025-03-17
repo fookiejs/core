@@ -1,5 +1,5 @@
 {
-  "name": "@fookie/core",
-  "version": "0.1.0",
-  "exports": "./mod.ts"
+	"name": "@fookiejs/core",
+	"version": "0.1.0",
+	"exports": "./mod.ts"
 }

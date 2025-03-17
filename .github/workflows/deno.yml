@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main]
 
+# Bu izinler, OIDC token'ı oluşturmak için gereklidir
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -32,7 +37,7 @@ jobs:
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Setup repo
         uses: actions/checkout@v3
@@ -53,5 +58,3 @@ jobs:
           cd ../graphql && jsr publish
           cd ../randomize && jsr publish
           cd ../cache && jsr publish
-        env:
-          JSR_TOKEN: ${{ secrets.JSR_TOKEN }} 

@@ -1,31 +1,31 @@
 {
-  "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
-  "parser": "@typescript-eslint/parser",
-  "plugins": ["@typescript-eslint"],
-  "root": true,
-  "rules": {
-    "@typescript-eslint/no-explicit-any": "warn",
-    //"es/no-arrow-functions": "error",
-    //"es/no-block-scoped-functions": "error",
-    //"es/no-classes": "error",
-    //"es/no-default-parameters": "error",
-    "@typescript-eslint/ban-types": "warn",
-    "no-inner-declarations": "warn",
-    "no-dupe-args": "warn",
-    "no-empty": [
-      "error",
-      {
-        "allowEmptyCatch": true
-      }
-    ],
-    "no-unused-vars": "off",
-    "quotes": [
-      "error",
-      "double",
-      {
-        "allowTemplateLiterals": true
-      }
-    ],
-    "semi": ["error", "never"]
-  }
+	"extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
+	"parser": "@typescript-eslint/parser",
+	"plugins": ["@typescript-eslint"],
+	"root": true,
+	"rules": {
+		"@typescript-eslint/no-explicit-any": "warn",
+		//"es/no-arrow-functions": "error",
+		//"es/no-block-scoped-functions": "error",
+		//"es/no-classes": "error",
+		//"es/no-default-parameters": "error",
+		"@typescript-eslint/ban-types": "warn",
+		"no-inner-declarations": "warn",
+		"no-dupe-args": "warn",
+		"no-empty": [
+			"error",
+			{
+				"allowEmptyCatch": true
+			}
+		],
+		"no-unused-vars": "off",
+		"quotes": [
+			"error",
+			"double",
+			{
+				"allowTemplateLiterals": true
+			}
+		],
+		"semi": ["error", "never"]
+	}
 }

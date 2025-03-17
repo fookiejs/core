@@ -2,41 +2,41 @@ import * as lodash from "https://raw.githubusercontent.com/lodash/lodash/4.17.21
 import { Rule } from "../../lifecycle-function.ts"
 
 export default Rule.create({
-  key: "validate_payload",
-  execute: async function (payload) {
-    if (lodash.has(payload, "options") && !lodash.isObject(payload.options)) {
-      return false
-    }
+	key: "validate_payload",
+	execute: async function (payload) {
+		if (lodash.has(payload, "options") && !lodash.isObject(payload.options)) {
+			return false
+		}
 
-    if (
-      lodash.has(payload.options, "sub") &&
-      !lodash.isNil(payload.options.sub) &&
-      !(
-        lodash.isString(payload.options.sub) ||
-        lodash.isSymbol(payload.options.sub)
-      )
-    ) {
-      return false
-    }
+		if (
+			lodash.has(payload.options, "sub") &&
+			!lodash.isNil(payload.options.sub) &&
+			!(
+				lodash.isString(payload.options.sub) ||
+				lodash.isSymbol(payload.options.sub)
+			)
+		) {
+			return false
+		}
 
-    if (lodash.has(payload, "body") && !lodash.isObject(payload.body)) {
-      return false
-    }
+		if (lodash.has(payload, "body") && !lodash.isObject(payload.body)) {
+			return false
+		}
 
-    if (lodash.has(payload, "query") && !lodash.isObject(payload.query)) {
-      return false
-    }
+		if (lodash.has(payload, "query") && !lodash.isObject(payload.query)) {
+			return false
+		}
 
-    const avaible_keys = [
-      "state",
-      "method",
-      "model",
-      "options",
-      "body",
-      "query",
-      "runId",
-    ]
+		const avaible_keys = [
+			"state",
+			"method",
+			"model",
+			"options",
+			"body",
+			"query",
+			"runId",
+		]
 
-    return lodash.without(lodash.keys(payload), ...avaible_keys).length === 0
-  },
+		return lodash.without(lodash.keys(payload), ...avaible_keys).length === 0
+	},
 })

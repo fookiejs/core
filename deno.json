@@ -1,51 +1,52 @@
 {
-  "workspace": [
-    "packages/core",
-    "packages/graphql",
-    "packages/randomize",
-    "packages/cache"
-  ],
+	"workspace": [
+		"packages/core",
+		"packages/graphql",
+		"packages/randomize",
+		"packages/cache"
+	],
 
-  "imports": {
-    "@fookiejs/cache": "./packages/cache/mod.ts",
-    "@fookiejs/core": "./packages/core/mod.ts",
-    "@fookiejs/core/": "./packages/core/",
-    "@fookiejs/graphql": "./packages/graphql/mod.ts",
-    "@fookiejs/randomize": "./packages/randomize/mod.ts",
-    "@std/expect": "jsr:@std/expect@^0.4.0",
-    "class-transformer": "npm:class-transformer",
-    "moment": "npm:moment",
-    "reflect-metadata": "npm:reflect-metadata",
-    "uuid": "npm:uuid"
-  },
-  "tasks": {
-    "dev": "deno run --allow-net --allow-env --allow-read mod.ts",
-    "test": "deno test --allow-net --allow-env --allow-read",
-    "test:core": "deno test --allow-net --allow-env --allow-read packages/core/test/",
-    "test:graphql": "deno test --allow-net --allow-env --allow-read packages/graphql/test/",
-    "test:randomize": "deno test --allow-net --allow-env --allow-read packages/randomize/test/",
-    "fix-imports": "deno run --allow-read --allow-write scripts/fix-imports.ts",
-    "check": "deno check ./packages/**/*.ts",
-    "lint": "deno lint ./packages/**/*.ts",
-    "fmt": "deno fmt ./packages/**/*.ts"
-  },
-  "compilerOptions": {
-    "allowJs": true,
-    "strict": false,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "noImplicitAny": false
-  },
-  "fmt": {
-    "lineWidth": 120,
-    "semiColons": false,
-    "singleQuote": false
-  },
-  "lint": {
-    "include": ["packages/**/*.ts"],
-    "rules": {
-      "tags": ["recommended"],
-      "exclude": ["no-explicit-any", "require-await"]
-    }
-  }
+	"imports": {
+		"@fookiejs/cache": "./packages/cache/mod.ts",
+		"@fookiejs/core": "./packages/core/mod.ts",
+		"@fookiejs/core/": "./packages/core/",
+		"@fookiejs/graphql": "./packages/graphql/mod.ts",
+		"@fookiejs/randomize": "./packages/randomize/mod.ts",
+		"@std/expect": "jsr:@std/expect@^0.4.0",
+		"class-transformer": "npm:class-transformer",
+		"moment": "npm:moment",
+		"reflect-metadata": "npm:reflect-metadata",
+		"uuid": "npm:uuid"
+	},
+	"tasks": {
+		"dev": "deno run --allow-net --allow-env --allow-read mod.ts",
+		"test": "deno test --allow-net --allow-env --allow-read",
+		"test:core": "deno test --allow-net --allow-env --allow-read packages/core/test/",
+		"test:graphql": "deno test --allow-net --allow-env --allow-read packages/graphql/test/",
+		"test:randomize": "deno test --allow-net --allow-env --allow-read packages/randomize/test/",
+		"fix-imports": "deno run --allow-read --allow-write scripts/fix-imports.ts",
+		"check": "deno check ./packages/**/*.ts",
+		"lint": "deno lint ./packages/**/*.ts",
+		"fmt": "deno fmt ./packages/**/*.ts"
+	},
+	"compilerOptions": {
+		"allowJs": true,
+		"strict": false,
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
+		"noImplicitAny": false
+	},
+	"fmt": {
+		"lineWidth": 120,
+		"semiColons": false,
+		"singleQuote": false,
+		"useTabs": true
+	},
+	"lint": {
+		"include": ["packages/**/*.ts"],
+		"rules": {
+			"tags": ["recommended"],
+			"exclude": ["no-explicit-any", "require-await"]
+		}
+	}
 }

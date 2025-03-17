@@ -10,21 +10,21 @@ import validate_attributes from "../rule/validate_attributes.ts"
 import validate_payload from "../rule/validate_payload.ts"
 
 export const globalRules: Rule<Model, Method>[] = [
-  validate_payload,
-  default_payload,
-  validate_payload,
-  has_method,
-  has_body,
-  validate_attributes,
-  db_connect,
+	validate_payload,
+	default_payload,
+	validate_payload,
+	has_method,
+	has_body,
+	validate_attributes,
+	db_connect,
 ] as const
 
 export const globalEffects: Effect<Model, Method>[] = [db_disconnect] as const
 
 export function addGlobalRule(rule: Rule) {
-  globalRules.push(rule)
+	globalRules.push(rule)
 }
 
 export function addGlobalEffect(effect: Effect) {
-  globalEffects.push(effect)
+	globalEffects.push(effect)
 }

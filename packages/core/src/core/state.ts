@@ -1,3 +1,3 @@
 export class State {
-  cachedResponse?: string
+	cachedResponse?: string
 }

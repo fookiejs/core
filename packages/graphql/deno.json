@@ -1,5 +1,5 @@
 {
-  "name": "@fookie/graphql",
-  "version": "0.1.0",
-  "exports": "./mod.ts"
+	"name": "@fookiejs/graphql",
+	"version": "0.1.0",
+	"exports": "./mod.ts"
 }
