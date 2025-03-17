@@ -2,7 +2,7 @@ import { Type } from "../../core/type.ts"
 
 import * as lodash from "https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/lodash.js"
 
-export const boolean = Type.create({
+export const boolean: Type = Type.create({
 	key: "boolean",
 	validate: lodash.isBoolean,
 	example: true,

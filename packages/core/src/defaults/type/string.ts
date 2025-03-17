@@ -2,7 +2,7 @@ import { Type } from "../../core/type.ts"
 
 import * as lodash from "https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/lodash.js"
 
-export const string = Type.create({
+export const string: Type = Type.create({
 	key: "string",
 	jsonType: "string",
 	validate: lodash.isString,

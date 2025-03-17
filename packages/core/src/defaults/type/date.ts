@@ -9,7 +9,7 @@ function isDate(value: unknown) {
 	return moment(value as string, "YYYY-MM-DD", true).isValid()
 }
 
-export const date = Type.create({
+export const date: Type = Type.create({
 	key: "date",
 	jsonType: "date",
 	validate: isDate,
