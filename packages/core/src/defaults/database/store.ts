@@ -1,4 +1,5 @@
 import * as lodash from "https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/lodash.js"
+
 import { Database } from "../../core/database.ts"
 import type { Model, QueryType } from "../../core/model/model.ts"
 import { Method } from "../../core/method.ts"

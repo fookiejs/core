@@ -13,10 +13,12 @@
 		"@fookiejs/graphql": "./packages/graphql/mod.ts",
 		"@fookiejs/randomize": "./packages/randomize/mod.ts",
 		"@std/expect": "jsr:@std/expect@^0.4.0",
-		"class-transformer": "npm:class-transformer",
-		"moment": "npm:moment",
-		"reflect-metadata": "npm:reflect-metadata",
-		"uuid": "npm:uuid"
+		"class-transformer": "npm:class-transformer@^0.5.1",
+		"moment": "npm:moment@^2.30.1",
+		"reflect-metadata": "npm:reflect-metadata@^0.2.2",
+		"uuid": "npm:uuid@^11.1.0",
+		"lodash": "npm:lodash",
+		"std/": "jsr:@std/"
 	},
 	"tasks": {
 		"dev": "deno run --allow-net --allow-env --allow-read mod.ts",
@@ -48,5 +50,6 @@
 			"tags": ["recommended"],
 			"exclude": ["no-explicit-any", "require-await", "no-slow-types"]
 		}
-	}
+	},
+	"license": "MIT"
 }

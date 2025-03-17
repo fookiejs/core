@@ -6,7 +6,6 @@ on:
   pull_request:
     branches: [main]
 
-# Bu izinler, OIDC token'ı oluşturmak için gereklidir
 permissions:
   contents: read
   id-token: write

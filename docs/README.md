@@ -260,7 +260,9 @@ import {
     use,
     run,
 } from "fookie";
-import * as lodash from "https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/lodash.js";
+
+import { add, eq } from 'https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/lodash.js';
+;
 ;
 (async () => {
     const set_draft = Builder.lifecycle(async function set_draft(payload, state) {

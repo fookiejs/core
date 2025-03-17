@@ -1,5 +1,6 @@
 import { type BindsType, type Database, Field, Lifecycle, Method, Model, Type } from "@fookiejs/core"
 import { v4 } from "uuid"
+
 import * as lodash from "https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/lodash.js"
 
 export class Randomize {
