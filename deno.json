@@ -46,7 +46,7 @@
 		"include": ["packages/**/*.ts"],
 		"rules": {
 			"tags": ["recommended"],
-			"exclude": ["no-explicit-any", "require-await"]
+			"exclude": ["no-explicit-any", "require-await","no-slow-types"]
 		}
 	}
 }
