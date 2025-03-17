@@ -2,7 +2,9 @@
 
 # What is FookieJS?
 
-FookieJS is an extensible Typescript Framework that provides integrated CRUD functionality by defining your application's data structures with models. With this structure, FookieJS supports fast and consistent application development while enabling you to implement complex functions with ease.
+FookieJS is an extensible Typescript Framework that provides integrated CRUD functionality by defining your
+application's data structures with models. With this structure, FookieJS supports fast and consistent application
+development while enabling you to implement complex functions with ease.
 
 # Get Started
 
@@ -15,54 +17,53 @@ npm install fookie
 ## **Hello World!**
 
 ```javascript
-import { Dictionary, Builder, Database, Method, Mixin, Role, Type, Types, use, run } from "fookie";
+import { Builder, Database, Dictionary, Method, Mixin, Role, run, Type, Types, use } from "fookie"
+;(async () => {
+  const todo_model = await Builder.model({
+    name: "todo",
+    database: Database.store,
+    schema: {
+      title: {
+        type: Fookie.Dictionary.type.string,
+      },
+      status: {
+        type: Fookie.Dictionary.type.string,
+        default: "Not Started",
+      },
+    },
+    bind: {
+      read: {
+        role: [Lifecycle.everybody],
+      },
+      create: {
+        role: [Lifecycle.system],
+      },
+    },
+  })
 
-(async () => {
-    const todo_model = await Builder.model({
-        name: "todo",
-        database: Database.store,
-        schema: {
-            title: {
-                type: Fookie.Dictionary.type.string,
-            },
-            status: {
-                type: Fookie.Dictionary.type.string,
-                default: "Not Started",
-            },
-        },
-        bind: {
-            read: {
-                role: [Lifecycle.everybody],
-            },
-            create: {
-                role: [Lifecycle.system],
-            },
-        },
-    });
+  const todo_entity = await Fookie.run({
+    sub: process.env.SYSTEM_TOKEN, // Only "system" role can create a todo.
+    model: todo_model,
+    method: Method.Create,
+    body: {
+      title: "Example",
+    },
+  })
+  console.log(todo_entity)
 
-    const todo_entity = await Fookie.run({
-        sub: process.env.SYSTEM_TOKEN, // Only "system" role can create a todo.
-        model: todo_model,
-        method: Method.Create,
-        body: {
-            title: "Example",
-        },
-    });
-    console.log(todo_entity);
+  const todo_response = await Fookie.run({
+    model: todo_model,
+    method: Method.Read,
+    query: {
+      filter: {
+        title: "Example",
+      },
+    },
+  })
 
-    const todo_response = await Fookie.run({
-        model: todo_model,
-        method: Method.Read,
-        query: {
-            filter: {
-                title: "Example",
-            },
-        },
-    });
-
-    console.log(todo_response);
-})();
-/* 
+  console.log(todo_response)
+})()
+/*
 todo_entity
 {
   data: {
@@ -76,7 +77,7 @@ todo_entity
 }
 
 todo_response
-{ 
+{
   data: [
     {
       id: '365c7be01f4d-4254-9d34-5cfeb8800dea',
@@ -93,13 +94,15 @@ todo_response
 
 # **Packages and Modules**
 
-FookieJS makes your application development process simple and effective through integrated packages and modules. These modules come together to fulfill the basic needs of your application.
+FookieJS makes your application development process simple and effective through integrated packages and modules. These
+modules come together to fulfill the basic needs of your application.
 
 ## **Core Packages**
 
 ### **Builder**
 
-It is the basic building block of your application. It allows you to define models and perform operations on these models.
+It is the basic building block of your application. It allows you to define models and perform operations on these
+models.
 
 ### **run**
 
@@ -131,57 +134,47 @@ It allows you to assign to here like something role, mixin and model
 
 # **Model Creation**
 
-With FookieJS, creating models, the basic building block of your application, is extremely simple. Models define the data structure of your application and the operations on these structures. In this section, we explain how a model is defined and its most basic properties.
+With FookieJS, creating models, the basic building block of your application, is extremely simple. Models define the
+data structure of your application and the operations on these structures. In this section, we explain how a model is
+defined and its most basic properties.
 
 ## **Model Definition and Properties**
 
-Models are the structure that helps your application interact with the database. Each model represents a specific data structure and contains information about how that structure is stored, how it is queried, etc.
+Models are the structure that helps your application interact with the database. Each model represents a specific data
+structure and contains information about how that structure is stored, how it is queried, etc.
 
 ```javascript
-import {
-    Dictionary,
-    Builder,
-    Database,
-    Method,
-    Mixin,
-    Role,
-    Selection,
-    Type,
-    Types,
-    use,
-    run,
-} from "fookie";
+import { Builder, Database, Dictionary, Method, Mixin, Role, run, Selection, Type, Types, use } from "fookie"
 
-import { init_cache } from "fookie_cache";
-import { init_redis } from "fookie_redis";
+import { init_cache } from "fookie_cache"
+import { init_redis } from "fookie_redis"
+;(async () => {
+  const database_redis = await init_redis()
+  const mixin_cache = await init_cache(database_redis)
 
-(async () => {
-    const database_redis = await init_redis();
-    const mixin_cache = await init_cache(database_redis);
+  async function positive_integer(val) {
+    return val > 0
+  }
 
-    async function positive_integer(val) {
-        return val > 0;
-    }
-
-    const product_model = await Builder.model({
-        name: "product",
-        database: Database.store,
-        mixins: [mixin_cache],
-        schema: {
-            name: { type: Fookie.Dictionary.type.string },
-            stock: {
-                type: Fookie.Dictionary.Type.integer,
-                validators: [positive_integer],
-            },
-            color: { type: Fookie.Dictionary.Type.integer },
-        },
-        bind: {
-            read: {
-                role: [Lifecycle.everybody],
-            },
-        },
-    });
-})();
+  const product_model = await Builder.model({
+    name: "product",
+    database: Database.store,
+    mixins: [mixin_cache],
+    schema: {
+      name: { type: Fookie.Dictionary.type.string },
+      stock: {
+        type: Fookie.Dictionary.Type.integer,
+        validators: [positive_integer],
+      },
+      color: { type: Fookie.Dictionary.Type.integer },
+    },
+    bind: {
+      read: {
+        role: [Lifecycle.everybody],
+      },
+    },
+  })
+})()
 ```
 
 ## **Defination of Model Fields**
@@ -198,26 +191,20 @@ import { init_redis } from "fookie_redis";
 
 Fields are used to define how each field in the model behaves. Here are some properties that can be used in this fielder
 
-| key            | description                                                   |
-| -------------- | ------------------------------------------------------------- | ----------------------------- |
-| type           | Specifies which data type the field is.                       |
-| required       | Indicates whether the field is mandatory or not.              |
-| unique         | Indicates whether the field is unique or not.                 |
-| default        | Indicates the default value for the field.                    |
-| unique_group   | Specifies the uniqueness groups.                              |
-| relation       | Specifies the relationship with other models.                 |
-| read           | Specifies which roles can read the information in this field. |
-| write          | Information in this field specifies which roles can write.    |
-| minimum        | Specifies minimum limits for numeric values.                  |
-| maximum        | Specifies maximum limits for numeric values.                  |
-| minimum_size   | Specifies size limits for arrays.                             |
-| maximum_size   | Specifies size limits for arrays.                             |
-| selection      | specifies a specific type of selection.                       |
-| validators     | Specifies special validators.                                 | specifies whether it is null. |
+| key | description | | -------------- | ------------------------------------------------------------- |
+----------------------------- | | type | Specifies which data type the field is. | | required | Indicates whether the
+field is mandatory or not. | | unique | Indicates whether the field is unique or not. | | default | Indicates the
+default value for the field. | | unique_group | Specifies the uniqueness groups. | | relation | Specifies the
+relationship with other models. | | read | Specifies which roles can read the information in this field. | | write |
+Information in this field specifies which roles can write. | | minimum | Specifies minimum limits for numeric values. |
+| maximum | Specifies maximum limits for numeric values. | | minimum_size | Specifies size limits for arrays. | |
+maximum_size | Specifies size limits for arrays. | | selection | specifies a specific type of selection. | | validators
+| Specifies special validators. | specifies whether it is null. |
 
 ## **Bind**
 
-This defines how the methods of a model work. It can be written separately for each method. Below is an example for create.
+This defines how the methods of a model work. It can be written separately for each method. Below is an example for
+create.
 
 | lifecycle | description                                                                        |
 | --------- | ---------------------------------------------------------------------------------- |
@@ -234,23 +221,28 @@ This defines how the methods of a model work. It can be written separately for e
 
 ### Bind
 
-The **`bind`** concept allows you to control operations (such as CRUD operations) performed on a specific model. For example, it specifies which roles can read, update, create or delete a model.
+The **`bind`** concept allows you to control operations (such as CRUD operations) performed on a specific model. For
+example, it specifies which roles can read, update, create or delete a model.
 
 ### Role
 
-**`role`** represents the authorization of users or systems to perform certain operations. For example, **`Lifecycle.everybody`** gives access to all users, while **`Lifecycle.nobody`** gives access to no users.
+**`role`** represents the authorization of users or systems to perform certain operations. For example,
+**`Lifecycle.everybody`** gives access to all users, while **`Lifecycle.nobody`** gives access to no users.
 
 ### \***\*Lifecycle, Reject ve Accept\*\***
 
 The **`lifecycle`** specifies special functions to be executed during the operation performed on a model.
 
-\***\*Reject ve Accept\*\***
-For each model operation, **`reject`** and **`accept`** are used to accept or reject specific roles.
+\***\*Reject ve Accept\*\*** For each model operation, **`reject`** and **`accept`** are used to accept or reject
+specific roles.
 
--   **Reject**: Used to reject the operation. If **`reject`** is defined for a role and a user with that role tries to perform the specified operation, the operation will be rejected.
--   **Accept**: Used to accept the operation. If **`accept`** is defined for a role and a user with that role attempts to perform the specified operation, the operation is accepted.
+- **Reject**: Used to reject the operation. If **`reject`** is defined for a role and a user with that role tries to
+  perform the specified operation, the operation will be rejected.
+- **Accept**: Used to accept the operation. If **`accept`** is defined for a role and a user with that role attempts to
+  perform the specified operation, the operation is accepted.
 
-The **`lifecycle`** functions you specify in **`reject`** and **`accept`** are used to determine whether a transaction is rejected or accepted.
+The **`lifecycle`** functions you specify in **`reject`** and **`accept`** are used to determine whether a transaction
+is rejected or accepted.
 
 ### Example
 
@@ -376,57 +368,57 @@ import * as lodash from "https://raw.githubusercontent.com/lodash/lodash/4.17.21
 
 # **Data Types**
 
-The basic data types you can use in FookieJS are critical for defining the structure of your data in the database. Here are some key data types you can define and their brief descriptions
+The basic data types you can use in FookieJS are critical for defining the structure of your data in the database. Here
+are some key data types you can define and their brief descriptions
 
 ## **Core Data Types**
 
-| name      | description                                                                                                                    |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| Text      | Used for text data. This accepts any string of characters, such as characters of the alphabet, numbers and special characters. |
-| Float     | Accepts floating point numbers.                                                                                                |
-|           | Integer                                                                                                                        | Accepts only integers.                                                                         |
-|           | Boolean                                                                                                                        | Accepts true or false values.                                                                  |
-|           | Buffer                                                                                                                         | Accepts a data buffer (Buffer). Especially used for storing binary data such as file contents. |
-| Plain     | Accepts simple objects.                                                                                                        |
-| Char      | Accepts only a single character.                                                                                               |
-| Function  | Accepts functions.                                                                                                             |
-|           | Array                                                                                                                          | Accepts an array of data of a specific type.                                                   |
-| DateType  | Accepts only dates in 'YYYY-MM-DD' format.                                                                                     |
-| Time      | Accepts time values containing hours, minutes and seconds.                                                                     |
-| DateTime  | Accepts timestamp values that contain both date and time information.                                                          |
-| Timestamp | Accepts timestamp values.                                                                                                      |
+## | name | description | | --------- |
+
+| ---------------------------------------------------------------------------------------------- | | Text | Used for
+text data. This accepts any string of characters, such as characters of the alphabet, numbers and special characters. |
+| Float | Accepts floating point numbers. | | | Integer | Accepts only integers. | | | Boolean | Accepts true or false
+values. | | | Buffer | Accepts a data buffer (Buffer). Especially used for storing binary data such as file contents. |
+| Plain | Accepts simple objects. | | Char | Accepts only a single character. | | Function | Accepts functions. | | |
+Array | Accepts an array of data of a specific type. | | DateType | Accepts only dates in 'YYYY-MM-DD' format. | | Time
+| Accepts time values containing hours, minutes and seconds. | | DateTime | Accepts timestamp values that contain both
+date and time information. | | Timestamp | Accepts timestamp values. |
 
 # Query and Response Structure
 
 ## **Run Function and Usage**
 
-In FookieJS, the **`run`** function allows to execute a specific method on a model. This function facilitates the implementation of CRUD operations (Create, Read, Update, Delete) as well as other specialized methods. Basically, the **`run`** function is the trigger for a model to perform a specific operation.
+In FookieJS, the **`run`** function allows to execute a specific method on a model. This function facilitates the
+implementation of CRUD operations (Create, Read, Update, Delete) as well as other specialized methods. Basically, the
+**`run`** function is the trigger for a model to perform a specific operation.
 
 ```javascript
-import { Dictionary, Method, run } from "fookie";
+import { Dictionary, Method, run } from "fookie"
 
 const response = await Fookie.run({
-    sub: "some string token",
-    model: Dictionary.Model.user,
-    method: Method.Update,
-    query: {
-        limit: 10,
-        offset: 1,
-        filter: {
-            email: {
-                eq: "foo@example-domain.com",
-            },
-        },
+  sub: "some string token",
+  model: Dictionary.Model.user,
+  method: Method.Update,
+  query: {
+    limit: 10,
+    offset: 1,
+    filter: {
+      email: {
+        eq: "foo@example-domain.com",
+      },
     },
-    body: {
-        email: "bar@example-domain.com",
-    },
-});
+  },
+  body: {
+    email: "bar@example-domain.com",
+  },
+})
 ```
 
 # Error Management
 
-In a software application, unexpected situations and errors are inevitable. FookieJS has an effective error handling mechanism to manage such situations. Thanks to this mechanism, errors are reported to both the developer and the users of the application with meaningful and informative messages.
+In a software application, unexpected situations and errors are inevitable. FookieJS has an effective error handling
+mechanism to manage such situations. Thanks to this mechanism, errors are reported to both the developer and the users
+of the application with meaningful and informative messages.
 
 ## Standard Errors
 
@@ -434,11 +426,11 @@ FookieJS throws error messages for many common error conditions.
 
 ```javascript
 const response = await Fookie.run({
-    model: Dictionary.Model.NOT_EXISTED_MODEL,
-    method: Method.Read,
-    query: {},
-});
-console.log(response);
+  model: Dictionary.Model.NOT_EXISTED_MODEL,
+  method: Method.Read,
+  query: {},
+})
+console.log(response)
 /*
 {
   data: null,
@@ -451,80 +443,68 @@ console.log(response);
 
 ## **Validation Errors**
 
-FookieJS provides a specific set of types and rules for the fields defined on the models. When data is entered that does not comply with these rules, the system automatically throws a validation error.
+FookieJS provides a specific set of types and rules for the fields defined on the models. When data is entered that does
+not comply with these rules, the system automatically throws a validation error.
 
 ```javascript
-import {
-    Dictionary,
-    Builder,
-    Database,
-    Method,
-    Mixin,
-    Role,
-    Selection,
-    Type,
-    Types,
-    use,
-    run,
-} from "fookie";
+import { Builder, Database, Dictionary, Method, Mixin, Role, run, Selection, Type, Types, use } from "fookie"
+;(async () => {
+  async function is_strong_password(password) {
+    var hasLowerCase = /[a-z]/.test(password)
+    var hasUpperCase = /[A-Z]/.test(password)
+    var hasNumbers = /\d/.test(password)
+    var hasSpecialChars = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/.test(password)
 
-(async () => {
-    async function is_strong_password(password) {
-        var hasLowerCase = /[a-z]/.test(password);
-        var hasUpperCase = /[A-Z]/.test(password);
-        var hasNumbers = /\d/.test(password);
-        var hasSpecialChars = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/.test(password);
+    return (
+      password.length >= 8 && hasLowerCase && hasUpperCase && hasNumbers && hasSpecialChars
+    )
+  }
 
-        return (
-            password.length >= 8 && hasLowerCase && hasUpperCase && hasNumbers && hasSpecialChars
-        );
-    }
+  async function is_email(email) {
+    var regex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/
+    return regex.test(email)
+  }
 
-    async function is_email(email) {
-        var regex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
-        return regex.test(email);
-    }
+  const account = await Builder.model({
+    name: "account",
+    database: Database.store,
+    schema: {
+      email: {
+        type: Fookie.Dictionary.type.string,
+        validators: [is_email],
+      },
+      password: {
+        type: Fookie.Dictionary.type.string,
+        validators: [is_strong_password],
+      },
+    },
+    bind: {
+      create: {
+        role: [Lifecycle.everybody],
+      },
+    },
+  })
 
-    const account = await Builder.model({
-        name: "account",
-        database: Database.store,
-        schema: {
-            email: {
-                type: Fookie.Dictionary.type.string,
-                validators: [is_email],
-            },
-            password: {
-                type: Fookie.Dictionary.type.string,
-                validators: [is_strong_password],
-            },
-        },
-        bind: {
-            create: {
-                role: [Lifecycle.everybody],
-            },
-        },
-    });
+  const response = await Fookie.run({
+    model: account,
+    method: Method.Create,
+    body: {
+      email: "test",
+      password: "123456",
+    },
+  })
+  console.log(response)
 
-    const response = await Fookie.run({
-        model: account,
-        method: Method.Create,
-        body: {
-            email: "test",
-            password: "123456",
-        },
-    });
-    console.log(response);
-
-    /*
+  /*
 {
     data: null,
     status: false,
     error: "validate_body",
-    validation_error: { 
-			email: ["is_email"], 
-			password: ["is_strong_password"] 
+    validation_error: {
+			email: ["is_email"],
+			password: ["is_strong_password"]
 		},
   }
-*/
-})();
+  */
+})()
 ```

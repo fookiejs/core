@@ -1,26 +1,23 @@
-import * as lodash from "https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/lodash.js";
-import { Rule } from "../../lifecycle-function.ts";
-import { defaults } from "../../../defaults/index.ts";
+import * as lodash from "https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/lodash.js"
+import { Rule } from "../../lifecycle-function.ts"
+import { defaults } from "../../../defaults/index.ts"
 
 export default Rule.create({
   key: "check_required",
   execute: async function (payload) {
-    const search = [null, undefined];
-    const keys =
-      payload.method == "create"
-        ? lodash.keys(payload.model.schema())
-        : lodash.keys(payload.body);
+    const search = [null, undefined]
+    const keys = payload.method == "create" ? lodash.keys(payload.model.schema()) : lodash.keys(payload.body)
     for (const key of keys) {
       if (
         (payload.model.schema() as Record<string, any>)[key].features.includes(
-          defaults.feature.required
+          defaults.feature.required,
         )
       ) {
         if (search.includes((payload.body as Record<string, any>)[key])) {
-          return false;
+          return false
         }
       }
     }
-    return true;
+    return true
   },
-});
+})

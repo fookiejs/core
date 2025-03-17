@@ -1,5 +1,5 @@
-import { create } from "@fookiejs/graphql";
-import { defaults, Model, Field } from "@fookiejs/core";
+import { create } from "@fookiejs/graphql"
+import { defaults, Field, Model } from "@fookiejs/core"
 
 @Model.Decorator({
   database: defaults.database.store,
@@ -8,23 +8,23 @@ export class User extends Model {
   @Field.Decorator({
     type: defaults.type.string,
   })
-  name!: string;
+  name!: string
 
   @Field.Decorator({
     type: defaults.type.string,
   })
-  email!: string;
+  email!: string
 
   @Field.Decorator({
     type: defaults.type.number,
   })
-  height!: number;
+  height!: number
 
   @Field.Decorator({
     type: defaults.type.boolean,
     default: true,
   })
-  isActive!: boolean;
+  isActive!: boolean
 }
 
 @Model.Decorator({
@@ -34,7 +34,7 @@ export class Company extends Model {
   @Field.Decorator({
     type: defaults.type.string,
   })
-  name!: string;
+  name!: string
 }
 
 @Model.Decorator({
@@ -44,12 +44,12 @@ export class Team extends Model {
   @Field.Decorator({
     type: defaults.type.string,
   })
-  name!: string;
+  name!: string
 
   @Field.Decorator({
     relation: Company,
   })
-  company!: Company;
+  company!: Company
 }
 
 @Model.Decorator({
@@ -59,12 +59,12 @@ export class UserTeam extends Model {
   @Field.Decorator({
     relation: User,
   })
-  user!: User;
+  user!: User
 
   @Field.Decorator({
     relation: Team,
   })
-  team!: Team;
+  team!: Team
 }
 
 @Model.Decorator({
@@ -74,12 +74,12 @@ export class Meeting extends Model {
   @Field.Decorator({
     relation: User,
   })
-  user!: User;
+  user!: User
 
   @Field.Decorator({
     relation: Company,
   })
-  company!: Company;
+  company!: Company
 }
 
 @Model.Decorator({
@@ -89,12 +89,12 @@ export class TeamMeeting extends Model {
   @Field.Decorator({
     relation: Team,
   })
-  team!: Team;
+  team!: Team
 
   @Field.Decorator({
     relation: Meeting,
   })
-  meeting!: Meeting;
+  meeting!: Meeting
 }
 
 @Model.Decorator({
@@ -104,12 +104,12 @@ export class UserMeetingAccess extends Model {
   @Field.Decorator({
     relation: User,
   })
-  user!: User;
+  user!: User
 
   @Field.Decorator({
     relation: Meeting,
   })
-  meeting!: Meeting;
+  meeting!: Meeting
 }
 
 @Model.Decorator({
@@ -119,17 +119,17 @@ export class MeetingAnalytics extends Model {
   @Field.Decorator({
     relation: Meeting,
   })
-  meeting!: Meeting;
+  meeting!: Meeting
 
   @Field.Decorator({
     type: defaults.type.string,
   })
-  summary!: string;
+  summary!: string
 
   @Field.Decorator({
     type: defaults.type.array(defaults.type.string),
   })
-  actionItems!: string[];
+  actionItems!: string[]
 }
 
 @Model.Decorator({
@@ -139,22 +139,22 @@ export class UserPaymentHistory extends Model {
   @Field.Decorator({
     relation: User,
   })
-  user!: User;
+  user!: User
 
   @Field.Decorator({
     type: defaults.type.string,
   })
-  paymentMethod!: string;
+  paymentMethod!: string
 
   @Field.Decorator({
     type: defaults.type.number,
   })
-  amount!: number;
+  amount!: number
 
   @Field.Decorator({
     type: defaults.type.date,
   })
-  paymentDate!: Date;
+  paymentDate!: Date
 }
 
 @Model.Decorator({
@@ -164,17 +164,17 @@ export class CompanyDocuments extends Model {
   @Field.Decorator({
     relation: Company,
   })
-  company!: Company;
+  company!: Company
 
   @Field.Decorator({
     type: defaults.type.string,
   })
-  documentType!: string;
+  documentType!: string
 
   @Field.Decorator({
     type: defaults.type.string,
   })
-  documentUrl!: string;
+  documentUrl!: string
 }
 
 @Model.Decorator({
@@ -184,23 +184,23 @@ export class CompanyUserRole extends Model {
   @Field.Decorator({
     relation: Company,
   })
-  company!: Company;
+  company!: Company
 
   @Field.Decorator({
     relation: User,
   })
-  user!: User;
+  user!: User
 
   @Field.Decorator({
     type: defaults.type.string,
   })
-  role!: string;
+  role!: string
 }
 
 Deno.test("Graphql", () => {
   Deno.test("Generate Graphql Schema", async () => {
-    const schema = create();
+    const schema = create()
 
-    console.log(schema);
-  });
-});
+    console.log(schema)
+  })
+})

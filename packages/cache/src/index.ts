@@ -1,4 +1,4 @@
-import crypto from "node:crypto";
+import crypto from "node:crypto"
 import {
   Config,
   type Database,
@@ -10,17 +10,17 @@ import {
   Mixin,
   Model,
   Modify,
-} from "@fookiejs/core";
+} from "@fookiejs/core"
 
 export function hasher(data: any): string {
-  const hash = crypto.createHash("sha256");
-  hash.update(JSON.stringify(data));
-  return hash.digest("hex");
+  const hash = crypto.createHash("sha256")
+  hash.update(JSON.stringify(data))
+  return hash.digest("hex")
 }
 
 export interface CacheModule {
-  FookieCache: typeof Model;
-  createMixin: (ttl: number) => Mixin;
+  FookieCache: typeof Model
+  createMixin: (ttl: number) => Mixin
 }
 
 export function initCache(database: Database): CacheModule {
@@ -46,25 +46,25 @@ export function initCache(database: Database): CacheModule {
       type: defaults.type.string,
       features: [defaults.feature.required],
     })
-    model!: string;
+    model!: string
 
     @Field.Decorator({
       type: defaults.type.string,
       features: [defaults.feature.required],
     })
-    hash!: string;
+    hash!: string
 
     @Field.Decorator({
       type: defaults.type.string,
       features: [defaults.feature.required],
     })
-    data!: string;
+    data!: string
 
     @Field.Decorator({
       type: defaults.type.number,
       features: [defaults.feature.required],
     })
-    expiresAt!: number;
+    expiresAt!: number
   }
 
   const isCached = Modify.create({
@@ -74,7 +74,7 @@ export function initCache(database: Database): CacheModule {
         sub: payload.options.sub,
         query: payload.query,
         model: payload.model.name,
-      });
+      })
 
       const entries = await FookieCache.read(
         {
@@ -86,14 +86,14 @@ export function initCache(database: Database): CacheModule {
         },
         {
           sub: Config.SYSTEM_TOKEN,
-        }
-      );
+        },
+      )
 
       if (!(entries instanceof FookieError) && entries.length > 0) {
-        payload.state.cachedResponse = JSON.parse(entries[0].data);
+        payload.state.cachedResponse = JSON.parse(entries[0].data)
       }
     },
-  });
+  })
 
   const cacheResponse = (ttl: number) =>
     Effect.create({
@@ -103,9 +103,9 @@ export function initCache(database: Database): CacheModule {
           sub: payload.options.sub,
           query: payload.query,
           model: payload.model.name,
-        });
+        })
 
-        const expiresAt = Date.now() + ttl;
+        const expiresAt = Date.now() + ttl
 
         await FookieCache.create(
           {
@@ -116,10 +116,10 @@ export function initCache(database: Database): CacheModule {
           },
           {
             sub: Config.SYSTEM_TOKEN,
-          }
-        );
+          },
+        )
       },
-    });
+    })
 
   const cacheCreateResponse = (ttl: number) =>
     Effect.create({
@@ -136,9 +136,9 @@ export function initCache(database: Database): CacheModule {
             limit: 1,
           },
           model: payload.model.name,
-        });
+        })
 
-        const expiresAt = Date.now() + ttl;
+        const expiresAt = Date.now() + ttl
 
         await FookieCache.create(
           {
@@ -149,10 +149,10 @@ export function initCache(database: Database): CacheModule {
           },
           {
             sub: Config.SYSTEM_TOKEN,
-          }
-        );
+          },
+        )
       },
-    });
+    })
 
   const clearModelCache = Effect.create({
     key: "clearCache",
@@ -165,10 +165,10 @@ export function initCache(database: Database): CacheModule {
         },
         {
           sub: Config.SYSTEM_TOKEN,
-        }
-      );
+        },
+      )
     },
-  });
+  })
 
   const clearExpiredCache = Effect.create({
     key: "clearExpiredCache",
@@ -181,10 +181,10 @@ export function initCache(database: Database): CacheModule {
         },
         {
           sub: Config.SYSTEM_TOKEN,
-        }
-      );
+        },
+      )
     },
-  });
+  })
 
   return {
     FookieCache: FookieCache,
@@ -210,7 +210,7 @@ export function initCache(database: Database): CacheModule {
             effect: [clearModelCache, clearExpiredCache],
           },
         },
-      });
+      })
     },
-  };
+  }
 }

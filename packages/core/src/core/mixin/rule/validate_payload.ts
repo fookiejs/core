@@ -1,11 +1,11 @@
-import * as lodash from "https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/lodash.js";
-import { Rule } from "../../lifecycle-function.ts";
+import * as lodash from "https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/lodash.js"
+import { Rule } from "../../lifecycle-function.ts"
 
 export default Rule.create({
   key: "validate_payload",
   execute: async function (payload) {
     if (lodash.has(payload, "options") && !lodash.isObject(payload.options)) {
-      return false;
+      return false
     }
 
     if (
@@ -16,15 +16,15 @@ export default Rule.create({
         lodash.isSymbol(payload.options.sub)
       )
     ) {
-      return false;
+      return false
     }
 
     if (lodash.has(payload, "body") && !lodash.isObject(payload.body)) {
-      return false;
+      return false
     }
 
     if (lodash.has(payload, "query") && !lodash.isObject(payload.query)) {
-      return false;
+      return false
     }
 
     const avaible_keys = [
@@ -35,8 +35,8 @@ export default Rule.create({
       "body",
       "query",
       "runId",
-    ];
+    ]
 
-    return lodash.without(lodash.keys(payload), ...avaible_keys).length === 0;
+    return lodash.without(lodash.keys(payload), ...avaible_keys).length === 0
   },
-});
+})

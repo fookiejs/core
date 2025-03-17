@@ -1,4 +1,4 @@
 export class Options {
-    sub?: string | symbol;
-    [key: string]: unknown
+  sub?: string | symbol;
+  [key: string]: unknown
 }

@@ -1,8 +1,8 @@
-import { expect } from "jsr:@std/expect";
-import { Model, Field, defaults, Mixin, Role } from "@fookiejs/core";
+import { expect } from "jsr:@std/expect"
+import { defaults, Field, Mixin, Model, Role } from "@fookiejs/core"
 
 // Mixin tanımlama
-let createFlag = false;
+let createFlag = false
 
 const sampleMixin = Mixin.create({
   key: "flag",
@@ -12,14 +12,14 @@ const sampleMixin = Mixin.create({
         Role.create({
           key: "mixin_flag",
           execute: async function () {
-            createFlag = true;
-            return true;
+            createFlag = true
+            return true
           },
         }),
       ],
     },
   },
-});
+})
 
 @Model.Decorator({
   database: defaults.database.store,
@@ -31,11 +31,11 @@ class TestModel extends Model {
     type: defaults.type.string,
     features: [defaults.feature.required],
   })
-  name!: string;
+  name!: string
 }
 
 Deno.test("should merge mixin binds into model binds correctly", async () => {
-  await TestModel.create({ name: "Test Name" });
+  await TestModel.create({ name: "Test Name" })
 
-  expect(createFlag).toBe(true);
-});
+  expect(createFlag).toBe(true)
+})

@@ -1,23 +1,23 @@
-import type { Method } from "./method.ts";
-import type { Model } from "./model/model.ts";
-import type { Payload } from "./payload.ts";
+import type { Method } from "./method.ts"
+import type { Model } from "./model/model.ts"
+import type { Payload } from "./payload.ts"
 
 export class Database {
-  key!: string;
-  connect!: () => Promise<void>;
-  disconnect!: () => Promise<void>;
+  key!: string
+  connect!: () => Promise<void>
+  disconnect!: () => Promise<void>
 
   modify!: <T extends Model>(
-    model: typeof Model
+    model: typeof Model,
   ) => {
-    create: (payload: Payload<T, Method.CREATE>) => Promise<T>;
-    read: (payload: Payload<T, Method.READ>) => Promise<T[]>;
-    update: (payload: Payload<T, Method.UPDATE>) => Promise<boolean>;
-    delete: (payload: Payload<T, Method.DELETE>) => Promise<boolean>;
-  };
+    create: (payload: Payload<T, Method.CREATE>) => Promise<T>
+    read: (payload: Payload<T, Method.READ>) => Promise<T[]>
+    update: (payload: Payload<T, Method.UPDATE>) => Promise<boolean>
+    delete: (payload: Payload<T, Method.DELETE>) => Promise<boolean>
+  }
 
   static create(data: Database): Database {
-    const instance = new Database();
-    return Object.assign(instance, data);
+    const instance = new Database()
+    return Object.assign(instance, data)
   }
 }

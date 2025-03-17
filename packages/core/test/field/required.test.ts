@@ -1,5 +1,5 @@
-import { Model, Field, defaults, FookieError } from "@fookiejs/core";
-import { expect } from "jsr:@std/expect";
+import { defaults, Field, FookieError, Model } from "@fookiejs/core"
+import { expect } from "jsr:@std/expect"
 
 Deno.test("Define a required field with Error", async () => {
   @Model.Decorator({
@@ -11,17 +11,17 @@ Deno.test("Define a required field with Error", async () => {
       features: [defaults.feature.required],
       type: defaults.type.string,
     })
-    field?: string;
+    field?: string
   }
 
   try {
-    await RequiredField.create({});
-    expect(false).toBe(true);
+    await RequiredField.create({})
+    expect(false).toBe(true)
   } catch (error) {
-    expect(error instanceof FookieError).toBe(true);
-    expect(error.name === "check_required").toBe(true);
+    expect(error instanceof FookieError).toBe(true)
+    expect(error.name === "check_required").toBe(true)
   }
-});
+})
 
 Deno.test("Define a required field with Success", async () => {
   @Model.Decorator({
@@ -33,14 +33,14 @@ Deno.test("Define a required field with Success", async () => {
       features: [defaults.feature.required],
       type: defaults.type.string,
     })
-    field!: string;
+    field!: string
   }
 
   const response = await RequiredField2.create({
     field: "fookie",
-  });
-  expect(response instanceof RequiredField2).toBe(true);
+  })
+  expect(response instanceof RequiredField2).toBe(true)
   if (response instanceof RequiredField2) {
-    expect(response.field === "fookie").toBe(true);
+    expect(response.field === "fookie").toBe(true)
   }
-});
+})

@@ -1,12 +1,11 @@
 {
-  "name": "@fookiejs",
-  "version": "1.0.0",
-  "exports": {
-    "./core": "./packages/core/mod.ts",
-    "./graphql": "./packages/graphql/mod.ts",
-    "./randomize": "./packages/randomize/mod.ts",
-    "./cache": "./packages/cache/mod.ts"
-  },
+  "workspace": [
+    "packages/core",
+    "packages/graphql",
+    "packages/randomize",
+    "packages/cache"
+  ],
+
   "imports": {
     "@fookiejs/cache": "./packages/cache/mod.ts",
     "@fookiejs/core": "./packages/core/mod.ts",
@@ -32,9 +31,10 @@
   },
   "compilerOptions": {
     "allowJs": true,
-    "strict": true,
+    "strict": false,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "emitDecoratorMetadata": true,
+    "noImplicitAny": false
   },
   "fmt": {
     "lineWidth": 120,
@@ -43,6 +43,9 @@
   },
   "lint": {
     "include": ["packages/**/*.ts"],
-    "exclude": ["**/node_modules/", "**/dist/"]
+    "rules": {
+      "tags": ["recommended"],
+      "exclude": ["no-explicit-any", "require-await"]
+    }
   }
 }

@@ -1,4 +1,4 @@
-import { defaults, Field, type Method, Model, Rule } from "@fookiejs/core";
+import { defaults, Field, type Method, Model, Rule } from "@fookiejs/core"
 
 Deno.test("Payload Type Safety Tests", () => {
   @Model.Decorator({
@@ -12,73 +12,73 @@ Deno.test("Payload Type Safety Tests", () => {
       },
     },
   })
-  class TypeCheckUser extends Model {
+  class _TypeCheckUser extends Model {
     @Field.Decorator({ type: defaults.type.string })
-    email!: string;
+    email!: string
 
     @Field.Decorator({ type: defaults.type.string })
-    username!: string;
+    username!: string
   }
 
   Deno.test("should have correct payload types for CREATE method", () => {
-    Rule.create<TypeCheckUser, Method.CREATE>({
+    Rule.create<_TypeCheckUser, Method.CREATE>({
       key: "create_test",
       execute: async (payload) => {
-        payload.body.email;
-        payload.body.username;
-        return true;
+        payload.body.email
+        payload.body.username
+        return true
       },
-    });
-  });
+    })
+  })
 
   Deno.test("should have correct payload types for READ method", () => {
-    Rule.create<TypeCheckUser, Method.READ>({
+    Rule.create<_TypeCheckUser, Method.READ>({
       key: "read_test",
       execute: async (payload) => {
-        payload.query.filter;
-        return true;
+        payload.query.filter
+        return true
       },
-    });
-  });
+    })
+  })
 
   Deno.test("should have correct payload types for UPDATE method", () => {
-    Rule.create<TypeCheckUser, Method.UPDATE>({
+    Rule.create<_TypeCheckUser, Method.UPDATE>({
       key: "update_test",
       execute: async (payload) => {
-        payload.query;
-        payload.body.email;
-        return true;
+        payload.query
+        payload.body.email
+        return true
       },
-    });
-  });
+    })
+  })
 
   Deno.test("should have correct payload types for DELETE method", () => {
-    Rule.create<TypeCheckUser, Method.DELETE>({
+    Rule.create<_TypeCheckUser, Method.DELETE>({
       key: "delete_test",
       execute: async (payload) => {
-        payload.query;
-        return true;
+        payload.query
+        return true
       },
-    });
-  });
+    })
+  })
 
   Deno.test("type parameter test", () => {
     Rule.create({
       key: "delete_test",
       execute: async (payload) => {
-        payload.model;
-        payload.method;
-        return true;
+        payload.model
+        payload.method
+        return true
       },
-    });
+    })
 
-    Rule.create<TypeCheckUser>({
+    Rule.create<_TypeCheckUser>({
       key: "delete_test",
       execute: async (payload) => {
-        payload.model.read();
-        payload.method;
-        return true;
+        payload.model.read()
+        payload.method
+        return true
       },
-    });
-  });
-});
+    })
+  })
+})

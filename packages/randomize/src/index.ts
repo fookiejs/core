@@ -1,18 +1,10 @@
-import {
-  BindsType,
-  Database,
-  Field,
-  Model,
-  Type,
-  Method,
-  Lifecycle,
-} from "@fookiejs/core";
-import { v4 } from "uuid";
-import * as lodash from "https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/lodash.js";
+import { type BindsType, type Database, Field, Lifecycle, Method, Model, Type } from "@fookiejs/core"
+import { v4 } from "uuid"
+import * as lodash from "https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/lodash.js"
 
 export class Randomize {
-  static generateRandomModel(database: Database, fieldCount = 5) {
-    const fieldTypes = Type.list();
+  static generateRandomModel(database: Database, fieldCount = 5): typeof Model {
+    const fieldTypes = Type.list()
 
     const binds: BindsType = {
       [Method.CREATE]: {
@@ -42,24 +34,24 @@ export class Randomize {
         [Lifecycle.FILTER]: [],
         [Lifecycle.EFFECT]: [],
       },
-    };
+    }
 
     @Model.Decorator({ name: "RandomModel_" + v4(), database, binds })
     class RandomModel extends Model {}
 
     for (let i = 0; i < fieldCount; i++) {
-      const fieldName = `field_${i}`;
-      const fieldType = lodash.sample(fieldTypes);
+      const fieldName = `field_${i}`
+      const fieldType = lodash.sample(fieldTypes)
 
       Field.Decorator({
         type: fieldType,
-      })(RandomModel.prototype, fieldName);
+      })(RandomModel.prototype, fieldName)
     }
 
-    return RandomModel;
+    return RandomModel
   }
 
-  static generateRandomRequest() {
-    return {};
+  static generateRandomRequest(): void {
+    return
   }
 }

@@ -1,6 +1,0 @@
-{
-  "name": "@fookie/core",
-  "version": "1.0.0",
-  "exports": "./mod.ts",
-  "imports": {}
-}

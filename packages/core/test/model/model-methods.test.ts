@@ -1,6 +1,6 @@
-import { expect } from "jsr:@std/expect";
-import * as lodash from "https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/lodash.js";
-import { Model, Field, defaults, Role } from "@fookiejs/core";
+import { expect } from "jsr:@std/expect"
+import * as lodash from "https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/lodash.js"
+import { defaults, Field, Model, Role } from "@fookiejs/core"
 
 @Model.Decorator({
   database: defaults.database.store,
@@ -19,7 +19,7 @@ import { Model, Field, defaults, Role } from "@fookiejs/core";
         Role.create({
           key: "example-lifecycle",
           execute: async function () {
-            return true;
+            return true
           },
         }),
       ],
@@ -31,30 +31,30 @@ class User extends Model {
     features: [defaults.feature.required],
     type: defaults.type.string,
   })
-  email!: string;
+  email!: string
 
   @Field.Decorator({
     features: [defaults.feature.required],
     type: defaults.type.number,
   })
-  usage!: number;
+  usage!: number
 }
 
 Deno.test("should create a user correctly", async () => {
   const createResponse = await User.create({
     email: "test@fookiejs.com",
     usage: 3,
-  });
-  expect(createResponse instanceof User).toEqual(true);
-});
+  })
+  expect(createResponse instanceof User).toEqual(true)
+})
 
 Deno.test("should read users correctly", async () => {
-  const readResponse = await User.read({});
-  expect(lodash.isArray(readResponse)).toEqual(true);
-});
+  const readResponse = await User.read({})
+  expect(lodash.isArray(readResponse)).toEqual(true)
+})
 
 Deno.test("should update a user correctly", async () => {
-  const users = await User.read({});
+  const users = await User.read({})
   const updateResponse = await User.update(
     {
       filter: {
@@ -68,10 +68,10 @@ Deno.test("should update a user correctly", async () => {
     },
     {
       email: "tester@fookiejs.com",
-    }
-  );
-  expect(updateResponse).toEqual(true);
-});
+    },
+  )
+  expect(updateResponse).toEqual(true)
+})
 
 Deno.test("should delete a user correctly", async () => {
   const deleteResponse = await User.delete({
@@ -80,6 +80,6 @@ Deno.test("should delete a user correctly", async () => {
         equals: "example-id",
       },
     },
-  });
-  expect(deleteResponse).toEqual(true);
-});
+  })
+  expect(deleteResponse).toEqual(true)
+})

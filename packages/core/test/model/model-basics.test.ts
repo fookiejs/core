@@ -1,5 +1,4 @@
-import { expect } from "jsr:@std/expect";
-import { Model, Field, defaults, Role } from "@fookiejs/core";
+import { defaults, Field, Model, Role } from "@fookiejs/core"
 
 Deno.test("Define a simple model", async () => {
   @Model.Decorator({
@@ -13,7 +12,7 @@ Deno.test("Define a simple model", async () => {
           Role.create({
             key: "example-lifecycle",
             execute: async function () {
-              return true;
+              return true
             },
           }),
         ],
@@ -25,10 +24,10 @@ Deno.test("Define a simple model", async () => {
       features: [defaults.feature.required],
       type: defaults.type.string,
     })
-    email!: string;
+    email!: string
   }
-  User;
-});
+  User
+})
 
 Deno.test("Define a model with relations.", async () => {
   @Model.Decorator({
@@ -40,7 +39,7 @@ Deno.test("Define a model with relations.", async () => {
       type: defaults.type.string,
       features: [defaults.feature.unique, defaults.feature.required],
     })
-    city!: string;
+    city!: string
   }
 
   @Model.Decorator({
@@ -53,7 +52,7 @@ Deno.test("Define a model with relations.", async () => {
       relation: Address,
       features: [defaults.feature.required],
     })
-    address!: string;
+    address!: string
   }
-  Place;
-});
+  Place
+})

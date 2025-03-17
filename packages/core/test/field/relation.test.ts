@@ -1,5 +1,5 @@
-import { Model, Field, defaults, FookieError } from "@fookiejs/core";
-import { expect } from "jsr:@std/expect";
+import { defaults, Field, FookieError, Model } from "@fookiejs/core"
+import { expect } from "jsr:@std/expect"
 
 Deno.test("Relation", () => {
   @Model.Decorator({
@@ -15,10 +15,10 @@ Deno.test("Relation", () => {
   })
   class RelationAddressModel extends Model {
     @Field.Decorator({ type: defaults.type.string })
-    street?: string;
+    street?: string
 
     @Field.Decorator({ type: defaults.type.string })
-    city?: string;
+    city?: string
   }
 
   @Model.Decorator({
@@ -34,10 +34,10 @@ Deno.test("Relation", () => {
   })
   class RelationUserModel extends Model {
     @Field.Decorator({ type: defaults.type.string })
-    name?: string;
+    name?: string
 
     @Field.Decorator({ relation: RelationAddressModel })
-    address?: string;
+    address?: string
   }
 
   Deno.test(
@@ -46,34 +46,34 @@ Deno.test("Relation", () => {
       const addressResponse = await RelationAddressModel.create({
         street: "street",
         city: "city",
-      });
+      })
 
-      expect(addressResponse instanceof RelationAddressModel).toBe(true);
+      expect(addressResponse instanceof RelationAddressModel).toBe(true)
 
       if (addressResponse instanceof RelationAddressModel) {
         const userResponse = await RelationUserModel.create({
           name: "John Doe",
           address: addressResponse.id,
-        });
-        expect(userResponse instanceof RelationUserModel).toBe(true);
+        })
+        expect(userResponse instanceof RelationUserModel).toBe(true)
 
         if (userResponse instanceof RelationUserModel) {
-          expect(addressResponse.id === userResponse.address).toBe(true);
+          expect(addressResponse.id === userResponse.address).toBe(true)
         }
       }
-    }
-  );
+    },
+  )
 
   Deno.test("Create an address and relate it to a user error", async () => {
     const userResponse = await RelationUserModel.create({
       name: "John Doe",
       address: "wrong-id",
-    });
+    })
 
-    expect(userResponse instanceof FookieError).toBe(true);
+    expect(userResponse instanceof FookieError).toBe(true)
 
     if (userResponse instanceof FookieError) {
-      expect(userResponse.name === "has_entity").toBeTruthy();
+      expect(userResponse.name === "has_entity").toBeTruthy()
     }
-  });
-});
+  })
+})

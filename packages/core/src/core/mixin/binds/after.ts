@@ -1,10 +1,10 @@
-import validate_query from "../rule/validate_query.ts";
-import filter_fields from "../modify/filter_fields.ts";
-import has_entity from "../rule/has_entity.ts";
-import check_required from "../rule/check_required.ts";
-import attributes from "../filter/attributes.ts";
-import validate_body from "../rule/validate_body.ts";
-import type { BindsType } from "../../model/model.ts";
+import validate_query from "../rule/validate_query.ts"
+import filter_fields from "../modify/filter_fields.ts"
+import has_entity from "../rule/has_entity.ts"
+import check_required from "../rule/check_required.ts"
+import attributes from "../filter/attributes.ts"
+import validate_body from "../rule/validate_body.ts"
+import type { BindsType } from "../../model/model.ts"
 
 export const after: BindsType = {
   create: {
@@ -43,4 +43,4 @@ export const after: BindsType = {
     accepts: [],
     rejects: [],
   },
-};
+}

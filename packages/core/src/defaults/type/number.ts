@@ -1,10 +1,10 @@
-import { Type } from "../../core/type.ts";
-import * as lodash from "https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/lodash.js";
+import { Type } from "../../core/type.ts"
+import * as lodash from "https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/lodash.js"
 export const number = Type.create({
   key: "number",
   jsonType: "number",
   validate: function (value: unknown): boolean {
-    return lodash.isNumber(value);
+    return lodash.isNumber(value)
   },
   example: 1,
   queryController: {
@@ -36,4 +36,4 @@ export const number = Type.create({
       validate: lodash.isBoolean,
     },
   },
-});
+})
