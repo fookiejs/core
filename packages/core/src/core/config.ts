@@ -1,35 +1,30 @@
-import * as lodash from "lodash"
-import { FookieError } from "./error"
+import { FookieError } from "./error.ts";
+import * as lodash from "https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/lodash.js";
 
 export enum Environment {
-    LOCAL = "local",
-    TEST = "test",
-    DEVELOPMENT = "development",
-    PRODUCTION = "production",
+  LOCAL = "local",
+  TEST = "test",
+  DEVELOPMENT = "development",
+  PRODUCTION = "production",
 }
+
 export class Config {
-    private static env: Record<string, string> = {}
+  private static env: Record<string, string> = {};
 
-    static SYSTEM_TOKEN = Symbol("SYSTEM_TOKEN")
+  static SYSTEM_TOKEN = Symbol("SYSTEM_TOKEN");
 
-    static {
-        for (const key in process.env) {
-            if (lodash.has(process.env, key)) {
-                this.env[key] = process.env[key] as string
-            }
-        }
+  static get(key: string): string {
+    if (!lodash.has(this.env, key)) {
+      throw FookieError.create({
+        name: "missing_config",
+        message: `Environment variable not found`,
+        validationErrors: {},
+      });
     }
+    return this.env[key];
+  }
 
-    static get(key: string): string {
-        if (!lodash.has(this.env, key)) {
-            throw FookieError.new({
-                key: "missing_config",
-                description: `Environment variable not found`,
-                validationErrors: {},
-            })
-        }
-        return this.env[key]
-    }
-
-    static environment = Environment[process.env.NODE_ENV ?? Environment.DEVELOPMENT]
+  static set(key: string, value: string): void {
+    this.env[key] = value;
+  }
 }

@@ -1,41 +1,41 @@
-import { describe, it, expect } from "vitest"
-import { Model, Field, defaults, Mixin, Role, Required } from "@fookiejs/core"
+import { expect } from "jsr:@std/expect";
+import { Model, Field, defaults, Mixin, Role } from "@fookiejs/core";
 
 // Mixin tanımlama
-let createFlag = false
+let createFlag = false;
 
-const sampleMixin = Mixin.new({
-    key: "flag",
-    binds: {
-        create: {
-            role: [
-                Role.new({
-                    key: "mixin_flag",
-                    execute: async function () {
-                        createFlag = true
-                        return true
-                    },
-                }),
-            ],
-        },
+const sampleMixin = Mixin.create({
+  key: "flag",
+  binds: {
+    create: {
+      role: [
+        Role.create({
+          key: "mixin_flag",
+          execute: async function () {
+            createFlag = true;
+            return true;
+          },
+        }),
+      ],
     },
+  },
+});
+
+@Model.Decorator({
+  database: defaults.database.store,
+  binds: { create: { role: [] } },
+  mixins: [sampleMixin],
 })
+class TestModel extends Model {
+  @Field.Decorator({
+    type: defaults.type.string,
+    features: [defaults.feature.required],
+  })
+  name!: string;
+}
 
-// Testler
-describe("fillModel Function Tests", () => {
-    @Model.Decorator({
-        database: defaults.database.store,
-        binds: { create: { role: [] } },
-        mixins: [sampleMixin],
-    })
-    class TestModel extends Model {
-        @Field.Decorator({ type: defaults.type.string, features: [Required] })
-        name!: string
-    }
+Deno.test("should merge mixin binds into model binds correctly", async () => {
+  await TestModel.create({ name: "Test Name" });
 
-    it("should merge mixin binds into model binds correctly", async () => {
-        await TestModel.create({ name: "Test Name" })
-
-        expect(createFlag).toBe(true)
-    })
-})
+  expect(createFlag).toBe(true);
+});

@@ -1,19 +1,18 @@
-import { describe, it, expect } from "vitest"
-import { Config } from "@fookiejs/core"
+import { Config } from "@fookiejs/core";
+import { expect } from "jsr:@std/expect";
 
-// Testler
-describe("Config", async () => {
-    it("t1", async () => {
-        Config.SYSTEM_TOKEN
-    })
+Deno.test("Config", async () => {
+  Deno.test("t1", async () => {
+    Config.SYSTEM_TOKEN;
+  });
 
-    it("t2", async () => {
-        try {
-            Config.get("INVALID_ENV")
-        } catch (error) {
-            return
-        }
+  Deno.test("t2", async () => {
+    try {
+      Config.get("INVALID_ENV");
+    } catch (error) {
+      return;
+    }
 
-        expect(false).toBeTruthy()
-    })
-})
+    expect(false).toBeTruthy();
+  });
+});

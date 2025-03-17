@@ -1,0 +1,10 @@
+{
+  "name": "@fookie/fookie",
+  "version": "1.0.0",
+  "exports": {
+    "./core": "./packages/core/mod.ts",
+    "./graphql": "./packages/graphql/mod.ts",
+    "./randomize": "./packages/randomize/mod.ts",
+    "./cache": "./packages/cache/mod.ts"
+  }
+}

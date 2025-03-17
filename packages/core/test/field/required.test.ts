@@ -1,38 +1,46 @@
-import { expect, test } from "vitest"
-import { Model, Field, defaults, FookieError, Required } from "@fookiejs/core"
+import { Model, Field, defaults, FookieError } from "@fookiejs/core";
+import { expect } from "jsr:@std/expect";
 
-test("Define a required field with Error", async () => {
-    @Model.Decorator({
-        database: defaults.database.store,
-        binds: { create: { role: [] } },
+Deno.test("Define a required field with Error", async () => {
+  @Model.Decorator({
+    database: defaults.database.store,
+    binds: { create: { role: [] } },
+  })
+  class RequiredField extends Model {
+    @Field.Decorator({
+      features: [defaults.feature.required],
+      type: defaults.type.string,
     })
-    class RequiredField extends Model {
-        @Field.Decorator({ features: [Required], type: defaults.type.string })
-        field?: string
-    }
+    field?: string;
+  }
 
-    const response = await RequiredField.create({})
-    expect(response instanceof FookieError).toBe(true)
-    if (response instanceof FookieError) {
-        expect(response.key === "check_required").toBe(true)
-    }
-})
+  try {
+    await RequiredField.create({});
+    expect(false).toBe(true);
+  } catch (error) {
+    expect(error instanceof FookieError).toBe(true);
+    expect(error.name === "check_required").toBe(true);
+  }
+});
 
-test("Define a required field with Success", async () => {
-    @Model.Decorator({
-        database: defaults.database.store,
-        binds: { create: { role: [] } },
+Deno.test("Define a required field with Success", async () => {
+  @Model.Decorator({
+    database: defaults.database.store,
+    binds: { create: { role: [] } },
+  })
+  class RequiredField2 extends Model {
+    @Field.Decorator({
+      features: [defaults.feature.required],
+      type: defaults.type.string,
     })
-    class RequiredField2 extends Model {
-        @Field.Decorator({ features: [Required], type: defaults.type.string })
-        field: string
-    }
+    field!: string;
+  }
 
-    const response = await RequiredField2.create({
-        field: "fookie",
-    })
-    expect(response instanceof RequiredField2).toBe(true)
-    if (response instanceof RequiredField2) {
-        expect(response.field === "fookie").toBe(true)
-    }
-})
+  const response = await RequiredField2.create({
+    field: "fookie",
+  });
+  expect(response instanceof RequiredField2).toBe(true);
+  if (response instanceof RequiredField2) {
+    expect(response.field === "fookie").toBe(true);
+  }
+});

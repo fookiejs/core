@@ -1,6 +1,6 @@
-import { Role } from "../../core/lifecycle-function"
+import { Role } from "../../core/lifecycle-function.ts";
 
-export const nobody = Role.new({
-    key: "nobody",
-    execute: async () => false,
-})
+export const nobody = Role.create({
+  key: "nobody",
+  execute: async () => false,
+});

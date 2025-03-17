@@ -1,10 +1,9 @@
-import * as lodash from "lodash"
-import { Rule } from "../../lifecycle-function"
-import { methods } from "../../method"
+import { Rule } from "../../lifecycle-function.ts";
+import { methods } from "../../method.ts";
 
-export default Rule.new({
-    key: "has_method",
-    execute: async function (payload) {
-        return lodash.includes(methods, payload.method)
-    },
-})
+export default Rule.create({
+  key: "has_method",
+  execute: async function (payload) {
+    return methods.includes(payload.method);
+  },
+});

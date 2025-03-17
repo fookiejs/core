@@ -1,80 +1,100 @@
-import { describe, it, expect } from "vitest"
-import { Model, Field, defaults, FookieError } from "@fookiejs/core"
+import { expect } from "jsr:@std/expect";
+import { Model, Field, defaults, FookieError } from "@fookiejs/core";
 
 // Model Tanımlama
 @Model.Decorator({
-    database: defaults.database.store,
-    binds: {
-        read: {
-            role: [],
-        },
-        create: {
-            role: [],
-        },
+  database: defaults.database.store,
+  binds: {
+    read: {
+      role: [],
     },
+    create: {
+      role: [],
+    },
+  },
 })
 class QueryTextModel extends Model {
-    @Field.Decorator({ type: defaults.type.string })
-    textField: string
+  @Field.Decorator({ type: defaults.type.string })
+  textField!: string;
 }
 
-// Testler
-describe("QueryTextModel validate_payload Tests", async () => {
-    await QueryTextModel.create({ textField: "abc" })
-    await QueryTextModel.create({ textField: "def" })
-    await QueryTextModel.create({ textField: "ghi" })
+Deno.test("QueryTextModel validate_payload Tests", async () => {
+  await QueryTextModel.create({ textField: "abc" });
+  await QueryTextModel.create({ textField: "def" });
+  await QueryTextModel.create({ textField: "ghi" });
 
-    it("should throw error if options is not an object", async () => {
-        const results = await QueryTextModel.read({}, "invalid_option")
-        expect(results instanceof FookieError).toBeTruthy()
-    })
+  Deno.test("should throw error if options is not an object", async () => {
+    try {
+      await QueryTextModel.read({}, { test: "invalid_option" });
+      expect(false).toBeTruthy();
+    } catch (error) {
+      expect(error instanceof FookieError).toBeTruthy();
+    }
+  });
 
-    it("should throw error if options.sub is not a string", async () => {
-        const results = await QueryTextModel.read(
-            {},
-            {
-                sub: 1,
-            },
-        )
+  Deno.test("should throw error if options.sub is not a string", async () => {
+    try {
+      await QueryTextModel.read(
+        {},
+        {
+          sub: "invalid_sub" as any,
+        }
+      );
+      expect(false).toBeTruthy();
+    } catch (error) {
+      expect(error instanceof FookieError).toBeTruthy();
+    }
+  });
 
-        expect(results instanceof FookieError).toBeTruthy()
-    })
+  Deno.test("should throw error if body is not an object", async () => {
+    try {
+      await QueryTextModel.create({ textField: 123 } as any);
+      expect(false).toBeTruthy();
+    } catch (error) {
+      expect(error instanceof FookieError).toBeTruthy();
+    }
+  });
 
-    it("should throw error if body is not an object", async () => {
-        const results = await QueryTextModel.create("abc")
+  Deno.test("should throw error if body properties are invalid", async () => {
+    try {
+      await QueryTextModel.create({
+        invalidField: 1,
+      } as any);
+      expect(false).toBeTruthy();
+    } catch (error) {
+      expect(error instanceof FookieError).toBeTruthy();
+    }
+  });
 
-        expect(results instanceof FookieError).toBeTruthy()
-    })
+  Deno.test("should throw error if filter is not valid", async () => {
+    try {
+      await QueryTextModel.read({
+        filter: {
+          invalidField: { equals: "abc" },
+        } as any,
+      });
+      expect(false).toBeTruthy();
+    } catch (error) {
+      expect(error instanceof FookieError).toBeTruthy();
+    }
+  });
 
-    it("should throw error if body is not an object", async () => {
-        const results = await QueryTextModel.create({
-            a: 1,
-        })
+  Deno.test("should throw error if query is not a object", async () => {
+    try {
+      await QueryTextModel.read({} as any);
+      expect(false).toBeTruthy();
+    } catch (error) {
+      expect(error instanceof FookieError).toBeTruthy();
+    }
+  });
 
-        expect(results instanceof FookieError).toBeTruthy()
-    })
-
-    it("should throw error if query is not an object", async () => {
-        const results = await QueryTextModel.read({
-            filter: "abc",
-        })
-
-        expect(results instanceof FookieError).toBeTruthy()
-    })
-
-    it("should throw error if query is not a object", async () => {
-        const results = await QueryTextModel.read("invalid_query")
-
-        expect(results instanceof FookieError).toBeTruthy()
-    })
-
-    it("should return results for valid payload", async () => {
-        const results = await QueryTextModel.read({
-            filter: {
-                textField: { equals: "abc" },
-            },
-        })
-        expect(results).toHaveLength(1)
-        expect(results[0].textField).toBe("abc")
-    })
-})
+  Deno.test("should return results for valid payload", async () => {
+    const results = await QueryTextModel.read({
+      filter: {
+        textField: { equals: "abc" },
+      },
+    });
+    expect(results).toHaveLength(1);
+    expect(results[0].textField).toBe("abc");
+  });
+});

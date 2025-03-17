@@ -38,3 +38,13 @@ Thumbs.db
 
 # TypeScript incremental build info
 *.tsbuildinfo
+
+# Deno
+.env
+.env.local
+deno.lock
+
+# Node.js
+.next/
+.nuxt/
+.pnpm-debug.log

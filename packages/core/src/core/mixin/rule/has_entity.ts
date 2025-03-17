@@ -1,31 +1,31 @@
-import { Config } from "../../config"
-import { Rule } from "../../lifecycle-function"
-import * as lodash from "lodash"
-import { Method } from "../../method"
-import { Model } from "../../model/model"
+import { Config } from "../../config.ts";
+import { Rule } from "../../lifecycle-function.ts";
+import * as lodash from "https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/lodash.js";
+import type { Method } from "../../method.ts";
+import type { Model } from "../../model/model.ts";
 
-export default Rule.new<Model, Method>({
-    key: "has_entity",
-    execute: async function (payload) {
-        for (const key of Object.keys(payload.body) as (keyof Model)[]) {
-            if (lodash.has(payload.model.schema()[key], "relation")) {
-                payload.model.schema()[key]
-                const res = await payload.model.schema()[key].relation!.read(
-                    {
-                        filter: {
-                            id: { equals: payload.body[key] },
-                        },
-                    },
-                    {
-                        sub: Config.SYSTEM_TOKEN,
-                    },
-                )
+export default Rule.create<Model, Method>({
+  key: "has_entity",
+  execute: async function (payload) {
+    for (const key of Object.keys(payload.body) as (keyof Model)[]) {
+      if (lodash.has(payload.model.schema()[key], "relation")) {
+        payload.model.schema()[key];
+        const res = await payload.model.schema()[key].relation!.read(
+          {
+            filter: {
+              id: { equals: payload.body[key] },
+            },
+          },
+          {
+            sub: Config.SYSTEM_TOKEN,
+          }
+        );
 
-                if (Array.isArray(res) && res.length === 0) {
-                    return false
-                }
-            }
+        if (Array.isArray(res) && res.length === 0) {
+          return false;
         }
-        return true
-    },
-})
+      }
+    }
+    return true;
+  },
+});

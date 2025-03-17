@@ -1,8 +1,8 @@
-import { Effect } from "../../lifecycle-function"
+import { Effect } from "../../lifecycle-function.ts";
 
-export default Effect.new({
-    key: "db_disconnect",
-    execute: async function (payload) {
-        await payload.model.database().disconnect()
-    },
-})
+export default Effect.create({
+  key: "db_disconnect",
+  execute: async function (payload) {
+    await payload.model.database().disconnect();
+  },
+});

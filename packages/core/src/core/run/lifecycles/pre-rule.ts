@@ -1,23 +1,25 @@
-import { Payload } from "../../payload"
-import { FookieError } from "../../error"
-import { globalRules } from "../../mixin/binds/global"
-import { Method } from "../../method"
-import { Model } from "../../model/model"
+import type { Payload } from "../../payload.ts";
+import { FookieError } from "../../error.ts";
+import { globalRules } from "../../mixin/binds/global.ts";
+import type { Method } from "../../method.ts";
+import type { Model } from "../../model/model.ts";
 
-const preRule = async function (payload: Payload<Model, Method>): Promise<boolean> {
-    for (const rule of globalRules) {
-        const res = await rule.execute(payload)
+const preRule = async function (
+  payload: Payload<Model, Method>
+): Promise<boolean> {
+  for (const rule of globalRules) {
+    const res = await rule.execute(payload);
 
-        if (res !== true) {
-            throw FookieError.new({
-                description: "pre-rule",
-                validationErrors: {},
-                key: rule.key,
-            })
-        }
+    if (res !== true) {
+      throw FookieError.create({
+        message: "pre-rule",
+        validationErrors: {},
+        name: rule.key,
+      });
     }
+  }
 
-    return true
-}
+  return true;
+};
 
-export default preRule
+export default preRule;

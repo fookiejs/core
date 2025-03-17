@@ -1,8 +1,11 @@
-import { BaseClass } from "./base-class"
+import { plainToClass } from "class-transformer";
 
-export class FookieError extends BaseClass {
-    description?: string
-    validationErrors: {
-        [key: string]: string[]
-    }
+export class FookieError extends Error {
+  validationErrors!: {
+    [key: string]: string[];
+  };
+
+  static create(error: FookieError) {
+    return plainToClass(FookieError, error);
+  }
 }

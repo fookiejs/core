@@ -1,55 +1,57 @@
-import { expect, test } from "vitest"
-import { Model, Field, defaults, FookieError } from "@fookiejs/core"
+import { expect } from "jsr:@std/expect";
+import { Model, Field, defaults, FookieError } from "@fookiejs/core";
 
-test("Field with a validator passing validation", async () => {
-    @Model.Decorator({
-        database: defaults.database.store,
-        binds: {
-            create: { role: [] },
+Deno.test("Field with a validator passing validation", async () => {
+  @Model.Decorator({
+    database: defaults.database.store,
+    binds: {
+      create: { role: [] },
+    },
+  })
+  class ValidatorModel extends Model {
+    @Field.Decorator({
+      type: defaults.type.number,
+      validators: [
+        (value: any) => {
+          return value >= 10 && value <= 20;
         },
+      ],
     })
-    class ValidatorModel extends Model {
-        @Field.Decorator({
-            type: defaults.type.number,
-            validators: [
-                (value: any) => {
-                    return value >= 10 && value <= 20
-                },
-            ],
-        })
-        myNumber?: number
-    }
+    myNumber?: number;
+  }
 
-    const validResponse = await ValidatorModel.create({ myNumber: 15 })
-    expect(validResponse instanceof ValidatorModel).toBe(true)
-})
+  const validResponse = await ValidatorModel.create({ myNumber: 15 });
+  expect(validResponse instanceof ValidatorModel).toBe(true);
+});
 
-test("Field with a validator failing validation", async () => {
-    @Model.Decorator({
-        database: defaults.database.store,
-        binds: {
-            create: { role: [] },
+Deno.test("Field with a validator failing validation", async () => {
+  @Model.Decorator({
+    database: defaults.database.store,
+    binds: {
+      create: { role: [] },
+    },
+  })
+  class ValidatorModel2 extends Model {
+    @Field.Decorator({
+      type: defaults.type.number,
+      validators: [
+        (value: any) => {
+          const isValid = value >= 10 && value <= 20;
+          return isValid === true || "number_not_in_range";
         },
+      ],
     })
-    class ValidatorModel2 extends Model {
-        @Field.Decorator({
-            type: defaults.type.number,
-            validators: [
-                (value: any) => {
-                    const isValid = value >= 10 && value <= 20
-                    return isValid === true || "number_not_in_range"
-                },
-            ],
-        })
-        myNumber?: number
-    }
+    myNumber?: number;
+  }
 
-    const invalidResponse = await ValidatorModel2.create({ myNumber: 25 })
-
-    expect(invalidResponse instanceof FookieError).toBe(true)
-
-    if (invalidResponse instanceof FookieError) {
-        expect(invalidResponse.key === "validate_body").toBe(true)
-        expect(invalidResponse.validationErrors.myNumber[0] === "number_not_in_range").toBe(true)
-    }
-})
+  try {
+    await ValidatorModel2.create({ myNumber: 25 });
+    expect(false).toBe(true);
+  } catch (error) {
+    expect(error instanceof FookieError).toBe(true);
+    expect(error.name === "validate_body").toBe(true);
+    expect(error.validationErrors.myNumber[0] === "number_not_in_range").toBe(
+      true
+    );
+  }
+});
