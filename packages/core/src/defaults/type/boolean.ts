@@ -21,4 +21,4 @@ export const boolean: Type = Type.create({
 		},
 	},
 	jsonType: "boolean",
-})
+}) as Type

@@ -54,4 +54,4 @@ export const date: Type = Type.create({
 			validate: lodash.isBoolean,
 		},
 	},
-})
+}) as Type

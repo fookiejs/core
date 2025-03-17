@@ -38,4 +38,4 @@ export const number: Type = Type.create({
 			validate: lodash.isBoolean,
 		},
 	},
-})
+}) as Type
