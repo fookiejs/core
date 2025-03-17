@@ -1,5 +1,4 @@
-import * as lodash from "https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/lodash.js"
-
+import * as lodash from "npm:lodash@^4.17.21"
 import { Rule } from "../../lifecycle-function.ts"
 import { defaults } from "../../../defaults/index.ts"
 

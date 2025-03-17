@@ -1,8 +1,7 @@
 import type { Options } from "../option.ts"
 import type { ConstructorOf, Payload } from "../payload.ts"
 
-import * as lodash from "https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/lodash.js"
-
+import * as lodash from "npm:lodash@^4.17.21"
 import pre_rule from "./lifecycles/pre-rule.ts"
 import modify from "./lifecycles/modify.ts"
 import role from "./lifecycles/role.ts"
