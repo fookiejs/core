@@ -47,8 +47,4 @@ jobs:
           deno-version: v2.x
 
       - name: Publish packages
-        run: |
-          cd packages/core && deno publish
-          cd ../graphql && deno publish
-          cd ../randomize && deno publish
-          cd ../cache && deno publish
+        run: deno publish
