@@ -11,7 +11,7 @@ export enum Environment {
 export class Config {
 	private static env: Record<string, string> = {}
 
-	static SYSTEM_TOKEN = Symbol("SYSTEM_TOKEN")
+	static SYSTEM_TOKEN: symbol = Symbol("SYSTEM_TOKEN")
 
 	static get(key: string): string {
 		if (!Utils.has(this.env, key)) {
