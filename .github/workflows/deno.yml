@@ -99,6 +99,6 @@ jobs:
 
       - name: Publish packages
         run: |
-          for pkg in packages/*; do
-            deno publish --allow-slow-types "$pkg"
+          for pkg in packages/*/deno.json; do
+            deno publish "$pkg"
           done
