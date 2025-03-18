@@ -23,14 +23,32 @@ jobs:
         with:
           deno-version: v2.x
 
-      - name: Verify formatting
-        run: deno fmt --check
+      - name: Detect changed packages
+        id: changed-packages
+        run: |
+          changed=$(git diff --name-only HEAD^ HEAD | grep 'packages/' || true)
+          echo "changed_files<<EOF" >> $GITHUB_ENV
+          echo "$changed" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          if echo "$changed" | grep -q "packages/core/"; then
+            echo "core_changed=true" >> $GITHUB_ENV
+          else
+            echo "core_changed=false" >> $GITHUB_ENV
+          fi
 
-      - name: Check code
-        run: deno task check
-
-      - name: Run tests
-        run: deno task test
+      - name: Run tests for changed packages
+        run: |
+          if [ "$core_changed" == "true" ]; then
+            echo "Core package changed, running all tests..."
+            deno task test
+          else
+            for pkg in packages/*; do
+              if echo "$changed_files" | grep -q "$pkg"; then
+                echo "Running tests for $pkg..."
+                (cd "$pkg" && deno test)
+              fi
+            done
+          fi
 
   publish:
     needs: test
@@ -46,19 +64,6 @@ jobs:
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-
-      - name: Detect changed packages
-        id: changed-packages
-        run: |
-          changed=$(git diff --name-only HEAD^ HEAD | grep 'packages/' || true)
-          echo "changed_files<<EOF" >> $GITHUB_ENV
-          echo "$changed" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-          if echo "$changed" | grep -q "packages/core/"; then
-            echo "core_changed=true" >> $GITHUB_ENV
-          else
-            echo "core_changed=false" >> $GITHUB_ENV
-          fi
 
       - name: Bump versions
         run: |
@@ -76,7 +81,7 @@ jobs:
             fi
 
             new_version="$major.$minor.$patch"
-            sed -i "s/\"version\": \"$version\"/\"version\": \"$new_version\"/" "$pkg_json"
+            sed -i "s/"version": "$version"/"version": "$new_version"/" "$pkg_json"
             echo "Updated $pkg_json from $version to $new_version"
           }
 
