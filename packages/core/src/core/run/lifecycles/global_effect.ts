@@ -4,7 +4,7 @@ import * as lodash from "npm:lodash-es@^4.17.21"
 import type { MethodResponse } from "../../response.ts"
 import type { Model } from "../../model/model.ts"
 import type { Method } from "../../method.ts"
-import type { Effect } from "@fookiejs/core/src/core/lifecycle-function.ts"
+import type { Effect } from "../../lifecycle-function.ts"
 
 export default async function globalEffect<T extends Model, M extends Method>(
 	payload: Payload<T, M>,

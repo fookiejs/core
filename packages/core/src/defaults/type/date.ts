@@ -1,7 +1,7 @@
 import { Type } from "../../core/type.ts"
 
 import moment from "moment"
-import { Utils } from "@fookiejs/core/src/utils/util.ts"
+import { Utils } from "../../utils/util.ts"
 
 function isDate(value: unknown) {
 	if (!Utils.isString(value)) return false

@@ -1,7 +1,7 @@
 import { Rule } from "../../lifecycle-function.ts"
 import { v4 } from "uuid"
 import * as lodash from "npm:lodash-es@^4.17.21"
-import { Utils } from "@fookiejs/core/src/utils/util.ts"
+import { Utils } from "../../../utils/util.ts"
 
 export default Rule.create({
 	key: "defalut_payload",

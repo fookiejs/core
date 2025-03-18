@@ -1,4 +1,4 @@
-import { Utils } from "@fookiejs/core/src/utils/util.ts"
+import { Utils } from "../utils/util.ts"
 import { FookieError } from "./error.ts"
 
 export enum Environment {

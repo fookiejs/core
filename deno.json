@@ -7,11 +7,6 @@
 	],
 
 	"imports": {
-		"@fookiejs/cache": "./packages/cache/mod.ts",
-		"@fookiejs/core": "./packages/core/mod.ts",
-		"@fookiejs/core/": "./packages/core/",
-		"@fookiejs/graphql": "./packages/graphql/mod.ts",
-		"@fookiejs/randomize": "./packages/randomize/mod.ts",
 		"@std/collections": "jsr:@std/collections@^1.0.10",
 		"@std/expect": "jsr:@std/expect@^0.4.0",
 		"class-transformer": "npm:class-transformer@^0.5.1",

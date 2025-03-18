@@ -2,7 +2,7 @@ import { Database } from "../../core/database.ts"
 import type { Model, QueryType } from "../../core/model/model.ts"
 import { Method } from "../../core/method.ts"
 import type { Payload } from "../../core/payload.ts"
-import { Utils } from "@fookiejs/core/src/utils/util.ts"
+import { Utils } from "../../utils/util.ts"
 
 export const store = Database.create({
 	key: "store",

@@ -1,5 +1,5 @@
 import { string } from "../../defaults/type/string.ts"
-import { Utils } from "@fookiejs/core/src/utils/util.ts"
+import { Utils } from "../../utils/util.ts"
 import type { Model } from "../model/model.ts"
 import { schemaSymbol } from "../model/model.ts"
 import type { Type } from "../type.ts"

@@ -1,4 +1,4 @@
-import { Utils } from "@fookiejs/core/src/utils/util.ts"
+import { Utils } from "../../../utils/util.ts"
 import { Config } from "../../config.ts"
 import { Rule } from "../../lifecycle-function.ts"
 

@@ -1,7 +1,7 @@
 import { Rule } from "../../lifecycle-function.ts"
 import { Config } from "../../config.ts"
 import { defaults } from "../../../defaults/index.ts"
-import { Utils } from "@fookiejs/core/src/utils/util.ts"
+import { Utils } from "../../../utils/util.ts"
 
 export default Rule.create({
 	key: "unique",
