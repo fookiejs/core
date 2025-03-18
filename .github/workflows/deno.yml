@@ -51,11 +51,13 @@ jobs:
         id: changed-packages
         run: |
           changed=$(git diff --name-only HEAD^ HEAD | grep 'packages/' || true)
-          echo "changed_files=$changed" >> $GITHUB_OUTPUT
+          echo "changed_files<<EOF" >> $GITHUB_ENV
+          echo "$changed" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
           if echo "$changed" | grep -q "packages/core/"; then
-            echo "core_changed=true" >> $GITHUB_OUTPUT
+            echo "core_changed=true" >> $GITHUB_ENV
           else
-            echo "core_changed=false" >> $GITHUB_OUTPUT
+            echo "core_changed=false" >> $GITHUB_ENV
           fi
 
       - name: Bump versions
@@ -78,7 +80,7 @@ jobs:
             echo "Updated $pkg_json from $version to $new_version"
           }
 
-          if [ "${{ steps.changed-packages.outputs.core_changed }}" == "true" ]; then
+          if [ "$core_changed" == "true" ]; then
             echo "Core package changed, bumping all packages minor..."
             for pkg in packages/*; do
               bump_version "$pkg/deno.json" minor
@@ -86,7 +88,7 @@ jobs:
           else
             echo "Bumping only changed packages (patch)..."
             for pkg in packages/*; do
-              if echo "${{ steps.changed-packages.outputs.changed_files }}" | grep -q "$pkg"; then
+              if echo "$changed_files" | grep -q "$pkg"; then
                 bump_version "$pkg/deno.json" patch
               fi
             done
