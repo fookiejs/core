@@ -51,7 +51,7 @@ jobs:
         id: changed-packages
         run: |
           changed=$(git diff --name-only HEAD^ HEAD | grep 'packages/' || true)
-          echo "changed_files=$changed"
+          echo "changed_files=$changed" >> $GITHUB_OUTPUT
           if echo "$changed" | grep -q "packages/core/"; then
             echo "core_changed=true" >> $GITHUB_OUTPUT
           else
@@ -60,16 +60,34 @@ jobs:
 
       - name: Bump versions
         run: |
+          bump_version() {
+            local pkg_json="$1"
+            local bump_type="$2"
+            local version=$(grep '"version"' "$pkg_json" | awk -F '"' '{print $4}')
+            IFS='.' read -r major minor patch <<< "$version"
+
+            if [ "$bump_type" == "minor" ]; then
+              minor=$((minor + 1))
+              patch=0
+            elif [ "$bump_type" == "patch" ]; then
+              patch=$((patch + 1))
+            fi
+
+            new_version="$major.$minor.$patch"
+            sed -i "s/\"version\": \"$version\"/\"version\": \"$new_version\"/" "$pkg_json"
+            echo "Updated $pkg_json from $version to $new_version"
+          }
+
           if [ "${{ steps.changed-packages.outputs.core_changed }}" == "true" ]; then
             echo "Core package changed, bumping all packages minor..."
             for pkg in packages/*/deno.json; do
-              deno run -A scripts/bump-version.ts "$pkg" minor
+              bump_version "$pkg" minor
             done
           else
             echo "Bumping only changed packages (patch)..."
             for pkg in packages/*; do
               if echo "${{ steps.changed-packages.outputs.changed_files }}" | grep -q "$pkg"; then
-                deno run -A scripts/bump-version.ts "$pkg/deno.json" patch
+                bump_version "$pkg/deno.json" patch
               fi
             done
           fi
