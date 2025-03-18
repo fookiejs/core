@@ -1,4 +1,4 @@
-import { type BindsType, type Database, Field, Lifecycle, Method, Model, Type } from "@fookiejs/core"
+import { type BindsType, type Database, Field, Lifecycle, Method, Model, Type } from "jsr:@fookiejs/core"
 import * as collections from "@std/collections"
 import { v4 } from "uuid"
 
