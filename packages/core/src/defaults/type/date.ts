@@ -1,6 +1,6 @@
 import { Type } from "../../core/type.ts"
 
-import * as lodash from "npm:lodash@^4.17.21"
+import * as lodash from "https://deno.land/x/lodash_es@v0.0.2/mod.ts"
 import moment from "moment"
 
 function isDate(value: unknown) {

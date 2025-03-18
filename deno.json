@@ -16,9 +16,7 @@
 		"class-transformer": "npm:class-transformer@^0.5.1",
 		"moment": "npm:moment@^2.30.1",
 		"reflect-metadata": "npm:reflect-metadata@^0.2.2",
-		"uuid": "npm:uuid@^11.1.0",
-		"lodash": "npm:lodash",
-		"std/": "jsr:@std/"
+		"uuid": "npm:uuid@^11.1.0"
 	},
 	"tasks": {
 		"dev": "deno run --allow-net --allow-env --allow-read mod.ts",

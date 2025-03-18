@@ -1,4 +1,4 @@
-import * as lodash from "npm:lodash@^4.17.21"
+import * as lodash from "https://deno.land/x/lodash_es@v0.0.2/mod.ts"
 import { ApolloServer } from "npm:@apollo/server@4.11"
 import { defaults, models } from "@fookiejs/core"
 

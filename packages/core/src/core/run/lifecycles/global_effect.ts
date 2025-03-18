@@ -1,7 +1,7 @@
 import { globalEffects } from "../../mixin/index.ts"
 import type { Payload } from "../../payload.ts"
 
-import * as lodash from "npm:lodash@^4.17.21"
+import * as lodash from "https://deno.land/x/lodash_es@v0.0.2/mod.ts"
 import type { MethodResponse } from "../../response.ts"
 import type { Model } from "../../model/model.ts"
 import type { Method } from "../../method.ts"

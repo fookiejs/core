@@ -1,6 +1,6 @@
 import { string } from "../../../defaults/type/string.ts"
 
-import * as lodash from "npm:lodash@^4.17.21"
+import * as lodash from "https://deno.land/x/lodash_es@v0.0.2/mod.ts"
 import type { Field } from "../field.ts"
 
 export function fillSchema(field: Field): Field {

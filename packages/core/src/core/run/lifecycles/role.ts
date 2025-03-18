@@ -1,4 +1,4 @@
-import * as lodash from "npm:lodash@^4.17.21"
+import * as lodash from "https://deno.land/x/lodash_es@v0.0.2/mod.ts"
 import type { Payload } from "../../payload.ts"
 import { before } from "../../mixin/binds/before.ts"
 import { after } from "../../mixin/binds/after.ts"

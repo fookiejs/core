@@ -1,7 +1,7 @@
 import { Config } from "../../config.ts"
 import { Rule } from "../../lifecycle-function.ts"
 
-import * as lodash from "npm:lodash@^4.17.21"
+import * as lodash from "https://deno.land/x/lodash_es@v0.0.2/mod.ts"
 import type { Method } from "../../method.ts"
 import type { Model } from "../../model/model.ts"
 
