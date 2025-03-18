@@ -1,6 +1,6 @@
 import { Filter } from "../../lifecycle-function.ts"
 import { Method } from "../../method.ts"
-import * as lodash from "npm:lodash-es"
+import * as lodash from "npm:lodash-es@^4.17.21"
 
 export default Filter.create({
 	key: "attributes",

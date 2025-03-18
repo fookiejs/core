@@ -1,6 +1,6 @@
 import { Rule } from "../../lifecycle-function.ts"
 import { Type } from "../../type.ts"
-import * as lodash from "npm:lodash-es"
+import * as lodash from "npm:lodash-es@^4.17.21"
 
 function isValidFilterKey(type: Type, currentKey: string, value: any): boolean {
 	if (type.queryController[currentKey].isArray) {

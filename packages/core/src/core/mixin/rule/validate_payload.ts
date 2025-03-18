@@ -1,5 +1,5 @@
 import { Rule } from "../../lifecycle-function.ts"
-import * as lodash from "npm:lodash-es"
+import * as lodash from "npm:lodash-es@^4.17.21"
 
 export default Rule.create({
 	key: "validate_payload",

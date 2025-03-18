@@ -4,7 +4,7 @@ import { after } from "../../mixin/binds/after.ts"
 import { FookieError } from "../../error.ts"
 import type { Model } from "../../model/model.ts"
 import type { Method } from "../../method.ts"
-import * as lodash from "npm:lodash-es"
+import * as lodash from "npm:lodash-es@^4.17.21"
 
 const role = async function (payload: Payload<Model, Method>) {
 	const roles = [
