@@ -1,10 +1,10 @@
-import * as lodash from "https://deno.land/x/lodash_es@v0.0.2/mod.ts"
 import type { Payload } from "../../payload.ts"
 import { before } from "../../mixin/binds/before.ts"
 import { after } from "../../mixin/binds/after.ts"
 import { FookieError } from "../../error.ts"
 import type { Model } from "../../model/model.ts"
 import type { Method } from "../../method.ts"
+import * as lodash from "npm:lodash-es"
 
 const role = async function (payload: Payload<Model, Method>) {
 	const roles = [

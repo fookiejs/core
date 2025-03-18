@@ -1,10 +1,10 @@
 import { Type } from "../../core/type.ts"
 
-import * as lodash from "https://deno.land/x/lodash_es@v0.0.2/mod.ts"
 import moment from "moment"
+import { Utils } from "@fookiejs/core/src/utils/util.ts"
 
 function isDate(value: unknown) {
-	if (!lodash.isString(value)) return false
+	if (!Utils.isString(value)) return false
 	return moment(value as string, "YYYY-MM-DD", true).isValid()
 }
 
@@ -50,7 +50,7 @@ export const date: Type = Type.create({
 		},
 		isNull: {
 			key: "boolean",
-			validate: lodash.isBoolean,
+			validate: Utils.isBoolean,
 		},
 	},
 }) as Type

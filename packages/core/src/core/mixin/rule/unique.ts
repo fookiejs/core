@@ -1,13 +1,13 @@
-import * as lodash from "https://deno.land/x/lodash_es@v0.0.2/mod.ts"
 import { Rule } from "../../lifecycle-function.ts"
 import { Config } from "../../config.ts"
 import { defaults } from "../../../defaults/index.ts"
+import { Utils } from "@fookiejs/core/src/utils/util.ts"
 
 export default Rule.create({
 	key: "unique",
 	execute: async function (payload) {
 		const trash_old = payload.method === "create" ? 0 : 1
-		const fields = lodash.keys(payload.body)
+		const fields = Utils.keys(payload.body)
 		for (const field of fields) {
 			if (
 				(payload.model.schema() as Record<string, any>)[

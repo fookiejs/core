@@ -1,8 +1,8 @@
-import * as lodash from "https://deno.land/x/lodash_es@v0.0.2/mod.ts"
 import { Database } from "../../core/database.ts"
 import type { Model, QueryType } from "../../core/model/model.ts"
 import { Method } from "../../core/method.ts"
 import type { Payload } from "../../core/payload.ts"
+import { Utils } from "@fookiejs/core/src/utils/util.ts"
 
 export const store = Database.create({
 	key: "store",
@@ -21,87 +21,109 @@ export const store = Database.create({
 			},
 			[Method.READ]: async (payload: Payload<T, Method.READ>) => {
 				const attributes = payload.query.attributes
-				const res = poolFilter<T>(pool, payload.query)
-				return res.map((entity: T) => lodash.pick(entity, attributes) as T)
+				const matchingEntities: T[] = []
+
+				for (const entity of pool) {
+					if (isEntityMatchingQuery(entity, payload.query)) {
+						matchingEntities.push(entity)
+					}
+				}
+
+				const start = payload.query.offset || 0
+				const end = start + (payload.query.limit || matchingEntities.length)
+				const paginatedResults = matchingEntities.slice(start, end)
+
+				return paginatedResults.map((entity) => {
+					const result: Partial<T> = {}
+					for (const attr of attributes) {
+						result[attr as keyof T] = entity[attr as keyof T]
+					}
+					return result as T
+				})
 			},
 			[Method.UPDATE]: async (payload: Payload<T, Method.UPDATE>) => {
-				const entities = poolFilter(pool, payload.query)
-
-				entities.forEach((entity: T) => {
-					Object.keys(payload.body).forEach((key) => {
-						;(entity as Record<string, any>)[key] = (
-							payload.body as Record<string, any>
-						)[key]
-					})
-				})
-
+				for (const entity of pool) {
+					if (isEntityMatchingQuery(entity, payload.query)) {
+						Object.keys(payload.body).forEach((key) => {
+							;(entity as Record<string, any>)[key] = (
+								payload.body as Record<string, any>
+							)[key]
+						})
+					}
+				}
 				return true
 			},
 			[Method.DELETE]: async (payload: Payload<T, Method.DELETE>) => {
-				const filtered = poolFilter(pool, payload.query).map(function (f: T) {
-					return f.id
-				})
-				const rejected = lodash.reject(pool, function (entity: T) {
-					return filtered.includes(entity.id)
-				})
-				pool = rejected
+				const newPool: T[] = []
+
+				for (const entity of pool) {
+					if (!isEntityMatchingQuery(entity, payload.query)) {
+						newPool.push(entity)
+					}
+				}
+
+				pool = newPool
 				return true
 			},
 		}
 	},
 })
 
-function poolFilter<model extends Model>(
-	pool: model[],
-	query: QueryType<model>,
-) {
-	const results = pool.filter(function (entity) {
-		for (const field of Object.keys(query.filter!) as Array<keyof model>) {
-			const value = query.filter![field]!
+function isEntityMatchingQuery<T extends Model>(
+	entity: T,
+	query: QueryType<T>,
+): boolean {
+	if (!query.filter) {
+		return true
+	}
 
-			if (value.equals !== undefined && entity[field] !== value.equals) {
-				return false
-			}
-			if (value.notEquals !== undefined && entity[field] === value.notEquals) {
-				return false
-			}
+	for (const field of Object.keys(query.filter) as Array<keyof T>) {
+		const value = query.filter[field]!
+		const entityValue = entity[field]
 
-			if (value.in && !value.in.includes(entity[field] as never)) {
+		if (value.equals !== undefined && entityValue !== value.equals) {
+			return false
+		}
+
+		if (value.notEquals !== undefined && entityValue === value.notEquals) {
+			return false
+		}
+
+		if (value.in && !value.in.includes(entityValue as never)) {
+			return false
+		}
+		if (value.notIn && value.notIn.includes(entityValue as never)) {
+			return false
+		}
+		if (value.lt !== undefined && entityValue >= value.lt) {
+			return false
+		}
+		if (value.lte !== undefined && entityValue > value.lte) {
+			return false
+		}
+		if (value.gt !== undefined && entityValue <= value.gt) {
+			return false
+		}
+		if (value.gte !== undefined && entityValue < value.gte) {
+			return false
+		}
+		if (
+			value.like &&
+			!new RegExp(value.like.replace(/%/g, ".*")).test(
+				entityValue as string,
+			)
+		) {
+			return false
+		}
+		if (Utils.isBoolean(value.isNull)) {
+			if (value.isNull && entityValue !== null) {
 				return false
 			}
-			if (value.notIn && value.notIn.includes(entity[field] as never)) {
+			if (!value.isNull && entityValue === null) {
 				return false
-			}
-			if (value.lt !== undefined && entity[field] >= value.lt) {
-				return false
-			}
-			if (value.lte !== undefined && entity[field] > value.lte) {
-				return false
-			}
-			if (value.gt !== undefined && entity[field] <= value.gt) {
-				return false
-			}
-			if (value.gte !== undefined && entity[field] < value.gte) {
-				return false
-			}
-			if (
-				value.like &&
-				!new RegExp(value.like.replace(/%/g, ".*")).test(
-					entity[field] as string,
-				)
-			) {
-				return false
-			}
-			if (lodash.isBoolean(value.isNull)) {
-				if (value.isNull && entity[field] !== null) {
-					return false
-				}
-				if (!value.isNull && entity[field] === null) {
-					return false
-				}
 			}
 		}
-		return true
-	})
-	return lodash.slice(results, query.offset!, query.offset! + query.limit!)
+	}
+
+	return true
 }

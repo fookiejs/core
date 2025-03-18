@@ -1,7 +1,6 @@
-import * as lodash from "https://deno.land/x/lodash_es@v0.0.2/mod.ts"
 import { ApolloServer } from "npm:@apollo/server@4.11"
-import { defaults, models } from "@fookiejs/core"
-
+import { defaults, models, Utils } from "@fookiejs/core"
+import * as collections from "@std/collections"
 const filter_types = `
 input string_filter {
   equals: String
@@ -141,7 +140,7 @@ export function create(): ApolloServer {
 		}
 
 		const schema = model.schema() as Record<string, any>
-		for (const field of lodash.keys(schema)) {
+		for (const field of Utils.keys(schema)) {
 			const fieldConfig = schema[field] as any
 			const temp_type = resolve_type(fieldConfig)
 			const temp_input = temp_type
@@ -200,7 +199,7 @@ export function create(): ApolloServer {
 	for (const model of models) {
 		const schema = model.schema() as Record<string, any>
 
-		for (const field of lodash.keys(schema)) {
+		for (const field of Utils.keys(schema)) {
 			if ((schema[field] as any).relation) {
 				const relatedModel = (schema[field] as any).relation
 
@@ -231,7 +230,7 @@ export function create(): ApolloServer {
 					payload: any,
 					context: any,
 				) {
-					const query: any = lodash.omit(payload.query, field)
+					const query: any = collections.omit(payload.query, [field] as unknown as [])
 					if (!query.filter) {
 						query.filter = {}
 					}
@@ -251,7 +250,7 @@ export function create(): ApolloServer {
 				) {
 					if (!payload.field) return 0
 
-					const query: any = lodash.omit(payload.query, field)
+					const query: any = collections.omit(payload.query, [field] as unknown as [])
 					if (!query.filter) {
 						query.filter = {}
 					}
@@ -278,7 +277,7 @@ export function create(): ApolloServer {
 					payload: any,
 					context: any,
 				) {
-					const query: any = lodash.omit(payload.query, field)
+					const query: any = collections.omit(payload.query, [field] as unknown as [])
 					if (!query.filter) {
 						query.filter = {}
 					}

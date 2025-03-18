@@ -1,8 +1,6 @@
 import { expect } from "jsr:@std/expect"
-
-import * as lodash from "https://deno.land/x/lodash_es@v0.0.2/mod.ts"
 import { Randomize } from "@fookiejs/randomize"
-import { Config, defaults } from "@fookiejs/core"
+import { Config, defaults, Utils } from "@fookiejs/core"
 
 Deno.test("Randomize", () => {
 	Deno.test("rastgele model oluşturabilmeli", async () => {
@@ -11,7 +9,7 @@ Deno.test("Randomize", () => {
 				defaults.database.store,
 				Math.floor(Math.random() * 100),
 			)
-			console.log(lodash.keys(randomModel.schema()).length)
+			console.log(Utils.keys(randomModel.schema()).length)
 
 			const response = await randomModel.read({}, { sub: Config.SYSTEM_TOKEN })
 

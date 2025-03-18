@@ -1,7 +1,7 @@
 import { type BindsType, type Database, Field, Lifecycle, Method, Model, Type } from "@fookiejs/core"
+import * as collections from "@std/collections"
 import { v4 } from "uuid"
 
-import * as lodash from "https://deno.land/x/lodash_es@v0.0.2/mod.ts"
 export class Randomize {
 	static generateRandomModel(database: Database, fieldCount = 5): typeof Model {
 		const fieldTypes = Type.list()
@@ -41,7 +41,7 @@ export class Randomize {
 
 		for (let i = 0; i < fieldCount; i++) {
 			const fieldName = `field_${i}`
-			const fieldType = lodash.sample(fieldTypes)
+			const fieldType = collections.sample(fieldTypes)
 
 			Field.Decorator({
 				type: fieldType,

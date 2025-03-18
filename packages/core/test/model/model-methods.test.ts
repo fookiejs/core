@@ -1,6 +1,5 @@
 import { expect } from "jsr:@std/expect"
 
-import * as lodash from "https://deno.land/x/lodash_es@v0.0.2/mod.ts"
 import { defaults, Field, Model, Role } from "@fookiejs/core"
 
 @Model.Decorator({
@@ -51,7 +50,7 @@ Deno.test("should create a user correctly", async () => {
 
 Deno.test("should read users correctly", async () => {
 	const readResponse = await User.read({})
-	expect(lodash.isArray(readResponse)).toEqual(true)
+	expect(Array.isArray(readResponse)).toEqual(true)
 })
 
 Deno.test("should update a user correctly", async () => {

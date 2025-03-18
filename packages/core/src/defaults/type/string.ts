@@ -1,41 +1,41 @@
 import { Type } from "../../core/type.ts"
+import { Utils } from "../../utils/util.ts"
 
-import * as lodash from "https://deno.land/x/lodash_es@v0.0.2/mod.ts"
 export const string: Type = Type.create({
 	key: "string",
 	jsonType: "string",
-	validate: lodash.isString,
+	validate: Utils.isString,
 	example: "abc",
 	queryController: {
 		equals: {
 			key: "string",
-			validate: lodash.isString,
+			validate: Utils.isString,
 		},
 		notEquals: {
 			key: "string",
-			validate: lodash.isString,
+			validate: Utils.isString,
 		},
 		in: {
 			key: "string",
-			validate: lodash.isString,
+			validate: Utils.isString,
 			isArray: true,
 		},
 		notIn: {
 			key: "string",
-			validate: lodash.isString,
+			validate: Utils.isString,
 			isArray: true,
 		},
 		like: {
 			key: "string",
-			validate: lodash.isString,
+			validate: Utils.isString,
 		},
 		isNull: {
 			key: "boolean",
-			validate: lodash.isBoolean,
+			validate: Utils.isBoolean,
 		},
 		isNotNull: {
 			key: "boolean",
-			validate: lodash.isBoolean,
+			validate: Utils.isBoolean,
 		},
 	},
 }) as Type

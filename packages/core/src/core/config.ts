@@ -1,6 +1,6 @@
+import { Utils } from "@fookiejs/core/src/utils/util.ts"
 import { FookieError } from "./error.ts"
 
-import * as lodash from "https://deno.land/x/lodash_es@v0.0.2/mod.ts"
 export enum Environment {
 	LOCAL = "local",
 	TEST = "test",
@@ -14,7 +14,7 @@ export class Config {
 	static SYSTEM_TOKEN = Symbol("SYSTEM_TOKEN")
 
 	static get(key: string): string {
-		if (!lodash.has(this.env, key)) {
+		if (!Utils.has(this.env, key)) {
 			throw FookieError.create({
 				name: "missing_config",
 				message: `Environment variable not found`,

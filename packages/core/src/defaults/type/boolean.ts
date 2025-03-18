@@ -1,22 +1,21 @@
 import { Type } from "../../core/type.ts"
-
-import * as lodash from "https://deno.land/x/lodash_es@v0.0.2/mod.ts"
+import { Utils } from "../../utils/util.ts"
 export const boolean: Type = Type.create({
 	key: "boolean",
-	validate: lodash.isBoolean,
+	validate: Utils.isBoolean,
 	example: true,
 	queryController: {
 		equals: {
 			key: "boolean",
-			validate: lodash.isBoolean,
+			validate: Utils.isBoolean,
 		},
 		notEquals: {
 			key: "boolean",
-			validate: lodash.isBoolean,
+			validate: Utils.isBoolean,
 		},
 		isNull: {
 			key: "boolean",
-			validate: lodash.isBoolean,
+			validate: Utils.isBoolean,
 		},
 	},
 	jsonType: "boolean",

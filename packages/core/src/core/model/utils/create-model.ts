@@ -1,8 +1,8 @@
-import * as lodash from "https://deno.land/x/lodash_es@v0.0.2/mod.ts"
 import type { BindsType, BindsTypeField, ModelTypeInput, ModelTypeOutput } from "../../model/model.ts"
 import { methods } from "../../method.ts"
 import { system } from "../../../defaults/role/system.ts"
 import { lifecycles } from "../../lifecycle.ts"
+import * as lodash from "npm:lodash-es"
 
 export function fillModel(model: ModelTypeInput): ModelTypeOutput {
 	model.binds = model.binds || ({} as BindsType)

@@ -1,7 +1,6 @@
 import type { Options } from "../option.ts"
 import type { ConstructorOf, Payload } from "../payload.ts"
-
-import * as lodash from "https://deno.land/x/lodash_es@v0.0.2/mod.ts"
+import * as lodash from "npm:lodash-es"
 import pre_rule from "./lifecycles/pre-rule.ts"
 import modify from "./lifecycles/modify.ts"
 import role from "./lifecycles/role.ts"

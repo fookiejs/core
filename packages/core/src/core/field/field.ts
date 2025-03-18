@@ -1,6 +1,5 @@
 import { string } from "../../defaults/type/string.ts"
-
-import * as lodash from "https://deno.land/x/lodash_es@v0.0.2/mod.ts"
+import { Utils } from "@fookiejs/core/src/utils/util.ts"
 import type { Model } from "../model/model.ts"
 import { schemaSymbol } from "../model/model.ts"
 import type { Type } from "../type.ts"
@@ -21,7 +20,7 @@ export class Field {
 			const metadata = Reflect.getMetadata(schemaSymbol, target.constructor) ||
 				{}
 
-			if (!lodash.has(metadata, "id")) {
+			if (!Utils.has(metadata, "id")) {
 				metadata["id"] = fillSchema({
 					type: string,
 				})

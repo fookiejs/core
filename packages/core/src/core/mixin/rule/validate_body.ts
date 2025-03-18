@@ -1,6 +1,6 @@
-import * as lodash from "https://deno.land/x/lodash_es@v0.0.2/mod.ts"
 import { Rule } from "../../lifecycle-function.ts"
 import { FookieError } from "../../error.ts"
+import * as lodash from "npm:lodash-es"
 
 export default Rule.create({
 	key: "validate_body",

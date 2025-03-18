@@ -1,12 +1,12 @@
-import * as lodash from "https://deno.land/x/lodash_es@v0.0.2/mod.ts"
 import { Rule } from "../../lifecycle-function.ts"
 import { defaults } from "../../../defaults/index.ts"
+import { Utils } from "@fookiejs/core/src/utils/util.ts"
 
 export default Rule.create({
 	key: "check_required",
 	execute: async function (payload) {
 		const search = [null, undefined]
-		const keys = payload.method == "create" ? lodash.keys(payload.model.schema()) : lodash.keys(payload.body)
+		const keys = payload.method == "create" ? Utils.keys(payload.model.schema()) : Utils.keys(payload.body)
 		for (const key of keys) {
 			if (
 				(payload.model.schema() as Record<string, any>)[key].features.includes(

@@ -14,5 +14,5 @@ export * from "@fookiejs/core/src/core/type.ts"
 export * from "@fookiejs/core/src/core/payload.ts"
 export * from "@fookiejs/core/src/core/mixin/index.ts"
 export * from "@fookiejs/core/src/defaults/index.ts"
-
+export * from "@fookiejs/core/src/utils/util.ts"
 export const fookieInstanceId = v4()

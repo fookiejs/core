@@ -1,6 +1,7 @@
-import * as lodash from "https://deno.land/x/lodash_es@v0.0.2/mod.ts"
 import { Rule } from "../../lifecycle-function.ts"
 import { v4 } from "uuid"
+import * as lodash from "npm:lodash-es"
+import { Utils } from "@fookiejs/core/src/utils/util.ts"
 
 export default Rule.create({
 	key: "defalut_payload",
@@ -24,15 +25,15 @@ export default Rule.create({
 			)[key]
 		}
 
-		if (!lodash.has(payload.query, "offset")) {
+		if (!Utils.has(payload.query, "offset")) {
 			payload.query.offset = 0
 		}
-		if (!lodash.has(payload.query, "limit")) {
+		if (!Utils.has(payload.query, "limit")) {
 			payload.query.limit = Infinity
 		}
 
 		if ((payload.query.attributes || []).length == 0) {
-			payload.query.attributes = lodash.keys(payload.model.schema())
+			payload.query.attributes = Utils.keys(payload.model.schema())
 		}
 		return true
 	},
