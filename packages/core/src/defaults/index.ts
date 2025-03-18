@@ -7,8 +7,33 @@ import { date } from "./type/date.ts"
 import { number } from "./type/number.ts"
 import { boolean } from "./type/boolean.ts"
 import { array } from "./type/array.ts"
+import { Type } from "../core/type.ts"
+import { Database } from "../core/database.ts"
+import { Role } from "../core/lifecycle-function.ts"
 
-export const defaults = {
+type DefaultsType = {
+	type: {
+		string: Type
+		date: Type
+		number: Type
+		boolean: Type
+		array: (innerType: Type) => Type
+	}
+	database: {
+		store: Database
+	}
+	role: {
+		nobody: Role
+		system: Role
+		everybody: Role
+	}
+	feature: {
+		required: symbol
+		unique: symbol
+	}
+}
+
+export const defaults: DefaultsType = {
 	type: {
 		string,
 		date,
