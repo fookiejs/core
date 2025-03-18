@@ -22,9 +22,6 @@
 	"tasks": {
 		"dev": "deno run --allow-net --allow-env --allow-read mod.ts",
 		"test": "deno test --allow-net --allow-env --allow-read",
-		"test:core": "deno test --allow-net --allow-env --allow-read packages/core/test/",
-		"test:graphql": "deno test --allow-net --allow-env --allow-read packages/graphql/test/",
-		"test:randomize": "deno test --allow-net --allow-env --allow-read packages/randomize/test/",
 		"fix-imports": "deno run --allow-read --allow-write scripts/fix-imports.ts",
 		"check": "deno check ./packages/**/*.ts",
 		"lint": "deno lint ./packages/**/*.ts",
