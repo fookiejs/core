@@ -80,8 +80,8 @@ jobs:
 
           if [ "${{ steps.changed-packages.outputs.core_changed }}" == "true" ]; then
             echo "Core package changed, bumping all packages minor..."
-            for pkg in packages/*/deno.json; do
-              bump_version "$pkg" minor
+            for pkg in packages/*; do
+              bump_version "$pkg/deno.json" minor
             done
           else
             echo "Bumping only changed packages (patch)..."
@@ -99,6 +99,8 @@ jobs:
 
       - name: Publish packages
         run: |
-          for pkg in packages/*/deno.json; do
-            deno publish "$pkg"
+          for pkg in packages/*; do
+            if [ -f "$pkg/deno.json" ]; then
+              (cd "$pkg" && deno publish)
+            fi
           done
