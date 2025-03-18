@@ -1,5 +1,5 @@
 import { ApolloServer } from "npm:@apollo/server@4.11"
-import { defaults, models, Utils } from "jsr:@fookiejs/core"
+import { defaults, models, Utils } from "jsr:@fookiejs/core@0.1.0"
 import * as collections from "@std/collections"
 const filter_types = `
 input string_filter {

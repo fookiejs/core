@@ -10,7 +10,7 @@ import {
 	Mixin,
 	Model,
 	Modify,
-} from "jsr:@fookiejs/core"
+} from "jsr:@fookiejs/core@0.1.0"
 
 export function hasher(data: any): string {
 	const hash = crypto.createHash("sha256")
