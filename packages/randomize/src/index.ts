@@ -45,7 +45,7 @@ export class Randomize {
 
 			Field.Decorator({
 				type: fieldType,
-			})(RandomModel.prototype, fieldName)
+			})(RandomModel, fieldName)
 		}
 
 		return RandomModel

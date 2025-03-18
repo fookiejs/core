@@ -16,4 +16,4 @@ export * from "./src/core/mixin/index.ts"
 export * from "./src/defaults/index.ts"
 export * from "./src/utils/util.ts"
 
-export const fookieInstanceId = v4()
+export const fookieInstanceId: string = v4()

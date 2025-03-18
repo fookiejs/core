@@ -28,4 +28,4 @@ export const defaults = {
 		required: Symbol(),
 		unique: Symbol(),
 	},
-}
+} as const

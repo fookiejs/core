@@ -83,7 +83,7 @@ export class Model {
 		return this[Symbol.metadata][mixinsSymbol] as Mixin[]
 	}
 
-	static Decorator<M extends Model>(model: ModelTypeInput) {
+	static Decorator<M extends Model>(model: ModelTypeInput): (constructor: typeof Model, descriptor: any) => void {
 		return function (constructor: typeof Model, descriptor: any) {
 			const existingModel = models.find((m) => m.getName() === model.name)
 			if (existingModel) {

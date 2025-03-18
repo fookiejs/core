@@ -6,4 +6,4 @@ export const system = Role.create({
 	execute: async function (payload) {
 		return payload.options.sub === Config.SYSTEM_TOKEN
 	},
-})
+}) as Role

@@ -16,7 +16,7 @@ export class Field {
 	relation?: typeof Model
 	features?: symbol[]
 
-	static Decorator(field: Field) {
+	static Decorator(field: Field): (constructor: typeof Model, descriptor: any) => void {
 		return function (_value: any, descriptor: any) {
 			if (!lodash.isObject(descriptor.metadata[schemaSymbol])) {
 				descriptor.metadata[schemaSymbol] = {

@@ -67,7 +67,7 @@ export const store = Database.create({
 			},
 		}
 	},
-})
+}) as Database
 
 function isEntityMatchingQuery<T extends Model>(
 	entity: T,
