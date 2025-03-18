@@ -2,7 +2,7 @@ import type { BindsType, BindsTypeField, ModelTypeInput, ModelTypeOutput } from 
 import { methods } from "../../method.ts"
 import { system } from "../../../defaults/role/system.ts"
 import { lifecycles } from "../../lifecycle.ts"
-import * as lodash from "npm:lodash-es@^4.17.21"
+import * as lodash from "lodash"
 
 export function fillModel(model: ModelTypeInput): ModelTypeOutput {
 	model.binds = model.binds || ({} as BindsType)

@@ -1,7 +1,6 @@
 import { defaults, Field, FookieError, Model } from "@fookiejs/core"
 import { expect } from "jsr:@std/expect"
 
-// Model tanımlama
 @Model.Decorator({
 	database: defaults.database.store,
 	binds: { create: { role: [] } },

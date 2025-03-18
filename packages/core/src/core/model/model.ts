@@ -16,6 +16,7 @@ export const schemaSymbol = Symbol("schema")
 const bindsSymbol = Symbol("binds")
 const databaseSymbol = Symbol("database")
 const mixinsSymbol = Symbol("mixins")
+const modelNameSymbol = Symbol("modelName")
 
 interface ModelMethods<model extends Model> {
 	create: (payload: Payload<model, Method.CREATE>) => Promise<model>
@@ -70,20 +71,20 @@ export class Model {
 	}
 
 	static schema<model extends Model>(this: new () => model): SchemaType<model> {
-		return Reflect.getMetadata(schemaSymbol, this)
+		return this[Symbol.metadata][schemaSymbol] as SchemaType<model>
 	}
 	static binds<model extends Model>(this: new () => model): BindsType {
-		return Reflect.getMetadata(bindsSymbol, this)
+		return this[Symbol.metadata][bindsSymbol] as BindsType
 	}
 	static database<model extends Model>(this: new () => model): Database {
-		return Reflect.getMetadata(databaseSymbol, this)
+		return this[Symbol.metadata][databaseSymbol] as Database
 	}
 	static mixins<model extends Model>(this: new () => model): Mixin[] {
-		return Reflect.getMetadata(mixinsSymbol, this)
+		return this[Symbol.metadata][mixinsSymbol] as Mixin[]
 	}
 
-	static Decorator<model extends Model>(model: ModelTypeInput) {
-		return function (constructor: typeof Model) {
+	static Decorator<M extends Model>(model: ModelTypeInput) {
+		return function (constructor: typeof Model, descriptor: any) {
 			const existingModel = models.find((m) => m.getName() === model.name)
 			if (existingModel) {
 				throw new Error(`Model "${constructor.name}" already exists`)
@@ -93,21 +94,15 @@ export class Model {
 				model.name = constructor.name
 			}
 
-			const schema: SchemaType<model> = Reflect.getMetadata(
-				schemaSymbol,
-				constructor,
-			)
 			const filledModel = fillModel(model)
-			const methods = filledModel.database.modify<model>(
+			const methods = filledModel.database.modify<M>(
 				filledModel as unknown as typeof Model,
-			) as unknown as ModelMethods<model>
+			) as unknown as ModelMethods<M>
 
-			Reflect.defineMetadata(schemaSymbol, schema, constructor)
-			Reflect.defineMetadata(bindsSymbol, filledModel.binds, constructor)
-			Reflect.defineMetadata(databaseSymbol, filledModel.database, constructor)
-			Reflect.defineMetadata(mixinsSymbol, filledModel.mixins, constructor)
-
-			Reflect.defineMetadata("modelName", model.name, constructor)
+			descriptor.metadata[bindsSymbol] = filledModel.binds
+			descriptor.metadata[databaseSymbol] = filledModel.database
+			descriptor.metadata[mixinsSymbol] = filledModel.mixins
+			descriptor.metadata[modelNameSymbol] = model.name
 
 			constructor.create = createRun(methods.create) as typeof Model.create
 			constructor.read = readRun(methods.read) as typeof Model.read

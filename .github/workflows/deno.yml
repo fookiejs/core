@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 jobs:
@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Setup repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Deno
         uses: denoland/setup-deno@v2
@@ -39,11 +39,48 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Setup Deno
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
 
+      - name: Detect changed packages
+        id: changed-packages
+        run: |
+          changed=$(git diff --name-only HEAD^ HEAD | grep 'packages/' || true)
+          echo "changed_files=$changed"
+          if echo "$changed" | grep -q "packages/core/"; then
+            echo "core_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "core_changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Bump versions
+        run: |
+          if [ "${{ steps.changed-packages.outputs.core_changed }}" == "true" ]; then
+            echo "Core package changed, bumping all packages minor..."
+            for pkg in packages/*/deno.json; do
+              deno run -A scripts/bump-version.ts "$pkg" minor
+            done
+          else
+            echo "Bumping only changed packages (patch)..."
+            for pkg in packages/*; do
+              if echo "${{ steps.changed-packages.outputs.changed_files }}" | grep -q "$pkg"; then
+                deno run -A scripts/bump-version.ts "$pkg/deno.json" patch
+              fi
+            done
+          fi
+
+      - name: Commit bumped versions
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: bump package versions"
+
       - name: Publish packages
-        run: deno publish --allow-slow-types
+        run: |
+          for pkg in packages/*; do
+            deno publish --allow-slow-types "$pkg"
+          done

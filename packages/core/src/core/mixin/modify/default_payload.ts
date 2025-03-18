@@ -1,7 +1,6 @@
 import { Rule } from "../../lifecycle-function.ts"
 import { v4 } from "uuid"
-import * as lodash from "npm:lodash-es@^4.17.21"
-import { Utils } from "../../../utils/util.ts"
+import * as lodash from "lodash"
 
 export default Rule.create({
 	key: "defalut_payload",
@@ -25,15 +24,15 @@ export default Rule.create({
 			)[key]
 		}
 
-		if (!Utils.has(payload.query, "offset")) {
+		if (!lodash.has(payload.query, "offset")) {
 			payload.query.offset = 0
 		}
-		if (!Utils.has(payload.query, "limit")) {
+		if (!lodash.has(payload.query, "limit")) {
 			payload.query.limit = Infinity
 		}
 
 		if ((payload.query.attributes || []).length == 0) {
-			payload.query.attributes = Utils.keys(payload.model.schema())
+			payload.query.attributes = lodash.keys(payload.model.schema())
 		}
 		return true
 	},

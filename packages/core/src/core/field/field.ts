@@ -4,6 +4,7 @@ import type { Model } from "../model/model.ts"
 import { schemaSymbol } from "../model/model.ts"
 import type { Type } from "../type.ts"
 import { fillSchema } from "./utils/fill-schema.ts"
+import * as lodash from "lodash"
 
 export class Field {
 	required?: boolean
@@ -16,19 +17,22 @@ export class Field {
 	features?: symbol[]
 
 	static Decorator(field: Field) {
-		return function (target: any, propertyKey: any) {
-			const metadata = Reflect.getMetadata(schemaSymbol, target.constructor) ||
-				{}
+		return function (_value: any, descriptor: any) {
+			if (!lodash.isObject(descriptor.metadata[schemaSymbol])) {
+				descriptor.metadata[schemaSymbol] = {
+					"id": fillSchema({
+						type: string,
+					}),
+				}
+			}
 
-			if (!Utils.has(metadata, "id")) {
-				metadata["id"] = fillSchema({
+			if (!lodash.has(descriptor.metadata[schemaSymbol], "id")) {
+				descriptor.metadata[schemaSymbol]["id"] = fillSchema({
 					type: string,
 				})
 			}
 
-			metadata[propertyKey] = fillSchema(field)
-
-			Reflect.defineMetadata(schemaSymbol, metadata, target.constructor)
+			descriptor.metadata[schemaSymbol][descriptor.name] = fillSchema(field)
 		}
 	}
 }

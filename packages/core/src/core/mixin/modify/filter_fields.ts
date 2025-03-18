@@ -1,5 +1,5 @@
 import { Modify } from "../../lifecycle-function.ts"
-import * as lodash from "npm:lodash-es@^4.17.21"
+import * as lodash from "lodash"
 
 export default Modify.create({
 	key: "filter_fields",
