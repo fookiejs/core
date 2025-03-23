@@ -3,7 +3,7 @@ import { Utils } from "../../utils/util.ts"
 
 export const number: Type = Type.create({
 	key: "number",
-	jsonType: "number",
+	alias: ["number"],
 	validate: function (value: unknown): boolean {
 		return Utils.isNumber(value)
 	},
@@ -11,30 +11,25 @@ export const number: Type = Type.create({
 	queryController: {
 		equals: {
 			key: "number",
-			validate: Utils.isNumber,
 		},
 		notEquals: {
 			key: "number",
-			validate: Utils.isNumber,
 		},
 
-		gte: { key: "number", validate: Utils.isNumber },
-		gt: { key: "number", validate: Utils.isNumber },
-		lte: { key: "number", validate: Utils.isNumber },
-		lt: { key: "number", validate: Utils.isNumber },
+		gte: { key: "number" },
+		gt: { key: "number" },
+		lte: { key: "number" },
+		lt: { key: "number" },
 		in: {
 			key: "number",
-			validate: Utils.isNumber,
 			isArray: true,
 		},
 		notIn: {
 			key: "number",
-			validate: Utils.isNumber,
 			isArray: true,
 		},
 		isNull: {
 			key: "boolean",
-			validate: Utils.isBoolean,
 		},
 	},
 }) as Type

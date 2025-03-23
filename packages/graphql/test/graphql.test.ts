@@ -1,4 +1,4 @@
-import { create } from "@fookiejs/graphql"
+import { createServer } from "../mod.ts"
 import { defaults, Field, Model } from "@fookiejs/core"
 
 @Model.Decorator({
@@ -197,10 +197,6 @@ export class CompanyUserRole extends Model {
 	role!: string
 }
 
-Deno.test("Graphql", () => {
-	Deno.test("Generate Graphql Schema", async () => {
-		const schema = create()
-
-		console.log(schema)
-	})
+Deno.test("Graphql", async () => {
+	createServer()
 })

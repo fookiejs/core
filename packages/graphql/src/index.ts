@@ -107,7 +107,7 @@ function resolve_input(typeStr: string): string {
 	return "string_filter" // Varsayılan
 }
 
-export function create(): ApolloServer {
+export function createServer(): ApolloServer {
 	const typeDefs: TypeDefs = {
 		input: {},
 		type: {},
@@ -186,10 +186,10 @@ export function create(): ApolloServer {
 
 		resolvers.Query[model.getName()] = async function (
 			_: any,
-			{ query }: any,
+			{ query = {} }: any,
 			context: any,
 		) {
-			const response = await model.read(query || {}, {
+			const response = await model.read(query, {
 				token: context.token || "",
 			})
 			return Array.isArray(response) ? response : []
@@ -227,17 +227,17 @@ export function create(): ApolloServer {
 
 				resolvers[relatedModel.getName()]["all_" + model.getName()] = async function (
 					parent: any,
-					payload: any,
+					{ query = {} }: any,
 					context: any,
 				) {
-					const query: any = collections.omit(payload.query, [field] as unknown as [])
-					if (!query.filter) {
-						query.filter = {}
+					const queryObj: any = collections.omit(query, [field] as unknown as [])
+					if (!queryObj.filter) {
+						queryObj.filter = {}
 					}
 
-					query.filter[field] = { equals: parent.id }
+					queryObj.filter[field] = { equals: parent.id }
 
-					const response = await model.read(query, {
+					const response = await model.read(queryObj, {
 						token: context.token || "",
 					})
 					return Array.isArray(response) ? response : []
@@ -245,26 +245,26 @@ export function create(): ApolloServer {
 
 				resolvers[relatedModel.getName()]["sum_" + model.getName()] = async function (
 					parent: any,
-					payload: any,
+					{ query = {}, field }: any,
 					context: any,
 				) {
-					if (!payload.field) return 0
+					if (!field) return 0
 
-					const query: any = collections.omit(payload.query, [field] as unknown as [])
-					if (!query.filter) {
-						query.filter = {}
+					const queryObj: any = collections.omit(query, [field] as unknown as [])
+					if (!queryObj.filter) {
+						queryObj.filter = {}
 					}
 
-					query.filter[field] = { equals: parent.id }
+					queryObj.filter[field] = { equals: parent.id }
 
 					let sum = 0
-					const items = await model.read(query, {
+					const items = await model.read(queryObj, {
 						token: context.token || "",
 					})
 
 					if (Array.isArray(items)) {
 						sum = items.reduce(
-							(total, item: any) => total + (Number((item as any)[payload.field]) || 0),
+							(total, item: any) => total + (Number((item as any)[field]) || 0),
 							0,
 						)
 					}
@@ -274,17 +274,17 @@ export function create(): ApolloServer {
 
 				resolvers[relatedModel.getName()]["count_" + model.getName()] = async function (
 					parent: any,
-					payload: any,
+					{ query = {} }: any,
 					context: any,
 				) {
-					const query: any = collections.omit(payload.query, [field] as unknown as [])
-					if (!query.filter) {
-						query.filter = {}
+					const queryObj: any = collections.omit(query, [field] as unknown as [])
+					if (!queryObj.filter) {
+						queryObj.filter = {}
 					}
 
-					query.filter[field] = { equals: parent.id }
+					queryObj.filter[field] = { equals: parent.id }
 
-					const items = await model.read(query, {
+					const items = await model.read(queryObj, {
 						token: context.token || "",
 					})
 					return Array.isArray(items) ? items.length : 0

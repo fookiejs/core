@@ -13,6 +13,7 @@ import { plainToInstance } from "class-transformer"
 import type { Model, QueryType } from "../model/model.ts"
 import { Method } from "../method.ts"
 import type { MethodResponse } from "../response.ts"
+import { DisposableSpan } from "../../otel/index.ts"
 
 function createPayload<T extends Model, M extends Method>(
 	payload: Omit<Payload<T, M>, "runId" | "state">,
@@ -28,10 +29,13 @@ async function runLifecycle<T extends Model, M extends Method>(
 	payload: Payload<T, M>,
 	method: (payload: Payload<T, M>) => Promise<MethodResponse<T>[M]>,
 ) {
+	using _span = new DisposableSpan(`run:${payload.model.getName()}:${payload.method}`)
+
 	if (await pre_rule(payload)) {
-		await modify(payload)
 		if (await role(payload)) {
+			await modify(payload)
 			if (await rule(payload)) {
+				using _ruleSpan = DisposableSpan.add("method")
 				const response = plainToInstance(
 					payload.model,
 					lodash.isString(payload.state.cachedResponse)

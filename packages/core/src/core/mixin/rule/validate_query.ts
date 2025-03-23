@@ -3,10 +3,13 @@ import { Type } from "../../type.ts"
 import * as lodash from "lodash"
 
 function isValidFilterKey(type: Type, currentKey: string, value: any): boolean {
+	const key = type.queryController[currentKey].key
+	const keyType: Type = lodash.find(Type.list(), { key: key })
+
 	if (type.queryController[currentKey].isArray) {
-		return value.every((val: any) => type.queryController[currentKey].validate(val))
+		return value.every((val: any) => keyType.validate(val))
 	}
-	return type.queryController[currentKey].validate(value)
+	return keyType.validate(value)
 }
 
 export default Rule.create({
@@ -25,13 +28,13 @@ export default Rule.create({
 
 		if (lodash.difference(filterKeys, modelKeys).length > 0) return false
 
+		const schema = payload.model.schema()
+
 		for (const filterKey of filterKeys) {
 			const currentKeys = lodash.keys(
 				(payload.query.filter as Record<string, any>)[filterKey],
 			)
-			const type: Type = (payload.model.schema() as Record<string, any>)[
-				filterKey
-			].type
+			const type: Type = schema[filterKey].type
 
 			const availableFilterKeys = lodash.keys(type.queryController)
 

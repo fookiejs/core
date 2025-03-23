@@ -15,5 +15,6 @@ export * from "./src/core/payload.ts"
 export * from "./src/core/mixin/index.ts"
 export * from "./src/defaults/index.ts"
 export * from "./src/utils/util.ts"
+export * from "./src/otel/index.ts"
 
 export const fookieInstanceId: string = v4()

@@ -48,3 +48,5 @@ deno.lock
 .next/
 .nuxt/
 .pnpm-debug.log
+
+/packages/example/

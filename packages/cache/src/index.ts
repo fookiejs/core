@@ -73,14 +73,14 @@ export function initCache(database: Database): CacheModule {
 			const cacheKey = hasher({
 				sub: payload.options.sub,
 				query: payload.query,
-				model: payload.model.name,
+				model: payload.model.getName(),
 			})
 
 			const entries = await FookieCache.read(
 				{
 					filter: {
 						hash: { equals: cacheKey },
-						model: { equals: payload.model.name },
+						model: { equals: payload.model.getName() },
 						expiresAt: { gt: Date.now() },
 					},
 				},
@@ -102,14 +102,14 @@ export function initCache(database: Database): CacheModule {
 				const cacheKey = hasher({
 					sub: payload.options.sub,
 					query: payload.query,
-					model: payload.model.name,
+					model: payload.model.getName(),
 				})
 
 				const expiresAt = Date.now() + ttl
 
 				await FookieCache.create(
 					{
-						model: payload.model.name,
+						model: payload.model.getName(),
 						hash: cacheKey,
 						data: JSON.stringify(response),
 						expiresAt: expiresAt,
@@ -135,14 +135,14 @@ export function initCache(database: Database): CacheModule {
 						},
 						limit: 1,
 					},
-					model: payload.model.name,
+					model: payload.model.getName(),
 				})
 
 				const expiresAt = Date.now() + ttl
 
 				await FookieCache.create(
 					{
-						model: payload.model.name,
+						model: payload.model.getName(),
 						hash: cacheKey,
 						data: JSON.stringify(response),
 						expiresAt: expiresAt,
@@ -160,7 +160,7 @@ export function initCache(database: Database): CacheModule {
 			await FookieCache.delete(
 				{
 					filter: {
-						model: { equals: payload.model.name },
+						model: { equals: payload.model.getName() },
 					},
 				},
 				{
@@ -195,13 +195,13 @@ export function initCache(database: Database): CacheModule {
 					[Method.CREATE]: {
 						effect: [
 							clearModelCache,
-							cacheCreateResponse(ttl),
 							clearExpiredCache,
+							cacheCreateResponse(ttl),
 						],
 					},
 					[Method.READ]: {
 						modify: [isCached],
-						effect: [cacheResponse(ttl), clearExpiredCache],
+						effect: [clearExpiredCache, cacheResponse(ttl)],
 					},
 					[Method.UPDATE]: {
 						effect: [clearModelCache, clearExpiredCache],

@@ -7,6 +7,8 @@ import { SchemaType } from "../schema.ts"
 import { Options } from "../option.ts"
 import { Mixin } from "../mixin/index.ts"
 import { Payload } from "../payload.ts"
+import * as lodash from "lodash"
+import { fillSchema } from "../field/utils/fill-schema.ts"
 
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
 
@@ -14,7 +16,7 @@ export const models: (typeof Model)[] = []
 
 export const schemaSymbol = Symbol("schema")
 const bindsSymbol = Symbol("binds")
-const databaseSymbol = Symbol("database")
+export const databaseSymbol = Symbol("database")
 const mixinsSymbol = Symbol("mixins")
 const modelNameSymbol = Symbol("modelName")
 
@@ -94,7 +96,17 @@ export class Model {
 				model.name = constructor.name
 			}
 
-			const filledModel = fillModel(model)
+			const modelCopy: ModelTypeInput = {
+				...model,
+				binds: model.binds ? lodash.cloneDeep(model.binds) : {},
+				mixins: model.mixins ? [...model.mixins] : [],
+			}
+
+			descriptor.metadata[schemaSymbol]["id"] = fillSchema({
+				type: modelCopy.database.primaryKeyType,
+			})
+
+			const filledModel = fillModel(modelCopy)
 			const methods = filledModel.database.modify<M>(
 				filledModel as unknown as typeof Model,
 			) as unknown as ModelMethods<M>

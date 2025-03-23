@@ -1,12 +1,13 @@
 import type { Method } from "./method.ts"
 import type { Model } from "./model/model.ts"
 import type { Payload } from "./payload.ts"
+import { Type } from "./type.ts"
 
 export class Database {
 	key!: string
 	connect!: () => Promise<void>
 	disconnect!: () => Promise<void>
-
+	primaryKeyType!: Type
 	modify!: <T extends Model>(
 		model: typeof Model,
 	) => {

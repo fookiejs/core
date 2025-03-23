@@ -3,12 +3,16 @@
 		"packages/core",
 		"packages/graphql",
 		"packages/randomize",
-		"packages/cache"
+		"packages/cache",
+		"packages/typeorm",
+		"packages/example"
 	],
 
 	"imports": {
 		"@std/collections": "jsr:@std/collections@^1.0.10",
 		"@std/expect": "jsr:@std/expect@^0.4.0",
+		"@fookiejs/core": "./packages/core/mod.ts",
+		"@fookiejs/cache": "./packages/cache/mod.ts",
 		"class-transformer": "npm:class-transformer@^0.5.1",
 		"moment": "npm:moment@^2.30.1",
 		"reflect-metadata": "npm:reflect-metadata@^0.2.2",
@@ -25,7 +29,8 @@
 	},
 	"compilerOptions": {
 		"strict": false,
-		"noImplicitAny": false
+		"noImplicitAny": false,
+		"lib": ["deno.window", "deno.ns"]
 	},
 	"fmt": {
 		"lineWidth": 120,

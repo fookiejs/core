@@ -7,6 +7,6 @@ export const array = (innerType: Type): Type => {
 		validate: (value: any) => Array.isArray(value) && value.every(innerType.validate),
 		example: [innerType.example],
 		queryController: {},
-		jsonType: "array",
+		alias: ["array"],
 	})
 }

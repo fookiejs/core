@@ -5,6 +5,7 @@ import { FookieError } from "../../error.ts"
 import type { Model } from "../../model/model.ts"
 import type { Method } from "../../method.ts"
 import * as lodash from "lodash"
+import { DisposableSpan } from "../../../otel/index.ts"
 
 const role = async function (payload: Payload<Model, Method>) {
 	const roles = [
@@ -12,12 +13,14 @@ const role = async function (payload: Payload<Model, Method>) {
 		...payload.model.binds()![payload.method]!.role!,
 		...after[payload.method]!.role!,
 	]
-
+	using _span = DisposableSpan.add(`role`)
 	if (roles.length === 0) {
 		return true
 	}
 
 	for (let i = 0; i < roles.length; i++) {
+		using _roleSpan = DisposableSpan.add(roles[i].key)
+
 		const role = roles[i]
 		const res = await role.execute(payload)
 		const field = payload.model.binds()[payload.method]!
@@ -32,6 +35,7 @@ const role = async function (payload: Payload<Model, Method>) {
 			)
 
 			for (const modify of modifies) {
+				using _modifySpan = DisposableSpan.add("role:modify", modify.key)
 				await modify.execute(payload)
 			}
 
@@ -42,6 +46,7 @@ const role = async function (payload: Payload<Model, Method>) {
 			)
 
 			for (const rule of extra_rules) {
+				using _ruleSpan = DisposableSpan.add("role:rule", rule.key)
 				const extra_rule_response = await rule.execute(payload)
 				extra_rule_responses.push(extra_rule_response)
 			}
@@ -65,6 +70,7 @@ const role = async function (payload: Payload<Model, Method>) {
 			)
 
 			for (const modify of modifies) {
+				using _modifySpan = DisposableSpan.add("role:modify", modify.key)
 				await modify.execute(payload)
 			}
 
@@ -79,6 +85,7 @@ const role = async function (payload: Payload<Model, Method>) {
 			)
 
 			for (const rule of extra_rules) {
+				using _ruleSpan = DisposableSpan.add("role:rule", rule.key)
 				const extra_rule_response = await rule.execute(payload)
 				extra_rule_responses.push(extra_rule_response)
 			}

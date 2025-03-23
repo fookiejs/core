@@ -7,16 +7,13 @@ export const boolean: Type = Type.create({
 	queryController: {
 		equals: {
 			key: "boolean",
-			validate: Utils.isBoolean,
 		},
 		notEquals: {
 			key: "boolean",
-			validate: Utils.isBoolean,
 		},
 		isNull: {
 			key: "boolean",
-			validate: Utils.isBoolean,
 		},
 	},
-	jsonType: "boolean",
+	alias: ["boolean"],
 }) as Type

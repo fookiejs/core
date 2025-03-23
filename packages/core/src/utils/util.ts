@@ -5,13 +5,61 @@ export class Utils {
 	static keys<T extends object>(obj: T): Array<keyof T> {
 		return Object.keys(obj) as Array<keyof T>
 	}
-	static isString(value: unknown): boolean {
+	static isString(value: any): boolean {
 		return typeof value === "string"
 	}
-	static isNumber(value: unknown): boolean {
-		return typeof value === "number"
+	static isNumber(value: any): boolean {
+		return typeof value === "number" && !isNaN(value)
 	}
-	static isBoolean(value: unknown): boolean {
+	static isBoolean(value: any): boolean {
 		return typeof value === "boolean"
+	}
+	static isInteger(value: any): boolean {
+		return Number.isInteger(value)
+	}
+	static isBigInt(value: any): boolean {
+		try {
+			BigInt(value)
+			return true
+		} catch {
+			return false
+		}
+	}
+	static isDecimal(value: any): boolean {
+		if (typeof value !== "string") return false
+		return /^-?\d*\.?\d+$/.test(value)
+	}
+	static isFloat(value: any): boolean {
+		return typeof value === "number" && !Number.isInteger(value)
+	}
+	static isObject(value: any): boolean {
+		return typeof value === "object" && value !== null && !Array.isArray(value)
+	}
+	static isDate(value: any): boolean {
+		const date = new Date(value)
+		return date instanceof Date && !isNaN(date.getTime())
+	}
+	static isPoint(value: any): boolean {
+		return (
+			this.isObject(value) &&
+			typeof value.x === "number" &&
+			typeof value.y === "number"
+		)
+	}
+	static isUUID(value: any): boolean {
+		if (typeof value !== "string") return false
+		return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
+	}
+	static isGeometry(value: any): boolean {
+		return typeof value === "string" && /^([A-Z]+)\s*\([\d\s.,-]+\)$/i.test(value)
+	}
+	static isGeography(value: any): boolean {
+		return this.isGeometry(value)
+	}
+	static isMoney(value: any): boolean {
+		return typeof value === "string" && /^-?\d+(\.\d{1,2})?$/.test(value)
+	}
+	static isTime(value: any): boolean {
+		return typeof value === "string" && /^\d{2}:\d{2}(:\d{2})?$/.test(value)
 	}
 }

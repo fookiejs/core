@@ -6,11 +6,10 @@ export class Type extends BaseClass {
 	queryController!: {
 		[key: string]: _QueryValidator
 	}
-	jsonType!: "string" | "number" | "boolean" | "object" | "array" | "date"
+	alias: string[]
 }
 
 class _QueryValidator {
 	key!: string
-	validate!: (value: unknown) => boolean
 	isArray?: boolean
 }
