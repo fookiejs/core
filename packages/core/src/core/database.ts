@@ -5,8 +5,6 @@ import { Type } from "./type.ts"
 
 export class Database {
 	key!: string
-	connect!: () => Promise<void>
-	disconnect!: () => Promise<void>
 	primaryKeyType!: Type
 	modify!: <T extends Model>(
 		model: typeof Model,

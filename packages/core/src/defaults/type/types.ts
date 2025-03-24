@@ -44,42 +44,6 @@ export const types = {
 		alias: ["int", "int4", "integer"],
 	}) as Type,
 
-	number: Type.create({
-		key: "number",
-		validate: Utils.isNumber,
-		example: 42,
-		queryController: {
-			equals: { key: "number" },
-			notEquals: { key: "number" },
-			gt: { key: "number" },
-			gte: { key: "number" },
-			lt: { key: "number" },
-			lte: { key: "number" },
-			in: { key: "number", isArray: true },
-			notIn: { key: "number", isArray: true },
-			isNull: { key: "number" },
-		},
-		alias: ["int", "int4", "integer"],
-	}) as Type,
-
-	date: Type.create({
-		key: "date",
-		validate: Utils.isDate,
-		example: "2024-03-22",
-		queryController: {
-			equals: { key: "date" },
-			notEquals: { key: "date" },
-			gt: { key: "date" },
-			gte: { key: "date" },
-			lt: { key: "date" },
-			lte: { key: "date" },
-			in: { key: "date", isArray: true },
-			notIn: { key: "date", isArray: true },
-			isNull: { key: "boolean" },
-		},
-		alias: ["date"],
-	}) as Type,
-
 	bigint: Type.create({
 		key: "bigint",
 		validate: Utils.isBigInt,
@@ -185,8 +149,10 @@ export const types = {
 		queryController: {
 			equals: { key: "timestamp" },
 			notEquals: { key: "timestamp" },
-			before: { key: "timestamp" },
-			after: { key: "timestamp" },
+			lt: { key: "timestamp" },
+			lte: { key: "timestamp" },
+			gt: { key: "timestamp" },
+			gte: { key: "timestamp" },
 			in: { key: "timestamp", isArray: true },
 			notIn: { key: "timestamp", isArray: true },
 			isNull: { key: "boolean" },
@@ -201,8 +167,10 @@ export const types = {
 		queryController: {
 			equals: { key: "timestamptz" },
 			notEquals: { key: "timestamptz" },
-			before: { key: "timestamptz" },
-			after: { key: "timestamptz" },
+			lt: { key: "timestamptz" },
+			lte: { key: "timestamptz" },
+			gt: { key: "timestamptz" },
+			gte: { key: "timestamptz" },
 			in: { key: "timestamptz", isArray: true },
 			notIn: { key: "timestamptz", isArray: true },
 			isNull: { key: "boolean" },

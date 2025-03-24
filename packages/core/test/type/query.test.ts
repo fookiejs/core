@@ -9,10 +9,10 @@ import { expect } from "jsr:@std/expect"
 	},
 })
 class QueryTypeModel extends Model {
-	@Field.Decorator({ type: defaults.type.number })
+	@Field.Decorator({ type: defaults.type.integer })
 	intField!: number
 
-	@Field.Decorator({ type: defaults.type.number })
+	@Field.Decorator({ type: defaults.type.integer })
 	floatField!: number
 
 	@Field.Decorator({ type: defaults.type.text })

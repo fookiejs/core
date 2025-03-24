@@ -14,7 +14,7 @@ Deno.test("QueryIntModel Query Tests", async () => {
 		},
 	})
 	class QueryIntModel extends Model {
-		@Field.Decorator({ type: defaults.type.number })
+		@Field.Decorator({ type: defaults.type.integer })
 		intField!: number
 	}
 

@@ -6,12 +6,12 @@ Deno.test("Type Validation Tests", () => {
 	Deno.test("Integer Type", () => {
 		Deno.test("should validate a valid integer", () => {
 			const validValue = 123
-			expect(defaults.type.number.validate(validValue)).toBe(true)
+			expect(defaults.type.integer.validate(validValue)).toBe(true)
 		})
 
 		Deno.test("should invalidate an invalid integer", () => {
 			const invalidValue = "123"
-			expect(defaults.type.number.validate(invalidValue)).toBe(false)
+			expect(defaults.type.integer.validate(invalidValue)).toBe(false)
 		})
 	})
 
@@ -19,12 +19,12 @@ Deno.test("Type Validation Tests", () => {
 	Deno.test("Float Type", () => {
 		Deno.test("should validate a valid float", () => {
 			const validValue = 123.45
-			expect(defaults.type.number.validate(validValue)).toBe(true)
+			expect(defaults.type.integer.validate(validValue)).toBe(true)
 		})
 
 		Deno.test("should invalidate an invalid float", () => {
 			const invalidValue = "123.45"
-			expect(defaults.type.number.validate(invalidValue)).toBe(false)
+			expect(defaults.type.integer.validate(invalidValue)).toBe(false)
 		})
 	})
 

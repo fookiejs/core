@@ -9,6 +9,7 @@ function isValidFilterKey(type: Type, currentKey: string, value: any): boolean {
 	if (type.queryController[currentKey].isArray) {
 		return value.every((val: any) => keyType.validate(val))
 	}
+
 	return keyType.validate(value)
 }
 
@@ -22,11 +23,21 @@ export default Rule.create({
 			lodash.has(payload.query, key) &&
 			!validator((payload.query as Record<string, any>)[key])
 
-		if (isValidObject("filter", lodash.isObject)) return false
-		if (isValidObject("limit", lodash.isNumber)) return false
-		if (isValidObject("offset", lodash.isNumber)) return false
+		if (isValidObject("filter", lodash.isObject)) {
+			return false
+		}
 
-		if (lodash.difference(filterKeys, modelKeys).length > 0) return false
+		if (isValidObject("limit", lodash.isNumber)) {
+			return false
+		}
+
+		if (isValidObject("offset", lodash.isNumber)) {
+			return false
+		}
+
+		if (lodash.difference(filterKeys, modelKeys).length > 0) {
+			return false
+		}
 
 		const schema = payload.model.schema()
 
@@ -46,7 +57,9 @@ export default Rule.create({
 				const value = (payload.query.filter as Record<string, any>)[filterKey][
 					currentKey
 				]
-				if (!isValidFilterKey(type, currentKey, value)) return false
+				if (!isValidFilterKey(type, currentKey, value)) {
+					return false
+				}
 			}
 		}
 

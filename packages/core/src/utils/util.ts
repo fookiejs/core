@@ -39,6 +39,18 @@ export class Utils {
 		const date = new Date(value)
 		return date instanceof Date && !isNaN(date.getTime())
 	}
+	static isTimestamp(value: any): boolean {
+		if (value instanceof Date) return true
+
+		if (typeof value === "number" && value > 0 && value < 8640000000000000) return true
+
+		if (typeof value === "string") {
+			const date = new Date(value)
+			return !isNaN(date.getTime())
+		}
+
+		return false
+	}
 	static isPoint(value: any): boolean {
 		return (
 			this.isObject(value) &&

@@ -35,7 +35,7 @@ class User extends Model {
 
 	@Field.Decorator({
 		features: [defaults.feature.required],
-		type: defaults.type.number,
+		type: defaults.type.integer,
 	})
 	usage!: number
 }

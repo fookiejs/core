@@ -1,4 +1,5 @@
 import crypto from "node:crypto"
+import moment from "moment"
 import {
 	Config,
 	type Database,
@@ -50,7 +51,7 @@ export function initCache(database: Database): CacheModule {
 
 		@Field.Decorator({
 			type: defaults.type.text,
-			features: [defaults.feature.required],
+			features: [defaults.feature.required, defaults.feature.unique],
 		})
 		hash!: string
 
@@ -61,10 +62,10 @@ export function initCache(database: Database): CacheModule {
 		data!: string
 
 		@Field.Decorator({
-			type: defaults.type.number,
+			type: defaults.type.timestamp,
 			features: [defaults.feature.required],
 		})
-		expiresAt!: number
+		expiresAt!: string
 	}
 
 	const isCached = Modify.create({
@@ -81,7 +82,7 @@ export function initCache(database: Database): CacheModule {
 					filter: {
 						hash: { equals: cacheKey },
 						model: { equals: payload.model.getName() },
-						expiresAt: { gt: Date.now() },
+						expiresAt: { gt: moment().utc().toString() },
 					},
 				},
 				{
@@ -105,19 +106,22 @@ export function initCache(database: Database): CacheModule {
 					model: payload.model.getName(),
 				})
 
-				const expiresAt = Date.now() + ttl
-
-				await FookieCache.create(
-					{
-						model: payload.model.getName(),
-						hash: cacheKey,
-						data: JSON.stringify(response),
-						expiresAt: expiresAt,
-					},
-					{
-						sub: Config.SYSTEM_TOKEN,
-					},
-				)
+				const expiresAt = moment().utc().add(ttl, "seconds").toString()
+				try {
+					await FookieCache.create(
+						{
+							model: payload.model.getName(),
+							hash: cacheKey,
+							data: JSON.stringify(response),
+							expiresAt: expiresAt,
+						},
+						{
+							sub: Config.SYSTEM_TOKEN,
+						},
+					)
+				} catch (error) {
+					error
+				}
 			},
 		})
 
@@ -138,19 +142,22 @@ export function initCache(database: Database): CacheModule {
 					model: payload.model.getName(),
 				})
 
-				const expiresAt = Date.now() + ttl
-
-				await FookieCache.create(
-					{
-						model: payload.model.getName(),
-						hash: cacheKey,
-						data: JSON.stringify(response),
-						expiresAt: expiresAt,
-					},
-					{
-						sub: Config.SYSTEM_TOKEN,
-					},
-				)
+				const expiresAt = moment().utc().add(ttl, "seconds").toString()
+				try {
+					await FookieCache.create(
+						{
+							model: payload.model.getName(),
+							hash: cacheKey,
+							data: JSON.stringify(response),
+							expiresAt: expiresAt,
+						},
+						{
+							sub: Config.SYSTEM_TOKEN,
+						},
+					)
+				} catch (error) {
+					error
+				}
 			},
 		})
 
@@ -173,16 +180,20 @@ export function initCache(database: Database): CacheModule {
 	const clearExpiredCache = Effect.create({
 		key: "clearExpiredCache",
 		execute: async () => {
-			await FookieCache.delete(
-				{
-					filter: {
-						expiresAt: { lt: Date.now() },
+			try {
+				await FookieCache.delete(
+					{
+						filter: {
+							expiresAt: { lt: moment().utc().toString() },
+						},
 					},
-				},
-				{
-					sub: Config.SYSTEM_TOKEN,
-				},
-			)
+					{
+						sub: Config.SYSTEM_TOKEN,
+					},
+				)
+			} catch (error) {
+				console.log(error)
+			}
 		},
 	})
 

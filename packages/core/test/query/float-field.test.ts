@@ -14,7 +14,7 @@ Deno.test("QueryFloatModel Query Tests", async () => {
 		},
 	})
 	class QueryFloatModel extends Model {
-		@Field.Decorator({ type: defaults.type.number })
+		@Field.Decorator({ type: defaults.type.integer })
 		floatField!: number
 	}
 

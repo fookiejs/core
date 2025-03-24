@@ -16,7 +16,7 @@ export class User extends Model {
 	email!: string
 
 	@Field.Decorator({
-		type: defaults.type.number,
+		type: defaults.type.integer,
 	})
 	height!: number
 
@@ -147,7 +147,7 @@ export class UserPaymentHistory extends Model {
 	paymentMethod!: string
 
 	@Field.Decorator({
-		type: defaults.type.number,
+		type: defaults.type.integer,
 	})
 	amount!: number
 

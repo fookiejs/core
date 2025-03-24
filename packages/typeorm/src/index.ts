@@ -22,11 +22,6 @@ let dataSource: DataSource | null = null
 export const database = Database.create({
 	key: "typeorm",
 	primaryKeyType: postgresTypes.text,
-
-	connect: async function () {},
-
-	disconnect: async function () {},
-
 	modify: function (model: typeof Model) {
 		const modelName = model.name
 
@@ -52,7 +47,8 @@ export const database = Database.create({
 			[Method.DELETE]: async function (payload) {
 				const repo = getRepository(modelName)
 				const where = transformFilterToWhere(payload.query)
-				await repo.delete(where)
+				const res = await repo.delete(where)
+
 				return true
 			},
 		}
