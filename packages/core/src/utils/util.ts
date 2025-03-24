@@ -62,4 +62,7 @@ export class Utils {
 	static isTime(value: any): boolean {
 		return typeof value === "string" && /^\d{2}:\d{2}(:\d{2})?$/.test(value)
 	}
+	static includes(target: any[] | string, value: any): boolean {
+		return target.includes(value)
+	}
 }

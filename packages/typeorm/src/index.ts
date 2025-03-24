@@ -1,66 +1,147 @@
-import { DataSource, DataSourceOptions, EntitySchema } from "typeorm"
-import { Database, defaults, Method, Model, models } from "@fookiejs/core"
+import {
+	DataSource,
+	DataSourceOptions,
+	EntitySchema,
+	FindOptionsWhere,
+	In,
+	IsNull,
+	LessThan,
+	LessThanOrEqual,
+	Like,
+	MoreThan,
+	MoreThanOrEqual,
+	Not,
+	Repository,
+} from "typeorm"
+import { Database, defaults, Method, Model, models, QueryType, Utils } from "@fookiejs/core"
+import { postgresTypes } from "./extra-types.ts"
 
-const database = Database.create({
+const entityRegistry = new Map<string, EntitySchema>()
+let dataSource: DataSource | null = null
+
+export const database = Database.create({
 	key: "typeorm",
-	primaryKeyType: defaults.type.string,
+	primaryKeyType: postgresTypes.text,
 
-	connect: async function () {
-	},
+	connect: async function () {},
 
-	disconnect: async function () {
-	},
+	disconnect: async function () {},
 
 	modify: function (model: typeof Model) {
+		const modelName = model.name
+
 		return {
 			[Method.CREATE]: async function (payload) {
-				return {} as any
+				const repo = getRepository(modelName)
+				return repo.save(payload.body)
 			},
 
 			[Method.READ]: async function (payload) {
-				return []
+				const repo = getRepository(modelName)
+				const options = transformQueryToFindOptions(payload.query)
+				return repo.find(options)
 			},
 
-			[Method.UPDATE]: async function () {
+			[Method.UPDATE]: async function (payload) {
+				const repo = getRepository(modelName)
+				const where = transformFilterToWhere(payload.query)
+				await repo.update(where, payload.body)
 				return true
 			},
 
 			[Method.DELETE]: async function (payload) {
+				const repo = getRepository(modelName)
+				const where = transformFilterToWhere(payload.query)
+				await repo.delete(where)
 				return true
 			},
 		}
 	},
 })
 
+function getRepository(entityName: string): Repository<any> {
+	if (!dataSource) {
+		throw new Error("DataSource is not initialized yet.")
+	}
+	const entity = entityRegistry.get(entityName)
+	if (!entity) {
+		throw new Error(`Entity ${entityName} not registered.`)
+	}
+	return dataSource.getRepository(entity)
+}
+
+function transformQueryToFindOptions(query: QueryType<any>) {
+	const options: any = {
+		select: query.attributes,
+		where: transformFilterToWhere(query),
+		skip: query.offset,
+		take: query.limit === Infinity ? undefined : query.limit,
+	}
+	return options
+}
+
+function transformFilterToWhere(query: QueryType<any>): FindOptionsWhere<any> {
+	const filter = query.filter || {}
+	const where: any = {}
+
+	for (const [key, condition] of Object.entries(filter)) {
+		if (condition.equals !== undefined) where[key] = condition.equals
+		else if (condition.notEquals !== undefined) where[key] = Not(condition.notEquals)
+		else if (condition.in) where[key] = In(condition.in as string[])
+		else if (condition.notIn) where[key] = Not(In(condition.notIn as string[]))
+		else if (condition.lt !== undefined) where[key] = LessThan(condition.lt)
+		else if (condition.lte !== undefined) where[key] = LessThanOrEqual(condition.lte)
+		else if (condition.gt !== undefined) where[key] = MoreThan(condition.gt)
+		else if (condition.gte !== undefined) where[key] = MoreThanOrEqual(condition.gte)
+		else if (condition.like) where[key] = Like(condition.like)
+		else if (condition.isNull !== undefined) where[key] = condition.isNull ? IsNull() : Not(IsNull())
+	}
+
+	return where
+}
+
 export const initializeDataSource = async function (options: DataSourceOptions) {
-	const entities = []
-	for (const model of models) {
+	const entities = models.filter((model) => model.database().key === "typeorm").map((model) => {
 		const schema = model.schema()
 
-		return new EntitySchema({
+		const entity = new EntitySchema({
 			name: model.getName(),
 			tableName: model.getName(),
 			columns: Object.entries(schema).reduce((acc, [key, value]) => {
-				if (key === "id") {
-					acc[key] = {
+				acc[key] = (key === "id")
+					? {
 						primary: true,
-						type: model.database().primaryKeyType,
+						type: postgresTypes.text.key,
 						nullable: false,
 					}
-				} else {
-					acc[key] = {
-						type: value.type.key,
+					: {
+						type: Utils.includes(value.type.key, "[]") ? value.type.key.replace("[]", "") : value.type.key,
+						array: Utils.includes(value.type.key, "[]"),
 						nullable: !value.features.includes(defaults.feature.required),
 						unique: value.features.includes(defaults.feature.unique),
 					}
-				}
 
 				return acc
 			}, {}),
 		})
-	}
 
-	const dataSource = new DataSource({ ...options, entities })
+		entityRegistry.set(model.getName(), entity)
+
+		return entity
+	})
+
+	dataSource = new DataSource({
+		...options,
+		entities,
+		migrations: options.migrations || ["migrations/*.ts"],
+		synchronize: options.synchronize ?? true,
+	})
+
 	await dataSource.initialize()
-	return dataSource
+
+	if (Array.isArray(options.migrations) && options.migrations.length > 0) {
+		await dataSource.runMigrations()
+	}
 }
+
+export const INDEX = Symbol("index")

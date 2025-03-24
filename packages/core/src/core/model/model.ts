@@ -9,6 +9,7 @@ import { Mixin } from "../mixin/index.ts"
 import { Payload } from "../payload.ts"
 import * as lodash from "lodash"
 import { fillSchema } from "../field/utils/fill-schema.ts"
+import { Utils } from "../../utils/util.ts"
 
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
 
@@ -105,6 +106,13 @@ export class Model {
 			descriptor.metadata[schemaSymbol]["id"] = fillSchema({
 				type: modelCopy.database.primaryKeyType,
 			})
+
+			for (const key in descriptor.metadata[schemaSymbol]) {
+				const field = descriptor.metadata[schemaSymbol][key]
+				if (Utils.has(field, "relation")) {
+					field.type = modelCopy.database.primaryKeyType
+				}
+			}
 
 			const filledModel = fillModel(modelCopy)
 			const methods = filledModel.database.modify<M>(

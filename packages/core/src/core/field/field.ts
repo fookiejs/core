@@ -1,7 +1,5 @@
-import { string } from "../../defaults/type/string.ts"
-import { Database } from "../database.ts"
 import type { Model } from "../model/model.ts"
-import { databaseSymbol, schemaSymbol } from "../model/model.ts"
+import { schemaSymbol } from "../model/model.ts"
 import type { Type } from "../type.ts"
 import { fillSchema } from "./utils/fill-schema.ts"
 import * as lodash from "lodash"
