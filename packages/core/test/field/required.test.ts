@@ -9,7 +9,7 @@ Deno.test("Define a required field with Error", async () => {
 	class RequiredField extends Model {
 		@Field.Decorator({
 			features: [defaults.feature.required],
-			type: defaults.type.string,
+			type: defaults.type.text,
 		})
 		field?: string
 	}
@@ -31,7 +31,7 @@ Deno.test("Define a required field with Success", async () => {
 	class RequiredField2 extends Model {
 		@Field.Decorator({
 			features: [defaults.feature.required],
-			type: defaults.type.string,
+			type: defaults.type.text,
 		})
 		field!: string
 	}

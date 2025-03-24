@@ -19,7 +19,7 @@ Deno.test("Relation", () => {
 		},
 	})
 	class Token extends Model {
-		@Field.Decorator({ type: defaults.type.string })
+		@Field.Decorator({ type: defaults.type.text })
 		name!: string
 	}
 

@@ -43,19 +43,19 @@ export function initCache(database: Database): CacheModule {
 	})
 	class FookieCache extends Model {
 		@Field.Decorator({
-			type: defaults.type.string,
+			type: defaults.type.text,
 			features: [defaults.feature.required],
 		})
 		model!: string
 
 		@Field.Decorator({
-			type: defaults.type.string,
+			type: defaults.type.text,
 			features: [defaults.feature.required],
 		})
 		hash!: string
 
 		@Field.Decorator({
-			type: defaults.type.string,
+			type: defaults.type.text,
 			features: [defaults.feature.required],
 		})
 		data!: string

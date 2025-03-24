@@ -15,7 +15,7 @@ class QueryTypeModel extends Model {
 	@Field.Decorator({ type: defaults.type.number })
 	floatField!: number
 
-	@Field.Decorator({ type: defaults.type.string })
+	@Field.Decorator({ type: defaults.type.text })
 	textField!: string
 
 	@Field.Decorator({ type: defaults.type.date })

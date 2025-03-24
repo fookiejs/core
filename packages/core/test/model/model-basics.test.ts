@@ -22,7 +22,7 @@ Deno.test("Define a simple model", async () => {
 	class User extends Model {
 		@Field.Decorator({
 			features: [defaults.feature.required],
-			type: defaults.type.string,
+			type: defaults.type.text,
 		})
 		email!: string
 	}
@@ -36,7 +36,7 @@ Deno.test("Define a model with relations.", async () => {
 	})
 	class Address extends Model {
 		@Field.Decorator({
-			type: defaults.type.string,
+			type: defaults.type.text,
 			features: [defaults.feature.unique, defaults.feature.required],
 		})
 		city!: string
@@ -48,7 +48,7 @@ Deno.test("Define a model with relations.", async () => {
 	})
 	class Place extends Model {
 		@Field.Decorator({
-			type: defaults.type.string,
+			type: defaults.type.text,
 			relation: Address,
 			features: [defaults.feature.required],
 		})

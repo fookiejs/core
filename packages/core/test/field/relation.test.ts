@@ -14,10 +14,10 @@ Deno.test("Relation", () => {
 		},
 	})
 	class RelationAddressModel extends Model {
-		@Field.Decorator({ type: defaults.type.string })
+		@Field.Decorator({ type: defaults.type.text })
 		street?: string
 
-		@Field.Decorator({ type: defaults.type.string })
+		@Field.Decorator({ type: defaults.type.text })
 		city?: string
 	}
 
@@ -33,7 +33,7 @@ Deno.test("Relation", () => {
 		},
 	})
 	class RelationUserModel extends Model {
-		@Field.Decorator({ type: defaults.type.string })
+		@Field.Decorator({ type: defaults.type.text })
 		name?: string
 
 		@Field.Decorator({ relation: RelationAddressModel })

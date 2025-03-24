@@ -22,7 +22,7 @@ Deno.test("fillModel Function Tests", () => {
 	})
 	class TestModel extends Model {
 		@Field.Decorator({
-			type: defaults.type.string,
+			type: defaults.type.text,
 			features: [defaults.feature.required],
 		})
 		exampleField!: string

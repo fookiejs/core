@@ -10,11 +10,11 @@ import { defaults, Field, FookieError, Model } from "@fookiejs/core"
 class UniqueGroupField extends Model {
 	@Field.Decorator({
 		uniqueGroup: ["groupId", "itemName"],
-		type: defaults.type.string,
+		type: defaults.type.text,
 	})
 	itemName?: string
 
-	@Field.Decorator({ type: defaults.type.string })
+	@Field.Decorator({ type: defaults.type.text })
 	groupId?: string
 }
 

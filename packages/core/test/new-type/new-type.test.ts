@@ -7,7 +7,7 @@ import { defaults, Field, Model } from "@fookiejs/core"
 	},
 })
 class RootObject extends Model {
-	@Field.Decorator({ type: defaults.type.string })
+	@Field.Decorator({ type: defaults.type.text })
 	name!: string
 }
 
@@ -18,7 +18,7 @@ class RootObject extends Model {
 	},
 })
 class ChildObject extends Model {
-	@Field.Decorator({ type: defaults.type.string })
+	@Field.Decorator({ type: defaults.type.text })
 	name!: string
 
 	@Field.Decorator({ relation: RootObject })

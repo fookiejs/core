@@ -29,7 +29,7 @@ import { defaults, Field, Model, Role } from "@fookiejs/core"
 class User extends Model {
 	@Field.Decorator({
 		features: [defaults.feature.required],
-		type: defaults.type.string,
+		type: defaults.type.text,
 	})
 	email!: string
 

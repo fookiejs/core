@@ -7,7 +7,7 @@ import { expect } from "jsr:@std/expect"
 })
 class ArrayFieldModel extends Model {
 	@Field.Decorator({
-		type: defaults.type.array(defaults.type.string),
+		type: defaults.type.array(defaults.type.text),
 		features: [defaults.feature.required],
 	})
 	field!: string[]

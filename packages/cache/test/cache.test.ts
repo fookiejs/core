@@ -27,7 +27,7 @@ const cacheModel = cacheModule.FookieCache
 })
 class TestModel extends Model {
 	@Field.Decorator({
-		type: defaults.type.string,
+		type: defaults.type.text,
 	})
 	name!: string
 }

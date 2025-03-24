@@ -32,12 +32,12 @@ Deno.test("Type Validation Tests", () => {
 	Deno.test("Text Type", () => {
 		Deno.test("should validate a valid text", () => {
 			const validValue = "hello world"
-			expect(defaults.type.string.validate(validValue)).toBe(true)
+			expect(defaults.type.text.validate(validValue)).toBe(true)
 		})
 
 		Deno.test("should invalidate an invalid text", () => {
 			const invalidValue = 12345
-			expect(defaults.type.string.validate(invalidValue)).toBe(false)
+			expect(defaults.type.text.validate(invalidValue)).toBe(false)
 		})
 	})
 

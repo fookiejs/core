@@ -3,14 +3,14 @@ import type { Model, QueryType } from "../../core/model/model.ts"
 import { Method } from "../../core/method.ts"
 import type { Payload } from "../../core/payload.ts"
 import { Utils } from "../../utils/util.ts"
-import { string } from "../type/string.ts"
+import { types } from "../type/types.ts"
 
 export const store = Database.create({
 	key: "store",
 	connect: async function () {
 		return
 	},
-	primaryKeyType: string,
+	primaryKeyType: types.text,
 	disconnect: async function () {
 		return
 	},

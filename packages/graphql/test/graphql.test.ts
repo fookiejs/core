@@ -6,12 +6,12 @@ import { defaults, Field, Model } from "@fookiejs/core"
 })
 export class User extends Model {
 	@Field.Decorator({
-		type: defaults.type.string,
+		type: defaults.type.text,
 	})
 	name!: string
 
 	@Field.Decorator({
-		type: defaults.type.string,
+		type: defaults.type.text,
 	})
 	email!: string
 
@@ -32,7 +32,7 @@ export class User extends Model {
 })
 export class Company extends Model {
 	@Field.Decorator({
-		type: defaults.type.string,
+		type: defaults.type.text,
 	})
 	name!: string
 }
@@ -42,7 +42,7 @@ export class Company extends Model {
 })
 export class Team extends Model {
 	@Field.Decorator({
-		type: defaults.type.string,
+		type: defaults.type.text,
 	})
 	name!: string
 
@@ -122,12 +122,12 @@ export class MeetingAnalytics extends Model {
 	meeting!: Meeting
 
 	@Field.Decorator({
-		type: defaults.type.string,
+		type: defaults.type.text,
 	})
 	summary!: string
 
 	@Field.Decorator({
-		type: defaults.type.array(defaults.type.string),
+		type: defaults.type.array(defaults.type.text),
 	})
 	actionItems!: string[]
 }
@@ -142,7 +142,7 @@ export class UserPaymentHistory extends Model {
 	user!: User
 
 	@Field.Decorator({
-		type: defaults.type.string,
+		type: defaults.type.text,
 	})
 	paymentMethod!: string
 
@@ -152,7 +152,7 @@ export class UserPaymentHistory extends Model {
 	amount!: number
 
 	@Field.Decorator({
-		type: defaults.type.date,
+		type: defaults.type.timestamp,
 	})
 	paymentDate!: Date
 }
@@ -167,12 +167,12 @@ export class CompanyDocuments extends Model {
 	company!: Company
 
 	@Field.Decorator({
-		type: defaults.type.string,
+		type: defaults.type.text,
 	})
 	documentType!: string
 
 	@Field.Decorator({
-		type: defaults.type.string,
+		type: defaults.type.text,
 	})
 	documentUrl!: string
 }
@@ -192,7 +192,7 @@ export class CompanyUserRole extends Model {
 	user!: User
 
 	@Field.Decorator({
-		type: defaults.type.string,
+		type: defaults.type.text,
 	})
 	role!: string
 }

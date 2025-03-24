@@ -12,7 +12,7 @@ Deno.test("Define a unique field with Error", async () => {
 	class UniqueField extends Model {
 		@Field.Decorator({
 			features: [defaults.feature.unique],
-			type: defaults.type.string,
+			type: defaults.type.text,
 		})
 		username!: string
 	}

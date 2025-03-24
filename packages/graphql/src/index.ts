@@ -129,7 +129,7 @@ export function createServer(): ApolloServer {
 		const inputFields: Record<string, any> = {}
 
 		const pk_field = {
-			type: defaults.type.string,
+			type: defaults.type.text,
 			required: true,
 		}
 
