@@ -73,6 +73,14 @@ function transformQueryToFindOptions(query: QueryType<any>) {
 		skip: query.offset,
 		take: query.limit === Infinity ? undefined : query.limit,
 	}
+
+	if (query.orderBy && Object.keys(query.orderBy).length > 0) {
+		options.order = {}
+		for (const [key, direction] of Object.entries(query.orderBy)) {
+			options.order[key] = direction.toUpperCase()
+		}
+	}
+
 	return options
 }
 

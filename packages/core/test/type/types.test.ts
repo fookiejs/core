@@ -45,22 +45,22 @@ Deno.test("Type Validation Tests", () => {
 	Deno.test("Date Type", () => {
 		Deno.test("should validate a valid date", () => {
 			const validValue = "2024-05-14"
-			expect(defaults.type.date.validate(validValue)).toBe(true)
+			expect(defaults.type.timestamp.validate(validValue)).toBe(true)
 		})
 
 		Deno.test("should invalidate an invalid date", () => {
 			const invalidValue = "14-05-2024"
-			expect(defaults.type.date.validate(invalidValue)).toBe(false)
+			expect(defaults.type.timestamp.validate(invalidValue)).toBe(false)
 		})
 
 		Deno.test("should invalidate an incorrectly formatted date", () => {
 			const invalidValue = "2024/05/14"
-			expect(defaults.type.date.validate(invalidValue)).toBe(false)
+			expect(defaults.type.timestamp.validate(invalidValue)).toBe(false)
 		})
 
 		Deno.test("should invalidate a non-date string", () => {
 			const invalidValue = "invalid-date"
-			expect(defaults.type.date.validate(invalidValue)).toBe(false)
+			expect(defaults.type.timestamp.validate(invalidValue)).toBe(false)
 		})
 	})
 })

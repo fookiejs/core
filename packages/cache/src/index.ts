@@ -192,7 +192,7 @@ export function initCache(database: Database): CacheModule {
 					},
 				)
 			} catch (error) {
-				console.log(error)
+				error
 			}
 		},
 	})

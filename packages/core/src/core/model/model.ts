@@ -182,6 +182,9 @@ export type BindsTypeField = {
 export class QueryType<model extends Model> {
 	limit?: number
 	offset?: number
+	orderBy?: {
+		[key in keyof model]?: "asc" | "desc"
+	}
 	attributes?: string[]
 	filter?: Partial<
 		Record<

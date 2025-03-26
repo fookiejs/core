@@ -7,13 +7,7 @@ import { types } from "../type/types.ts"
 
 export const store = Database.create({
 	key: "store",
-	connect: async function () {
-		return
-	},
 	primaryKeyType: types.text,
-	disconnect: async function () {
-		return
-	},
 	modify: function <T extends Model>() {
 		let pool: T[] = []
 		return {
@@ -22,26 +16,32 @@ export const store = Database.create({
 				return payload.body
 			},
 			[Method.READ]: async (payload: Payload<T, Method.READ>) => {
-				const attributes = payload.query.attributes
 				const matchingEntities: T[] = []
-
 				for (const entity of pool) {
 					if (isEntityMatchingQuery(entity, payload.query)) {
 						matchingEntities.push(entity)
 					}
 				}
 
+				if (payload.query.orderBy && Object.keys(payload.query.orderBy).length > 0) {
+					sortEntities(matchingEntities, payload.query.orderBy || {})
+				}
+
 				const start = payload.query.offset || 0
 				const end = start + (payload.query.limit || matchingEntities.length)
 				const paginatedResults = matchingEntities.slice(start, end)
 
-				return paginatedResults.map((entity) => {
-					const result: Partial<T> = {}
-					for (const attr of attributes) {
-						result[attr as keyof T] = entity[attr as keyof T]
-					}
-					return result as T
-				})
+				if (payload.query.attributes && payload.query.attributes.length > 0) {
+					return paginatedResults.map((entity) => {
+						const result: Partial<T> = {}
+						for (const attr of payload.query.attributes) {
+							result[attr as keyof T] = entity[attr as keyof T]
+						}
+						return result as T
+					})
+				}
+
+				return paginatedResults
 			},
 			[Method.UPDATE]: async (payload: Payload<T, Method.UPDATE>) => {
 				for (const entity of pool) {
@@ -71,6 +71,50 @@ export const store = Database.create({
 	},
 }) as Database
 
+function sortEntities<T extends Model>(entities: T[], orderBy: Partial<Record<keyof T, "asc" | "desc">>): void {
+	const orderKeys = Object.keys(orderBy) as Array<keyof T>
+
+	entities.sort((a, b) => {
+		for (const key of orderKeys) {
+			const direction = orderBy[key] === "desc" ? -1 : 1
+			const valueA = a[key]
+			const valueB = b[key]
+
+			if (valueA === null && valueB === null) continue
+			if (valueA === null) return direction
+			if (valueB === null) return -direction
+
+			if (typeof valueA !== typeof valueB) {
+				const strA = String(valueA)
+				const strB = String(valueB)
+				if (strA < strB) return -1 * direction
+				if (strA > strB) return 1 * direction
+				continue
+			}
+
+			if (Utils.isNumber(valueA) && Utils.isNumber(valueB)) {
+				return (Number(valueA) - Number(valueB)) * direction
+			}
+
+			if (Utils.isString(valueA) && Utils.isString(valueB)) {
+				return String(valueA).localeCompare(String(valueB)) * direction
+			}
+
+			if (Utils.isTimestamp(valueA) && Utils.isTimestamp(valueB)) {
+				const dateA = new Date(valueA as string | number | Date).getTime()
+				const dateB = new Date(valueB as string | number | Date).getTime()
+				return (dateA - dateB) * direction
+			}
+
+			if (Utils.isBoolean(valueA) && Utils.isBoolean(valueB)) {
+				return ((valueA === valueB) ? 0 : (valueA ? 1 : -1)) * direction
+			}
+		}
+
+		return 0
+	})
+}
+
 function isEntityMatchingQuery<T extends Model>(
 	entity: T,
 	query: QueryType<T>,
@@ -80,48 +124,50 @@ function isEntityMatchingQuery<T extends Model>(
 	}
 
 	for (const field of Object.keys(query.filter) as Array<keyof T>) {
-		const value = query.filter[field]!
+		const condition = query.filter[field]
+		if (!condition) continue
+
 		const entityValue = entity[field]
 
-		if (value.equals !== undefined && entityValue !== value.equals) {
+		if (condition.equals !== undefined && entityValue !== condition.equals) {
 			return false
 		}
 
-		if (value.notEquals !== undefined && entityValue === value.notEquals) {
+		if (condition.notEquals !== undefined && entityValue === condition.notEquals) {
 			return false
 		}
 
-		if (value.in && !value.in.includes(entityValue as never)) {
+		if (condition.in && !condition.in.includes(entityValue as never)) {
 			return false
 		}
-		if (value.notIn && value.notIn.includes(entityValue as never)) {
+		if (condition.notIn && condition.notIn.includes(entityValue as never)) {
 			return false
 		}
-		if (value.lt !== undefined && entityValue >= value.lt) {
+		if (condition.lt !== undefined && entityValue >= condition.lt) {
 			return false
 		}
-		if (value.lte !== undefined && entityValue > value.lte) {
+		if (condition.lte !== undefined && entityValue > condition.lte) {
 			return false
 		}
-		if (value.gt !== undefined && entityValue <= value.gt) {
+		if (condition.gt !== undefined && entityValue <= condition.gt) {
 			return false
 		}
-		if (value.gte !== undefined && entityValue < value.gte) {
+		if (condition.gte !== undefined && entityValue < condition.gte) {
 			return false
 		}
 		if (
-			value.like &&
-			!new RegExp(value.like.replace(/%/g, ".*")).test(
-				entityValue as string,
+			condition.like &&
+			!new RegExp(condition.like.replace(/%/g, ".*")).test(
+				String(entityValue),
 			)
 		) {
 			return false
 		}
-		if (Utils.isBoolean(value.isNull)) {
-			if (value.isNull && entityValue !== null) {
+		if (Utils.isBoolean(condition.isNull)) {
+			if (condition.isNull && entityValue !== null) {
 				return false
 			}
-			if (!value.isNull && entityValue === null) {
+			if (!condition.isNull && entityValue === null) {
 				return false
 			}
 		}

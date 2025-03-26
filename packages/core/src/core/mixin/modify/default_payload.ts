@@ -31,6 +31,10 @@ export default Rule.create({
 			payload.query.limit = Infinity
 		}
 
+		if (!lodash.has(payload.query, "orderBy")) {
+			payload.query.orderBy = {}
+		}
+
 		if ((payload.query.attributes || []).length == 0) {
 			payload.query.attributes = lodash.keys(payload.model.schema())
 		}

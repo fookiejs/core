@@ -9,7 +9,7 @@ const cacheModel = cacheModule.FookieCache
 
 @Model.Decorator({
 	database: database,
-	mixins: [cacheMixin(1 * 1000)],
+	mixins: [cacheMixin(1)],
 	binds: {
 		[Method.CREATE]: {
 			role: [defaults.role.everybody],

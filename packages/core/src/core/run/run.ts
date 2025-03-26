@@ -73,6 +73,7 @@ export function createRun<T extends Model>(
 				offset: 0,
 				attributes: [],
 				filter: {},
+				orderBy: {},
 			},
 		})
 		return runLifecycle(payload, method)

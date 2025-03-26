@@ -9,11 +9,8 @@ Deno.test("Randomize", () => {
 				defaults.database.store,
 				Math.floor(Math.random() * 100),
 			)
-			console.log(Utils.keys(randomModel.schema()).length)
 
-			const response = await randomModel.read({}, { sub: Config.SYSTEM_TOKEN })
-
-			console.log(randomModel.getName(), response)
+			await randomModel.read({}, { sub: Config.SYSTEM_TOKEN })
 
 			expect(randomModel).toBeDefined()
 		}

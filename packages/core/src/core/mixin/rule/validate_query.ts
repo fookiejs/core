@@ -35,6 +35,10 @@ export default Rule.create({
 			return false
 		}
 
+		if (isValidObject("orderBy", lodash.isObject)) {
+			return false
+		}
+
 		if (lodash.difference(filterKeys, modelKeys).length > 0) {
 			return false
 		}

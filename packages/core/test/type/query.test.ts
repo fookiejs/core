@@ -18,7 +18,7 @@ class QueryTypeModel extends Model {
 	@Field.Decorator({ type: defaults.type.text })
 	textField!: string
 
-	@Field.Decorator({ type: defaults.type.date })
+	@Field.Decorator({ type: defaults.type.timestamp })
 	dateField!: string
 }
 
