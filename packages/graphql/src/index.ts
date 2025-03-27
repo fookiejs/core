@@ -91,7 +91,7 @@ function resolve_type(field: any): string {
 			}
 		}
 
-		if (key.includes("date") || key.includes("timestamp")) {
+		if (key.includes("date") || key.includes("timestamp") || aliases.some((a) => a.toLowerCase().includes("date"))) {
 			return "DateTime"
 		}
 	}
@@ -106,36 +106,10 @@ function resolve_input(typeStr: string, field: any = null): string {
 		const queryController = field.field.type.queryController
 		const queryControllerKeys = Object.keys(queryController)
 
-		const getFieldType = () => {
-			if (!field.field || !field.field.type) return "string"
-
-			const key = field.field.type.key.toLowerCase()
-			if (key.includes("int")) return "int"
-			if (key.includes("float") || key.includes("decimal") || key.includes("double")) return "float"
-			if (key.includes("bool")) return "boolean"
-			if (key.includes("date") || key.includes("timestamp")) return "DateTime"
-			return "string"
-		}
-
 		if (queryControllerKeys.length > 0) {
-			const fieldType = getFieldType()
-			const hasStringOperations = queryControllerKeys.some((k) => ["equals", "like", "ilike"].includes(k))
-			const hasNumericOperations = queryControllerKeys.some((k) => ["gt", "gte", "lt", "lte"].includes(k))
-
-			if (fieldType === "DateTime" && (hasStringOperations || hasNumericOperations)) {
-				return "date_filter"
-			}
-			if (fieldType === "boolean") {
-				return "boolean_filter"
-			}
-			if (fieldType === "int" && (hasStringOperations || hasNumericOperations)) {
-				return "int_filter"
-			}
-			if (fieldType === "float" && (hasStringOperations || hasNumericOperations)) {
-				return "float_filter"
-			}
-			if (hasStringOperations) {
-				return "string_filter"
+			const resolvedType = resolve_type(field.field)
+			if (filterTypeMap[resolvedType]) {
+				return filterTypeMap[resolvedType]
 			}
 		}
 	}

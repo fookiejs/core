@@ -157,7 +157,7 @@ export const types = {
 			notIn: { key: "timestamp", isArray: true },
 			isNull: { key: "boolean" },
 		},
-		alias: ["timestamp", "timestamp without time zone", "date"],
+		alias: ["timestamp", "timestamp without time zone", "DateTime"],
 	}) as Type,
 
 	timestamptz: Type.create({
@@ -175,7 +175,7 @@ export const types = {
 			notIn: { key: "timestamptz", isArray: true },
 			isNull: { key: "boolean" },
 		},
-		alias: ["timestamptz", "timestamp with time zone", "date"],
+		alias: ["timestamptz", "timestamp with time zone", "DateTime"],
 	}) as Type,
 
 	point: Type.create({
