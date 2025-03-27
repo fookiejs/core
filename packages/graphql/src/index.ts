@@ -1,110 +1,155 @@
 import { ApolloServer } from "npm:@apollo/server@4.11"
 import { defaults, models, Utils } from "@fookiejs/core"
 import * as collections from "@std/collections"
-const filter_types = `
-input string_filter {
-  equals: String
-  notEquals: String
-  in: [String]
-  notIn: [String]
-  like: String
-  notLike: String
-  isNull: Boolean
-  isNotNull: Boolean
-  gte: String
-  gt: String
-  lte: String
-  lt: String
+import { FookieDataLoader } from "./dataloader.ts"
+import { Resolvers, TypeDefs } from "./types.ts"
+
+const graphqlNativeTypes = ["String", "Int", "Float", "Boolean", "ID"]
+
+const filterTypeMap: Record<string, string> = {
+	"String": "string_filter",
+	"Int": "int_filter",
+	"Float": "float_filter",
+	"Boolean": "boolean_filter",
+	"DateTime": "date_filter",
 }
 
-input int_filter {
-  equals: Int
-  notEquals: Int
-  in: [Int]
-  notIn: [Int]
-  gte: Int
-  gt: Int
-  lte: Int
-  lt: Int
-  isNull: Boolean
-  isNotNull: Boolean
+function generate_filter_types(): string {
+	const fookieTypes = Object.values(defaults.type)
+		.filter((t) => typeof t === "object" && t !== null && "key" in t && "queryController" in t)
+
+	let result = ""
+
+	const filterableTypes = graphqlNativeTypes.filter((type) => type !== "ID")
+
+	const typeMapping = {
+		"String": fookieTypes.filter((t) => resolve_type({ type: t }) === "String")[0],
+		"Int": fookieTypes.filter((t) => resolve_type({ type: t }) === "Int")[0],
+		"Float": fookieTypes.filter((t) => resolve_type({ type: t }) === "Float")[0],
+		"Boolean": fookieTypes.filter((t) => resolve_type({ type: t }) === "Boolean")[0],
+		"DateTime": fookieTypes.filter((t) => resolve_type({ type: t }) === "DateTime")[0],
+	}
+
+	const filterConfigs = filterableTypes.map((graphqlType) => {
+		const name = graphqlType.toLowerCase() + "_filter"
+		const fookieType = typeMapping[graphqlType]
+		const fields = []
+
+		fields.push({ name: "isNull", type: "Boolean" })
+		fields.push({ name: "notIsNull", type: "Boolean" })
+
+		if (fookieType && fookieType.queryController && Object.keys(fookieType.queryController).length > 0) {
+			for (const opName of Object.keys(fookieType.queryController)) {
+				if (opName === "isNull") continue
+				const validator = fookieType.queryController[opName]
+				if (validator && typeof validator === "object" && validator.isArray) {
+					fields.push({ name: opName, type: `[${graphqlType}]` })
+				} else {
+					fields.push({ name: opName, type: graphqlType })
+				}
+			}
+		} else {
+			fields.push({ name: "equals", type: graphqlType })
+			fields.push({ name: "notEquals", type: graphqlType })
+		}
+
+		return {
+			name,
+			baseType: graphqlType,
+			fields,
+		}
+	})
+
+	for (const config of filterConfigs) {
+		result += `\ninput ${config.name} {\n`
+		for (const field of config.fields) {
+			result += `  ${field.name}: ${field.type}\n`
+		}
+		result += `}\n`
+	}
+
+	return result
 }
 
-input float_filter {
-  equals: Float
-  notEquals: Float
-  in: [Float]
-  notIn: [Float]
-  gte: Float
-  gt: Float
-  lte: Float
-  lt: Float
-  isNull: Boolean
-  isNotNull: Boolean
-}
-
-input boolean_filter {
-  equals: Boolean
-  notEquals: Boolean
-  isNull: Boolean
-  isNotNull: Boolean
-}
-
-input date_filter {
-  equals: String
-  notEquals: String
-  gte: String
-  gt: String
-  lte: String
-  lt: String
-  isNull: Boolean
-  isNotNull: Boolean
-}
-`
-
-// Resolver ve TypeDefs için tip tanımları
-type Resolvers = {
-	Query: Record<string, any>
-	Mutation: Record<string, any>
-	[key: string]: Record<string, any> // Dinamik model isimleri için
-}
-
-type TypeDefs = {
-	input: Record<string, Record<string, any>>
-	type: Record<string, Record<string, any>>
-	Query: Record<string, any>
-	Mutation: Record<string, any>
-}
+const filter_types = generate_filter_types()
 
 function resolve_type(field: any): string {
 	if (!field || !field.type) return "String"
 
-	switch (field.type.key) {
-		case "string":
-			return "String"
-		case "number":
-			return "Float"
-		case "boolean":
-			return "Boolean"
-		case "date":
-			return "String"
-		case "array":
-			return "[String]"
-		case "object":
-			return "String"
-		default:
-			return "String"
+	if (field.type && field.type.key) {
+		const key = field.type.key.toLowerCase()
+		const aliases = field.type.alias || []
+
+		if (key.includes("[]")) {
+			return `[${resolve_type({ type: { key: key.replace("[]", "") } })}]`
+		}
+
+		for (const graphqlType of graphqlNativeTypes) {
+			const lowerGraphqlType = graphqlType.toLowerCase()
+			if (key.includes(lowerGraphqlType) || aliases.some((a) => a.toLowerCase().includes(lowerGraphqlType))) {
+				return graphqlType
+			}
+		}
+
+		if (key.includes("date") || key.includes("timestamp")) {
+			return "DateTime"
+		}
 	}
+
+	return "String"
 }
 
-// Tip bazlı filtre dönüşümü
-function resolve_input(typeStr: string): string {
-	if (typeStr === "String") return "string_filter"
-	if (typeStr === "Int") return "int_filter"
-	if (typeStr === "Float") return "float_filter"
-	if (typeStr === "Boolean") return "boolean_filter"
-	if (typeStr === "Date") return "date_filter"
-	return "string_filter" // Varsayılan
+function resolve_input(typeStr: string, field: any = null): string {
+	if (!typeStr) return "string_filter"
+
+	if (field && field.field && field.field.type && field.field.type.queryController) {
+		const queryController = field.field.type.queryController
+		const queryControllerKeys = Object.keys(queryController)
+
+		const getFieldType = () => {
+			if (!field.field || !field.field.type) return "string"
+
+			const key = field.field.type.key.toLowerCase()
+			if (key.includes("int")) return "int"
+			if (key.includes("float") || key.includes("decimal") || key.includes("double")) return "float"
+			if (key.includes("bool")) return "boolean"
+			if (key.includes("date") || key.includes("timestamp")) return "DateTime"
+			return "string"
+		}
+
+		if (queryControllerKeys.length > 0) {
+			const fieldType = getFieldType()
+			const hasStringOperations = queryControllerKeys.some((k) => ["equals", "like", "ilike"].includes(k))
+			const hasNumericOperations = queryControllerKeys.some((k) => ["gt", "gte", "lt", "lte"].includes(k))
+
+			if (fieldType === "DateTime" && (hasStringOperations || hasNumericOperations)) {
+				return "date_filter"
+			}
+			if (fieldType === "boolean") {
+				return "boolean_filter"
+			}
+			if (fieldType === "int" && (hasStringOperations || hasNumericOperations)) {
+				return "int_filter"
+			}
+			if (fieldType === "float" && (hasStringOperations || hasNumericOperations)) {
+				return "float_filter"
+			}
+			if (hasStringOperations) {
+				return "string_filter"
+			}
+		}
+	}
+
+	if (filterTypeMap[typeStr]) {
+		return filterTypeMap[typeStr]
+	}
+
+	if (typeStr && typeStr.startsWith("[") && typeStr.endsWith("]")) {
+		const innerType = typeStr.substring(1, typeStr.length - 1)
+		return resolve_input(innerType)
+	}
+
+	return "string_filter"
 }
 
 export function createServer(): ApolloServer {
@@ -166,16 +211,39 @@ export function createServer(): ApolloServer {
 				) {
 					if (!parent[field]) return null
 
-					const response = await fieldConfig.relation.read(
-						{
-							filter: {
-								id: { equals: parent[field] },
-							},
-						},
-						{ token: context.token || "" },
-					)
+					try {
+						const relatedModel = fieldConfig.relation
 
-					return Array.isArray(response) ? response[0] : null
+						return await relatedModel.read({ filter: { id: { equals: parent[field] } } }, { sub: context.sub || "" })
+							.then((results) => Array.isArray(results) && results.length > 0 ? results[0] : null)
+					} catch (error) {
+						console.error("RELATION ERROR:", error)
+						return null
+					}
+				}
+
+				if (field.startsWith("all_")) {
+					if (!resolvers[model.getName()]) {
+						resolvers[model.getName()] = {}
+					}
+
+					resolvers[model.getName()][field] = async function (
+						parent: any,
+						{ query = {} }: any,
+						context: any,
+					) {
+						const sub = context.token || ""
+
+						const queryObj: any = collections.omit(query, [field] as unknown as [])
+						if (!queryObj.filter) {
+							queryObj.filter = {}
+						}
+
+						queryObj.filter[field] = { equals: parent.id }
+
+						const response = await model.read(queryObj, { sub })
+						return Array.isArray(response) ? response : []
+					}
 				}
 			}
 		}
@@ -189,9 +257,8 @@ export function createServer(): ApolloServer {
 			{ query = {} }: any,
 			context: any,
 		) {
-			const response = await model.read(query, {
-				token: context.token || "",
-			})
+			const sub = context.token || ""
+			const response = await model.read(query, { sub })
 			return Array.isArray(response) ? response : []
 		}
 	}
@@ -238,7 +305,7 @@ export function createServer(): ApolloServer {
 					queryObj.filter[field] = { equals: parent.id }
 
 					const response = await model.read(queryObj, {
-						token: context.token || "",
+						sub: context.sub || "",
 					})
 					return Array.isArray(response) ? response : []
 				}
@@ -259,7 +326,7 @@ export function createServer(): ApolloServer {
 
 					let sum = 0
 					const items = await model.read(queryObj, {
-						token: context.token || "",
+						sub: context.sub || "",
 					})
 
 					if (Array.isArray(items)) {
@@ -285,7 +352,7 @@ export function createServer(): ApolloServer {
 					queryObj.filter[field] = { equals: parent.id }
 
 					const items = await model.read(queryObj, {
-						token: context.token || "",
+						sub: context.sub || "",
 					})
 					return Array.isArray(items) ? items.length : 0
 				}
@@ -295,7 +362,6 @@ export function createServer(): ApolloServer {
 
 	let result = "\n"
 
-	//QUERY
 	result += "type Query {\n"
 
 	for (const typeName in typeDefs.Query) {
@@ -303,7 +369,6 @@ export function createServer(): ApolloServer {
 	}
 	result += "}\n"
 
-	//TYPE
 	for (const typeName in typeDefs.type) {
 		result += `type ${typeName} {\n`
 
@@ -325,7 +390,6 @@ export function createServer(): ApolloServer {
 		result += "}\n"
 	}
 
-	// FILTER INPUT
 	for (const typeName in typeDefs.type) {
 		result += `input ${typeName}_filter {\n`
 
@@ -333,6 +397,7 @@ export function createServer(): ApolloServer {
 			result += `  ${field}: ${
 				resolve_input(
 					typeDefs.type[typeName][field].value,
+					typeDefs.type[typeName][field].field,
 				)
 			}\n`
 		}
@@ -340,7 +405,6 @@ export function createServer(): ApolloServer {
 		result += "}\n"
 	}
 
-	// FILTER QUERY
 	for (const typeName in typeDefs.input) {
 		result += `input ${typeName}_query {
     offset: Int,
@@ -349,7 +413,6 @@ export function createServer(): ApolloServer {
         }\n`
 	}
 
-	// CREATE INPUT
 	for (const typeName in typeDefs.input) {
 		result += `input ${typeName}_input {\n`
 
@@ -362,7 +425,6 @@ export function createServer(): ApolloServer {
 		result += "}\n"
 	}
 
-	// Mutations type
 	result += "type Mutation {\n"
 
 	for (const typeName in typeDefs.input) {
@@ -383,11 +445,10 @@ export function createServer(): ApolloServer {
 		) {
 			try {
 				const response = await modelClass.create(body, {
-					token: context.token || "",
+					sub: context.sub || "",
 				})
 				return response
 			} catch (error: any) {
-				// Hata tipini belirt
 				throw new Error(error?.message || "Creation failed")
 			}
 		}
@@ -399,7 +460,7 @@ export function createServer(): ApolloServer {
 		) {
 			try {
 				await modelClass.update(query || {}, body, {
-					token: context.token || "",
+					sub: context.sub || "",
 				})
 				return true
 			} catch (error: any) {
@@ -413,7 +474,7 @@ export function createServer(): ApolloServer {
 			context: any,
 		) {
 			try {
-				await modelClass.delete(query || {}, { token: context.token || "" })
+				await modelClass.delete(query || {}, { sub: context.sub || "" })
 				return true
 			} catch (error: any) {
 				throw new Error(error?.message || "Delete failed")
@@ -427,7 +488,7 @@ export function createServer(): ApolloServer {
 		) {
 			try {
 				const items = await modelClass.read(query || {}, {
-					token: context.token || "",
+					sub: context.sub || "",
 				})
 				return Array.isArray(items) ? items.length : 0
 			} catch (error: any) {
@@ -444,7 +505,7 @@ export function createServer(): ApolloServer {
 
 			try {
 				const items = await modelClass.read(query || {}, {
-					token: context.token || "",
+					sub: context.sub || "",
 				})
 
 				if (!Array.isArray(items)) return 0
@@ -456,18 +517,64 @@ export function createServer(): ApolloServer {
 				throw new Error(error?.message || "Sum failed")
 			}
 		}
-		result += "\n"
 	}
 
 	result += "}\n"
 
 	const server = new ApolloServer({
 		typeDefs: `
-          ${filter_types}
-          ${result}
-          `,
-		resolvers,
+		scalar DateTime
+		input date_filter {
+			equals: DateTime
+			notEquals: DateTime
+			gt: DateTime
+			gte: DateTime
+			lt: DateTime
+			lte: DateTime
+			isNull: Boolean
+			notIsNull: Boolean
+		}
+		${filter_types}
+		${result}
+		`,
+		resolvers: {
+			...resolvers,
+			DateTime: {
+				serialize: (value: any) => {
+					if (value instanceof Date) {
+						return value.toISOString()
+					}
+					return value
+				},
+				parseValue: (value: any) => {
+					return new Date(value)
+				},
+			},
+		},
+		includeStacktraceInErrorResponses: false,
 	})
 
 	return server
+}
+
+export function createDataLoader(sub: string = ""): FookieDataLoader {
+	return new FookieDataLoader(async (model: any, ids) => {
+		const response = await model.read(
+			{
+				filter: {
+					id: { in: ids },
+				},
+			},
+			{ sub },
+		)
+		return Array.isArray(response) ? response : []
+	})
+}
+
+export function createContext(req: any): { sub: string; dataLoader: FookieDataLoader } {
+	const sub = req?.headers?.authorization || ""
+	return {
+		sub,
+		dataLoader: createDataLoader(sub),
+	}
 }

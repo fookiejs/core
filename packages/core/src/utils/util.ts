@@ -30,7 +30,7 @@ export class Utils {
 		return /^-?\d*\.?\d+$/.test(value)
 	}
 	static isFloat(value: any): boolean {
-		return typeof value === "number" && !Number.isInteger(value)
+		return typeof value === "number"
 	}
 	static isObject(value: any): boolean {
 		return typeof value === "object" && value !== null && !Array.isArray(value)

@@ -1,7 +1,7 @@
 export type Resolvers = {
 	Query: Record<string, any>
 	Mutation: Record<string, any>
-	[key: string]: Record<string, any> // Dinamik model isimleri için
+	[key: string]: Record<string, any>
 }
 
 export type TypeDefs = {

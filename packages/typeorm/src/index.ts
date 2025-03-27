@@ -14,14 +14,13 @@ import {
 	Repository,
 } from "typeorm"
 import { Database, defaults, Method, Model, models, QueryType, Utils } from "@fookiejs/core"
-import { postgresTypes } from "./extra-types.ts"
 
 const entityRegistry = new Map<string, EntitySchema>()
 let dataSource: DataSource | null = null
 
 export const database = Database.create({
 	key: "typeorm",
-	primaryKeyType: postgresTypes.text,
+	primaryKeyType: defaults.type.text,
 	modify: function (model: typeof Model) {
 		const modelName = model.name
 
@@ -115,7 +114,7 @@ export const initializeDataSource = async function (options: DataSourceOptions) 
 				acc[key] = (key === "id")
 					? {
 						primary: true,
-						type: postgresTypes.text.key,
+						type: defaults.type.text.key,
 						nullable: false,
 					}
 					: {
