@@ -14,13 +14,10 @@ export class FookieDataLoader {
 	}
 
 	getLoader(modelName: string, model: FookieModel) {
-		console.log("getLoader çağrıldı - modelName:", modelName, "model:", model)
 		if (!this.loaders.has(modelName)) {
-			console.log("Yeni DataLoader oluşturuluyor:", modelName)
 			this.loaders.set(
 				modelName,
 				new DataLoader((ids: string[]) => {
-					console.log("DataLoader batch fonksiyonu çağrıldı - ids:", ids)
 					return this.batchLoadFn(model, ids)
 				}),
 			)

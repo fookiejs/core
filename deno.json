@@ -2,9 +2,9 @@
 	"workspace": [
 		"packages/core",
 		"packages/graphql",
-		"packages/randomize",
 		"packages/cache",
 		"packages/typeorm",
+		"packages/auth",
 		"packages/example"
 	],
 

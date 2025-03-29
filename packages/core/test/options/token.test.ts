@@ -11,7 +11,7 @@ Deno.test("Relation", () => {
 					Role.create({
 						key: "token_role",
 						execute: async function (payload) {
-							return payload.options.sub === "token"
+							return payload.options.token === "token"
 						},
 					}),
 				],
@@ -27,7 +27,7 @@ Deno.test("Relation", () => {
 		const entity = await Token.create(
 			{ name: v4() },
 			{
-				sub: "token",
+				token: "token",
 			},
 		)
 
@@ -38,7 +38,7 @@ Deno.test("Relation", () => {
 		const entity = await Token.create(
 			{ name: v4() },
 			{
-				sub: "invalid_token",
+				token: "invalid_token",
 			},
 		)
 

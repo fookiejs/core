@@ -49,4 +49,4 @@ deno.lock
 .nuxt/
 .pnpm-debug.log
 
-/packages/example/
+

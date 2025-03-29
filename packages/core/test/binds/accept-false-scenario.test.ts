@@ -9,7 +9,7 @@ const admin = Role.create({
 	key: "admin",
 	execute: async function (payload) {
 		flag1.called = true
-		return payload.options.sub === "admin"
+		return payload.options.token === "admin"
 	},
 })
 
@@ -58,7 +58,7 @@ Deno.test("QueryTextModel Accept and Rule Lifecycle Tests", async () => {
 			flag2.called = false
 
 			try {
-				await TrueQueryTextModel.read({}, { sub: "admin" })
+				await TrueQueryTextModel.read({}, { token: "admin" })
 				throw new Error("Bu noktaya ulaşmamalıydı")
 			} catch (error) {
 				expect(flag1.called).toBe(true)
@@ -75,7 +75,7 @@ Deno.test("QueryTextModel Accept and Rule Lifecycle Tests", async () => {
 			flag2.called = false
 
 			try {
-				await TrueQueryTextModel.read({}, { sub: "user" })
+				await TrueQueryTextModel.read({}, { token: "user" })
 				throw new Error("Bu noktaya ulaşmamalıydı")
 			} catch (error) {
 				expect(flag1.called).toBe(true)

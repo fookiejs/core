@@ -72,7 +72,7 @@ export function initCache(database: Database): CacheModule {
 		key: "isCached",
 		execute: async function (payload) {
 			const cacheKey = hasher({
-				sub: payload.options.sub,
+				token: payload.options.token,
 				query: payload.query,
 				model: payload.model.getName(),
 			})
@@ -86,7 +86,7 @@ export function initCache(database: Database): CacheModule {
 					},
 				},
 				{
-					sub: Config.SYSTEM_TOKEN,
+					token: Config.SYSTEM_TOKEN,
 				},
 			)
 
@@ -101,7 +101,7 @@ export function initCache(database: Database): CacheModule {
 			key: "cacheResponse",
 			execute: async (payload, response) => {
 				const cacheKey = hasher({
-					sub: payload.options.sub,
+					token: payload.options.token,
 					query: payload.query,
 					model: payload.model.getName(),
 				})
@@ -116,7 +116,7 @@ export function initCache(database: Database): CacheModule {
 							expiresAt: expiresAt,
 						},
 						{
-							sub: Config.SYSTEM_TOKEN,
+							token: Config.SYSTEM_TOKEN,
 						},
 					)
 				} catch (error) {
@@ -130,7 +130,7 @@ export function initCache(database: Database): CacheModule {
 			key: "cacheCreateResponse",
 			execute: async (payload, response) => {
 				const cacheKey = hasher({
-					sub: payload.options?.sub || "anonymous",
+					token: payload.options?.token || "anonymous",
 					query: {
 						filter: {
 							id: {
@@ -152,7 +152,7 @@ export function initCache(database: Database): CacheModule {
 							expiresAt: expiresAt,
 						},
 						{
-							sub: Config.SYSTEM_TOKEN,
+							token: Config.SYSTEM_TOKEN,
 						},
 					)
 				} catch (error) {
@@ -171,7 +171,7 @@ export function initCache(database: Database): CacheModule {
 					},
 				},
 				{
-					sub: Config.SYSTEM_TOKEN,
+					token: Config.SYSTEM_TOKEN,
 				},
 			)
 		},
@@ -188,7 +188,7 @@ export function initCache(database: Database): CacheModule {
 						},
 					},
 					{
-						sub: Config.SYSTEM_TOKEN,
+						token: Config.SYSTEM_TOKEN,
 					},
 				)
 			} catch (error) {

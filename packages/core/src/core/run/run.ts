@@ -14,6 +14,7 @@ import type { Model, QueryType } from "../model/model.ts"
 import { Method } from "../method.ts"
 import type { MethodResponse } from "../response.ts"
 import { DisposableSpan } from "../../otel/index.ts"
+import preModify from "./lifecycles/pre-modify.ts"
 
 function createPayload<T extends Model, M extends Method>(
 	payload: Omit<Payload<T, M>, "runId" | "state">,
@@ -32,6 +33,7 @@ async function runLifecycle<T extends Model, M extends Method>(
 	using _span = new DisposableSpan(`run:${payload.model.getName()}:${payload.method}`)
 
 	if (await pre_rule(payload)) {
+		await preModify(payload)
 		if (await role(payload)) {
 			await modify(payload)
 			if (await rule(payload)) {

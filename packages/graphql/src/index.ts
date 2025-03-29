@@ -36,7 +36,6 @@ function generate_filter_types(): string {
 		const fields = []
 
 		fields.push({ name: "isNull", type: "Boolean" })
-		fields.push({ name: "notIsNull", type: "Boolean" })
 
 		if (fookieType && fookieType.queryController && Object.keys(fookieType.queryController).length > 0) {
 			for (const opName of Object.keys(fookieType.queryController)) {
@@ -188,7 +187,9 @@ export function createServer(): ApolloServer {
 					try {
 						const relatedModel = fieldConfig.relation
 
-						return await relatedModel.read({ filter: { id: { equals: parent[field] } } }, { sub: context.sub || "" })
+						return await relatedModel.read({ filter: { id: { equals: parent[field] } } }, {
+							token: context.token || "",
+						})
 							.then((results) => Array.isArray(results) && results.length > 0 ? results[0] : null)
 					} catch (error) {
 						console.error("RELATION ERROR:", error)
@@ -206,7 +207,7 @@ export function createServer(): ApolloServer {
 						{ query = {} }: any,
 						context: any,
 					) {
-						const sub = context.token || ""
+						const token = context.token || ""
 
 						const queryObj: any = collections.omit(query, [field] as unknown as [])
 						if (!queryObj.filter) {
@@ -215,7 +216,7 @@ export function createServer(): ApolloServer {
 
 						queryObj.filter[field] = { equals: parent.id }
 
-						const response = await model.read(queryObj, { sub })
+						const response = await model.read(queryObj, { token })
 						return Array.isArray(response) ? response : []
 					}
 				}
@@ -231,8 +232,8 @@ export function createServer(): ApolloServer {
 			{ query = {} }: any,
 			context: any,
 		) {
-			const sub = context.token || ""
-			const response = await model.read(query, { sub })
+			const token = context.token || ""
+			const response = await model.read(query, { token })
 			return Array.isArray(response) ? response : []
 		}
 	}
@@ -279,7 +280,7 @@ export function createServer(): ApolloServer {
 					queryObj.filter[field] = { equals: parent.id }
 
 					const response = await model.read(queryObj, {
-						sub: context.sub || "",
+						token: context.token || "",
 					})
 					return Array.isArray(response) ? response : []
 				}
@@ -300,7 +301,7 @@ export function createServer(): ApolloServer {
 
 					let sum = 0
 					const items = await model.read(queryObj, {
-						sub: context.sub || "",
+						token: context.token || "",
 					})
 
 					if (Array.isArray(items)) {
@@ -326,7 +327,7 @@ export function createServer(): ApolloServer {
 					queryObj.filter[field] = { equals: parent.id }
 
 					const items = await model.read(queryObj, {
-						sub: context.sub || "",
+						token: context.token || "",
 					})
 					return Array.isArray(items) ? items.length : 0
 				}
@@ -419,7 +420,7 @@ export function createServer(): ApolloServer {
 		) {
 			try {
 				const response = await modelClass.create(body, {
-					sub: context.sub || "",
+					token: context.token || "",
 				})
 				return response
 			} catch (error: any) {
@@ -434,7 +435,7 @@ export function createServer(): ApolloServer {
 		) {
 			try {
 				await modelClass.update(query || {}, body, {
-					sub: context.sub || "",
+					token: context.token || "",
 				})
 				return true
 			} catch (error: any) {
@@ -448,7 +449,7 @@ export function createServer(): ApolloServer {
 			context: any,
 		) {
 			try {
-				await modelClass.delete(query || {}, { sub: context.sub || "" })
+				await modelClass.delete(query || {}, { token: context.token || "" })
 				return true
 			} catch (error: any) {
 				throw new Error(error?.message || "Delete failed")
@@ -462,7 +463,7 @@ export function createServer(): ApolloServer {
 		) {
 			try {
 				const items = await modelClass.read(query || {}, {
-					sub: context.sub || "",
+					token: context.token || "",
 				})
 				return Array.isArray(items) ? items.length : 0
 			} catch (error: any) {
@@ -479,7 +480,7 @@ export function createServer(): ApolloServer {
 
 			try {
 				const items = await modelClass.read(query || {}, {
-					sub: context.sub || "",
+					token: context.token || "",
 				})
 
 				if (!Array.isArray(items)) return 0
@@ -506,7 +507,6 @@ export function createServer(): ApolloServer {
 			lt: DateTime
 			lte: DateTime
 			isNull: Boolean
-			notIsNull: Boolean
 		}
 		${filter_types}
 		${result}
@@ -531,7 +531,7 @@ export function createServer(): ApolloServer {
 	return server
 }
 
-export function createDataLoader(sub: string = ""): FookieDataLoader {
+export function createDataLoader(token: string = ""): FookieDataLoader {
 	return new FookieDataLoader(async (model: any, ids) => {
 		const response = await model.read(
 			{
@@ -539,16 +539,16 @@ export function createDataLoader(sub: string = ""): FookieDataLoader {
 					id: { in: ids },
 				},
 			},
-			{ sub },
+			{ token },
 		)
 		return Array.isArray(response) ? response : []
 	})
 }
 
-export function createContext(req: any): { sub: string; dataLoader: FookieDataLoader } {
-	const sub = req?.headers?.authorization || ""
+export function createContext(req: any): { token: string; dataLoader: FookieDataLoader } {
+	const token = req?.headers?.authorization || ""
 	return {
-		sub,
-		dataLoader: createDataLoader(sub),
+		token,
+		dataLoader: createDataLoader(token),
 	}
 }

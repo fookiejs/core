@@ -9,11 +9,11 @@ export default Rule.create({
 		}
 
 		if (
-			lodash.has(payload.options, "sub") &&
-			!lodash.isNil(payload.options.sub) &&
+			lodash.has(payload.options, "token") &&
+			!lodash.isNil(payload.options.token) &&
 			!(
-				lodash.isString(payload.options.sub) ||
-				lodash.isSymbol(payload.options.sub)
+				lodash.isString(payload.options.token) ||
+				lodash.isSymbol(payload.options.token)
 			)
 		) {
 			return false

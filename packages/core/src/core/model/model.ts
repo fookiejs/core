@@ -34,7 +34,7 @@ export class Model {
 	static async create<model extends Model>(
 		this: new () => model,
 		body: Omit<model, "id">,
-		options?: Optional<Options, "test" | "sub">,
+		options?: Optional<Options, "test" | "token">,
 	): Promise<model> {
 		body
 		options
@@ -44,7 +44,7 @@ export class Model {
 	static async read<model extends Model>(
 		this: new () => model,
 		query?: Partial<QueryType<model>>,
-		options?: Optional<Options, "test" | "sub">,
+		options?: Optional<Options, "test" | "token">,
 	): Promise<model[]> {
 		query
 		options
@@ -55,7 +55,7 @@ export class Model {
 		this: new () => model,
 		query: QueryType<model>,
 		body: Partial<Omit<model, "id">>,
-		options?: Optional<Options, "test" | "sub">,
+		options?: Optional<Options, "test" | "token">,
 	): Promise<boolean> {
 		query
 		body
@@ -66,7 +66,7 @@ export class Model {
 	static async delete<model extends Model>(
 		this: new () => model,
 		query: Partial<QueryType<model>>,
-		options?: Optional<Options, "test" | "sub">,
+		options?: Optional<Options, "test" | "token">,
 	): Promise<boolean> {
 		query
 		options

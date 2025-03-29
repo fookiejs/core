@@ -33,7 +33,7 @@ export default Rule.create<Model, Method>({
 
 			const res = await payload.model.read(
 				{ filter },
-				{ sub: Config.SYSTEM_TOKEN },
+				{ token: Config.SYSTEM_TOKEN },
 			)
 
 			return Array.isArray(res) && res.length == 0

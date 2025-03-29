@@ -20,7 +20,7 @@ export default Rule.create({
 							[field]: { equals: (payload.body as Record<string, any>)[field] },
 						},
 					},
-					{ sub: Config.SYSTEM_TOKEN },
+					{ token: Config.SYSTEM_TOKEN },
 				)
 
 				if (Array.isArray(res) && res.length > trash_old) {

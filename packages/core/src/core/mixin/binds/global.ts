@@ -1,4 +1,4 @@
-import type { Effect, Rule } from "../../lifecycle-function.ts"
+import type { Effect, Modify, Rule } from "../../lifecycle-function.ts"
 import type { Method } from "../../method.ts"
 import type { Model } from "../../model/model.ts"
 import default_payload from "../modify/default_payload.ts"
@@ -18,10 +18,16 @@ export const globalRules: Rule<Model, Method>[] = [
 
 export const globalEffects: Effect<Model, Method>[] = [] as const
 
+export const globalPreModifies: Modify<Model, Method>[] = [] as const
+
 export function addGlobalRule(rule: Rule) {
 	globalRules.push(rule)
 }
 
 export function addGlobalEffect(effect: Effect) {
 	globalEffects.push(effect)
+}
+
+export function addGlobalPreModify(modify: Modify) {
+	globalPreModifies.push(modify)
 }

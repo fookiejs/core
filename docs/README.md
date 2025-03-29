@@ -42,7 +42,7 @@ import { Builder, Database, Dictionary, Method, Mixin, Role, run, Type, Types, u
 	})
 
 	const todo_entity = await Fookie.run({
-		sub: process.env.SYSTEM_TOKEN, // Only "system" role can create a todo.
+		token: process.env.SYSTEM_TOKEN, // Only "system" role can create a todo.
 		model: todo_model,
 		method: Method.Create,
 		body: {
@@ -319,7 +319,7 @@ import { add, eq } from 'https://raw.githubusercontent.com/lodash/lodash/4.17.21
 
     for (let i = 0; i < 100; i++) {
         await Fookie.run({
-            sub: process.env.SYSTEM_TOKEN,
+            token : process.env.SYSTEM_TOKEN,
             model: ArticleModel,
             method: Method.Create,
             body: {
@@ -343,7 +343,7 @@ import { add, eq } from 'https://raw.githubusercontent.com/lodash/lodash/4.17.21
     );
 
     const response_2 = await Fookie.run({
-        sub: process.env.SYSTEM_TOKEN, // system token
+        token : process.env.SYSTEM_TOKEN, // system token
         model: ArticleModel,
         method: Method.Read,
         query: {},
@@ -399,7 +399,7 @@ implementation of CRUD operations (Create, Read, Update, Delete) as well as othe
 import { Dictionary, Method, run } from "fookie"
 
 const response = await Fookie.run({
-	sub: "some string token",
+	token: "some string token",
 	model: Dictionary.Model.user,
 	method: Method.Update,
 	query: {

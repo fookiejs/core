@@ -1,6 +1,6 @@
 {
-	"name": "@fookiejs/randomize",
-	"version": "0.2.0",
+	"name": "@fookiejs/auth",
+	"version": "0.1.0",
 	"exports": "./mod.ts",
 	"license": "MIT",
 	"imports": {

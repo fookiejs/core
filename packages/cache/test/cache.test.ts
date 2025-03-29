@@ -36,7 +36,7 @@ Deno.test("Cache", async () => {
 	await cacheModel.delete(
 		{},
 		{
-			sub: Config.SYSTEM_TOKEN,
+			token: Config.SYSTEM_TOKEN,
 		},
 	)
 
@@ -54,7 +54,7 @@ Deno.test("Cache", async () => {
 	const isCached = await cacheModel.read(
 		{},
 		{
-			sub: Config.SYSTEM_TOKEN,
+			token: Config.SYSTEM_TOKEN,
 		},
 	)
 
@@ -77,7 +77,7 @@ Deno.test("should clear cache on update", async () => {
 	await cacheModel.delete(
 		{},
 		{
-			sub: Config.SYSTEM_TOKEN,
+			token: Config.SYSTEM_TOKEN,
 		},
 	)
 
@@ -90,7 +90,7 @@ Deno.test("should clear cache on update", async () => {
 	const isCached = await cacheModel.read(
 		{},
 		{
-			sub: Config.SYSTEM_TOKEN,
+			token: Config.SYSTEM_TOKEN,
 		},
 	)
 
@@ -114,7 +114,7 @@ Deno.test("should clear cache on update", async () => {
 	const isCacheCleared = await cacheModel.read(
 		{},
 		{
-			sub: Config.SYSTEM_TOKEN,
+			token: Config.SYSTEM_TOKEN,
 		},
 	)
 
@@ -128,7 +128,7 @@ Deno.test("should clear cache on delete", async () => {
 	await cacheModel.delete(
 		{},
 		{
-			sub: Config.SYSTEM_TOKEN,
+			token: Config.SYSTEM_TOKEN,
 		},
 	)
 
@@ -141,7 +141,7 @@ Deno.test("should clear cache on delete", async () => {
 	const isCached = await cacheModel.read(
 		{},
 		{
-			sub: Config.SYSTEM_TOKEN,
+			token: Config.SYSTEM_TOKEN,
 		},
 	)
 
@@ -162,7 +162,7 @@ Deno.test("should clear cache on delete", async () => {
 	const isCacheCleared = await cacheModel.read(
 		{},
 		{
-			sub: Config.SYSTEM_TOKEN,
+			token: Config.SYSTEM_TOKEN,
 		},
 	)
 
@@ -176,7 +176,7 @@ Deno.test("should expire cache after TTL", async () => {
 	await cacheModel.delete(
 		{},
 		{
-			sub: Config.SYSTEM_TOKEN,
+			token: Config.SYSTEM_TOKEN,
 		},
 	)
 
@@ -189,7 +189,7 @@ Deno.test("should expire cache after TTL", async () => {
 	const isCached = await cacheModel.read(
 		{},
 		{
-			sub: Config.SYSTEM_TOKEN,
+			token: Config.SYSTEM_TOKEN,
 		},
 	)
 
@@ -206,7 +206,7 @@ Deno.test("should expire cache after TTL", async () => {
 	const isCacheExpired = await cacheModel.read(
 		{},
 		{
-			sub: Config.SYSTEM_TOKEN,
+			token: Config.SYSTEM_TOKEN,
 		},
 	)
 

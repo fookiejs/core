@@ -32,12 +32,12 @@ Deno.test("QueryTextModel validate_payload Tests", async () => {
 		}
 	})
 
-	Deno.test("should throw error if options.sub is not a string", async () => {
+	Deno.test("should throw error if options.token is not a string", async () => {
 		try {
 			await QueryTextModel.read(
 				{},
 				{
-					sub: "invalid_sub" as any,
+					token: "invalid_token" as any,
 				},
 			)
 			expect(false).toBeTruthy()
