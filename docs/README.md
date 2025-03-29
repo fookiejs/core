@@ -1,516 +1,384 @@
-# FookieJS Core Documentation
+# Fookie Core
 
-# What is FookieJS?
+Fookie is a powerful TypeScript framework for modern web applications. It helps you easily manage database operations,
+authentication, authorization, and more.
 
-FookieJS is an extensible Typescript Framework that provides integrated CRUD functionality by defining your
-application's data structures with models. With this structure, FookieJS supports fast and consistent application
-development while enabling you to implement complex functions with ease.
+## Features
 
-# Get Started
+- 🚀 Full TypeScript support
+- 🔒 Role-based authorization
+- 🔄 Automatic lifecycle management
+- 📦 Database integration
+- 🎯 Decorator-based API
+- 🔍 Advanced filtering and querying
+- ⚡ Performance optimization
+- 🛡️ Security-focused design
 
 ## Installation
 
 ```bash
-npm install fookie
+deno add @fookie/core
 ```
 
-## **Hello World!**
+## Overview
 
-```javascript
-import { Builder, Database, Dictionary, Method, Mixin, Role, run, Type, Types, use } from "fookie"
-;(async () => {
-	const todo_model = await Builder.model({
-		name: "todo",
-		database: Database.store,
-		schema: {
-			title: {
-				type: Fookie.Dictionary.type.string,
-			},
-			status: {
-				type: Fookie.Dictionary.type.string,
-				default: "Not Started",
-			},
-		},
-		bind: {
-			read: {
-				role: [Lifecycle.everybody],
-			},
-			create: {
-				role: [Lifecycle.system],
-			},
-		},
-	})
+Fookie includes the following core components:
 
-	const todo_entity = await Fookie.run({
-		token: process.env.SYSTEM_TOKEN, // Only "system" role can create a todo.
-		model: todo_model,
-		method: Method.Create,
-		body: {
-			title: "Example",
-		},
-	})
-	console.log(todo_entity)
+- Model: Define data structures
+- Field: Field types and validations
+- Role: Authorization and access control
+- Modify: Data transformations
+- Lifecycle: Lifecycle management
 
-	const todo_response = await Fookie.run({
-		model: todo_model,
-		method: Method.Read,
-		query: {
-			filter: {
-				title: "Example",
-			},
-		},
-	})
+## Core Components
 
-	console.log(todo_response)
-})()
-/*
-todo_entity
-{
-  data: {
-    id: '365c7be01f4d-4254-9d34-5cfeb8800dea',
-    title: 'Example',
-    status: 'Not Started'
-  },
-  status: true,
-  error: null,
-  validation_error: {}
+### Model
+
+Model is used to define your data structures. Each model corresponds to a table in the database.
+
+```typescript
+import { defaults, Field, Model } from "@fookie/core"
+
+@Model.Decorator({ name: "users", database: defaults.database.store })
+class User extends Model {
+	@Field()
+	name!: string
+
+	@Field()
+	email!: string
+
+	@Field()
+	password!: string
+
+	@Field()
+	createdAt!: Date
 }
-
-todo_response
-{
-  data: [
-    {
-      id: '365c7be01f4d-4254-9d34-5cfeb8800dea',
-      title: 'Example',
-      status: 'Not Started'
-    }
-  ],
-  status: true,
-  error: null,
-  validation_error: {}
-}
-*/
 ```
 
-# **Packages and Modules**
+### Field
 
-FookieJS makes your application development process simple and effective through integrated packages and modules. These
-modules come together to fulfill the basic needs of your application.
+Field decorator defines the properties of model fields.
 
-## **Core Packages**
+```typescript
+@Field({
+	type: defaults.type.text,
+	features: [
+		defaults.feature.required,
+		defaults.feature.unique
+	],
+	validators: [
+		(value) => value.length >= 3 && value.length <= 50,
+		(value) => /^[a-zA-Z0-9]+$/.test(value)
+	]
+})
+username!: string
 
-### **Builder**
+@Field({
+	type: defaults.type.number,
+	features: [
+		defaults.feature.required
+	],
+	validators: [
+		(value) => value >= 0 && value <= 100
+	]
+})
+age!: number
 
-It is the basic building block of your application. It allows you to define models and perform operations on these
-models.
-
-### **run**
-
-It allows you to perform CRUD operations on the models you define.
-
-### **Database**
-
-Manages the database operations that FookieJS supports. It simplifies your database connections and queries.
-
-### **Method**
-
-Uygulamanızın temel CRUD işlevlerini tanımlar. Bu, verileriniz üzerindeki işlemleri yönetir.
-
-### **Type**
-
-Defines the basic CRUD functions of your application. This manages operations on your data.
-
-### **Mixin**
-
-It helps you add additional features or functions to your app's models.
-
-### **Role**
-
-Defines authentication and authorization functions. This increases the security level of your application.
-
-### **Dictionary**
-
-It allows you to assign to here like something role, mixin and model
-
-# **Model Creation**
-
-With FookieJS, creating models, the basic building block of your application, is extremely simple. Models define the
-data structure of your application and the operations on these structures. In this section, we explain how a model is
-defined and its most basic properties.
-
-## **Model Definition and Properties**
-
-Models are the structure that helps your application interact with the database. Each model represents a specific data
-structure and contains information about how that structure is stored, how it is queried, etc.
-
-```javascript
-import { Builder, Database, Dictionary, Method, Mixin, Role, run, Selection, Type, Types, use } from "fookie"
-
-import { init_cache } from "fookie_cache"
-import { init_redis } from "fookie_redis"
-;(async () => {
-	const database_redis = await init_redis()
-	const mixin_cache = await init_cache(database_redis)
-
-	async function positive_integer(val) {
-		return val > 0
-	}
-
-	const product_model = await Builder.model({
-		name: "product",
-		database: Database.store,
-		mixins: [mixin_cache],
-		schema: {
-			name: { type: Fookie.Dictionary.type.string },
-			stock: {
-				type: Fookie.Dictionary.Type.integer,
-				validators: [positive_integer],
-			},
-			color: { type: Fookie.Dictionary.Type.integer },
-		},
-		bind: {
-			read: {
-				role: [Lifecycle.everybody],
-			},
-		},
-	})
-})()
+@Field({
+	type: defaults.type.date,
+	features: [
+		defaults.feature.required,
+		defaults.feature.default(() => new Date())
+	]
+})
+createdAt!: Date
 ```
-
-## **Defination of Model Fields**
-
-| key      | description                                                                                                     |
-| -------- | --------------------------------------------------------------------------------------------------------------- |
-| name     | Defines the unique name of the model. This name is used to refer to the model in other operations.              |
-| database | Determines in which database storage solution the model will be stored.                                         |
-| schema   | Defines the data structure of the model and its properties.                                                     |
-| bind     | Defines the operations that can be performed on the model and how to handle these operations.                   |
-| mixins   | It is used to add additional features to the functionality of the model, so you can create reusable structures. |
-
-## **Schema**
-
-Fields are used to define how each field in the model behaves. Here are some properties that can be used in this fielder
-
-| key | description | | -------------- | ------------------------------------------------------------- |
------------------------------ | | type | Specifies which data type the field is. | | required | Indicates whether the
-field is mandatory or not. | | unique | Indicates whether the field is unique or not. | | default | Indicates the
-default value for the field. | | unique_group | Specifies the uniqueness groups. | | relation | Specifies the
-relationship with other models. | | read | Specifies which roles can read the information in this field. | | write |
-Information in this field specifies which roles can write. | | minimum | Specifies minimum limits for numeric values. |
-| maximum | Specifies maximum limits for numeric values. | | minimum_size | Specifies size limits for arrays. | |
-maximum_size | Specifies size limits for arrays. | | selection | specifies a specific type of selection. | | validators
-| Specifies special validators. | specifies whether it is null. |
-
-## **Bind**
-
-This defines how the methods of a model work. It can be written separately for each method. Below is an example for
-create.
-
-| lifecycle | description                                                                        |
-| --------- | ---------------------------------------------------------------------------------- |
-| pre_rule  | Specifies the first rules to be executed before the method is called.              |
-| modify    | Specifies functions to modify incoming data.                                       |
-| role      | specifies which roles can call this method.                                        |
-| rule      | Specifies the conditions for processing or saving data.                            |
-| filter    | Specifies functions to filter the returned data.                                   |
-| effect    | Specifies side effect functions to be executed after the method completes.         |
-| accept    | Specifies modify and rules to be added to the flow when a role is accepted.        |
-| reject    | Specifies modifications and rules to be added to the flow when a role is rejected. |
-
-### A Deep Dive into the Concept of Bind and Role
-
-### Bind
-
-The **`bind`** concept allows you to control operations (such as CRUD operations) performed on a specific model. For
-example, it specifies which roles can read, update, create or delete a model.
 
 ### Role
 
-**`role`** represents the authorization of users or systems to perform certain operations. For example,
-**`Lifecycle.everybody`** gives access to all users, while **`Lifecycle.nobody`** gives access to no users.
+Role decorator is used for authorization and access control.
 
-### \***\*Lifecycle, Reject ve Accept\*\***
+```typescript
+@Role({
+	name: "admin",
+	execute: async (payload) => {
+		return payload.options.token === "admin-token"
+	}
+})
 
-The **`lifecycle`** specifies special functions to be executed during the operation performed on a model.
+@Role({
+	name: "owner",
+	execute: async (payload) => {
+		return payload.options.userId === payload.body.authorId
+	}
+})
 
-\***\*Reject ve Accept\*\*** For each model operation, **`reject`** and **`accept`** are used to accept or reject
-specific roles.
-
-- **Reject**: Used to reject the operation. If **`reject`** is defined for a role and a user with that role tries to
-  perform the specified operation, the operation will be rejected.
-- **Accept**: Used to accept the operation. If **`accept`** is defined for a role and a user with that role attempts to
-  perform the specified operation, the operation is accepted.
-
-The **`lifecycle`** functions you specify in **`reject`** and **`accept`** are used to determine whether a transaction
-is rejected or accepted.
-
-### Example
-
-```javascript
-import {
-    Dictionary,
-    Builder,
-    Database,
-    Method,
-    Mixin,
-    Role,
-    Selection,
-    Type,
-    Types,
-    use,
-    run,
-} from "fookie";
-
-import { add, eq } from 'https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/lodash.js';
-;
-;
-(async () => {
-    const set_draft = Builder.lifecycle(async function set_draft(payload, state) {
-        if (!payload.body.status) {
-            payload.body.status = "draft";
-        }
-    });
-
-    const set_limit = Builder.lifecycle(async function set_limit(payload, state) {
-        payload.query.limit = 10;
-    });
-
-    const set_published: Types.LifecycleFunction<unknown, any> = async function set_published(
-        payload,
-        state,
-    ) {
-        payload.query.filter.status = "published";
-    };
-
-    const valide_article_status: Types.LifecycleFunction = async function valide_article_status(
-        payload,
-        state,
-    ) {
-        return lodash.includes(["draft", "published"], payload.body.status);
-    };
-
-    const ArticleModel = await Builder.model({
-        name: "article",
-        database: Database.store,
-        schema: {
-            title: { type: Fookie.Dictionary.type.string },
-            content: { type: Fookie.Dictionary.type.string },
-            status: { type: Fookie.Dictionary.type.string },
-        },
-        bind: {
-            read: {
-                role: [Lifecycle.system, Lifecycle.everybody],
-                reject: {
-                    system: {
-                        modify: [set_limit, set_published],
-                    },
-                },
-            },
-            create: {
-                pre_rule: [],
-                rule: [valide_article_status],
-                modify: [set_draft],
-                role: [Lifecycle.system],
-                filter: [],
-                effect: [],
-            },
-        },
-    });
-
-    for (let i = 0; i < 100; i++) {
-        await Fookie.run({
-            token : process.env.SYSTEM_TOKEN,
-            model: ArticleModel,
-            method: Method.Create,
-            body: {
-                title: `Title ${i}`,
-                content: `content ${i}`,
-                status: Math.random() > 0.5 ? "draft" : "published",
-            },
-        });
-    }
-
-    const response_1 = await Fookie.run({
-        model: ArticleModel,
-        method: Method.Read,
-        query: {},
-    });
-
-    console.log("As a 'everybody' article data length" + response_1.data.length);
-    console.log(
-        "As a 'everybody' published article data length " +
-            lodash.filter(response_1.data, { status: "published" }).length,
-    );
-
-    const response_2 = await Fookie.run({
-        token : process.env.SYSTEM_TOKEN, // system token
-        model: ArticleModel,
-        method: Method.Read,
-        query: {},
-    });
-
-    console.log("As a 'system' article data length" + response_2.data.length);
-    console.log(
-        "As a 'system' published article data length " +
-            lodash.filter(response_2.data, { status: "published" }).length,
-    );
-})();
-```
-
-## **Methods**
-
-| name   | description                                                                                                                              | returning data |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| Create | This method is used to create a new record. It adds this data to the database by sending data according to the model schema you specify. | Entity         |
-| Read   | Used to read existing records. You can access specific data using specific filters or queries.                                           | Entity[]       |
-| Update | Used to update the data in an existing record. You can identify the record using a specific ID or filter and make the desired changes.   | Boolean        |
-| Delete | Used to delete an existing record. You can identify and delete the record using a specific ID or filter.                                 | Boolean        |
-| Sum    | Allows you to get the sum value over a specific property or properties. Especially useful on numeric data.                               | Float          |
-| Test   | Allows you to test how your model handles a specific method or function. This is useful for verifying functionality during development.  | Response       |
-
-# **Data Types**
-
-The basic data types you can use in FookieJS are critical for defining the structure of your data in the database. Here
-are some key data types you can define and their brief descriptions
-
-## **Core Data Types**
-
-## | name | description | | --------- |
-
-## |
-
-| | Text | Used for text data. This accepts any string of characters, such as characters of the alphabet, numbers and
-special characters. | | Float | Accepts floating point numbers. | | | Integer | Accepts only integers. | | | Boolean |
-Accepts true or false values. | | | Buffer | Accepts a data buffer (Buffer). Especially used for storing binary data
-such as file contents. | | Plain | Accepts simple objects. | | Char | Accepts only a single character. | | Function |
-Accepts functions. | | | Array | Accepts an array of data of a specific type. | | DateType | Accepts only dates in
-'YYYY-MM-DD' format. | | Time | Accepts time values containing hours, minutes and seconds. | | DateTime | Accepts
-timestamp values that contain both date and time information. | | Timestamp | Accepts timestamp values. |
-
-# Query and Response Structure
-
-## **Run Function and Usage**
-
-In FookieJS, the **`run`** function allows to execute a specific method on a model. This function facilitates the
-implementation of CRUD operations (Create, Read, Update, Delete) as well as other specialized methods. Basically, the
-**`run`** function is the trigger for a model to perform a specific operation.
-
-```javascript
-import { Dictionary, Method, run } from "fookie"
-
-const response = await Fookie.run({
-	token: "some string token",
-	model: Dictionary.Model.user,
-	method: Method.Update,
-	query: {
-		limit: 10,
-		offset: 1,
-		filter: {
-			email: {
-				eq: "foo@example-domain.com",
-			},
-		},
-	},
-	body: {
-		email: "bar@example-domain.com",
-	},
+@Role({
+	name: "loggedIn",
+	execute: async (payload) => {
+		return !!payload.options.token
+	}
 })
 ```
 
-# Error Management
+### Modify
 
-In a software application, unexpected situations and errors are inevitable. FookieJS has an effective error handling
-mechanism to manage such situations. Thanks to this mechanism, errors are reported to both the developer and the users
-of the application with meaningful and informative messages.
+Modify decorator is used for data transformations.
 
-## Standard Errors
-
-FookieJS throws error messages for many common error conditions.
-
-```javascript
-const response = await Fookie.run({
-	model: Dictionary.Model.NOT_EXISTED_MODEL,
-	method: Method.Read,
-	query: {},
+```typescript
+@Modify({
+	name: "hashPassword",
+	execute: async (payload) => {
+		payload.body.password = await hash(payload.body.password)
+		return payload
+	}
 })
-console.log(response)
-/*
-{
-  data: null,
-  status: false,
-  error: 'has_model',
-  validation_error: {}
+
+@Modify({
+	name: "addTimestamp",
+	execute: async (payload) => {
+		payload.body.createdAt = new Date()
+		return payload
+	}
+})
+
+@Modify({
+	name: "sanitizeInput",
+	execute: async (payload) => {
+		payload.body.content = sanitize(payload.body.content)
+		return payload
+	}
+})
+```
+
+### Lifecycle
+
+Each model operation goes through the following stages:
+
+1. pre-rule: Initial rule check
+2. pre-modify: Initial data transformation
+3. role: Authorization check
+4. modify: Data transformation
+5. rule: Rule check
+6. method: Main operation (create/read/update/delete)
+7. filter: Result filtering
+8. effect: Side effects
+9. global-effect: Global side effects
+
+```typescript
+const user = await User.create({
+	name: "John",
+	email: "john@example.com",
+	password: "secret123",
+})
+```
+
+## Data Types
+
+- string: Text fields
+- number: Numeric fields
+- boolean: Logical fields
+- date: Date fields
+- json: JSON data
+- array: Array fields
+- object: Object fields
+- enum: Enum fields
+- relation: Relational data fields
+
+## Database Operations
+
+### Create
+
+```typescript
+const user = await User.create({
+	name: "John",
+	email: "john@example.com",
+	password: "secret123",
+})
+```
+
+### Read
+
+```typescript
+// Get all users
+const users = await User.read()
+
+// Filtering
+const activeUsers = await User.read({
+	filter: {
+		status: "active",
+		age: { gt: 18 },
+	},
+})
+
+// Sorting
+const sortedUsers = await User.read({
+	orderBy: {
+		createdAt: "desc",
+	},
+})
+
+// Pagination
+const paginatedUsers = await User.read({
+	limit: 10,
+	offset: 0,
+})
+```
+
+### Update
+
+```typescript
+await User.update(
+	{ filter: { id: "123" } },
+	{
+		name: "John Doe",
+		email: "john.doe@example.com",
+	},
+)
+```
+
+### Delete
+
+```typescript
+await User.delete({
+	filter: { id: "123" },
+})
+```
+
+## Error Handling
+
+```typescript
+try {
+	await User.create({
+		name: "John",
+		email: "invalid-email",
+	})
+} catch (error) {
+	if (error instanceof FookieError) {
+		console.log(error.validationErrors)
+	}
 }
-*/
 ```
 
-## **Validation Errors**
+## Example Applications
 
-FookieJS provides a specific set of types and rules for the fields defined on the models. When data is entered that does
-not comply with these rules, the system automatically throws a validation error.
+### Blog Application
 
-```javascript
-import { Builder, Database, Dictionary, Method, Mixin, Role, run, Selection, Type, Types, use } from "fookie"
-;(async () => {
-	async function is_strong_password(password) {
-		var hasLowerCase = /[a-z]/.test(password)
-		var hasUpperCase = /[A-Z]/.test(password)
-		var hasNumbers = /\d/.test(password)
-		var hasSpecialChars = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/.test(
-			password,
-		)
+```typescript
+import { Model, Field, Role, Modify } from "@fookie/core"
 
-		return (
-			password.length >= 8 && hasLowerCase && hasUpperCase && hasNumbers &&
-			hasSpecialChars
-		)
-	}
+class Post extends Model {
+	@Field()
+	title!: string
 
-	async function is_email(email) {
-		var regex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/
-		return regex.test(email)
-	}
+	@Field()
+	content!: string
 
-	const account = await Builder.model({
-		name: "account",
-		database: Database.store,
-		schema: {
-			email: {
-				type: Fookie.Dictionary.type.string,
-				validators: [is_email],
-			},
-			password: {
-				type: Fookie.Dictionary.type.string,
-				validators: [is_strong_password],
-			},
-		},
-		bind: {
-			create: {
-				role: [Lifecycle.everybody],
-			},
-		},
+	@Field()
+	authorId!: string
+
+	@Field()
+	status!: "draft" | "published"
+
+	@Field()
+	createdAt!: Date
+
+	@Role({
+		name: "author",
+		execute: async (payload) => {
+			return payload.options.token === payload.body.authorId
+		}
 	})
 
-	const response = await Fookie.run({
-		model: account,
-		method: Method.Create,
-		body: {
-			email: "test",
-			password: "123456",
-		},
+	@Modify({
+		name: "addTimestamp",
+		execute: async (payload) => {
+			payload.body.createdAt = new Date()
+			return payload
+		}
 	})
-	console.log(response)
+}
 
-	/*
-{
-    data: null,
-    status: false,
-    error: "validate_body",
-    validation_error: {
-			email: ["is_email"],
-			password: ["is_strong_password"]
-		},
-  }
-  */
-})()
+// Create post
+const post = await Post.create({
+	title: "Hello World",
+	content: "This is a test post",
+	authorId: "user123",
+	status: "draft"
+})
+
+// Read posts
+const posts = await Post.read({
+	filter: {
+		status: "published",
+		authorId: "user123"
+	},
+	orderBy: {
+		createdAt: "desc"
+	}
+})
 ```
+
+### E-Commerce Application
+
+```typescript
+import { Model, Field, Role, Modify } from "@fookie/core"
+
+class Product extends Model {
+	@Field()
+	name!: string
+
+	@Field()
+	description!: string
+
+	@Field()
+	price!: number
+
+	@Field()
+	stock!: number
+
+	@Field()
+	categoryId!: string
+
+	@Role({
+		name: "admin",
+		execute: async (payload) => {
+			return payload.options.role === "admin"
+		}
+	})
+
+	@Modify({
+		name: "validateStock",
+		execute: async (payload) => {
+			if (payload.body.stock < 0) {
+				throw new Error("Stock cannot be negative")
+			}
+			return payload
+		}
+	})
+}
+
+// Create product
+const product = await Product.create({
+	name: "iPhone 13",
+	description: "Apple iPhone 13 128GB",
+	price: 999.99,
+	stock: 100,
+	categoryId: "electronics"
+})
+
+// Read products
+const products = await Product.read({
+	filter: {
+		categoryId: "electronics",
+		stock: { gt: 0 }
+	},
+	orderBy: {
+		price: "asc"
+	}
+})
+```
+
+## License
+
+MIT

@@ -5,9 +5,7 @@ import { fillSchema } from "./utils/fill-schema.ts"
 import * as lodash from "lodash"
 
 export class Field {
-	required?: boolean
 	type?: Type
-	unique?: boolean
 	uniqueGroup?: string[]
 	default?: unknown
 	validators?: [(value: unknown) => boolean | string]
