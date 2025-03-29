@@ -1,7 +1,10 @@
 # Fookie Core
 
-Fookie is a powerful TypeScript framework for modern web applications. It helps you easily manage database operations,
-authentication, authorization, and more.
+Fookie is a revolutionary model-based TypeScript framework that redefines how we build applications. By focusing on
+models as the core building blocks, it provides a powerful and intuitive way to handle data operations, business logic,
+and application flow. Unlike traditional frameworks, Fookie's model-centric approach brings unprecedented flexibility
+and type safety to your development process. Perfect for rapid prototyping, POCs, and startup projects, while still
+being powerful enough for large-scale applications.
 
 ## Features
 
@@ -13,6 +16,7 @@ authentication, authorization, and more.
 - 🔍 Advanced filtering and querying
 - ⚡ Performance optimization
 - 🛡️ Security-focused design
+- 📊 Built-in OpenTelemetry support for metrics, traces and logs
 
 ## Installation
 
@@ -29,6 +33,7 @@ Fookie includes the following core components:
 - Role: Authorization and access control
 - Modify: Data transformations
 - Lifecycle: Lifecycle management
+- OpenTelemetry: Built-in observability
 
 ## Core Components
 
@@ -96,28 +101,21 @@ createdAt!: Date
 
 ### Role
 
-Role decorator is used for authorization and access control.
+Role is used for authorization and access control.
 
 ```typescript
-@Role({
-	name: "admin",
+const adminRole = Role.create({
+	key: "admin",
 	execute: async (payload) => {
 		return payload.options.token === "admin-token"
-	}
+	},
 })
 
-@Role({
-	name: "owner",
+const ownerRole = Role.create({
+	key: "owner",
 	execute: async (payload) => {
 		return payload.options.userId === payload.body.authorId
-	}
-})
-
-@Role({
-	name: "loggedIn",
-	execute: async (payload) => {
-		return !!payload.options.token
-	}
+	},
 })
 ```
 
@@ -173,6 +171,25 @@ const user = await User.create({
 })
 ```
 
+### OpenTelemetry
+
+Fookie automatically collects metrics, traces and logs using Deno's built-in OpenTelemetry support.
+
+```typescript
+// Enable OpenTelemetry in deno.json
+{
+	"tasks": {
+		"start": "deno run --allow-all --trace-otel main.ts"
+	}
+}
+```
+
+When OpenTelemetry is enabled, Fookie automatically collects:
+
+- Metrics: Operation counts, latencies, error rates (WIP)
+- Traces: Request flow, database operations, lifecycle stages
+- Logs: Operation details, errors, warnings (WIP)
+
 ## Data Types
 
 - string: Text fields
@@ -206,7 +223,7 @@ const users = await User.read()
 // Filtering
 const activeUsers = await User.read({
 	filter: {
-		status: "active",
+		status: { equals: "active" },
 		age: { gt: 18 },
 	},
 })
@@ -229,7 +246,7 @@ const paginatedUsers = await User.read({
 
 ```typescript
 await User.update(
-	{ filter: { id: "123" } },
+	{ filter: { id: { equals: "123" } } },
 	{
 		name: "John Doe",
 		email: "john.doe@example.com",
@@ -241,7 +258,7 @@ await User.update(
 
 ```typescript
 await User.delete({
-	filter: { id: "123" },
+	filter: { id: { equals: "123" } },
 })
 ```
 
@@ -265,8 +282,25 @@ try {
 ### Blog Application
 
 ```typescript
-import { Model, Field, Role, Modify } from "@fookie/core"
+import { Field, Lifecycle, Method, Model, Modify, Role } from "@fookie/core"
 
+@Model.Decorator({
+	name: "posts",
+	database: defaults.database.store,
+	binds: {
+		[Method.CREATE]: {
+			[Lifecycle.MODIFY]: [
+				Modify.create({
+					key: "addTimestamp",
+					execute: async (payload) => {
+						payload.body.createdAt = new Date()
+						return payload
+					},
+				}),
+			],
+		},
+	},
+})
 class Post extends Model {
 	@Field()
 	title!: string
@@ -280,22 +314,14 @@ class Post extends Model {
 	@Field()
 	status!: "draft" | "published"
 
-	@Field()
+	@Field({ type: defaults.type.timestamp })
 	createdAt!: Date
 
-	@Role({
-		name: "author",
+	authorRole = Role.create({
+		key: "author",
 		execute: async (payload) => {
 			return payload.options.token === payload.body.authorId
-		}
-	})
-
-	@Modify({
-		name: "addTimestamp",
-		execute: async (payload) => {
-			payload.body.createdAt = new Date()
-			return payload
-		}
+		},
 	})
 }
 
@@ -304,26 +330,49 @@ const post = await Post.create({
 	title: "Hello World",
 	content: "This is a test post",
 	authorId: "user123",
-	status: "draft"
+	status: "draft",
 })
+
+console.log(post instanceof Post) // true
 
 // Read posts
 const posts = await Post.read({
 	filter: {
-		status: "published",
-		authorId: "user123"
+		status: { equals: "published" },
+		authorId: { equals: "user123" },
 	},
 	orderBy: {
-		createdAt: "desc"
-	}
+		createdAt: "desc",
+	},
 })
+
+console.log(posts[0] instanceof Post) // true
 ```
 
 ### E-Commerce Application
 
 ```typescript
-import { Model, Field, Role, Modify } from "@fookie/core"
+import { Field, Lifecycle, Method, Model, Modify, Role } from "@fookie/core"
 
+@Model.Decorator({
+	name: "products",
+	database: defaults.database.store,
+	binds: {
+		[Method.CREATE]: {
+			[Lifecycle.MODIFY]: [
+				Modify.create({
+					key: "validateStock",
+					execute: async (payload) => {
+						if (payload.body.stock < 0) {
+							throw new Error("Stock cannot be negative")
+						}
+						return payload
+					},
+				}),
+			],
+		},
+	},
+})
 class Product extends Model {
 	@Field()
 	name!: string
@@ -340,21 +389,11 @@ class Product extends Model {
 	@Field()
 	categoryId!: string
 
-	@Role({
-		name: "admin",
+	adminRole = Role.create({
+		key: "admin",
 		execute: async (payload) => {
 			return payload.options.role === "admin"
-		}
-	})
-
-	@Modify({
-		name: "validateStock",
-		execute: async (payload) => {
-			if (payload.body.stock < 0) {
-				throw new Error("Stock cannot be negative")
-			}
-			return payload
-		}
+		},
 	})
 }
 
@@ -364,21 +403,48 @@ const product = await Product.create({
 	description: "Apple iPhone 13 128GB",
 	price: 999.99,
 	stock: 100,
-	categoryId: "electronics"
+	categoryId: "electronics",
 })
+
+console.log(product instanceof Product) // true
 
 // Read products
 const products = await Product.read({
 	filter: {
-		categoryId: "electronics",
-		stock: { gt: 0 }
+		categoryId: { equals: "electronics" },
+		stock: { gt: 0 },
 	},
 	orderBy: {
-		price: "asc"
-	}
+		price: "asc",
+	},
 })
+
+console.log(products[0] instanceof Product) // true
 ```
 
 ## License
 
 MIT
+
+## Special Thanks
+
+- 🦕 [Deno](https://deno.land) - The modern runtime for JavaScript and TypeScript
+- 📦 [JSR](https://jsr.io) - The JavaScript Registry
+
+## Pros & Cons
+
+### Advantages
+
+- 🚀 Rapid development with plug-and-play functionality
+- 🔄 Automated API generation
+- 📦 Ecosystem of packages
+- 🎯 Type-safe development
+- 🔍 Built-in validation and error handling
+- ⚡ Easy to prototype and test ideas
+
+### Disadvantages
+
+- 🔄 Lazy loading approach may result in multiple requests
+- ⚡ Performance might not be optimal for high-frequency operations
+- 🔒 Role management can become complex in large applications
+- 🔄 Less control over database queries compared to raw SQL
