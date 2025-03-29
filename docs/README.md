@@ -30,9 +30,18 @@ Fookie includes the following core components:
 
 - Model: Define data structures
 - Field: Field types and validations
-- Role: Authorization and access control
-- Modify: Data transformations
 - Lifecycle: Lifecycle management
+  - pre-rule: Initial rule check
+  - pre-modify: Initial data transformation
+  - role: Authorization check
+  - modify: Data transformation
+  - rule: Rule check
+  - method: Main DB operation
+  - filter: Result filtering
+  - effect: Side effects
+  - global-pre-rule: Global initial rule check
+  - global-pre-modify: Global initial data transformation
+  - global-effect: Global side effects
 - OpenTelemetry: Built-in observability
 
 ## Core Components
@@ -199,7 +208,6 @@ When OpenTelemetry is enabled, Fookie automatically collects:
 - json: JSON data
 - array: Array fields
 - object: Object fields
-- enum: Enum fields
 - relation: Relational data fields
 
 ## Database Operations
@@ -359,14 +367,14 @@ import { Field, Lifecycle, Method, Model, Modify, Role } from "@fookie/core"
 	database: defaults.database.store,
 	binds: {
 		[Method.CREATE]: {
-			[Lifecycle.MODIFY]: [
-				Modify.create({
+			[Lifecycle.Rule]: [
+				Rule.create({
 					key: "validateStock",
 					execute: async (payload) => {
 						if (payload.body.stock < 0) {
-							throw new Error("Stock cannot be negative")
+							return true
 						}
-						return payload
+						return false
 					},
 				}),
 			],
