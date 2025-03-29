@@ -7,19 +7,7 @@ integrated CRUD functionalities. To dive into FookieJS and start building, pleas
 
 Please follow the documentation at [Fookie Documentation !](https://fookiejs.github.io/core/#/)
 
-## Sponsors
-
-The ongoing development and maintenance of FookieJS are made possible entirely by our esteemed sponsors and
-contributors. We're grateful for their support. If you are excited about FookieJS and want to be a part of this journey,
-consider sponsoring the project.
-
-## 🌟 Special Sponsor
-
-## 💠 Diamond Sponsor
-
-## 🟡 Gold Sponsor
-
-## ⚪ Iron Sponsor
+Join the community [Discord !](https://discord.gg/Y4BPxTUMsh)
 
 ## Support and Questions
 
