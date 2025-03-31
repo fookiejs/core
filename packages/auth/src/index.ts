@@ -16,9 +16,22 @@ import { verifyGoogleAccessToken } from "./google/google.ts"
 
 export const ACCOUNT = Symbol("account")
 
+export interface AuthReturn {
+	Account: typeof Model & {
+		new (): Model & {
+			iss: string
+			sub: string
+			email: string
+			name: string
+			picture: string
+		}
+	}
+	loggedIn: Role<Model, Method>
+}
+
 export function initAuth(
 	database: Database,
-) {
+): AuthReturn {
 	@Model.Decorator({
 		database,
 		binds: {
@@ -108,8 +121,5 @@ export function initAuth(
 			return payload.state[ACCOUNT] instanceof Account
 		},
 	})
-	return { loggedIn, Account } as {
-		Account: typeof Account
-		loggedIn: typeof loggedIn
-	}
+	return { loggedIn, Account }
 }
