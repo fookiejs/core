@@ -1,13 +1,13 @@
-version: '3.8'
+version: "3.8"
 
 services:
   lgtm-stack:
     image: grafana/otel-lgtm
     container_name: lgtm-stack
     ports:
-      - "3000:3000"  # Grafana UI
-      - "4317:4317"  # OTLP gRPC
-      - "4318:4318"  # OTLP HTTP
+      - "3000:3000" # Grafana UI
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
     volumes:
       - ./data/grafana:/data/grafana
       - ./data/prometheus:/data/prometheus
@@ -48,7 +48,6 @@ services:
       - "5432:5432"
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
-
 
 networks:
   otel-net:

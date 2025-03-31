@@ -46,8 +46,7 @@ export const database = Database.create({
 			[Method.DELETE]: async function (payload) {
 				const repo = getRepository(modelName)
 				const where = transformFilterToWhere(payload.query)
-				const res = await repo.delete(where)
-
+				await repo.delete(where)
 				return true
 			},
 		}

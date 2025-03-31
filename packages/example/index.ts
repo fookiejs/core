@@ -5,6 +5,7 @@ import { defaults, Field, Model } from "@fookiejs/core"
 import { initCache } from "@fookiejs/cache"
 import * as typeorm from "@fookiejs/typeorm"
 import * as pg from "pg"
+pg
 
 const cacheModule = initCache(typeorm.database)
 const database = typeorm.database

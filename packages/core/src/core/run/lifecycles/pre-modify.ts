@@ -1,5 +1,4 @@
 import type { Payload } from "../../payload.ts"
-import { FookieError } from "../../error.ts"
 import { globalPreModifies } from "../../mixin/binds/global.ts"
 import type { Method } from "../../method.ts"
 import type { Model } from "../../model/model.ts"

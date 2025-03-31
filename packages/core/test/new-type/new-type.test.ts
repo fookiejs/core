@@ -24,3 +24,5 @@ class ChildObject extends Model {
 	@Field.Decorator({ relation: RootObject })
 	root!: string
 }
+
+ChildObject
