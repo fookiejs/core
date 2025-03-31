@@ -38,13 +38,13 @@ export function initAuth(
 				role: [defaults.role.system],
 			},
 			[Method.READ]: {
-				role: [defaults.role.system, loggedIn],
+				role: [defaults.role.system],
 			},
 			[Method.UPDATE]: {
 				role: [defaults.role.system],
 			},
 			[Method.DELETE]: {
-				role: [defaults.role.system, loggedIn],
+				role: [defaults.role.system],
 			},
 		},
 	})
