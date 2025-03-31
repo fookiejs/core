@@ -14,7 +14,7 @@ import {
 import { system } from "../../core/src/defaults/role/system.ts"
 import { verifyGoogleAccessToken } from "./google/google.ts"
 
-const ACCOUNT = Symbol("account")
+export const ACCOUNT = Symbol("account")
 
 export function initAuth(
 	database: Database,
@@ -108,5 +108,8 @@ export function initAuth(
 			return payload.state[ACCOUNT] instanceof Account
 		},
 	})
-	return { loggedIn, Account }
+	return { loggedIn, Account } as {
+		Account: typeof Account
+		loggedIn: typeof loggedIn
+	}
 }

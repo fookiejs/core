@@ -1,4 +1,4 @@
-import { context, Span, SpanOptions, SpanStatusCode, trace } from "npm:@opentelemetry/api"
+import { context, Span, SpanOptions, SpanStatusCode, trace } from "npm:@opentelemetry/api@1.9.0"
 
 export class DisposableSpan implements Disposable {
 	private currentSpan: Span
