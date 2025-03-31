@@ -11,7 +11,6 @@ import {
 	Utils,
 } from "@fookiejs/core"
 
-import { system } from "../../core/src/defaults/role/system.ts"
 import { verifyGoogleAccessToken } from "./google/google.ts"
 
 export const ACCOUNT = Symbol("account")
@@ -36,16 +35,16 @@ export function initAuth(
 		database,
 		binds: {
 			[Method.CREATE]: {
-				role: [system],
+				role: [defaults.role.system],
 			},
 			[Method.READ]: {
-				role: [system],
+				role: [defaults.role.system],
 			},
 			[Method.UPDATE]: {
-				role: [system],
+				role: [defaults.role.system],
 			},
 			[Method.DELETE]: {
-				role: [system],
+				role: [defaults.role.system],
 			},
 		},
 	})
