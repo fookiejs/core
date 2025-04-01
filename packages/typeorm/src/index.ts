@@ -18,7 +18,7 @@ import { Database, defaults, Method, Model, models, QueryType, Utils } from "@fo
 const entityRegistry = new Map<string, EntitySchema>()
 let dataSource: DataSource | null = null
 
-export const database = Database.create({
+export const database: Database = Database.create({
 	key: "typeorm",
 	primaryKeyType: defaults.type.text,
 	modify: function (model: typeof Model) {
@@ -51,7 +51,7 @@ export const database = Database.create({
 			},
 		}
 	},
-})
+}) as Database
 
 function getRepository(entityName: string): Repository<any> {
 	if (!dataSource) {
@@ -102,7 +102,7 @@ function transformFilterToWhere(query: QueryType<any>): FindOptionsWhere<any> {
 	return where
 }
 
-export const initializeDataSource = async function (options: DataSourceOptions) {
+export const initializeDataSource = async function (options: DataSourceOptions): Promise<void> {
 	const entities = models.filter((model) => model.database().key === "typeorm").map((model) => {
 		const schema = model.schema()
 
