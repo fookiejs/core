@@ -1,9 +1,0 @@
-{
-	"name": "@fookiejs/examples",
-	"version": "0.3.0",
-	"exports": "./mod.ts",
-	"license": "MIT",
-	"imports": {
-		"pg": "npm:pg@8.12.0"
-	}
-}
