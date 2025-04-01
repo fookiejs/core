@@ -1,6 +1,6 @@
-[![Test and Publish](https://github.com/fookiejs/core/actions/workflows/deno.yml/badge.svg)](https://github.com/fookiejs/core/actions/workflows/deno.yml)
-
 # FookieJS/Core
+
+[![Test and Publish](https://github.com/fookiejs/core/actions/workflows/deno.yml/badge.svg)](https://github.com/fookiejs/core/actions/workflows/deno.yml)
 
 ## Getting Started
 
