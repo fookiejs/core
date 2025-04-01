@@ -30,10 +30,13 @@ interface ModelMethods<model extends Model> {
 
 export class Model {
 	id!: string
+	createdAt!: string
+	updatedAt!: string
+	deletedAt!: string | null
 
 	static async create<model extends Model>(
 		this: new () => model,
-		body: Omit<model, "id">,
+		body: Omit<model, "id" | "createdAt" | "updatedAt" | "deletedAt">,
 		options?: Optional<Options, "test" | "token">,
 	): Promise<model> {
 		body
@@ -54,7 +57,7 @@ export class Model {
 	static async update<model extends Model>(
 		this: new () => model,
 		query: QueryType<model>,
-		body: Partial<Omit<model, "id">>,
+		body: Partial<Omit<model, "id" | "createdAt" | "updatedAt" | "deletedAt">>,
 		options?: Optional<Options, "test" | "token">,
 	): Promise<boolean> {
 		query
@@ -166,7 +169,7 @@ export type BindsTypeField = {
 		| [
 			[
 				Role<Model, Method>,
-				{ modify: Modify<Model, Method>[]; rule: Rule<Model, Method>[] },
+				{ modify?: Modify<Model, Method>[]; rule?: Rule<Model, Method>[] },
 			],
 		]
 	rejects?:
@@ -174,7 +177,7 @@ export type BindsTypeField = {
 		| [
 			[
 				Role<Model, Method>,
-				{ modify: Modify<Model, Method>[]; rule: Rule<Model, Method>[] },
+				{ modify?: Modify<Model, Method>[]; rule?: Rule<Model, Method>[] },
 			],
 		]
 }

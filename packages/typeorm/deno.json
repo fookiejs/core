@@ -1,10 +1,10 @@
 {
 	"name": "@fookiejs/typeorm",
-	"version": "0.3.0",
+	"version": "0.4.0",
 	"exports": "./mod.ts",
 	"license": "MIT",
 	"imports": {
-		"@fookiejs/core": "jsr:@fookiejs/core@0.3.0",
+		"@fookiejs/core": "jsr:@fookiejs/core@0.4.0",
 		"typeorm": "npm:typeorm@0.3.21"
 	}
 }

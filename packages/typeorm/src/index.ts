@@ -2,6 +2,7 @@ import {
 	DataSource,
 	DataSourceOptions,
 	EntitySchema,
+	FindManyOptions,
 	FindOptionsWhere,
 	In,
 	IsNull,
@@ -32,7 +33,8 @@ export const database: Database = Database.create({
 
 			[Method.READ]: async function (payload) {
 				const repo = getRepository(modelName)
-				const options = transformQueryToFindOptions(payload.query)
+				const options: FindManyOptions = transformQueryToFindOptions(payload.query)
+				options.withDeleted = false
 				return repo.find(options)
 			},
 
@@ -46,7 +48,7 @@ export const database: Database = Database.create({
 			[Method.DELETE]: async function (payload) {
 				const repo = getRepository(modelName)
 				const where = transformFilterToWhere(payload.query)
-				await repo.delete(where)
+				await repo.softDelete(where)
 				return true
 			},
 		}
@@ -109,22 +111,53 @@ export const initializeDataSource = async function (options: DataSourceOptions):
 		const entity = new EntitySchema({
 			name: model.getName(),
 			tableName: model.getName(),
-			columns: Object.entries(schema).reduce((acc, [key, value]) => {
-				acc[key] = (key === "id")
-					? {
-						primary: true,
-						type: defaults.type.text.key,
-						nullable: false,
-					}
-					: {
-						type: Utils.includes(value.type.key, "[]") ? value.type.key.replace("[]", "") : value.type.key,
+			indices: [
+				{
+					name: "IDX_DELETED_AT",
+					columns: ["deletedAt"],
+				},
+			],
+			columns: {
+				id: {
+					primary: true,
+					type: defaults.type.text.key,
+					nullable: false,
+				},
+				createdAt: {
+					type: defaults.type.timestamp.key,
+					createDate: true,
+					nullable: false,
+				},
+				updatedAt: {
+					type: defaults.type.timestamp.key,
+					updateDate: true,
+					nullable: false,
+				},
+				deletedAt: {
+					type: defaults.type.timestamp.key,
+					nullable: true,
+					index: true,
+					deleteDate: true,
+				},
+				...Object.entries(schema).reduce((acc, [key, value]) => {
+					if (key === "id" || key === "createdAt" || key === "updatedAt" || key === "deletedAt") return acc
+					acc[key] = {
+						type: Utils.includes(value.type.key, "[]")
+							? value.type.key.replace("[]", "")
+							: value.type.key === "text"
+							? String
+							: value.type.key === "number"
+							? Number
+							: value.type.key === "boolean"
+							? Boolean
+							: Date,
 						array: Utils.includes(value.type.key, "[]"),
 						nullable: !value.features.includes(defaults.feature.required),
 						unique: value.features.includes(defaults.feature.unique),
 					}
-
-				return acc
-			}, {}),
+					return acc
+				}, {}),
+			},
 		})
 
 		entityRegistry.set(model.getName(), entity)

@@ -106,8 +106,18 @@ jobs:
 
       - name: Publish packages
         run: |
+          # First publish core package if it exists and has changes
+          if [ -f "packages/core/deno.json" ] && ([ "$core_changed" == "true" ] || echo "$changed_files" | grep -q "packages/core/"); then
+            echo "Publishing core package first..."
+            (cd "packages/core" && deno publish)
+          fi
+
+          # Then publish other packages
           for pkg in packages/*; do
-            if [ -f "$pkg/deno.json" ]; then
-              (cd "$pkg" && deno publish)
+            if [ "$pkg" != "packages/core" ] && [ -f "$pkg/deno.json" ]; then
+              if echo "$changed_files" | grep -q "$pkg"; then
+                echo "Publishing $pkg..."
+                (cd "$pkg" && deno publish)
+              fi
             fi
           done

@@ -2,6 +2,7 @@ import {
 	Config,
 	Database,
 	defaults,
+	Effect,
 	Field,
 	globalPreModifies,
 	Method,
@@ -12,25 +13,65 @@ import {
 } from "@fookiejs/core"
 
 import { verifyGoogleAccessToken } from "./google/google.ts"
+import { v4 } from "uuid"
+
+type IAccount = typeof Model & {
+	new (): Model & {
+		iss: string
+		sub: string
+		email: string
+		name: string
+		picture: string
+	}
+}
 
 export const ACCOUNT = Symbol("account")
 
 export interface AuthReturn {
-	Account: typeof Model & {
-		new (): Model & {
-			iss: string
-			sub: string
-			email: string
-			name: string
-			picture: string
-		}
-	}
+	Account: IAccount
 	loggedIn: Role<Model, Method>
 }
 
 export function initAuth(
 	database: Database,
 ): AuthReturn {
+	const loggedIn = Role.create({
+		key: "loggedIn",
+
+		async execute(payload: any) {
+			return payload.state[ACCOUNT] instanceof Account
+		},
+	})
+
+	const belongsToUser = Modify.create({
+		key: "belongsToUser",
+		async execute(payload) {
+			payload.query.filter["id"] = { equals: payload.state[ACCOUNT].id }
+		},
+	})
+
+	const anonymizeEmailSymbol = Symbol("anonymizeEmail")
+
+	const anonymizeEmail = Effect.create<Account, Method>({
+		key: "anonymizeEmail",
+		async execute(payload) {
+			const accounts = await payload.state[anonymizeEmailSymbol]
+
+			const ids = accounts.map((account) => account.id)
+			await Account.update({ filter: { id: { in: ids } } }, { email: `${v4()}@anonymized.anonymized` }, {
+				token: Config.SYSTEM_TOKEN,
+			})
+		},
+	})
+
+	const findAnonymizedEmail = Modify.create<Account, Method>({
+		key: "findAnonymizedEmail",
+		async execute(payload) {
+			const accounts = Account.read(payload.query, { token: Config.SYSTEM_TOKEN })
+			payload.state[anonymizeEmailSymbol] = accounts
+		},
+	})
+
 	@Model.Decorator({
 		database,
 		binds: {
@@ -38,13 +79,24 @@ export function initAuth(
 				role: [defaults.role.system],
 			},
 			[Method.READ]: {
-				role: [defaults.role.system],
+				role: [defaults.role.system, loggedIn],
+				accepts: [[loggedIn, {
+					modify: [belongsToUser],
+				}]],
 			},
 			[Method.UPDATE]: {
-				role: [defaults.role.system],
+				role: [defaults.role.system, loggedIn],
+				accepts: [[loggedIn, {
+					modify: [belongsToUser],
+				}]],
 			},
 			[Method.DELETE]: {
-				role: [defaults.role.system],
+				role: [defaults.role.system, loggedIn],
+				modify: [findAnonymizedEmail],
+				effect: [anonymizeEmail],
+				accepts: [[loggedIn, {
+					modify: [belongsToUser],
+				}]],
 			},
 		},
 	})
@@ -113,12 +165,5 @@ export function initAuth(
 
 	globalPreModifies.push(parseToken)
 
-	const loggedIn = Role.create({
-		key: "loggedIn",
-
-		async execute(payload: any) {
-			return payload.state[ACCOUNT] instanceof Account
-		},
-	})
 	return { loggedIn, Account }
 }

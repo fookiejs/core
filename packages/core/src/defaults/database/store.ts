@@ -9,16 +9,19 @@ export const store = Database.create({
 	key: "store",
 	primaryKeyType: types.text,
 	modify: function <T extends Model>() {
-		let pool: T[] = []
+		const pool: T[] = []
 		return {
 			[Method.CREATE]: async (payload: Payload<T, Method.CREATE>) => {
+				const now = new Date().toISOString()
+				payload.body.createdAt = now
+				payload.body.updatedAt = now
 				pool.push(payload.body)
 				return payload.body
 			},
 			[Method.READ]: async (payload: Payload<T, Method.READ>) => {
 				const matchingEntities: T[] = []
 				for (const entity of pool) {
-					if (isEntityMatchingQuery(entity, payload.query)) {
+					if (isEntityMatchingQuery(entity, payload.query) && !entity.deletedAt) {
 						matchingEntities.push(entity)
 					}
 				}
@@ -45,7 +48,7 @@ export const store = Database.create({
 			},
 			[Method.UPDATE]: async (payload: Payload<T, Method.UPDATE>) => {
 				for (const entity of pool) {
-					if (isEntityMatchingQuery(entity, payload.query)) {
+					if (isEntityMatchingQuery(entity, payload.query) && !entity.deletedAt) {
 						Object.keys(payload.body).forEach((key) => {
 							;(entity as Record<string, any>)[key] = (
 								payload.body as Record<string, any>
@@ -56,15 +59,11 @@ export const store = Database.create({
 				return true
 			},
 			[Method.DELETE]: async (payload: Payload<T, Method.DELETE>) => {
-				const newPool: T[] = []
-
 				for (const entity of pool) {
-					if (!isEntityMatchingQuery(entity, payload.query)) {
-						newPool.push(entity)
+					if (isEntityMatchingQuery(entity, payload.query)) {
+						entity.deletedAt = new Date().toISOString()
 					}
 				}
-
-				pool = newPool
 				return true
 			},
 		}

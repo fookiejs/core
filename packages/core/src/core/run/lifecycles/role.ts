@@ -18,10 +18,14 @@ const role = async function (payload: Payload<Model, Method>) {
 		return true
 	}
 
+	let anyRoleAccepted = false
+	let lastRoleKey = ""
+
 	for (let i = 0; i < roles.length; i++) {
 		using _roleSpan = DisposableSpan.add(roles[i].key)
 
 		const role = roles[i]
+		lastRoleKey = role.key
 		const res = await role.execute(payload)
 		const field = payload.model.binds()[payload.method]!
 
@@ -31,7 +35,7 @@ const role = async function (payload: Payload<Model, Method>) {
 			const modifies = lodash.flatten(
 				(field.accepts || [])
 					.filter((r) => r[0] === role)
-					?.map((item) => item[1].modify),
+					?.map((item) => item[1].modify || []),
 			)
 
 			for (const modify of modifies) {
@@ -42,7 +46,7 @@ const role = async function (payload: Payload<Model, Method>) {
 			const extra_rules = lodash.flatten(
 				(field.accepts || [])
 					.filter((r) => r[0] === role)
-					?.map((item) => item[1].rule),
+					?.map((item) => item[1].rule || []),
 			)
 
 			for (const rule of extra_rules) {
@@ -52,13 +56,10 @@ const role = async function (payload: Payload<Model, Method>) {
 			}
 
 			if (extra_rule_responses.includes(false)) {
-				throw FookieError.create({
-					message: "accepts:extra_rule",
-					validationErrors: {},
-					name: role.key,
-				})
+				continue
 			}
 
+			anyRoleAccepted = true
 			break
 		} else {
 			const extra_rule_responses: boolean[] = []
@@ -66,7 +67,7 @@ const role = async function (payload: Payload<Model, Method>) {
 			const modifies = lodash.flatten(
 				(field.rejects || [])
 					.filter((r) => r[0] === role)
-					?.map((item) => item[1].modify),
+					?.map((item) => item[1].modify || []),
 			)
 
 			for (const modify of modifies) {
@@ -74,14 +75,10 @@ const role = async function (payload: Payload<Model, Method>) {
 				await modify.execute(payload)
 			}
 
-			if (modifies.length > 0) {
-				extra_rule_responses.push(true)
-			}
-
 			const extra_rules = lodash.flatten(
 				(field.rejects || [])
 					.filter((r) => r[0] === role)
-					?.map((item) => item[1].rule),
+					?.map((item) => item[1].rule || []),
 			)
 
 			for (const rule of extra_rules) {
@@ -90,21 +87,23 @@ const role = async function (payload: Payload<Model, Method>) {
 				extra_rule_responses.push(extra_rule_response)
 			}
 
-			if (
-				extra_rule_responses.includes(false) ||
-				extra_rule_responses.length === 0
-			) {
-				throw FookieError.create({
-					message: "rejects:extra_rule",
-					validationErrors: {},
-					name: role.key,
-				})
-			}
-
-			if (extra_rule_responses.length === 0) {
+			if (extra_rules.length > 0 && extra_rule_responses.every((response) => response === true)) {
+				anyRoleAccepted = true
 				break
 			}
+
+			if (extra_rule_responses.includes(false)) {
+				continue
+			}
 		}
+	}
+
+	if (!anyRoleAccepted) {
+		throw FookieError.create({
+			message: "No role accepted the request",
+			validationErrors: {},
+			name: lastRoleKey,
+		})
 	}
 
 	return true

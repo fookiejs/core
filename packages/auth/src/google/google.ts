@@ -25,7 +25,7 @@ export async function verifyGoogleAccessToken(
 			picture: data.picture || "",
 		}
 
-		if (!data.email || !data.sub) {
+		if (data.email) {
 			try {
 				const userInfoResponse = await fetch(
 					`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${token}`,
@@ -42,7 +42,7 @@ export async function verifyGoogleAccessToken(
 					}
 				}
 			} catch (error) {
-				console.error("Access token validation error:", error)
+				console.error("User info fetch error:", error)
 			}
 		}
 
