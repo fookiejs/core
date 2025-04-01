@@ -4,8 +4,7 @@
 		"packages/graphql",
 		"packages/cache",
 		"packages/typeorm",
-		"packages/auth",
-		"packages/example"
+		"packages/auth"
 	],
 
 	"imports": {
@@ -42,7 +41,12 @@
 		"include": ["packages/**/*.ts"],
 		"rules": {
 			"tags": ["recommended"],
-			"exclude": ["no-explicit-any", "require-await", "no-slow-types", "no-this-alias"]
+			"exclude": [
+				"no-explicit-any",
+				"require-await",
+				"no-slow-types",
+				"no-this-alias"
+			]
 		}
 	},
 	"license": "MIT"
