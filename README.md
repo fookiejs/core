@@ -24,7 +24,7 @@ report. Non-compliant issues might be closed without further inspection.
 ## Contribution
 
 Thinking of contributing to FookieJS? That's awesome! Make sure you read our Contributing Guide before sending a pull
-request. Have a FookieJS related tool or project? Send a PR to our curated list and showcase it to the community.
+request. Have a FookieJS related tool or project? Send a PR to our curated list and showcase it to the community..
 
 ## License
 
