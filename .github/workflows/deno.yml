@@ -107,7 +107,8 @@ jobs:
       - name: Publish packages
         run: |
           for pkg in packages/*; do
-            if [ -f "$pkg/deno.json" ]; then
+            if [ -d "$pkg" ] && [ -f "$pkg/deno.json" ]; then
+              echo "Publishing $pkg..."
               (cd "$pkg" && deno publish)
             fi
           done
