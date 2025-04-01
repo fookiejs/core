@@ -13,7 +13,7 @@ export class FookieDataLoader {
 		this.batchLoadFn = batchLoadFn
 	}
 
-	getLoader(modelName: string, model: FookieModel) {
+	getLoader(modelName: string, model: FookieModel): DataLoader {
 		if (!this.loaders.has(modelName)) {
 			this.loaders.set(
 				modelName,
