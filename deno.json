@@ -4,8 +4,7 @@
 		"packages/graphql",
 		"packages/cache",
 		"packages/typeorm",
-		"packages/auth",
-		"packages/example"
+		"packages/auth"
 	],
 
 	"imports": {
