@@ -10,16 +10,18 @@ import { Payload } from "../payload.ts"
 import * as lodash from "lodash"
 import { fillSchema } from "../field/utils/fill-schema.ts"
 import { Utils } from "../../utils/util.ts"
+import { Type } from "../type.ts"
+import { Field } from "../field/field.ts"
 
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
 
 export const models: (typeof Model)[] = []
 
 export const schemaSymbol = Symbol("schema")
-const bindsSymbol = Symbol("binds")
+export const bindsSymbol = Symbol("binds")
 export const databaseSymbol = Symbol("database")
-const mixinsSymbol = Symbol("mixins")
-const modelNameSymbol = Symbol("modelName")
+export const mixinsSymbol = Symbol("mixins")
+export const modelNameSymbol = Symbol("modelName")
 
 interface ModelMethods<model extends Model> {
 	create: (payload: Payload<model, Method.CREATE>) => Promise<model>
@@ -28,20 +30,30 @@ interface ModelMethods<model extends Model> {
 	delete: (payload: Payload<model, Method.DELETE>) => Promise<boolean>
 }
 
+interface FookieDecoratorContext {
+	metadata?: {
+		[schemaSymbol]?: Record<string, Field>
+		[bindsSymbol]?: BindsType
+		[databaseSymbol]?: Database
+		[mixinsSymbol]?: Mixin[]
+		[modelNameSymbol]?: string
+		[key: symbol]: any
+	}
+	name?: string | symbol
+}
+
 export class Model {
-	id!: string
-	createdAt!: string
-	updatedAt!: string
-	deletedAt!: string | null
+	id?: string
+	createdAt?: string
+	updatedAt?: string
+	deletedAt?: string | null
 
 	static async create<model extends Model>(
 		this: new () => model,
 		body: Omit<model, "id" | "createdAt" | "updatedAt" | "deletedAt">,
 		options?: Optional<Options, "test" | "token">,
 	): Promise<model> {
-		body
-		options
-		throw Error("Not implemented")
+		throw new Error("Not implemented - assigned by decorator")
 	}
 
 	static async read<model extends Model>(
@@ -49,9 +61,7 @@ export class Model {
 		query?: Partial<QueryType<model>>,
 		options?: Optional<Options, "test" | "token">,
 	): Promise<model[]> {
-		query
-		options
-		throw Error("Not implemented")
+		throw new Error("Not implemented - assigned by decorator")
 	}
 
 	static async update<model extends Model>(
@@ -60,10 +70,7 @@ export class Model {
 		body: Partial<Omit<model, "id" | "createdAt" | "updatedAt" | "deletedAt">>,
 		options?: Optional<Options, "test" | "token">,
 	): Promise<boolean> {
-		query
-		body
-		options
-		throw Error("Not implemented")
+		throw new Error("Not implemented - assigned by decorator")
 	}
 
 	static async delete<model extends Model>(
@@ -71,9 +78,7 @@ export class Model {
 		query: Partial<QueryType<model>>,
 		options?: Optional<Options, "test" | "token">,
 	): Promise<boolean> {
-		query
-		options
-		throw Error("Not implemented")
+		throw new Error("Not implemented - assigned by decorator")
 	}
 
 	static schema<model extends Model>(this: new () => model): SchemaType<model> {
@@ -89,15 +94,27 @@ export class Model {
 		return this[Symbol.metadata][mixinsSymbol] as Mixin[]
 	}
 
-	static Decorator<M extends Model>(model: ModelTypeInput): (constructor: typeof Model, descriptor: any) => void {
-		return function (constructor: typeof Model, descriptor: any) {
-			const existingModel = models.find((m) => m.getName() === model.name)
+	static Decorator<M extends Model>(
+		model: ModelTypeInput,
+	): (constructor: typeof Model, descriptor: FookieDecoratorContext) => void {
+		return function (constructor: typeof Model, descriptor: FookieDecoratorContext) {
+			if (!descriptor || !descriptor.metadata) {
+				console.warn("Model decorator missing descriptor or metadata, initializing.")
+				descriptor = { metadata: {} }
+			}
+			descriptor.metadata[schemaSymbol] = descriptor.metadata[schemaSymbol] ?? {}
+			descriptor.metadata[bindsSymbol] = descriptor.metadata[bindsSymbol] ?? {}
+			descriptor.metadata[mixinsSymbol] = descriptor.metadata[mixinsSymbol] ?? []
+			descriptor.metadata[modelNameSymbol] = descriptor.metadata[modelNameSymbol] ?? ""
+
+			const modelName = model.name || constructor.name
+			const existingModel = models.find((m) => m.getName() === modelName)
 			if (existingModel) {
-				throw new Error(`Model "${constructor.name}" already exists`)
+				throw new Error(`Model "${modelName}" already exists`)
 			}
 
 			if (!model.name) {
-				model.name = constructor.name
+				model.name = modelName
 			}
 
 			const modelCopy: ModelTypeInput = {
@@ -106,26 +123,35 @@ export class Model {
 				mixins: model.mixins ? [...model.mixins] : [],
 			}
 
-			descriptor.metadata[schemaSymbol]["id"] = fillSchema({
-				type: modelCopy.database.primaryKeyType,
+			if (!modelCopy.database) {
+				throw new Error(`Model definition for "${modelName}" must include a database configuration.`)
+			}
+			if (!modelCopy.database.primaryKeyType) {
+				throw new Error(`Database definition for model "${modelName}" must include primaryKeyType.`)
+			}
+			const primaryKeyType = modelCopy.database.primaryKeyType as Type
+
+			const schemaMeta = descriptor.metadata[schemaSymbol] as Record<string, Field>
+			schemaMeta["id"] = fillSchema({
+				type: primaryKeyType,
 			})
 
-			for (const key in descriptor.metadata[schemaSymbol]) {
-				const field = descriptor.metadata[schemaSymbol][key]
+			for (const key in schemaMeta) {
+				const field = schemaMeta[key]
 				if (Utils.has(field, "relation")) {
-					field.type = modelCopy.database.primaryKeyType
+					if (field.type !== primaryKeyType) {
+						field.type = primaryKeyType
+					}
 				}
 			}
 
 			const filledModel = fillModel(modelCopy)
-			const methods = filledModel.database.modify<M>(
-				filledModel as unknown as typeof Model,
-			) as unknown as ModelMethods<M>
+			const methods: ModelMethods<M> = filledModel.database.modify(constructor)
 
 			descriptor.metadata[bindsSymbol] = filledModel.binds
 			descriptor.metadata[databaseSymbol] = filledModel.database
 			descriptor.metadata[mixinsSymbol] = filledModel.mixins
-			descriptor.metadata[modelNameSymbol] = model.name
+			descriptor.metadata[modelNameSymbol] = modelName
 
 			constructor.create = createRun(methods.create) as typeof Model.create
 			constructor.read = readRun(methods.read) as typeof Model.read
@@ -137,7 +163,8 @@ export class Model {
 	}
 
 	static getName(): string {
-		return Reflect.getMetadata("modelName", this) || this.name
+		const nameFromMeta = this[Symbol.metadata]?.[modelNameSymbol]
+		return typeof nameFromMeta === "string" && nameFromMeta ? nameFromMeta : this.name
 	}
 }
 

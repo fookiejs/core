@@ -120,23 +120,22 @@ export const initializeDataSource = async function (options: DataSourceOptions):
 			columns: {
 				id: {
 					primary: true,
-					type: defaults.type.text.key,
+					type: "varchar",
 					nullable: false,
 				},
 				createdAt: {
-					type: defaults.type.timestamp.key,
+					type: "timestamp",
 					createDate: true,
 					nullable: false,
 				},
 				updatedAt: {
-					type: defaults.type.timestamp.key,
+					type: "timestamp",
 					updateDate: true,
 					nullable: false,
 				},
 				deletedAt: {
-					type: defaults.type.timestamp.key,
+					type: "timestamp",
 					nullable: true,
-					index: true,
 					deleteDate: true,
 				},
 				...Object.entries(schema).reduce((acc, [key, value]) => {

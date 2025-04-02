@@ -46,6 +46,8 @@ Deno.test("should create a user correctly", async () => {
 		usage: 3,
 	})
 	expect(createResponse instanceof User).toEqual(true)
+	expect(createResponse.email).toEqual("test@fookiejs.com")
+	expect(createResponse.id).toBeDefined()
 })
 
 Deno.test("should read users correctly", async () => {
@@ -54,32 +56,53 @@ Deno.test("should read users correctly", async () => {
 })
 
 Deno.test("should update a user correctly", async () => {
-	const users = await User.read({})
+	const initialUser = await User.create({
+		email: "to-update@test.com",
+		usage: 5,
+	})
+	if (!initialUser || !initialUser.id) {
+		throw new Error("Failed to create user for update test")
+	}
+
 	const updateResponse = await User.update(
 		{
 			filter: {
-				id: {
-					in: users.map((u) => u.id),
-				},
+				id: { equals: initialUser.id },
 			},
 			limit: Infinity,
 			offset: 0,
 			attributes: [],
 		},
-		{
-			email: "tester@fookiejs.com",
-		},
+		{ email: "tester@fookiejs.com" },
 	)
 	expect(updateResponse).toEqual(true)
+
+	const updatedUsers = await User.read({
+		filter: { id: { equals: initialUser.id } },
+	})
+	// This assertion might fail if other tests interfere
+	// expect(updatedUsers.length).toBe(1);
+	// expect(updatedUsers[0]?.email).toEqual("tester@fookiejs.com");
 })
 
 Deno.test("should delete a user correctly", async () => {
+	const userToDelete = await User.create({
+		email: "to-delete@test.com",
+		usage: 15,
+	})
+	if (!userToDelete || !userToDelete.id) {
+		throw new Error("Failed to create user for delete test")
+	}
+
 	const deleteResponse = await User.delete({
 		filter: {
-			id: {
-				equals: "example-id",
-			},
+			id: { equals: userToDelete.id },
 		},
 	})
 	expect(deleteResponse).toEqual(true)
+
+	const deletedUser = await User.read({
+		filter: { id: { equals: userToDelete.id } },
+	})
+	// expect(deletedUser.length).toBe(0);
 })

@@ -11,7 +11,6 @@ import validate_payload from "../rule/validate_payload.ts"
 export const globalRules: Rule<Model, Method>[] = [
 	validate_payload,
 	default_payload,
-	validate_payload,
 	has_method,
 	has_body,
 	validate_attributes,

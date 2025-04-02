@@ -1,5 +1,5 @@
 import type { Options } from "../option.ts"
-import type { ConstructorOf, Payload } from "../payload.ts"
+import type { ModelConstructor, Payload } from "../payload.ts"
 import * as lodash from "lodash"
 import pre_rule from "./lifecycles/pre-rule.ts"
 import modify from "./lifecycles/modify.ts"
@@ -15,22 +15,27 @@ import { Method } from "../method.ts"
 import type { MethodResponse } from "../response.ts"
 import { DisposableSpan } from "../../otel/index.ts"
 import preModify from "./lifecycles/pre-modify.ts"
+import { v4 as uuidv4 } from "uuid"
+import { State } from "../state.ts"
 
 function createPayload<T extends Model, M extends Method>(
-	payload: Omit<Payload<T, M>, "runId" | "state">,
+	payloadInput: Omit<Payload<T, M>, "runId" | "state" | "model"> & { modelConstructor: typeof Model },
 ): Payload<T, M> {
 	return {
-		...payload,
-		runId: "abc",
-		state: {},
+		...(payloadInput as Omit<Payload<T, M>, "runId" | "state" | "model">),
+		model: payloadInput.modelConstructor as ModelConstructor<T>,
+		runId: uuidv4(),
+		state: new State(),
 	}
 }
 
 async function runLifecycle<T extends Model, M extends Method>(
 	payload: Payload<T, M>,
-	method: (payload: Payload<T, M>) => Promise<MethodResponse<T>[M]>,
+	dbMethod: (payload: Payload<T, M>) => Promise<MethodResponse<T>[M]>,
 ) {
-	using _span = new DisposableSpan(`run:${payload.model.getName()}:${payload.method}`)
+	const modelName = payload.model.getName()
+
+	using _span = new DisposableSpan(`run:${modelName}:${payload.method}`)
 
 	if (await pre_rule(payload)) {
 		await preModify(payload)
@@ -42,13 +47,11 @@ async function runLifecycle<T extends Model, M extends Method>(
 					payload.model,
 					lodash.isString(payload.state.cachedResponse)
 						? JSON.parse(payload.state.cachedResponse!)
-						: await method(payload),
+						: await dbMethod(payload),
 				) as MethodResponse<T>[M]
-
 				await filter(payload, response)
 				await effect(payload, response)
 				await globalEffect(payload, response)
-
 				return response
 			}
 		}
@@ -56,8 +59,8 @@ async function runLifecycle<T extends Model, M extends Method>(
 
 	throw FookieError.create({
 		validationErrors: {},
-		message: "core error",
-		name: "unknown",
+		message: "Lifecycle execution failed or was rejected.",
+		name: "LifecycleError",
 	})
 }
 
@@ -65,11 +68,11 @@ export function createRun<T extends Model>(
 	method: (payload: Payload<T, Method.CREATE>) => Promise<T>,
 ) {
 	return async function (this: typeof Model, body: T, options: Options = {}) {
-		const payload = createPayload({
+		const payload = createPayload<T, Method.CREATE>({
 			method: Method.CREATE,
 			body,
 			options,
-			model: this as unknown as ConstructorOf<T>,
+			modelConstructor: this,
 			query: {
 				limit: Infinity,
 				offset: 0,
@@ -90,12 +93,12 @@ export function readRun<T extends Model>(
 		query: QueryType<T>,
 		options: Options = {},
 	) {
-		const payload = createPayload({
+		const payload = createPayload<T, Method.READ>({
 			method: Method.READ,
 			query,
 			options,
-			model: this as unknown as ConstructorOf<T>,
-			body: {},
+			modelConstructor: this,
+			body: {} as Partial<T>,
 		})
 		return runLifecycle(payload, method)
 	}
@@ -110,12 +113,12 @@ export function updateRun<T extends Model>(
 		body: Partial<T>,
 		options: Options = {},
 	) {
-		const payload = createPayload({
+		const payload = createPayload<T, Method.UPDATE>({
 			method: Method.UPDATE,
 			query,
 			body,
 			options,
-			model: this as unknown as ConstructorOf<T>,
+			modelConstructor: this,
 		})
 		return runLifecycle(payload, method)
 	}
@@ -129,12 +132,12 @@ export function deleteRun<T extends Model>(
 		query: QueryType<T>,
 		options: Options = {},
 	) {
-		const payload = createPayload({
+		const payload = createPayload<T, Method.DELETE>({
 			method: Method.DELETE,
 			query,
 			options,
-			model: this as unknown as ConstructorOf<T>,
-			body: {},
+			modelConstructor: this,
+			body: {} as Partial<T>,
 		})
 		return runLifecycle(payload, method)
 	}
