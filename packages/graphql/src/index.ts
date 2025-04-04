@@ -1,8 +1,16 @@
-import { ApolloServer } from "npm:@apollo/server@4.11"
-import { defaults, models, Utils } from "@fookiejs/core"
-import * as collections from "@std/collections"
+import { defaults, Method, Model, models } from "@fookiejs/core"
+
 import { FookieDataLoader } from "./dataloader.ts"
-import { Resolvers, TypeDefs } from "./types.ts"
+import { Resolvers, TypeDefs, TypeField } from "./types.ts"
+import { PubSub } from "npm:graphql-subscriptions@2.0.0"
+
+const pubsub = new PubSub()
+
+let resolveAccountId: ((token: string) => Promise<string | null>) | null = null
+
+export function setResolveAccountId(resolver: (token: string) => Promise<string | null>) {
+	resolveAccountId = resolver
+}
 
 const graphqlNativeTypes = ["String", "Int", "Float", "Boolean", "ID"]
 
@@ -60,14 +68,14 @@ function generate_filter_types(): string {
 	})
 
 	for (const config of filterConfigs) {
-		result += `\ninput ${config.name} {\n`
+		result += `input ${config.name} {\n`
 		for (const field of config.fields) {
 			result += `  ${field.name}: ${field.type}\n`
 		}
-		result += `}\n`
+		result += `}\n\n`
 	}
 
-	return result
+	return result.trim()
 }
 
 const filter_types = generate_filter_types()
@@ -125,17 +133,166 @@ function resolve_input(typeStr: string, field: any = null): string {
 	return "string_filter"
 }
 
-export function createServer(): ApolloServer {
+export function publishEvent(accountId: string, model: typeof Model, method: Method, data: any) {
+	const modelName = model.getName()
+	const eventName = `${modelName}_${method}.${accountId}`
+	pubsub.publish(eventName, data)
+}
+
+export function createTypeDefs(): { typeDefs: string } {
 	const typeDefs: TypeDefs = {
 		input: {},
 		type: {},
 		Query: {},
 		Mutation: {},
+		Subscription: {},
+	}
+
+	for (const model of models) {
+		const modelName = model.getName()
+
+		typeDefs.type[modelName] = {
+			id: { value: "ID" } as TypeField,
+			...Object.fromEntries(
+				Object.entries((model as any).fields).map(([key, field]) => [
+					key,
+					{ value: resolve_type(field) } as TypeField,
+				]),
+			),
+		}
+
+		typeDefs.Subscription[`${modelName}Created`] = modelName
+		typeDefs.Subscription[`${modelName}Updated`] = modelName
+		typeDefs.Subscription[`${modelName}Deleted`] = "ID"
+	}
+
+	const subscriptionFields = Object.entries(typeDefs.Subscription)
+		.map(([key, value]) => `  ${key}: ${value}`)
+		.join("\n")
+
+	const modelTypes = models.map((model) => {
+		const modelName = model.getName()
+		const fields = Object.entries(typeDefs.type[modelName] || {})
+			.map(([key, value]) => `  ${key}: ${value.value}`)
+			.join("\n")
+		if (!fields) return ""
+		return `type ${modelName} {\n${fields}\n}`
+	}).filter(Boolean).join("\n\n")
+
+	const typeDefsString = `
+scalar DateTime
+
+input DateFilter {
+  equals: DateTime
+  notEquals: DateTime
+  gt: DateTime
+  gte: DateTime
+  lt: DateTime
+  lte: DateTime
+  isNull: Boolean
+}
+
+${filter_types}
+
+${modelTypes}
+
+${
+		subscriptionFields
+			? `type Subscription {
+${subscriptionFields}
+}`
+			: ""
+	}
+`
+
+	return { typeDefs: typeDefsString }
+}
+
+export function createContext(req: any) {
+	const token = req.headers.authorization?.replace("Bearer ", "") || ""
+	return { token }
+}
+
+export function createResolvers(): { resolvers: Resolvers } {
+	const resolvers: Resolvers = {
+		Query: {},
+		Mutation: {},
+		Subscription: {},
+	}
+
+	for (const model of models) {
+		const modelName = model.getName()
+
+		resolvers.Subscription[`${modelName}Created`] = {
+			subscribe: async (_, __, context) => {
+				if (!context?.token) throw new Error("Unauthorized")
+				if (!resolveAccountId) throw new Error("ResolveAccountId hook not set")
+
+				const accountId = await resolveAccountId(context.token)
+				if (!accountId) throw new Error("Unauthorized")
+
+				const eventName = `${modelName}_${Method.CREATE}.${accountId}`
+				return pubsub.asyncIterator(eventName)
+			},
+			resolve: (payload) => payload,
+		}
+
+		resolvers.Subscription[`${modelName}Updated`] = {
+			subscribe: async (_, __, context) => {
+				if (!context?.token) throw new Error("Unauthorized")
+				if (!resolveAccountId) throw new Error("ResolveAccountId hook not set")
+
+				const accountId = await resolveAccountId(context.token)
+				if (!accountId) throw new Error("Unauthorized")
+
+				const eventName = `${modelName}_${Method.UPDATE}.${accountId}`
+				return pubsub.asyncIterator(eventName)
+			},
+			resolve: (payload) => payload,
+		}
+
+		resolvers.Subscription[`${modelName}Deleted`] = {
+			subscribe: async (_, __, context) => {
+				if (!context?.token) throw new Error("Unauthorized")
+				if (!resolveAccountId) throw new Error("ResolveAccountId hook not set")
+
+				const accountId = await resolveAccountId(context.token)
+				if (!accountId) throw new Error("Unauthorized")
+
+				const eventName = `${modelName}_${Method.DELETE}.${accountId}`
+				return pubsub.asyncIterator(eventName)
+			},
+			resolve: (payload) => payload,
+		}
+	}
+
+	return { resolvers }
+}
+
+export function createGraphQL() {
+	const typeDefs: TypeDefs = {
+		input: {},
+		type: {},
+		Query: {},
+		Mutation: {},
+		Subscription: {},
 	}
 
 	const resolvers: Resolvers = {
 		Query: {},
 		Mutation: {},
+		Subscription: {},
+		DateTime: {
+			serialize: (value: any) => {
+				if (value instanceof Date) {
+					return value.toISOString()
+				}
+				return value
+			},
+			parseValue: (value: any) => {
+				return new Date(value)
+			},
+		},
 	}
 
 	for (const model of models) {
@@ -143,392 +300,193 @@ export function createServer(): ApolloServer {
 			throw Error("Model name can not be 'Query'")
 		}
 
-		const typeFields: Record<string, any> = {}
-		const inputFields: Record<string, any> = {}
-
-		const pk_field = {
-			type: defaults.type.text,
-			required: true,
-		}
-
-		typeFields["id"] = {
-			value: resolve_type(pk_field),
-			field: pk_field,
-			is_pk: true,
-		}
-
+		const modelName = model.getName()
 		const schema = model.schema() as Record<string, any>
-		for (const field of Utils.keys(schema)) {
-			const fieldConfig = schema[field] as any
-			const temp_type = resolve_type(fieldConfig)
-			const temp_input = temp_type
 
-			if ((schema[field] as any).relation) {
-				typeFields[`${field}_entity`] = {
-					value: `${(schema[field] as any).relation.getName()}`,
-				}
-			}
-
-			typeFields[field] = { value: temp_type, field: fieldConfig }
-			inputFields[field] = { value: temp_input, field: fieldConfig }
-
-			if ((schema[field] as any).relation) {
-				if (!resolvers[model.getName()]) {
-					resolvers[model.getName()] = {}
-				}
-
-				resolvers[model.getName()][field + "_entity"] = async function (
-					parent: any,
-					_: any,
-					context: any,
-				) {
-					if (!parent[field]) return null
-
-					try {
-						const relatedModel = fieldConfig.relation
-
-						return await relatedModel.read({ filter: { id: { equals: parent[field] } } }, {
-							token: context.token || "",
-						})
-							.then((results) => Array.isArray(results) && results.length > 0 ? results[0] : null)
-					} catch (error) {
-						console.error("RELATION ERROR:", error)
-						return null
-					}
-				}
-
-				if (field.startsWith("all_")) {
-					if (!resolvers[model.getName()]) {
-						resolvers[model.getName()] = {}
-					}
-
-					resolvers[model.getName()][field] = async function (
-						parent: any,
-						{ query = {} }: any,
-						context: any,
-					) {
-						const token = context.token || ""
-
-						const queryObj: any = collections.omit(query, [field] as unknown as [])
-						if (!queryObj.filter) {
-							queryObj.filter = {}
-						}
-
-						queryObj.filter[field] = { equals: parent.id }
-
-						const response = await model.read(queryObj, { token })
-						return Array.isArray(response) ? response : []
-					}
-				}
-			}
+		typeDefs.type[modelName] = {
+			id: { value: "ID" } as TypeField,
+			...Object.fromEntries(
+				Object.entries(schema).map(([key, field]) => [
+					key,
+					{ value: resolve_type(field) } as TypeField,
+				]),
+			),
 		}
 
-		typeDefs.input[model.getName()] = inputFields
-		typeDefs.type[model.getName()] = typeFields
-		typeDefs.Query[model.getName()] = { value: `${model.getName()}_query` }
+		typeDefs.Subscription[`${modelName}Created`] = modelName
+		typeDefs.Subscription[`${modelName}Updated`] = modelName
+		typeDefs.Subscription[`${modelName}Deleted`] = "ID"
 
-		resolvers.Query[model.getName()] = async function (
-			_: any,
-			{ query = {} }: any,
-			context: any,
-		) {
+		resolvers.Subscription[`${modelName}Created`] = {
+			subscribe: async (_, __, context) => {
+				if (!context?.token) throw new Error("Unauthorized")
+				if (!resolveAccountId) throw new Error("ResolveAccountId hook not set")
+
+				const accountId = await resolveAccountId(context.token)
+				if (!accountId) throw new Error("Unauthorized")
+
+				const eventName = `${modelName}_${Method.CREATE}.${accountId}`
+				return pubsub.asyncIterator(eventName)
+			},
+			resolve: (payload) => payload,
+		}
+
+		resolvers.Subscription[`${modelName}Updated`] = {
+			subscribe: async (_, __, context) => {
+				if (!context?.token) throw new Error("Unauthorized")
+				if (!resolveAccountId) throw new Error("ResolveAccountId hook not set")
+
+				const accountId = await resolveAccountId(context.token)
+				if (!accountId) throw new Error("Unauthorized")
+
+				const eventName = `${modelName}_${Method.UPDATE}.${accountId}`
+				return pubsub.asyncIterator(eventName)
+			},
+			resolve: (payload) => payload,
+		}
+
+		resolvers.Subscription[`${modelName}Deleted`] = {
+			subscribe: async (_, __, context) => {
+				if (!context?.token) throw new Error("Unauthorized")
+				if (!resolveAccountId) throw new Error("ResolveAccountId hook not set")
+
+				const accountId = await resolveAccountId(context.token)
+				if (!accountId) throw new Error("Unauthorized")
+
+				const eventName = `${modelName}_${Method.DELETE}.${accountId}`
+				return pubsub.asyncIterator(eventName)
+			},
+			resolve: (payload) => payload,
+		}
+
+		typeDefs.input[modelName] = Object.fromEntries(
+			Object.entries(schema)
+				.filter(([key]) => key !== "id")
+				.map(([key, field]) => [
+					key,
+					{ value: resolve_type(field) } as TypeField,
+				]),
+		)
+
+		typeDefs.Query[modelName] = { value: `${modelName}_query` }
+
+		resolvers.Query[modelName] = async (_: any, { query = {} }: any, context: any) => {
 			const token = context.token || ""
 			const response = await model.read(query, { token })
 			return Array.isArray(response) ? response : []
 		}
-	}
 
-	for (const model of models) {
-		const schema = model.schema() as Record<string, any>
-
-		for (const field of Utils.keys(schema)) {
-			if ((schema[field] as any).relation) {
-				const relatedModel = (schema[field] as any).relation
-
-				if (!typeDefs.type[relatedModel.getName()]) continue
-
-				typeDefs.type[relatedModel.getName()]["all_" + model.getName()] = {
-					value: `[${model.getName()}]`,
-					all: true,
-					model: model,
-				}
-
-				typeDefs.type[relatedModel.getName()]["sum_" + model.getName()] = {
-					sum: true,
-					model: model,
-				}
-
-				typeDefs.type[relatedModel.getName()]["count_" + model.getName()] = {
-					count: true,
-					model: model,
-				}
-
-				if (!resolvers[relatedModel.getName()]) {
-					resolvers[relatedModel.getName()] = {}
-				}
-
-				resolvers[relatedModel.getName()]["all_" + model.getName()] = async function (
-					parent: any,
-					{ query = {} }: any,
-					context: any,
-				) {
-					const queryObj: any = collections.omit(query, [field] as unknown as [])
-					if (!queryObj.filter) {
-						queryObj.filter = {}
-					}
-
-					queryObj.filter[field] = { equals: parent.id }
-
-					const response = await model.read(queryObj, {
-						token: context.token || "",
-					})
-					return Array.isArray(response) ? response : []
-				}
-
-				resolvers[relatedModel.getName()]["sum_" + model.getName()] = async function (
-					parent: any,
-					{ query = {}, field }: any,
-					context: any,
-				) {
-					if (!field) return 0
-
-					const queryObj: any = collections.omit(query, [field] as unknown as [])
-					if (!queryObj.filter) {
-						queryObj.filter = {}
-					}
-
-					queryObj.filter[field] = { equals: parent.id }
-
-					let sum = 0
-					const items = await model.read(queryObj, {
-						token: context.token || "",
-					})
-
-					if (Array.isArray(items)) {
-						sum = items.reduce(
-							(total, item: any) => total + (Number((item as any)[field]) || 0),
-							0,
-						)
-					}
-
-					return sum
-				}
-
-				resolvers[relatedModel.getName()]["count_" + model.getName()] = async function (
-					parent: any,
-					{ query = {} }: any,
-					context: any,
-				) {
-					const queryObj: any = collections.omit(query, [field] as unknown as [])
-					if (!queryObj.filter) {
-						queryObj.filter = {}
-					}
-
-					queryObj.filter[field] = { equals: parent.id }
-
-					const items = await model.read(queryObj, {
-						token: context.token || "",
-					})
-					return Array.isArray(items) ? items.length : 0
-				}
-			}
-		}
-	}
-
-	let result = "\n"
-
-	result += "type Query {\n"
-
-	for (const typeName in typeDefs.Query) {
-		result += `  ${typeName}(query: ${typeDefs.Query[typeName].value}): [${typeName}]\n`
-	}
-	result += "}\n"
-
-	for (const typeName in typeDefs.type) {
-		result += `type ${typeName} {\n`
-
-		for (const field in typeDefs.type[typeName]) {
-			if (typeDefs.type[typeName][field].all) {
-				const model = typeDefs.type[typeName][field].model
-				result += `  ${field}(query: ${model.getName()}_query): ${typeDefs.type[typeName][field].value}\n`
-			} else if (typeDefs.type[typeName][field].sum) {
-				const model = typeDefs.type[typeName][field].model
-				result += `  ${field}(query: ${model.getName()}_query, field:String): Float\n`
-			} else if (typeDefs.type[typeName][field].count) {
-				const model = typeDefs.type[typeName][field].model
-				result += `  ${field}(query: ${model.getName()}_query): Int\n`
-			} else {
-				result += `  ${field}: ${typeDefs.type[typeName][field].value}\n`
-			}
-		}
-
-		result += "}\n"
-	}
-
-	for (const typeName in typeDefs.type) {
-		result += `input ${typeName}_filter {\n`
-
-		for (const field in typeDefs.type[typeName]) {
-			result += `  ${field}: ${
-				resolve_input(
-					typeDefs.type[typeName][field].value,
-					typeDefs.type[typeName][field].field,
-				)
-			}\n`
-		}
-
-		result += "}\n"
-	}
-
-	for (const typeName in typeDefs.input) {
-		result += `input ${typeName}_query {
-    offset: Int,
-    limit: Int,
-    filter: ${typeName}_filter
-        }\n`
-	}
-
-	for (const typeName in typeDefs.input) {
-		result += `input ${typeName}_input {\n`
-
-		for (const field in typeDefs.input[typeName]) {
-			if (field === "id") continue
-
-			result += `  ${field}: ${typeDefs.input[typeName][field].value}\n`
-		}
-
-		result += "}\n"
-	}
-
-	result += "type Mutation {\n"
-
-	for (const typeName in typeDefs.input) {
-		result += `  create_${typeName}(body: ${typeName}_input): ${typeName}\n`
-		result += `  update_${typeName}(query: ${typeName}_query, body: ${typeName}_input): Boolean\n`
-		result += `  delete_${typeName}(query: ${typeName}_query): Boolean\n`
-		result += `  count_${typeName}(query: ${typeName}_query): Int\n`
-		result += `  sum_${typeName}(query: ${typeName}_query , field: String): Float\n`
-
-		const modelClass = models.find((m) => m.getName() === typeName)
-
-		if (!modelClass) continue
-
-		resolvers.Mutation[`create_${typeName}`] = async function (
-			_: any,
-			{ body }: any,
-			context: any,
-		) {
-			try {
-				const response = await modelClass.create(body, {
-					token: context.token || "",
-				})
-				return response
-			} catch (error: any) {
-				throw new Error(error?.message || "Creation failed")
-			}
-		}
-
-		resolvers.Mutation[`update_${typeName}`] = async function (
-			_: any,
-			{ query, body }: any,
-			context: any,
-		) {
-			try {
-				await modelClass.update(query || {}, body, {
-					token: context.token || "",
-				})
-				return true
-			} catch (error: any) {
-				throw new Error(error?.message || "Update failed")
-			}
-		}
-
-		resolvers.Mutation[`delete_${typeName}`] = async function (
-			_: any,
-			{ query }: any,
-			context: any,
-		) {
-			try {
-				await modelClass.delete(query || {}, { token: context.token || "" })
-				return true
-			} catch (error: any) {
-				throw new Error(error?.message || "Delete failed")
-			}
-		}
-
-		resolvers.Mutation[`count_${typeName}`] = async function (
-			_: any,
-			{ query }: any,
-			context: any,
-		) {
-			try {
-				const items = await modelClass.read(query || {}, {
-					token: context.token || "",
-				})
-				return Array.isArray(items) ? items.length : 0
-			} catch (error: any) {
-				throw new Error(error?.message || "Count failed")
-			}
-		}
-
-		resolvers.Mutation[`sum_${typeName}`] = async function (
-			_: any,
-			{ query, field }: any,
-			context: any,
-		) {
-			if (!field) return 0
-
-			try {
-				const items = await modelClass.read(query || {}, {
-					token: context.token || "",
-				})
-
-				if (!Array.isArray(items)) return 0
-
-				return items.reduce((total, item: any) => {
-					return total + (Number((item as any)[field]) || 0)
-				}, 0)
-			} catch (error: any) {
-				throw new Error(error?.message || "Sum failed")
-			}
-		}
-	}
-
-	result += "}\n"
-
-	const server = new ApolloServer({
-		typeDefs: `
-		scalar DateTime
-		input date_filter {
-			equals: DateTime
-			notEquals: DateTime
-			gt: DateTime
-			gte: DateTime
-			lt: DateTime
-			lte: DateTime
-			isNull: Boolean
-		}
-		${filter_types}
-		${result}
-		`,
-		resolvers: {
-			...resolvers,
-			DateTime: {
-				serialize: (value: any) => {
-					if (value instanceof Date) {
-						return value.toISOString()
-					}
-					return value
-				},
-				parseValue: (value: any) => {
-					return new Date(value)
-				},
+		resolvers.Mutation = {
+			...resolvers.Mutation,
+			[`create_${modelName}`]: async (_: any, { body }: any, context: any) => {
+				return await model.create(body, { token: context.token || "" })
 			},
-		},
-		includeStacktraceInErrorResponses: false,
-	})
+			[`update_${modelName}`]: async (_: any, { query, body }: any, context: any) => {
+				await model.update(query || {}, body, { token: context.token || "" })
+				return true
+			},
+			[`delete_${modelName}`]: async (_: any, { query }: any, context: any) => {
+				await model.delete(query || {}, { token: context.token || "" })
+				return true
+			},
+			[`count_${modelName}`]: async (_: any, { query }: any, context: any) => {
+				const items = await model.read(query || {}, { token: context.token || "" })
+				return Array.isArray(items) ? items.length : 0
+			},
+			[`sum_${modelName}`]: async (_: any, { query, field }: any, context: any) => {
+				if (!field) return 0
+				const items = await model.read(query || {}, { token: context.token || "" })
+				return Array.isArray(items) ? items.reduce((total, item: any) => total + (Number(item[field]) || 0), 0) : 0
+			},
+		}
+	}
 
-	return server
+	const schemaString = `
+scalar DateTime
+
+input DateFilter {
+  equals: DateTime
+  notEquals: DateTime
+  gt: DateTime
+  gte: DateTime
+  lt: DateTime
+  lte: DateTime
+  isNull: Boolean
+}
+
+${filter_types}
+
+${
+		models.map((model) => {
+			const modelName = model.getName()
+			const fields = Object.entries(typeDefs.type[modelName] || {})
+				.map(([key, value]) => `  ${key}: ${value.value}`)
+				.join("\n")
+			return `type ${modelName} {\n${fields}\n}`
+		}).join("\n\n")
+	}
+
+type Query {
+${
+		Object.entries(typeDefs.Query)
+			.map(([key, value]) => `  ${key}(query: ${value.value}): [${key}]`)
+			.join("\n")
+	}
+}
+
+type Mutation {
+${
+		models.map((model) => {
+			const modelName = model.getName()
+			return `  create_${modelName}(body: ${modelName}_input): ${modelName}
+  update_${modelName}(query: ${modelName}_query, body: ${modelName}_input): Boolean
+  delete_${modelName}(query: ${modelName}_query): Boolean
+  count_${modelName}(query: ${modelName}_query): Int
+  sum_${modelName}(query: ${modelName}_query, field: String): Float`
+		}).join("\n")
+	}
+}
+
+${
+		models.map((model) => {
+			const modelName = model.getName()
+			return `input ${modelName}_filter {
+${
+				Object.entries(typeDefs.type[modelName] || {})
+					.map(([key, value]) => `  ${key}: ${resolve_input(value.value)}`)
+					.join("\n")
+			}
+}
+
+input ${modelName}_query {
+  offset: Int
+  limit: Int
+  filter: ${modelName}_filter
+}
+
+input ${modelName}_input {
+${
+				Object.entries(typeDefs.input[modelName] || {})
+					.map(([key, value]) => `  ${key}: ${value.value}`)
+					.join("\n")
+			}
+}`
+		}).join("\n\n")
+	}
+
+type Subscription {
+${
+		Object.entries(typeDefs.Subscription)
+			.map(([key, value]) => `  ${key}: ${value}`)
+			.join("\n")
+	}
+}
+`
+
+	return {
+		typeDefs: schemaString,
+		resolvers,
+	}
 }
 
 export function createDataLoader(token: string = ""): FookieDataLoader {
@@ -543,12 +501,4 @@ export function createDataLoader(token: string = ""): FookieDataLoader {
 		)
 		return Array.isArray(response) ? response : []
 	})
-}
-
-export function createContext(req: any): { token: string; dataLoader: FookieDataLoader } {
-	const token = req?.headers?.authorization || ""
-	return {
-		token,
-		dataLoader: createDataLoader(token),
-	}
 }

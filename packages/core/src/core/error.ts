@@ -1,5 +1,4 @@
 import { plainToClass } from "class-transformer"
-import type { Type } from "./type.ts"
 
 export class FookieError extends Error {
 	validationErrors!: {

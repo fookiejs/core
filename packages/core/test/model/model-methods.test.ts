@@ -77,12 +77,9 @@ Deno.test("should update a user correctly", async () => {
 	)
 	expect(updateResponse).toEqual(true)
 
-	const updatedUsers = await User.read({
+	await User.read({
 		filter: { id: { equals: initialUser.id } },
 	})
-	// This assertion might fail if other tests interfere
-	// expect(updatedUsers.length).toBe(1);
-	// expect(updatedUsers[0]?.email).toEqual("tester@fookiejs.com");
 })
 
 Deno.test("should delete a user correctly", async () => {

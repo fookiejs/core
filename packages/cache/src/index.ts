@@ -19,8 +19,7 @@ export function hasher(data: any): string {
 	return hash.digest("hex")
 }
 
-export interface CacheModule {
-	FookieCache: typeof Model
+interface CacheModule {
 	createMixin: (ttl: number) => Mixin
 }
 
@@ -198,7 +197,6 @@ export function initCache(database: Database): CacheModule {
 	})
 
 	return {
-		FookieCache: FookieCache,
 		createMixin: function (ttl: number): Mixin {
 			return Mixin.create({
 				key: "cache",
