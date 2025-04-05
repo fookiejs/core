@@ -1,15 +1,14 @@
 import { defaults, Method, Model, models } from "@fookiejs/core"
-
 import { FookieDataLoader } from "./dataloader.ts"
 import { Resolvers, TypeDefs, TypeField } from "./types.ts"
 import { PubSub } from "npm:graphql-subscriptions@2.0.0"
 
 const pubsub = new PubSub()
 
-let resolveAccountId: ((token: string) => Promise<string | null>) | null = null
+let resolveRooms: ((token: string) => Promise<string[]>) | null = null
 
-export function setResolveAccountId(resolver: (token: string) => Promise<string | null>) {
-	resolveAccountId = resolver
+export function setResolveRooms(resolver: (token: string) => Promise<string[]>) {
+	resolveRooms = resolver
 }
 
 const graphqlNativeTypes = ["String", "Int", "Float", "Boolean", "ID"]
@@ -133,9 +132,9 @@ function resolve_input(typeStr: string, field: any = null): string {
 	return "string_filter"
 }
 
-export function publishEvent(accountId: string, model: typeof Model, method: Method, data: any) {
+export function publishEvent(roomId: string, model: typeof Model, method: Method, data: any) {
 	const modelName = model.getName()
-	const eventName = `${modelName}_${method}.${accountId}`
+	const eventName = `${modelName}_${method}.${roomId}`
 	pubsub.publish(eventName, data)
 }
 
@@ -226,13 +225,13 @@ export function createResolvers(): { resolvers: Resolvers } {
 		resolvers.Subscription[`${modelName}Created`] = {
 			subscribe: async (_, __, context) => {
 				if (!context?.token) throw new Error("Unauthorized")
-				if (!resolveAccountId) throw new Error("ResolveAccountId hook not set")
+				if (!resolveRooms) throw new Error("ResolveRooms hook not set")
 
-				const accountId = await resolveAccountId(context.token)
-				if (!accountId) throw new Error("Unauthorized")
+				const rooms = await resolveRooms(context.token)
+				if (!rooms.length) throw new Error("No rooms available")
 
-				const eventName = `${modelName}_${Method.CREATE}.${accountId}`
-				return pubsub.asyncIterator(eventName)
+				const eventNames = rooms.map((room) => `${modelName}_${Method.CREATE}.${room}`)
+				return pubsub.asyncIterator(eventNames)
 			},
 			resolve: (payload) => payload,
 		}
@@ -240,13 +239,13 @@ export function createResolvers(): { resolvers: Resolvers } {
 		resolvers.Subscription[`${modelName}Updated`] = {
 			subscribe: async (_, __, context) => {
 				if (!context?.token) throw new Error("Unauthorized")
-				if (!resolveAccountId) throw new Error("ResolveAccountId hook not set")
+				if (!resolveRooms) throw new Error("ResolveRooms hook not set")
 
-				const accountId = await resolveAccountId(context.token)
-				if (!accountId) throw new Error("Unauthorized")
+				const rooms = await resolveRooms(context.token)
+				if (!rooms.length) throw new Error("No rooms available")
 
-				const eventName = `${modelName}_${Method.UPDATE}.${accountId}`
-				return pubsub.asyncIterator(eventName)
+				const eventNames = rooms.map((room) => `${modelName}_${Method.UPDATE}.${room}`)
+				return pubsub.asyncIterator(eventNames)
 			},
 			resolve: (payload) => payload,
 		}
@@ -254,13 +253,13 @@ export function createResolvers(): { resolvers: Resolvers } {
 		resolvers.Subscription[`${modelName}Deleted`] = {
 			subscribe: async (_, __, context) => {
 				if (!context?.token) throw new Error("Unauthorized")
-				if (!resolveAccountId) throw new Error("ResolveAccountId hook not set")
+				if (!resolveRooms) throw new Error("ResolveRooms hook not set")
 
-				const accountId = await resolveAccountId(context.token)
-				if (!accountId) throw new Error("Unauthorized")
+				const rooms = await resolveRooms(context.token)
+				if (!rooms.length) throw new Error("No rooms available")
 
-				const eventName = `${modelName}_${Method.DELETE}.${accountId}`
-				return pubsub.asyncIterator(eventName)
+				const eventNames = rooms.map((room) => `${modelName}_${Method.DELETE}.${room}`)
+				return pubsub.asyncIterator(eventNames)
 			},
 			resolve: (payload) => payload,
 		}
@@ -320,13 +319,13 @@ export function createGraphQL() {
 		resolvers.Subscription[`${modelName}Created`] = {
 			subscribe: async (_, __, context) => {
 				if (!context?.token) throw new Error("Unauthorized")
-				if (!resolveAccountId) throw new Error("ResolveAccountId hook not set")
+				if (!resolveRooms) throw new Error("ResolveRooms hook not set")
 
-				const accountId = await resolveAccountId(context.token)
-				if (!accountId) throw new Error("Unauthorized")
+				const rooms = await resolveRooms(context.token)
+				if (!rooms.length) throw new Error("No rooms available")
 
-				const eventName = `${modelName}_${Method.CREATE}.${accountId}`
-				return pubsub.asyncIterator(eventName)
+				const eventNames = rooms.map((room) => `${modelName}_${Method.CREATE}.${room}`)
+				return pubsub.asyncIterator(eventNames)
 			},
 			resolve: (payload) => payload,
 		}
@@ -334,13 +333,13 @@ export function createGraphQL() {
 		resolvers.Subscription[`${modelName}Updated`] = {
 			subscribe: async (_, __, context) => {
 				if (!context?.token) throw new Error("Unauthorized")
-				if (!resolveAccountId) throw new Error("ResolveAccountId hook not set")
+				if (!resolveRooms) throw new Error("ResolveRooms hook not set")
 
-				const accountId = await resolveAccountId(context.token)
-				if (!accountId) throw new Error("Unauthorized")
+				const rooms = await resolveRooms(context.token)
+				if (!rooms.length) throw new Error("No rooms available")
 
-				const eventName = `${modelName}_${Method.UPDATE}.${accountId}`
-				return pubsub.asyncIterator(eventName)
+				const eventNames = rooms.map((room) => `${modelName}_${Method.UPDATE}.${room}`)
+				return pubsub.asyncIterator(eventNames)
 			},
 			resolve: (payload) => payload,
 		}
@@ -348,13 +347,13 @@ export function createGraphQL() {
 		resolvers.Subscription[`${modelName}Deleted`] = {
 			subscribe: async (_, __, context) => {
 				if (!context?.token) throw new Error("Unauthorized")
-				if (!resolveAccountId) throw new Error("ResolveAccountId hook not set")
+				if (!resolveRooms) throw new Error("ResolveRooms hook not set")
 
-				const accountId = await resolveAccountId(context.token)
-				if (!accountId) throw new Error("Unauthorized")
+				const rooms = await resolveRooms(context.token)
+				if (!rooms.length) throw new Error("No rooms available")
 
-				const eventName = `${modelName}_${Method.DELETE}.${accountId}`
-				return pubsub.asyncIterator(eventName)
+				const eventNames = rooms.map((room) => `${modelName}_${Method.DELETE}.${room}`)
+				return pubsub.asyncIterator(eventNames)
 			},
 			resolve: (payload) => payload,
 		}
