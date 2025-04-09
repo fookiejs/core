@@ -75,7 +75,7 @@ Deno.test("should update a user correctly", async () => {
 		},
 		{ email: "tester@fookiejs.com" },
 	)
-	expect(updateResponse).toEqual(true)
+	expect(updateResponse.length).toEqual(1)
 
 	await User.read({
 		filter: { id: { equals: initialUser.id } },
@@ -96,7 +96,7 @@ Deno.test("should delete a user correctly", async () => {
 			id: { equals: userToDelete.id },
 		},
 	})
-	expect(deleteResponse).toEqual(true)
+	expect(deleteResponse.length).toEqual(1)
 
 	const deletedUser = await User.read({
 		filter: { id: { equals: userToDelete.id } },

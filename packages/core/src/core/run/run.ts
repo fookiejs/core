@@ -105,7 +105,7 @@ export function readRun<T extends Model>(
 }
 
 export function updateRun<T extends Model>(
-	method: (payload: Payload<T, Method.UPDATE>) => Promise<boolean>,
+	method: (payload: Payload<T, Method.UPDATE>) => Promise<string[]>,
 ) {
 	return async function (
 		this: typeof Model,
@@ -125,7 +125,7 @@ export function updateRun<T extends Model>(
 }
 
 export function deleteRun<T extends Model>(
-	method: (payload: Payload<T, Method.DELETE>) => Promise<boolean>,
+	method: (payload: Payload<T, Method.DELETE>) => Promise<string[]>,
 ) {
 	return async function (
 		this: typeof Model,

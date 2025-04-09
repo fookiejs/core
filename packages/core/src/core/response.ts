@@ -2,8 +2,8 @@ import type { Method } from "./method.ts"
 
 export type CreateResponse<T> = T
 export type ReadResponse<T> = T[]
-export type UpdateResponse = boolean
-export type DeleteResponse = boolean
+export type UpdateResponse = string[]
+export type DeleteResponse = string[]
 
 export type MethodResponse<T> = {
 	[Method.CREATE]: CreateResponse<T>

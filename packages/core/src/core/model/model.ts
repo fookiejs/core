@@ -26,8 +26,8 @@ export const modelNameSymbol = Symbol("modelName")
 interface ModelMethods<model extends Model> {
 	create: (payload: Payload<model, Method.CREATE>) => Promise<model>
 	read: (payload: Payload<model, Method.READ>) => Promise<model[]>
-	update: (payload: Payload<model, Method.UPDATE>) => Promise<boolean>
-	delete: (payload: Payload<model, Method.DELETE>) => Promise<boolean>
+	update: (payload: Payload<model, Method.UPDATE>) => Promise<string[]>
+	delete: (payload: Payload<model, Method.DELETE>) => Promise<string[]>
 }
 
 interface FookieDecoratorContext {
@@ -69,7 +69,7 @@ export class Model {
 		query: QueryType<model>,
 		body: Partial<Omit<model, "id" | "createdAt" | "updatedAt" | "deletedAt">>,
 		options?: Optional<Options, "test" | "token">,
-	): Promise<boolean> {
+	): Promise<string[]> {
 		throw new Error("Not implemented - assigned by decorator")
 	}
 
@@ -77,7 +77,7 @@ export class Model {
 		this: new () => model,
 		query: Partial<QueryType<model>>,
 		options?: Optional<Options, "test" | "token">,
-	): Promise<boolean> {
+	): Promise<string[]> {
 		throw new Error("Not implemented - assigned by decorator")
 	}
 

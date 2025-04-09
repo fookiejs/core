@@ -11,8 +11,8 @@ export class Database {
 	) => {
 		create: (payload: Payload<T, Method.CREATE>) => Promise<T>
 		read: (payload: Payload<T, Method.READ>) => Promise<T[]>
-		update: (payload: Payload<T, Method.UPDATE>) => Promise<boolean>
-		delete: (payload: Payload<T, Method.DELETE>) => Promise<boolean>
+		update: (payload: Payload<T, Method.UPDATE>) => Promise<string[]>
+		delete: (payload: Payload<T, Method.DELETE>) => Promise<string[]>
 	}
 
 	static create(data: Database): Database {

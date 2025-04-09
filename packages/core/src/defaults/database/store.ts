@@ -47,6 +47,7 @@ export const store = Database.create({
 				return paginatedResults
 			},
 			[Method.UPDATE]: async (payload: Payload<T, Method.UPDATE>) => {
+				const updatedIds: string[] = []
 				for (const entity of pool) {
 					if (isEntityMatchingQuery(entity, payload.query) && !entity.deletedAt) {
 						Object.keys(payload.body).forEach((key) => {
@@ -54,17 +55,24 @@ export const store = Database.create({
 								payload.body as Record<string, any>
 							)[key]
 						})
+						if (entity.id) {
+							updatedIds.push(entity.id)
+						}
 					}
 				}
-				return true
+				return updatedIds
 			},
 			[Method.DELETE]: async (payload: Payload<T, Method.DELETE>) => {
+				const deletedIds: string[] = []
 				for (const entity of pool) {
 					if (isEntityMatchingQuery(entity, payload.query)) {
 						entity.deletedAt = new Date().toISOString()
+						if (entity.id) {
+							deletedIds.push(entity.id)
+						}
 					}
 				}
-				return true
+				return deletedIds
 			},
 		}
 	},

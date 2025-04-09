@@ -160,9 +160,18 @@ export function createTypeDefs(): { typeDefs: string } {
 			),
 		}
 
+		typeDefs.type[`${modelName}UpdatePayload`] = {
+			ids: { value: "[ID!]!" },
+			body: { value: modelName },
+		}
+
+		typeDefs.type[`${modelName}DeletePayload`] = {
+			ids: { value: "[ID!]!" },
+		}
+
 		typeDefs.Subscription[`${modelName}Created`] = modelName
-		typeDefs.Subscription[`${modelName}Updated`] = modelName
-		typeDefs.Subscription[`${modelName}Deleted`] = "ID"
+		typeDefs.Subscription[`${modelName}Updated`] = `${modelName}UpdatePayload`
+		typeDefs.Subscription[`${modelName}Deleted`] = `${modelName}DeletePayload`
 	}
 
 	const subscriptionFields = Object.entries(typeDefs.Subscription)
@@ -174,8 +183,20 @@ export function createTypeDefs(): { typeDefs: string } {
 		const fields = Object.entries(typeDefs.type[modelName] || {})
 			.map(([key, value]) => `  ${key}: ${value.value}`)
 			.join("\n")
-		if (!fields) return ""
-		return `type ${modelName} {\n${fields}\n}`
+
+		const updatePayloadFields = Object.entries(typeDefs.type[`${modelName}UpdatePayload`] || {})
+			.map(([key, value]) => `  ${key}: ${value.value}`)
+			.join("\n")
+
+		const deletePayloadFields = Object.entries(typeDefs.type[`${modelName}DeletePayload`] || {})
+			.map(([key, value]) => `  ${key}: ${value.value}`)
+			.join("\n")
+
+		return `type ${modelName} {\n${fields}\n}
+
+type ${modelName}UpdatePayload {\n${updatePayloadFields}\n}
+
+type ${modelName}DeletePayload {\n${deletePayloadFields}\n}`
 	}).filter(Boolean).join("\n\n")
 
 	const typeDefsString = `
@@ -247,7 +268,12 @@ export function createResolvers(): { resolvers: Resolvers } {
 				const eventNames = rooms.map((room) => `${modelName}_${Method.UPDATE}.${room}`)
 				return pubsub.asyncIterator(eventNames)
 			},
-			resolve: (payload) => payload,
+			resolve: (payload) => {
+				if (!payload.ids || !payload.body) {
+					throw new Error("Invalid update payload")
+				}
+				return { ids: payload.ids, body: payload.body }
+			},
 		}
 
 		resolvers.Subscription[`${modelName}Deleted`] = {
@@ -261,7 +287,12 @@ export function createResolvers(): { resolvers: Resolvers } {
 				const eventNames = rooms.map((room) => `${modelName}_${Method.DELETE}.${room}`)
 				return pubsub.asyncIterator(eventNames)
 			},
-			resolve: (payload) => payload,
+			resolve: (payload) => {
+				if (!payload.ids) {
+					throw new Error("Invalid delete payload")
+				}
+				return { ids: payload.ids }
+			},
 		}
 	}
 
@@ -312,9 +343,18 @@ export function createGraphQL() {
 			),
 		}
 
+		typeDefs.type[`${modelName}UpdatePayload`] = {
+			ids: { value: "[ID!]!" },
+			body: { value: modelName },
+		}
+
+		typeDefs.type[`${modelName}DeletePayload`] = {
+			ids: { value: "[ID!]!" },
+		}
+
 		typeDefs.Subscription[`${modelName}Created`] = modelName
-		typeDefs.Subscription[`${modelName}Updated`] = modelName
-		typeDefs.Subscription[`${modelName}Deleted`] = "ID"
+		typeDefs.Subscription[`${modelName}Updated`] = `${modelName}UpdatePayload`
+		typeDefs.Subscription[`${modelName}Deleted`] = `${modelName}DeletePayload`
 
 		resolvers.Subscription[`${modelName}Created`] = {
 			subscribe: async (_, __, context) => {
@@ -341,7 +381,12 @@ export function createGraphQL() {
 				const eventNames = rooms.map((room) => `${modelName}_${Method.UPDATE}.${room}`)
 				return pubsub.asyncIterator(eventNames)
 			},
-			resolve: (payload) => payload,
+			resolve: (payload) => {
+				if (!payload.ids || !payload.body) {
+					throw new Error("Invalid update payload")
+				}
+				return { ids: payload.ids, body: payload.body }
+			},
 		}
 
 		resolvers.Subscription[`${modelName}Deleted`] = {
@@ -355,7 +400,12 @@ export function createGraphQL() {
 				const eventNames = rooms.map((room) => `${modelName}_${Method.DELETE}.${room}`)
 				return pubsub.asyncIterator(eventNames)
 			},
-			resolve: (payload) => payload,
+			resolve: (payload) => {
+				if (!payload.ids) {
+					throw new Error("Invalid delete payload")
+				}
+				return { ids: payload.ids }
+			},
 		}
 
 		typeDefs.input[modelName] = Object.fromEntries(
@@ -421,7 +471,20 @@ ${
 			const fields = Object.entries(typeDefs.type[modelName] || {})
 				.map(([key, value]) => `  ${key}: ${value.value}`)
 				.join("\n")
-			return `type ${modelName} {\n${fields}\n}`
+
+			const updatePayloadFields = Object.entries(typeDefs.type[`${modelName}UpdatePayload`] || {})
+				.map(([key, value]) => `  ${key}: ${value.value}`)
+				.join("\n")
+
+			const deletePayloadFields = Object.entries(typeDefs.type[`${modelName}DeletePayload`] || {})
+				.map(([key, value]) => `  ${key}: ${value.value}`)
+				.join("\n")
+
+			return `type ${modelName} {\n${fields}\n}
+
+type ${modelName}UpdatePayload {\n${updatePayloadFields}\n}
+
+type ${modelName}DeletePayload {\n${deletePayloadFields}\n}`
 		}).join("\n\n")
 	}
 

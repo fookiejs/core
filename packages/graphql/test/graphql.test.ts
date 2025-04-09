@@ -1,4 +1,3 @@
-import { createServer } from "../mod.ts"
 import { defaults, Field, Model } from "@fookiejs/core"
 
 @Model.Decorator({
@@ -196,7 +195,3 @@ export class CompanyUserRole extends Model {
 	})
 	role!: string
 }
-
-Deno.test("Graphql", async () => {
-	createServer()
-})

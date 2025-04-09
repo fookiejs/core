@@ -41,15 +41,57 @@ export const database: Database = Database.create({
 			[Method.UPDATE]: async function (payload) {
 				const repo = getRepository(modelName)
 				const where = transformFilterToWhere(payload.query)
-				await repo.update(where, payload.body)
-				return true
+
+				return await repo.manager.transaction(async (transactionalEntityManager) => {
+					const qb = transactionalEntityManager
+						.createQueryBuilder()
+						.select("id")
+						.from(modelName, "entity")
+						.where(where)
+						.andWhere("deletedAt IS NULL")
+
+					const results = await qb.getRawMany()
+					const ids = results.map((r) => r.id)
+
+					if (ids.length > 0) {
+						await transactionalEntityManager
+							.createQueryBuilder()
+							.update(modelName)
+							.set(payload.body)
+							.whereInIds(ids)
+							.execute()
+					}
+
+					return ids
+				})
 			},
 
 			[Method.DELETE]: async function (payload) {
 				const repo = getRepository(modelName)
 				const where = transformFilterToWhere(payload.query)
-				await repo.softDelete(where)
-				return true
+
+				return await repo.manager.transaction(async (transactionalEntityManager) => {
+					const qb = transactionalEntityManager
+						.createQueryBuilder()
+						.select("id")
+						.from(modelName, "entity")
+						.where(where)
+						.andWhere("deletedAt IS NULL")
+
+					const results = await qb.getRawMany()
+					const ids = results.map((r) => r.id)
+
+					if (ids.length > 0) {
+						await transactionalEntityManager
+							.createQueryBuilder()
+							.softDelete()
+							.from(modelName)
+							.whereInIds(ids)
+							.execute()
+					}
+
+					return ids
+				})
 			},
 		}
 	},
