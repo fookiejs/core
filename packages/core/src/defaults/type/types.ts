@@ -5,7 +5,7 @@ export const types = {
 	enum: <T extends Record<string, string | number>>(enumObj: T): Type => {
 		const enumValues = Object.values(enumObj)
 		return Type.create({
-			key: `enum(${enumValues.join("|")})`,
+			key: "enum",
 			validate: (value: any) => enumValues.includes(value),
 			example: enumValues[0],
 			queryController: {
