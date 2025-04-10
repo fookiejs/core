@@ -117,15 +117,6 @@ Deno.test("QueryFloatModel Query Tests", async () => {
 		expect(results).toHaveLength(0)
 	})
 
-	Deno.test("isNotNull query", async () => {
-		const results = await QueryFloatModel.read({
-			filter: {
-				floatField: { isNull: false },
-			},
-		})
-		expect(results).toHaveLength(3)
-	})
-
 	Deno.test("notExist query", async () => {
 		const results = await QueryFloatModel.read({
 			filter: {

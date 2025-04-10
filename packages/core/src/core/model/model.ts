@@ -12,6 +12,7 @@ import { fillSchema } from "../field/utils/fill-schema.ts"
 import { Utils } from "../../utils/util.ts"
 import { Type } from "../type.ts"
 import { Field } from "../field/field.ts"
+import { defaults } from "../../defaults/index.ts"
 
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
 
@@ -53,6 +54,8 @@ export class Model {
 		body: Omit<model, "id" | "createdAt" | "updatedAt" | "deletedAt">,
 		options?: Optional<Options, "test" | "token">,
 	): Promise<model> {
+		body
+		options
 		throw new Error("Not implemented - assigned by decorator")
 	}
 
@@ -61,6 +64,8 @@ export class Model {
 		query?: Partial<QueryType<model>>,
 		options?: Optional<Options, "test" | "token">,
 	): Promise<model[]> {
+		query
+		options
 		throw new Error("Not implemented - assigned by decorator")
 	}
 
@@ -70,6 +75,9 @@ export class Model {
 		body: Partial<Omit<model, "id" | "createdAt" | "updatedAt" | "deletedAt">>,
 		options?: Optional<Options, "test" | "token">,
 	): Promise<string[]> {
+		query
+		body
+		options
 		throw new Error("Not implemented - assigned by decorator")
 	}
 
@@ -78,6 +86,8 @@ export class Model {
 		query: Partial<QueryType<model>>,
 		options?: Optional<Options, "test" | "token">,
 	): Promise<string[]> {
+		query
+		options
 		throw new Error("Not implemented - assigned by decorator")
 	}
 
@@ -135,13 +145,23 @@ export class Model {
 			schemaMeta["id"] = fillSchema({
 				type: primaryKeyType,
 			})
+			schemaMeta["deletedAt"] = fillSchema({
+				type: defaults.type.timestamp,
+				default: null,
+			})
+			schemaMeta["createdAt"] = fillSchema({
+				type: defaults.type.timestamp,
+				features: [defaults.feature.required],
+			})
+			schemaMeta["updatedAt"] = fillSchema({
+				type: defaults.type.timestamp,
+				features: [defaults.feature.required],
+			})
 
 			for (const key in schemaMeta) {
 				const field = schemaMeta[key]
 				if (Utils.has(field, "relation")) {
-					if (field.type !== primaryKeyType) {
-						field.type = primaryKeyType
-					}
+					field.type = field.relation.database().primaryKeyType
 				}
 			}
 
@@ -191,22 +211,6 @@ export type BindsTypeField = {
 	rule?: Rule<Model>[]
 	filter?: Filter<Model>[]
 	effect?: Effect<Model>[]
-	accepts?:
-		| []
-		| [
-			[
-				Role<Model, Method>,
-				{ modify?: Modify<Model, Method>[]; rule?: Rule<Model, Method>[] },
-			],
-		]
-	rejects?:
-		| []
-		| [
-			[
-				Role<Model, Method>,
-				{ modify?: Modify<Model, Method>[]; rule?: Rule<Model, Method>[] },
-			],
-		]
 }
 
 export class QueryType<model extends Model> {
@@ -231,7 +235,6 @@ export class QueryType<model extends Model> {
 				like?: string
 				notLike?: string | Date
 				isNull?: boolean
-				isNotNull?: boolean
 				[keyword: string]: unknown
 			}
 		>

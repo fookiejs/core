@@ -1,21 +1,37 @@
-import type { BindsType, BindsTypeField, ModelTypeInput, ModelTypeOutput } from "../../model/model.ts"
+import { type BindsType, type BindsTypeField, type ModelTypeInput, type ModelTypeOutput } from "../../model/model.ts"
 import { methods } from "../../method.ts"
 import { system } from "../../../defaults/role/system.ts"
 import { lifecycles } from "../../lifecycle.ts"
 import * as lodash from "lodash"
+import { Modify } from "../../lifecycle-function.ts"
+
+const addDeletedAt = Modify.create({
+	key: "addDeletedAt",
+	execute: async function (payload) {
+		if (payload.state.rejectedRoles.includes(system)) {
+			payload.query.filter.deletedAt = {
+				isNull: true,
+			}
+		}
+
+		if (payload.state.acceptedRoles.includes(system) && payload.query.filter.deletedAt?.equals === undefined) {
+			payload.query.filter.deletedAt = {
+				isNull: true,
+			}
+		}
+	},
+})
 
 export function fillModel(model: ModelTypeInput): ModelTypeOutput {
 	model.binds = model.binds || ({} as BindsType)
 	model.mixins = lodash.isArray(model.mixins) ? model.mixins : []
 
 	const defaultBinds: BindsTypeField = {
-		modify: [],
+		modify: [addDeletedAt],
 		role: [system],
 		rule: [],
 		filter: [],
 		effect: [],
-		accepts: [],
-		rejects: [],
 	}
 
 	for (const method of methods) {

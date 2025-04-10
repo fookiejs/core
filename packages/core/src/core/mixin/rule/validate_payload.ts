@@ -27,8 +27,6 @@ export default Rule.create({
 			return false
 		}
 
-		// Temporarily disable the strict key check
-		/*
 		const avaible_keys = [
 			"state",
 			"method",
@@ -37,10 +35,8 @@ export default Rule.create({
 			"body",
 			"query",
 			"runId",
-		];
+		]
 
-		return lodash.without(lodash.keys(payload), ...avaible_keys).length === 0;
-		*/
-		return true // Always return true for now
+		return lodash.without(lodash.keys(payload), ...avaible_keys).length === 0
 	},
 })

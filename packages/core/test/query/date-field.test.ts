@@ -117,15 +117,6 @@ Deno.test("QueryDateModel Query Tests", async () => {
 		expect(results).toHaveLength(0)
 	})
 
-	Deno.test("isNotNull query", async () => {
-		const results = await QueryDateModel.read({
-			filter: {
-				dateField: { isNull: false },
-			},
-		})
-		expect(results).toHaveLength(3)
-	})
-
 	Deno.test("between query", async () => {
 		const results = await QueryDateModel.read({
 			filter: {

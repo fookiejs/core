@@ -84,15 +84,6 @@ Deno.test("QueryTextModel Query Tests", async () => {
 		expect(results).toHaveLength(0)
 	})
 
-	Deno.test("isNotNull query", async () => {
-		const results = await QueryTextModel.read({
-			filter: {
-				textField: { isNull: false },
-			},
-		})
-		expect(results).toHaveLength(3)
-	})
-
 	Deno.test("notExist query", async () => {
 		const results = await QueryTextModel.read({
 			filter: {

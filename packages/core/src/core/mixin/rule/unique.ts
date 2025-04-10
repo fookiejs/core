@@ -10,14 +10,14 @@ export default Rule.create({
 		const fields = Utils.keys(payload.body)
 		for (const field of fields) {
 			if (
-				(payload.model.schema() as Record<string, any>)[
+				(payload.model.schema())[
 					field
 				].features.includes(defaults.feature.unique)
 			) {
 				const res = await payload.model.read(
 					{
 						filter: {
-							[field]: { equals: (payload.body as Record<string, any>)[field] },
+							[field]: { equals: payload.body[field] },
 						},
 					},
 					{ token: Config.SYSTEM_TOKEN },

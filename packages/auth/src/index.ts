@@ -46,29 +46,18 @@ export function initAuth(
 	const belongsToUser = Modify.create({
 		key: "belongsToUser",
 		async execute(payload) {
-			payload.query.filter["id"] = { equals: payload.state[ACCOUNT].id }
+			if (payload.state.acceptedRoles.includes(loggedIn)) {
+				payload.query.filter["id"] = { equals: payload.state[ACCOUNT].id }
+			}
 		},
 	})
 
-	const anonymizeEmailSymbol = Symbol("anonymizeEmail")
-
-	const anonymizeEmail = Effect.create<Account, Method>({
+	const anonymizeEmail = Effect.create<Account, Method.DELETE>({
 		key: "anonymizeEmail",
-		async execute(payload) {
-			const accounts = await payload.state[anonymizeEmailSymbol]
-
-			const ids = accounts.map((account) => account.id)
-			await Account.update({ filter: { id: { in: ids } } }, { email: `${v4()}@anonymized.anonymized` }, {
+		async execute(_payload, response) {
+			await Account.update({ filter: { id: { in: response } } }, { email: `${v4()}@anonymized.anonymized` }, {
 				token: Config.SYSTEM_TOKEN,
 			})
-		},
-	})
-
-	const findAnonymizedEmail = Modify.create<Account, Method>({
-		key: "findAnonymizedEmail",
-		async execute(payload) {
-			const accounts = Account.read(payload.query, { token: Config.SYSTEM_TOKEN })
-			payload.state[anonymizeEmailSymbol] = accounts
 		},
 	})
 
@@ -80,23 +69,16 @@ export function initAuth(
 			},
 			[Method.READ]: {
 				role: [defaults.role.system, loggedIn],
-				accepts: [[loggedIn, {
-					modify: [belongsToUser],
-				}]],
+				modify: [belongsToUser],
 			},
 			[Method.UPDATE]: {
 				role: [defaults.role.system, loggedIn],
-				accepts: [[loggedIn, {
-					modify: [belongsToUser],
-				}]],
+				modify: [belongsToUser],
 			},
 			[Method.DELETE]: {
 				role: [defaults.role.system, loggedIn],
-				modify: [findAnonymizedEmail],
+				modify: [belongsToUser],
 				effect: [anonymizeEmail],
-				accepts: [[loggedIn, {
-					modify: [belongsToUser],
-				}]],
 			},
 		},
 	})

@@ -5,16 +5,15 @@ import check_required from "../rule/check_required.ts"
 import attributes from "../filter/attributes.ts"
 import validate_body from "../rule/validate_body.ts"
 import type { BindsType } from "../../model/model.ts"
+import set_dates from "../modify/set_dates.ts"
 
 export const after: BindsType = {
 	create: {
-		modify: [filter_fields],
+		modify: [set_dates, filter_fields],
 		rule: [has_entity, check_required, validate_body],
 		role: [],
 		filter: [attributes],
 		effect: [],
-		accepts: [],
-		rejects: [],
 	},
 	read: {
 		modify: [filter_fields],
@@ -22,25 +21,19 @@ export const after: BindsType = {
 		filter: [attributes],
 		effect: [],
 		role: [],
-		accepts: [],
-		rejects: [],
 	},
 	update: {
-		modify: [],
+		modify: [set_dates],
 		rule: [has_entity, validate_query, check_required, validate_body],
 		filter: [],
 		effect: [],
 		role: [],
-		accepts: [],
-		rejects: [],
 	},
 	delete: {
-		modify: [],
+		modify: [set_dates],
 		rule: [validate_query],
 		filter: [],
 		effect: [],
 		role: [],
-		accepts: [],
-		rejects: [],
 	},
 }

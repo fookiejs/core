@@ -19,11 +19,11 @@ import { v4 as uuidv4 } from "uuid"
 import { State } from "../state.ts"
 
 function createPayload<T extends Model, M extends Method>(
-	payloadInput: Omit<Payload<T, M>, "runId" | "state" | "model"> & { modelConstructor: typeof Model },
+	payloadInput: Omit<Payload<T, M>, "runId" | "state" | "model"> & { model: typeof Model },
 ): Payload<T, M> {
 	return {
 		...(payloadInput as Omit<Payload<T, M>, "runId" | "state" | "model">),
-		model: payloadInput.modelConstructor as ModelConstructor<T>,
+		model: payloadInput.model as ModelConstructor<T>,
 		runId: uuidv4(),
 		state: new State(),
 	}
@@ -72,7 +72,7 @@ export function createRun<T extends Model>(
 			method: Method.CREATE,
 			body,
 			options,
-			modelConstructor: this,
+			model: this,
 			query: {
 				limit: Infinity,
 				offset: 0,
@@ -97,7 +97,7 @@ export function readRun<T extends Model>(
 			method: Method.READ,
 			query,
 			options,
-			modelConstructor: this,
+			model: this,
 			body: {} as Partial<T>,
 		})
 		return runLifecycle(payload, method)
@@ -118,7 +118,7 @@ export function updateRun<T extends Model>(
 			query,
 			body,
 			options,
-			modelConstructor: this,
+			model: this,
 		})
 		return runLifecycle(payload, method)
 	}
@@ -136,7 +136,7 @@ export function deleteRun<T extends Model>(
 			method: Method.DELETE,
 			query,
 			options,
-			modelConstructor: this,
+			model: this,
 			body: {} as Partial<T>,
 		})
 		return runLifecycle(payload, method)

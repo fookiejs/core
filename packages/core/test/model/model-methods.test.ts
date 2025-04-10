@@ -87,19 +87,19 @@ Deno.test("should delete a user correctly", async () => {
 		email: "to-delete@test.com",
 		usage: 15,
 	})
-	if (!userToDelete || !userToDelete.id) {
-		throw new Error("Failed to create user for delete test")
-	}
 
 	const deleteResponse = await User.delete({
 		filter: {
 			id: { equals: userToDelete.id },
 		},
 	})
+
 	expect(deleteResponse.length).toEqual(1)
 
 	const deletedUser = await User.read({
 		filter: { id: { equals: userToDelete.id } },
 	})
-	// expect(deletedUser.length).toBe(0);
+
+	console.log(deletedUser, 333)
+	expect(deletedUser.length).toBe(0)
 })

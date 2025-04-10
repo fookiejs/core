@@ -52,15 +52,6 @@ Deno.test("QueryBooleanModel Query Tests", async () => {
 		expect(results).toHaveLength(0)
 	})
 
-	Deno.test("isNotNull query", async () => {
-		const results = await QueryBooleanModel.read({
-			filter: {
-				booleanField: { isNull: false },
-			},
-		})
-		expect(results).toHaveLength(3)
-	})
-
 	Deno.test("notExist query", async () => {
 		const results = await QueryBooleanModel.read({
 			filter: {

@@ -14,8 +14,6 @@ export const before: BindsType = {
 		rule: [has_body, has_field, check_type, unique, uniqueGroup],
 		filter: [],
 		effect: [],
-		accepts: [],
-		rejects: [],
 	},
 	read: {
 		modify: [],
@@ -23,8 +21,6 @@ export const before: BindsType = {
 		rule: [],
 		filter: [],
 		effect: [],
-		accepts: [],
-		rejects: [],
 	},
 	update: {
 		modify: [],
@@ -32,8 +28,6 @@ export const before: BindsType = {
 		rule: [has_body, has_field, check_type, unique],
 		filter: [],
 		effect: [],
-		accepts: [],
-		rejects: [],
 	},
 	delete: {
 		modify: [],
@@ -41,7 +35,5 @@ export const before: BindsType = {
 		rule: [],
 		filter: [],
 		effect: [],
-		accepts: [],
-		rejects: [],
 	},
 }

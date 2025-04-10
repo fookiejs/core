@@ -34,7 +34,6 @@ export const database: Database = Database.create({
 			[Method.READ]: async function (payload) {
 				const repo = getRepository(modelName)
 				const options: FindManyOptions = transformQueryToFindOptions(payload.query)
-				options.withDeleted = false
 				return repo.find(options)
 			},
 
@@ -48,7 +47,6 @@ export const database: Database = Database.create({
 						.select("id")
 						.from(modelName, "entity")
 						.where(where)
-						.andWhere("deletedAt IS NULL")
 
 					const results = await qb.getRawMany()
 					const ids = results.map((r) => r.id)
@@ -76,7 +74,6 @@ export const database: Database = Database.create({
 						.select("id")
 						.from(modelName, "entity")
 						.where(where)
-						.andWhere("deletedAt IS NULL")
 
 					const results = await qb.getRawMany()
 					const ids = results.map((r) => r.id)
