@@ -179,6 +179,7 @@ export function initCache(database: Database): CacheModule {
 				},
 				{
 					token: Config.SYSTEM_TOKEN,
+					hardDelete: true,
 				},
 			)
 		},
@@ -196,6 +197,7 @@ export function initCache(database: Database): CacheModule {
 					},
 					{
 						token: Config.SYSTEM_TOKEN,
+						hardDelete: true,
 					},
 				)
 			} catch (error) {

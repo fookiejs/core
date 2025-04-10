@@ -34,6 +34,7 @@ export const database: Database = Database.create({
 			[Method.READ]: async function (payload) {
 				const repo = getRepository(modelName)
 				const options: FindManyOptions = transformQueryToFindOptions(payload.query)
+				options.withDeleted = false
 				return repo.find(options)
 			},
 
@@ -79,12 +80,16 @@ export const database: Database = Database.create({
 					const ids = results.map((r) => r.id)
 
 					if (ids.length > 0) {
-						await transactionalEntityManager
+						const deleteBuilder = transactionalEntityManager
 							.createQueryBuilder()
-							.softDelete()
-							.from(modelName)
+							.from(modelName, "entity")
 							.whereInIds(ids)
-							.execute()
+
+						if (payload.options.hardDelete === true) {
+							await deleteBuilder.delete().execute()
+						} else {
+							await deleteBuilder.softDelete().execute()
+						}
 					}
 
 					return ids

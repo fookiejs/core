@@ -82,9 +82,9 @@ Deno.test("should update a user correctly", async () => {
 	})
 })
 
-Deno.test("should delete a user correctly", async () => {
+Deno.test("should soft delete a user by default", async () => {
 	const userToDelete = await User.create({
-		email: "to-delete@test.com",
+		email: "soft-delete@test.com",
 		usage: 15,
 	})
 
@@ -97,7 +97,34 @@ Deno.test("should delete a user correctly", async () => {
 	expect(deleteResponse.length).toEqual(1)
 
 	const deletedUser = await User.read({
-		filter: { id: { equals: userToDelete.id } },
+		filter: {
+			id: { equals: userToDelete.id },
+		},
+	})
+
+	expect(deletedUser.length).toBe(0)
+})
+
+Deno.test("should hard delete a user when hardDelete is true", async () => {
+	const userToDelete = await User.create({
+		email: "hard-delete@test.com",
+		usage: 15,
+	})
+
+	const deleteResponse = await User.delete({
+		filter: {
+			id: { equals: userToDelete.id },
+		},
+	}, {
+		hardDelete: true,
+	})
+
+	expect(deleteResponse.length).toEqual(1)
+
+	const deletedUser = await User.read({
+		filter: {
+			id: { equals: userToDelete.id },
+		},
 	})
 
 	expect(deletedUser.length).toBe(0)

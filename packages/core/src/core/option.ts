@@ -1,4 +1,5 @@
 export class Options {
-	token?: string | symbol;
+	token?: string | symbol
+	hardDelete?: boolean = false;
 	[key: string]: unknown
 }

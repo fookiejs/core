@@ -2,7 +2,6 @@ import { Database } from "../../core/database.ts"
 import type { Model, QueryType } from "../../core/model/model.ts"
 import { Method } from "../../core/method.ts"
 import type { Payload } from "../../core/payload.ts"
-import { Utils } from "../../utils/util.ts"
 import { types } from "../type/types.ts"
 
 export const store = Database.create({
@@ -21,7 +20,7 @@ export const store = Database.create({
 			[Method.READ]: async (payload: Payload<T, Method.READ>) => {
 				const matchingEntities: T[] = []
 				for (const entity of pool) {
-					if (isEntityMatchingQuery(entity, payload.query) && !entity.deletedAt) {
+					if (isEntityMatchingQuery(entity, payload.query) && entity.deletedAt === null) {
 						matchingEntities.push(entity)
 					}
 				}
@@ -66,7 +65,14 @@ export const store = Database.create({
 				const deletedIds: string[] = []
 				for (const entity of pool) {
 					if (isEntityMatchingQuery(entity, payload.query)) {
-						entity.deletedAt = new Date().toISOString()
+						if (payload.options.hardDelete === true) {
+							const index = pool.indexOf(entity)
+							if (index > -1) {
+								pool.splice(index, 1)
+							}
+						} else {
+							entity.deletedAt = new Date().toISOString()
+						}
 						if (entity.id) {
 							deletedIds.push(entity.id)
 						}
@@ -78,106 +84,56 @@ export const store = Database.create({
 	},
 }) as Database
 
-function sortEntities<T extends Model>(entities: T[], orderBy: Partial<Record<keyof T, "asc" | "desc">>): void {
-	const orderKeys = Object.keys(orderBy) as Array<keyof T>
-
+function sortEntities<T extends Model>(entities: T[], orderBy: Record<string, "asc" | "desc">) {
 	entities.sort((a, b) => {
-		for (const key of orderKeys) {
-			const direction = orderBy[key] === "desc" ? -1 : 1
-			const valueA = a[key]
-			const valueB = b[key]
+		for (const [key, direction] of Object.entries(orderBy)) {
+			const aValue = (a as Record<string, any>)[key]
+			const bValue = (b as Record<string, any>)[key]
 
-			if (valueA === null && valueB === null) continue
-			if (valueA === null) return direction
-			if (valueB === null) return -direction
+			if (aValue === bValue) continue
 
-			if (typeof valueA !== typeof valueB) {
-				const strA = String(valueA)
-				const strB = String(valueB)
-				if (strA < strB) return -1 * direction
-				if (strA > strB) return 1 * direction
-				continue
-			}
+			if (aValue === null || aValue === undefined) return direction === "asc" ? -1 : 1
+			if (bValue === null || bValue === undefined) return direction === "asc" ? 1 : -1
 
-			if (Utils.isNumber(valueA) && Utils.isNumber(valueB)) {
-				return (Number(valueA) - Number(valueB)) * direction
-			}
-
-			if (Utils.isString(valueA) && Utils.isString(valueB)) {
-				return String(valueA).localeCompare(String(valueB)) * direction
-			}
-
-			if (Utils.isTimestamp(valueA) && Utils.isTimestamp(valueB)) {
-				const dateA = new Date(valueA as string | number | Date).getTime()
-				const dateB = new Date(valueB as string | number | Date).getTime()
-				return (dateA - dateB) * direction
-			}
-
-			if (Utils.isBoolean(valueA) && Utils.isBoolean(valueB)) {
-				return ((valueA === valueB) ? 0 : (valueA ? 1 : -1)) * direction
-			}
+			const comparison = aValue < bValue ? -1 : 1
+			return direction === "asc" ? comparison : -comparison
 		}
-
 		return 0
 	})
 }
 
-function isEntityMatchingQuery<T extends Model>(
-	entity: T,
-	query: QueryType<T>,
-): boolean {
-	if (!query.filter) {
-		return true
-	}
+export function isEntityMatchingQuery<T extends Model>(entity: T, query: QueryType<T>): boolean {
+	const filter = query.filter || {}
 
-	for (const field of Object.keys(query.filter) as Array<keyof T>) {
-		const condition = query.filter[field]
-		if (!condition) continue
-
-		const entityValue = entity[field]
-
-		if (condition.equals !== undefined && entityValue !== condition.equals) {
-			return false
-		}
-
-		if (condition.notEquals !== undefined && entityValue === condition.notEquals) {
-			return false
+	for (const [key, condition] of Object.entries(filter)) {
+		const value = (entity as Record<string, any>)[key]
+		const typedCondition = condition as {
+			equals?: unknown
+			notEquals?: unknown
+			in?: unknown[]
+			notIn?: unknown[]
+			lt?: number | string | Date
+			lte?: number | string | Date
+			gt?: number | string | Date
+			gte?: number | string | Date
+			like?: string
+			isNull?: boolean
 		}
 
-		if (condition.in && !condition.in.includes(entityValue as never)) {
-			return false
+		if (typedCondition.equals !== undefined && value !== typedCondition.equals) return false
+		if (typedCondition.notEquals !== undefined && value === typedCondition.notEquals) return false
+		if (typedCondition.in && !typedCondition.in.includes(value)) return false
+		if (typedCondition.notIn && typedCondition.notIn.includes(value)) return false
+		if (typedCondition.lt !== undefined && (value === null || value >= typedCondition.lt)) return false
+		if (typedCondition.lte !== undefined && (value === null || value > typedCondition.lte)) return false
+		if (typedCondition.gt !== undefined && (value === null || value <= typedCondition.gt)) return false
+		if (typedCondition.gte !== undefined && (value === null || value < typedCondition.gte)) return false
+		if (typedCondition.like !== undefined) {
+			const pattern = typedCondition.like.replace(/%/g, ".*")
+			const regex = new RegExp(`^${pattern}$`)
+			if (!regex.test(String(value))) return false
 		}
-		if (condition.notIn && condition.notIn.includes(entityValue as never)) {
-			return false
-		}
-		if (condition.lt !== undefined && entityValue >= condition.lt) {
-			return false
-		}
-		if (condition.lte !== undefined && entityValue > condition.lte) {
-			return false
-		}
-		if (condition.gt !== undefined && entityValue <= condition.gt) {
-			return false
-		}
-		if (condition.gte !== undefined && entityValue < condition.gte) {
-			return false
-		}
-		if (
-			condition.like &&
-			!new RegExp(condition.like.replace(/%/g, ".*")).test(
-				String(entityValue),
-			)
-		) {
-			return false
-		}
-		if (Utils.isBoolean(condition.isNull)) {
-			if (condition.isNull && entityValue !== null) {
-				return false
-			}
-			if (!condition.isNull && entityValue === null) {
-				return false
-			}
-		}
+		if (typedCondition.isNull !== undefined && (value === null) !== typedCondition.isNull) return false
 	}
 
 	return true

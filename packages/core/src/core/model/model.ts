@@ -217,12 +217,12 @@ export class QueryType<model extends Model> {
 	limit?: number
 	offset?: number
 	orderBy?: {
-		[key in keyof model]?: "asc" | "desc"
+		[key in Exclude<keyof model, "deletedAt">]?: "asc" | "desc"
 	}
 	attributes?: string[]
 	filter?: Partial<
 		Record<
-			keyof model,
+			Exclude<keyof model, "deletedAt">,
 			{
 				gte?: number | string | Date
 				gt?: number | string | Date

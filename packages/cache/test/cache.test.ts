@@ -32,18 +32,50 @@ class TestModel extends Model {
 	name!: string
 }
 
-Deno.test("Cache", async () => {
+async function cleanup() {
+	await TestModel.delete(
+		{
+			filter: {},
+		},
+		{
+			token: Config.SYSTEM_TOKEN,
+			hardDelete: true,
+		},
+	)
 	await cacheModel.delete(
-		{},
+		{
+			filter: {},
+		},
+		{
+			token: Config.SYSTEM_TOKEN,
+			hardDelete: true,
+		},
+	)
+}
+
+Deno.test("Cache - Soft Delete", async () => {
+	await cleanup()
+
+	const testData = await TestModel.create(
+		{
+			name: "test",
+		},
 		{
 			token: Config.SYSTEM_TOKEN,
 		},
 	)
 
-	const testData = await TestModel.create({ name: "test" })
 	expect(testData).not.toBeInstanceOf(FookieError)
 
-	const firstRead = await TestModel.read({})
+	const firstRead = await TestModel.read(
+		{
+			filter: {},
+		},
+		{
+			token: Config.SYSTEM_TOKEN,
+		},
+	)
+
 	expect(firstRead).not.toBeInstanceOf(FookieError)
 
 	if (!(firstRead instanceof FookieError)) {
@@ -51,167 +83,207 @@ Deno.test("Cache", async () => {
 		expect(firstRead.length).toBe(1)
 	}
 
-	const isCached = await cacheModel.read(
-		{},
+	await TestModel.delete(
+		{
+			filter: {},
+		},
 		{
 			token: Config.SYSTEM_TOKEN,
 		},
 	)
 
-	if (!(isCached instanceof FookieError)) {
-		expect(Array.isArray(isCached)).toBe(true)
-		expect(isCached.length).toBe(2)
-	}
+	const afterDelete = await TestModel.read(
+		{
+			filter: {},
+		},
+		{
+			token: Config.SYSTEM_TOKEN,
+		},
+	)
 
-	const secondRead = await TestModel.read({})
-	expect(secondRead).not.toBeInstanceOf(FookieError)
-
-	if (!(secondRead instanceof FookieError)) {
-		expect(Array.isArray(secondRead)).toBe(true)
-		expect(secondRead.length).toBe(1)
-		expect(secondRead).toEqual(firstRead)
+	expect(afterDelete).not.toBeInstanceOf(FookieError)
+	if (!(afterDelete instanceof FookieError)) {
+		expect(Array.isArray(afterDelete)).toBe(true)
+		expect(afterDelete.length).toBe(0)
 	}
 })
 
-Deno.test("should clear cache on update", async () => {
-	await cacheModel.delete(
-		{},
+Deno.test("Cache - Hard Delete", async () => {
+	await cleanup()
+
+	const testData = await TestModel.create(
+		{
+			name: "test",
+		},
 		{
 			token: Config.SYSTEM_TOKEN,
 		},
 	)
 
-	const testData = await TestModel.create({ name: "test" })
 	expect(testData).not.toBeInstanceOf(FookieError)
 
-	const firstRead = await TestModel.read({})
-	expect(firstRead).not.toBeInstanceOf(FookieError)
-
-	const isCached = await cacheModel.read(
-		{},
+	const firstRead = await TestModel.read(
+		{
+			filter: {},
+		},
 		{
 			token: Config.SYSTEM_TOKEN,
 		},
 	)
 
-	if (!(isCached instanceof FookieError)) {
-		expect(Array.isArray(isCached)).toBe(true)
-		expect(isCached.length).toBe(2)
+	expect(firstRead).not.toBeInstanceOf(FookieError)
+
+	if (!(firstRead instanceof FookieError)) {
+		expect(Array.isArray(firstRead)).toBe(true)
+		expect(firstRead.length).toBe(1)
+	}
+
+	await TestModel.delete(
+		{
+			filter: {},
+		},
+		{
+			token: Config.SYSTEM_TOKEN,
+			hardDelete: true,
+		},
+	)
+
+	const afterDelete = await TestModel.read(
+		{
+			filter: {},
+		},
+		{
+			token: Config.SYSTEM_TOKEN,
+		},
+	)
+
+	expect(afterDelete).not.toBeInstanceOf(FookieError)
+	if (!(afterDelete instanceof FookieError)) {
+		expect(Array.isArray(afterDelete)).toBe(true)
+		expect(afterDelete.length).toBe(0)
+	}
+})
+
+Deno.test("Cache - Clear on Update", async () => {
+	await cleanup()
+
+	const testData = await TestModel.create(
+		{
+			name: "test",
+		},
+		{
+			token: Config.SYSTEM_TOKEN,
+		},
+	)
+
+	expect(testData).not.toBeInstanceOf(FookieError)
+
+	const firstRead = await TestModel.read(
+		{
+			filter: {},
+		},
+		{
+			token: Config.SYSTEM_TOKEN,
+		},
+	)
+
+	expect(firstRead).not.toBeInstanceOf(FookieError)
+
+	if (!(firstRead instanceof FookieError)) {
+		expect(Array.isArray(firstRead)).toBe(true)
+		expect(firstRead.length).toBe(1)
 	}
 
 	if (!(testData instanceof FookieError)) {
 		await TestModel.update(
 			{
 				filter: { id: { equals: testData.id } },
-				limit: 1,
-				offset: 0,
-				attributes: [],
 			},
-			{ name: "updated" },
+			{
+				name: "updated",
+			},
+			{
+				token: Config.SYSTEM_TOKEN,
+			},
 		)
 	}
 
-	const isCacheCleared = await cacheModel.read(
-		{},
+	const afterUpdate = await TestModel.read(
+		{
+			filter: {},
+		},
 		{
 			token: Config.SYSTEM_TOKEN,
 		},
 	)
 
-	if (!(isCacheCleared instanceof FookieError)) {
-		expect(Array.isArray(isCacheCleared)).toBe(true)
-		expect(isCacheCleared.length).toBe(0)
+	expect(afterUpdate).not.toBeInstanceOf(FookieError)
+	if (!(afterUpdate instanceof FookieError)) {
+		expect(Array.isArray(afterUpdate)).toBe(true)
+		expect(afterUpdate.length).toBe(1)
+		expect(afterUpdate[0].name).toBe("updated")
 	}
 })
 
-Deno.test("should clear cache on delete", async () => {
-	await cacheModel.delete(
-		{},
+Deno.test("Cache - Expire", async () => {
+	await cleanup()
+
+	const testData = await TestModel.create(
+		{
+			name: "test",
+		},
 		{
 			token: Config.SYSTEM_TOKEN,
 		},
 	)
 
-	const testData = await TestModel.create({ name: "test" })
 	expect(testData).not.toBeInstanceOf(FookieError)
 
-	const firstRead = await TestModel.read({})
+	const firstRead = await TestModel.read(
+		{
+			filter: {},
+		},
+		{
+			token: Config.SYSTEM_TOKEN,
+		},
+	)
+
 	expect(firstRead).not.toBeInstanceOf(FookieError)
 
-	const isCached = await cacheModel.read(
-		{},
-		{
-			token: Config.SYSTEM_TOKEN,
-		},
-	)
-
-	if (!(isCached instanceof FookieError)) {
-		expect(Array.isArray(isCached)).toBe(true)
-		expect(isCached.length).toBe(2)
+	if (!(firstRead instanceof FookieError)) {
+		expect(Array.isArray(firstRead)).toBe(true)
+		expect(firstRead.length).toBe(1)
 	}
 
-	if (!(testData instanceof FookieError)) {
-		await TestModel.delete({
-			filter: { id: { equals: testData.id } },
-			limit: 1,
-			offset: 0,
-			attributes: [],
-		})
+	await new Promise((resolve) => setTimeout(resolve, 2000))
+
+	const afterExpire = await TestModel.read(
+		{
+			filter: {},
+		},
+		{
+			token: Config.SYSTEM_TOKEN,
+		},
+	)
+
+	expect(afterExpire).not.toBeInstanceOf(FookieError)
+	if (!(afterExpire instanceof FookieError)) {
+		expect(Array.isArray(afterExpire)).toBe(true)
+		expect(afterExpire.length).toBe(1)
 	}
 
-	const isCacheCleared = await cacheModel.read(
-		{},
+	const cacheEntries = await cacheModel.read(
+		{
+			filter: {},
+		},
 		{
 			token: Config.SYSTEM_TOKEN,
 		},
 	)
 
-	if (!(isCacheCleared instanceof FookieError)) {
-		expect(Array.isArray(isCacheCleared)).toBe(true)
-		expect(isCacheCleared.length).toBe(0)
-	}
-})
-
-Deno.test("should expire cache after TTL", async () => {
-	await cacheModel.delete(
-		{},
-		{
-			token: Config.SYSTEM_TOKEN,
-		},
-	)
-
-	const testData = await TestModel.create({ name: "test" })
-	expect(testData).not.toBeInstanceOf(FookieError)
-
-	const firstRead = await TestModel.read({})
-	expect(firstRead).not.toBeInstanceOf(FookieError)
-
-	const isCached = await cacheModel.read(
-		{},
-		{
-			token: Config.SYSTEM_TOKEN,
-		},
-	)
-
-	if (!(isCached instanceof FookieError)) {
-		expect(Array.isArray(isCached)).toBe(true)
-		expect(isCached.length).toBe(2)
-	}
-
-	await new Promise((resolve) => setTimeout(resolve, 2 * 1000))
-
-	const secondRead = await TestModel.read({})
-	expect(secondRead).not.toBeInstanceOf(FookieError)
-
-	const isCacheExpired = await cacheModel.read(
-		{},
-		{
-			token: Config.SYSTEM_TOKEN,
-		},
-	)
-
-	if (!(isCacheExpired instanceof FookieError)) {
-		expect(Array.isArray(isCacheExpired)).toBe(true)
-		expect(isCacheExpired.length).toBe(1)
+	expect(cacheEntries).not.toBeInstanceOf(FookieError)
+	if (!(cacheEntries instanceof FookieError)) {
+		expect(Array.isArray(cacheEntries)).toBe(true)
+		expect(cacheEntries.length).toBe(1)
 	}
 })
