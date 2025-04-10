@@ -1,7 +1,6 @@
 import { expect } from "jsr:@std/expect"
 import { defaults, Field, Mixin, Model, Role } from "@fookiejs/core"
 
-// Mixin tanımlama
 let createFlag = false
 
 const sampleMixin = Mixin.create({

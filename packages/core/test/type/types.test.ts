@@ -1,8 +1,7 @@
 import { expect } from "jsr:@std/expect"
-import { defaults } from "@fookiejs/core" // Tipleri doğru yoldan import edin
+import { defaults } from "@fookiejs/core"
 
 Deno.test("Type Validation Tests", () => {
-	// Integer type tests
 	Deno.test("Integer Type", () => {
 		Deno.test("should validate a valid integer", () => {
 			const validValue = 123
@@ -15,7 +14,6 @@ Deno.test("Type Validation Tests", () => {
 		})
 	})
 
-	// Float type tests
 	Deno.test("Float Type", () => {
 		Deno.test("should validate a valid float", () => {
 			const validValue = 123.45
@@ -28,7 +26,6 @@ Deno.test("Type Validation Tests", () => {
 		})
 	})
 
-	// Text type tests
 	Deno.test("Text Type", () => {
 		Deno.test("should validate a valid text", () => {
 			const validValue = "hello world"
@@ -41,7 +38,6 @@ Deno.test("Type Validation Tests", () => {
 		})
 	})
 
-	// Date type tests
 	Deno.test("Date Type", () => {
 		Deno.test("should validate a valid date", () => {
 			const validValue = "2024-05-14"

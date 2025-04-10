@@ -1,4 +1,3 @@
-// Model tipi tanımla
 export interface FookieModel {
 	constructor: {
 		read: (query: any, options: any) => Promise<any>
@@ -26,7 +25,6 @@ export class FookieDataLoader {
 	}
 }
 
-// DataLoader sınıfı
 class DataLoader {
 	private batchLoadFn: (keys: string[]) => Promise<any[]>
 	private cache: Map<string, any> = new Map()

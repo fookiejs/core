@@ -1,7 +1,6 @@
 import { expect } from "jsr:@std/expect"
 import { defaults, Field, FookieError, Model } from "@fookiejs/core"
 
-// Model Tanımlama
 @Model.Decorator({
 	database: defaults.database.store,
 	binds: {

@@ -3,8 +3,6 @@ import type { Model, QueryType } from "./model/model.ts"
 import type { Options } from "./option.ts"
 import type { State } from "./state.ts"
 
-// Simplified and more direct constructor type definition
-// Represents a constructor that produces instances of T and has Model's static methods
 export type ModelConstructor<T extends Model> = typeof Model & (new (...args: any[]) => T)
 
 export type Payload<T extends Model, M extends Method> = {

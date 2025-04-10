@@ -45,7 +45,6 @@ Deno.test("QueryTypeModel CRUD Operations", () => {
 	})
 
 	Deno.test("should read entities with individual filters", async () => {
-		// Filter by integer greater than
 		let results = await QueryTypeModel.read({
 			filter: {
 				intField: { gte: 15 },
@@ -56,7 +55,6 @@ Deno.test("QueryTypeModel CRUD Operations", () => {
 			expect((entity as QueryTypeModel).intField).toBeGreaterThanOrEqual(15)
 		})
 
-		// Filter by float less than
 		results = await QueryTypeModel.read({
 			filter: {
 				floatField: { lte: 10.5 },
@@ -67,7 +65,6 @@ Deno.test("QueryTypeModel CRUD Operations", () => {
 			expect((entity as QueryTypeModel).floatField).toBeLessThanOrEqual(10.5)
 		})
 
-		// Filter by text equals
 		results = await QueryTypeModel.read({
 			filter: {
 				textField: { equals: "test5" },
@@ -78,7 +75,6 @@ Deno.test("QueryTypeModel CRUD Operations", () => {
 			expect((entity as QueryTypeModel).textField).toBe("test5")
 		})
 
-		// Filter by date greater than or equal
 		results = await QueryTypeModel.read({
 			filter: {
 				dateField: { gte: "2024-05-10" },

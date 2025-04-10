@@ -28,7 +28,7 @@ Deno.test("Enum Type - Valid Values", async () => {
 Deno.test("Enum Type - Invalid Values", async () => {
 	try {
 		await EnumFieldModel.create({ role: "INVALID_ROLE" as UserRole })
-		expect(false).toBe(true) // Should not reach here
+		expect(false).toBe(true)
 	} catch (error) {
 		expect(error instanceof FookieError).toBe(true)
 	}
