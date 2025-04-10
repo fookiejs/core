@@ -100,6 +100,5 @@ Deno.test("should delete a user correctly", async () => {
 		filter: { id: { equals: userToDelete.id } },
 	})
 
-	console.log(deletedUser, 333)
 	expect(deletedUser.length).toBe(0)
 })
