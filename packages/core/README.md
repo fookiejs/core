@@ -42,6 +42,19 @@ class Product extends Model {
 		features: [defaults.feature.required],
 	})
 	price!: number
+
+	@Field.Decorator({
+		type: defaults.type.enum(ProductStatus),
+		default: ProductStatus.ACTIVE,
+	})
+	status!: ProductStatus
+}
+
+// Enum example
+enum ProductStatus {
+	ACTIVE = "ACTIVE",
+	DISCONTINUED = "DISCONTINUED",
+	OUT_OF_STOCK = "OUT_OF_STOCK",
 }
 ```
 

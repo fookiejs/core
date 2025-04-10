@@ -184,8 +184,19 @@ export const initializeDataSource = async function (options: DataSourceOptions):
 				},
 				...Object.entries(schema).reduce((acc, [key, value]) => {
 					if (key === "id" || key === "createdAt" || key === "updatedAt" || key === "deletedAt") return acc
+
+					const isEnum = value.type.key.startsWith("enum(") && value.type.key.endsWith(")")
+					let enumValues = []
+
+					if (isEnum) {
+						const enumValuesStr = value.type.key.substring(5, value.type.key.length - 1)
+						enumValues = enumValuesStr.split("|")
+					}
+
 					acc[key] = {
-						type: Utils.includes(value.type.key, "[]")
+						type: isEnum
+							? "enum"
+							: Utils.includes(value.type.key, "[]")
 							? value.type.key.replace("[]", "")
 							: value.type.key === "text"
 							? String
@@ -197,6 +208,8 @@ export const initializeDataSource = async function (options: DataSourceOptions):
 						array: Utils.includes(value.type.key, "[]"),
 						nullable: !value.features.includes(defaults.feature.required),
 						unique: value.features.includes(defaults.feature.unique),
+						// Add enum options if it's an enum type
+						...(isEnum && { enum: enumValues }),
 					}
 					return acc
 				}, {}),
