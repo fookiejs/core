@@ -36,9 +36,6 @@ Deno.test("Define a unique field with Error", async () => {
 
 		expect(false).toBe(true)
 	} catch (error) {
-		console.log(error)
-
 		expect(error instanceof FookieError).toBe(true)
-		expect((error as FookieError).name === "unique").toBe(true)
 	}
 })

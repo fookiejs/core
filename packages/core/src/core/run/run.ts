@@ -15,6 +15,7 @@ import { Method } from "../method.ts"
 import type { MethodResponse } from "../response.ts"
 import { DisposableSpan } from "../../otel/index.ts"
 import preModify from "./lifecycles/pre-modify.ts"
+import method from "./lifecycles/method.ts"
 import { v4 as uuidv4 } from "uuid"
 import { State } from "../state.ts"
 
@@ -35,20 +36,15 @@ async function runLifecycle<T extends Model, M extends Method>(
 ) {
 	const modelName = payload.model.getName()
 
-	using _span = new DisposableSpan(`run:${modelName}:${payload.method}`)
+	using _span = DisposableSpan.add(`run:${modelName}:${payload.method}`)
 
 	if (await pre_rule(payload)) {
 		await preModify(payload)
 		if (await role(payload)) {
 			await modify(payload)
 			if (await rule(payload)) {
-				using _ruleSpan = DisposableSpan.add("method")
-				const response = plainToInstance(
-					payload.model,
-					lodash.isString(payload.state.cachedResponse)
-						? JSON.parse(payload.state.cachedResponse!)
-						: await dbMethod(payload),
-				) as MethodResponse<T>[M]
+				using _methodSpan = DisposableSpan.add("method")
+				const response = await method(payload, dbMethod)
 				await filter(payload, response)
 				await effect(payload, response)
 				await globalEffect(payload, response)
