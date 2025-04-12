@@ -14,7 +14,6 @@ interface FookieDecoratorContext {
 
 export class Field {
 	type?: Type
-	uniqueGroup?: string[]
 	default?: unknown
 	validators?: [(value: unknown) => boolean | string]
 	relation?: typeof Model

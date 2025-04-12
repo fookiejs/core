@@ -3,17 +3,44 @@ import type { Model, QueryType } from "../../core/model/model.ts"
 import { Method } from "../../core/method.ts"
 import type { Payload } from "../../core/payload.ts"
 import { types } from "../type/types.ts"
+import { defaults } from "../index.ts"
+
+function checkUniqueConstraints<T extends Model>(
+	model: typeof Model,
+	entity: T,
+	pool: T[],
+	excludeId?: string,
+): boolean {
+	const schema = model.schema()
+	for (const [field, fieldSchema] of Object.entries(schema)) {
+		if (fieldSchema.features.includes(defaults.feature.unique)) {
+			const value = entity[field as keyof T]
+			const existingEntity = pool.find((e) =>
+				e[field as keyof T] === value &&
+				e.deletedAt === null &&
+				(!excludeId || e.id !== excludeId)
+			)
+			if (existingEntity) {
+				throw new Error(`Unique constraint violation: ${field} must be unique`)
+			}
+		}
+	}
+	return true
+}
 
 export const store = Database.create({
 	key: "store",
 	primaryKeyType: types.text,
-	modify: function <T extends Model>() {
+	modify: function <T extends Model>(model: typeof Model) {
 		const pool: T[] = []
 		return {
 			[Method.CREATE]: async (payload: Payload<T, Method.CREATE>) => {
 				const now = new Date().toISOString()
 				payload.body.createdAt = now
 				payload.body.updatedAt = now
+
+				checkUniqueConstraints(model, payload.body, pool)
+
 				pool.push(payload.body)
 				return payload.body
 			},
@@ -49,11 +76,16 @@ export const store = Database.create({
 				const updatedIds: string[] = []
 				for (const entity of pool) {
 					if (isEntityMatchingQuery(entity, payload.query) && !entity.deletedAt) {
+						const updatedEntity = { ...entity }
 						Object.keys(payload.body).forEach((key) => {
-							;(entity as Record<string, any>)[key] = (
+							;(updatedEntity as Record<string, any>)[key] = (
 								payload.body as Record<string, any>
 							)[key]
 						})
+
+						checkUniqueConstraints(model, updatedEntity as T, pool, entity.id)
+
+						Object.assign(entity, updatedEntity)
 						if (entity.id) {
 							updatedIds.push(entity.id)
 						}

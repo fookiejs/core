@@ -1,6 +1,4 @@
 import set_default from "../modify/set_default.ts"
-import uniqueGroup from "../rule/uniqueGroup.ts"
-import unique from "../rule/unique.ts"
 import check_type from "../rule/check_type.ts"
 import has_field from "../rule/has_field.ts"
 import has_body from "../rule/has_body.ts"
@@ -11,7 +9,7 @@ export const before: BindsType = {
 	create: {
 		modify: [set_id, set_default],
 		role: [],
-		rule: [has_body, has_field, check_type, unique, uniqueGroup],
+		rule: [has_body, has_field, check_type],
 		filter: [],
 		effect: [],
 	},
@@ -25,7 +23,7 @@ export const before: BindsType = {
 	update: {
 		modify: [],
 		role: [],
-		rule: [has_body, has_field, check_type, unique],
+		rule: [has_body, has_field, check_type],
 		filter: [],
 		effect: [],
 	},

@@ -160,6 +160,16 @@ export const initializeDataSource = async function (options: DataSourceOptions):
 					name: "IDX_DELETED_AT",
 					columns: ["deletedAt"],
 				},
+				...Object.entries(schema).reduce((indices: any[], [key, value]) => {
+					if (value.features.includes(defaults.feature.unique)) {
+						indices.push({
+							name: `UQ_${model.getName()}_${key}`,
+							columns: [key],
+							unique: true,
+						})
+					}
+					return indices
+				}, []),
 			],
 			columns: {
 				id: {

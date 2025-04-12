@@ -24,11 +24,20 @@ Deno.test("Define a unique field with Error", async () => {
 	expect(firstResponse instanceof UniqueField).toBe(true)
 
 	try {
-		await UniqueField.create({
+		const firstResponse = await UniqueField.create({
 			username: "uniqueUser",
 		})
+
+		const secondResponse = await UniqueField.create({
+			username: "uniqueUser",
+		})
+
+		console.log(firstResponse, secondResponse)
+
 		expect(false).toBe(true)
 	} catch (error) {
+		console.log(error)
+
 		expect(error instanceof FookieError).toBe(true)
 		expect((error as FookieError).name === "unique").toBe(true)
 	}
