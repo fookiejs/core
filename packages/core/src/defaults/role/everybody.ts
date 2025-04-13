@@ -1,4 +1,4 @@
-import { Role } from "../../core/lifecycle-function.ts"
+import { Role } from "../../lifecycle-function/lifecycle-function.ts"
 
 export const everybody = Role.create({
 	key: "everybody",

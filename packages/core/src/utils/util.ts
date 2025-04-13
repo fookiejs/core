@@ -1,9 +1,16 @@
+import { Field } from "../field/field.ts"
+import type { SchemaType } from "../model/schema.ts"
+import type { Model } from "../model/model.ts"
+
 export class Utils {
 	static has(obj: any, key: string): boolean {
 		return Object.hasOwn(obj, key)
 	}
 	static keys<T extends object>(obj: T): Array<keyof T> {
 		return Object.keys(obj) as Array<keyof T>
+	}
+	static entries<T extends Model>(obj: SchemaType<T>): [keyof T, Field][] {
+		return Object.entries(obj) as [keyof T, Field][]
 	}
 	static isString(value: any): boolean {
 		return typeof value === "string"

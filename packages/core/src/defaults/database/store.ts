@@ -1,9 +1,11 @@
-import { Database } from "../../core/database.ts"
-import type { Model, QueryType } from "../../core/model/model.ts"
-import { Method } from "../../core/method.ts"
-import type { Payload } from "../../core/payload.ts"
+import { Database } from "../../database/database.ts"
+import { Model } from "../../model/model.ts"
+import type { QueryType } from "../../model/model.ts"
+import { Method } from "../../method/method.ts"
+import { Payload } from "../../payload/payload.ts"
 import { types } from "../type/types.ts"
 import { defaults } from "../index.ts"
+import { Utils } from "../../utils/util.ts"
 
 function checkUniqueConstraints<T extends Model>(
 	model: typeof Model,
@@ -12,16 +14,16 @@ function checkUniqueConstraints<T extends Model>(
 	excludeId?: string,
 ): boolean {
 	const schema = model.schema()
-	for (const [field, fieldSchema] of Object.entries(schema)) {
+	for (const [field, fieldSchema] of Utils.entries(schema)) {
 		if (fieldSchema.features.includes(defaults.feature.unique)) {
-			const value = entity[field as keyof T]
+			const value = entity[field]
 			const existingEntity = pool.find((e) =>
-				e[field as keyof T] === value &&
+				e[field] === value &&
 				e.deletedAt === null &&
 				(!excludeId || e.id !== excludeId)
 			)
 			if (existingEntity) {
-				throw new Error(`Unique constraint violation: ${field} must be unique`)
+				throw new Error(`Unique constraint violation: ${String(field)} must be unique`)
 			}
 		}
 	}

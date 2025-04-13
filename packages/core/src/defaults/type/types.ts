@@ -1,4 +1,4 @@
-import { Type } from "../../core/type.ts"
+import { Type } from "../../type/type.ts"
 import { Utils } from "../../utils/util.ts"
 
 export const types = {

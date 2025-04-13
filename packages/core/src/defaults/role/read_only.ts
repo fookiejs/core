@@ -1,5 +1,5 @@
-import { Role } from "../../core/lifecycle-function.ts"
-import { Method } from "../../core/method.ts"
+import { Role } from "../../lifecycle-function/lifecycle-function.ts"
+import { Method } from "../../method/method.ts"
 
 export const readOnly = Role.create({
 	key: "read_only",

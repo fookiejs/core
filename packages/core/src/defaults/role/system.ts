@@ -1,5 +1,5 @@
-import { Role } from "../../core/lifecycle-function.ts"
-import { Config } from "../../core/config.ts"
+import { Role } from "../../lifecycle-function/lifecycle-function.ts"
+import { Config } from "../../config/config.ts"
 
 export const system = Role.create({
 	key: "system",
