@@ -52,9 +52,9 @@ async function runLifecycle<T extends Model, M extends Method>(
 	}
 
 	throw FookieError.create({
-		validationErrors: {},
-		message: "Lifecycle execution failed or was rejected.",
-		name: "LifecycleError",
+		message: `Lifecycle execution failed.`,
+		status: 400,
+		code: "LIFECYCLE_FAILURE",
 	})
 }
 

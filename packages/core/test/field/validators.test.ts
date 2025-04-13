@@ -49,7 +49,8 @@ Deno.test("Field with a validator failing validation", async () => {
 		expect(false).toBe(true)
 	} catch (error) {
 		expect(error instanceof FookieError).toBe(true)
-		expect(error.name === "validate_body").toBe(true)
+
+		expect(error.code === "VALIDATION_ERROR").toBe(true)
 		expect(error.validationErrors.myNumber[0] === "number_not_in_range").toBe(
 			true,
 		)

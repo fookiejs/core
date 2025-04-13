@@ -70,7 +70,7 @@ Deno.test("Relation", () => {
 		expect(userResponse instanceof FookieError).toBe(true)
 
 		if (userResponse instanceof FookieError) {
-			expect(userResponse.name === "has_entity").toBeTruthy()
+			expect(userResponse.code === "has_entity").toBeTruthy()
 		}
 	})
 })

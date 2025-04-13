@@ -16,8 +16,8 @@ export class Config {
 	static get(key: string): string {
 		if (!Utils.has(this.env, key)) {
 			throw FookieError.create({
-				name: "missing_config",
-				message: `Environment variable not found`,
+				code: "MISSING_CONFIG",
+				message: `Environment variable not found.`,
 				validationErrors: {},
 			})
 		}

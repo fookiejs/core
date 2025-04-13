@@ -23,9 +23,9 @@ const rule = async function (
 
 		if (res !== true) {
 			throw FookieError.create({
-				name: rule.key,
-				validationErrors: {},
-				message: "rule error",
+				message: `Rule ${rule.key} failed.`,
+				code: "RULE",
+				status: 400,
 			})
 		}
 	}

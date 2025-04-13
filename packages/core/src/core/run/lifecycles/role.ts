@@ -31,9 +31,9 @@ const role = async function (payload: Payload<Model, Method>) {
 	}
 
 	throw FookieError.create({
-		message: "No role accepted the request",
-		validationErrors: {},
-		name: "role",
+		message: `Access denied. None of the required roles were satisfied.`,
+		status: 403,
+		code: "ACCESS_DENIED",
 	})
 }
 

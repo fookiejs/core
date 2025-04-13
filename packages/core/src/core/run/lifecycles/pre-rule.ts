@@ -16,9 +16,9 @@ const preRule = async function (
 		const res = await rule.execute(payload)
 		if (res !== true) {
 			throw FookieError.create({
-				message: "pre-rule",
-				validationErrors: {},
-				name: rule.key,
+				message: `Pre-rule ${rule.key} failed.`,
+				code: "PRE_RULE",
+				status: 400,
 			})
 		}
 	}

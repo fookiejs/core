@@ -44,7 +44,7 @@ Deno.test("Relation", () => {
 
 		expect(response instanceof FookieError).toBe(true)
 		if (response instanceof FookieError) {
-			expect(response.name).toBe("has_entity")
+			expect(response.code).toBe("has_entity")
 		}
 	})
 })

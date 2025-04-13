@@ -23,9 +23,9 @@ const method = async function <T extends Model, M extends Method>(
 		return response
 	} catch (error) {
 		throw FookieError.create({
-			validationErrors: {},
 			message: error.message,
-			name: "MethodError",
+			code: "METHOD_ERROR",
+			status: 400,
 		})
 	}
 }

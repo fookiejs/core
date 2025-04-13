@@ -19,7 +19,7 @@ Deno.test("Define a required field with Error", async () => {
 		expect(false).toBe(true)
 	} catch (error) {
 		expect(error instanceof FookieError).toBe(true)
-		expect(error.name === "check_required").toBe(true)
+		expect(error.code === "RULE").toBe(true)
 	}
 })
 

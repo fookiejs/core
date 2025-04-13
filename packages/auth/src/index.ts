@@ -4,6 +4,7 @@ import {
 	defaults,
 	Effect,
 	Field,
+	FookieError,
 	globalPreModifies,
 	Method,
 	Model,
@@ -39,7 +40,17 @@ export function initAuth(
 		key: "loggedIn",
 
 		async execute(payload: any) {
-			return payload.state[ACCOUNT] instanceof Account
+			const loggedIn = payload.state[ACCOUNT] instanceof Account
+
+			if (!loggedIn) {
+				throw FookieError.create({
+					message: `User is not logged in.`,
+					status: 401,
+					code: "NOT_LOGGED_IN",
+				})
+			}
+
+			return true
 		},
 	})
 
