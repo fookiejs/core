@@ -21,7 +21,7 @@ export default Rule.create({
 
 		const isValidObject = (key: string, validator: (val: any) => boolean) =>
 			lodash.has(payload.query, key) &&
-			!validator((payload.query as Record<string, any>)[key])
+			!validator(payload.query[key])
 
 		if (isValidObject("filter", lodash.isObject)) {
 			return false
@@ -47,7 +47,7 @@ export default Rule.create({
 
 		for (const filterKey of filterKeys) {
 			const currentKeys = lodash.keys(
-				(payload.query.filter as Record<string, any>)[filterKey],
+				payload.query.filter[filterKey],
 			)
 			const type: Type = schema[filterKey].type
 
@@ -58,7 +58,7 @@ export default Rule.create({
 			}
 
 			for (const currentKey of currentKeys) {
-				const value = (payload.query.filter as Record<string, any>)[filterKey][
+				const value = payload.query.filter[filterKey][
 					currentKey
 				]
 				if (!isValidFilterKey(type, currentKey, value)) {

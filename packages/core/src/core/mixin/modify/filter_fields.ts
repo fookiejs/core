@@ -5,7 +5,7 @@ export default Modify.create({
 	key: "filter_fields",
 	execute: async function (payload) {
 		for (const key of payload.query.attributes || []) {
-			const field = (payload.model.schema() as Record<string, any>)[key]
+			const field = (payload.model.schema())[key]
 
 			let show = true
 

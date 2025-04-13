@@ -331,7 +331,7 @@ export function createGraphQL() {
 		}
 
 		const modelName = model.getName()
-		const schema = model.schema() as Record<string, any>
+		const schema = model.schema()
 
 		typeDefs.type[modelName] = {
 			id: { value: "ID" } as TypeField,

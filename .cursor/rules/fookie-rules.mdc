@@ -1,0 +1,9 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Fookie JS AI Rules
+
+- Dont add comments to make the code understandable.

@@ -78,9 +78,7 @@ export const store = Database.create({
 					if (isEntityMatchingQuery(entity, payload.query) && !entity.deletedAt) {
 						const updatedEntity = { ...entity }
 						Object.keys(payload.body).forEach((key) => {
-							;(updatedEntity as Record<string, any>)[key] = (
-								payload.body as Record<string, any>
-							)[key]
+							updatedEntity[key] = payload.body[key]
 						})
 
 						checkUniqueConstraints(model, updatedEntity as T, pool, entity.id)
@@ -119,8 +117,8 @@ export const store = Database.create({
 function sortEntities<T extends Model>(entities: T[], orderBy: Record<string, "asc" | "desc">) {
 	entities.sort((a, b) => {
 		for (const [key, direction] of Object.entries(orderBy)) {
-			const aValue = (a as Record<string, any>)[key]
-			const bValue = (b as Record<string, any>)[key]
+			const aValue = a[key]
+			const bValue = b[key]
 
 			if (aValue === bValue) continue
 
@@ -138,7 +136,7 @@ export function isEntityMatchingQuery<T extends Model>(entity: T, query: QueryTy
 	const filter = query.filter || {}
 
 	for (const [key, condition] of Object.entries(filter)) {
-		const value = (entity as Record<string, any>)[key]
+		const value = entity[key]
 		const typedCondition = condition as {
 			equals?: unknown
 			notEquals?: unknown

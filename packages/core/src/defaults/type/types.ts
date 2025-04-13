@@ -2,7 +2,7 @@ import { Type } from "../../core/type.ts"
 import { Utils } from "../../utils/util.ts"
 
 export const types = {
-	enum: <T extends Record<string, string | number>>(enumObj: T): Type => {
+	enum: <T extends Record<string, string>>(enumObj: T): Type => {
 		const enumValues = Object.values(enumObj)
 		return Type.create({
 			key: "enum",
@@ -26,6 +26,26 @@ export const types = {
 			example: [innerType.example],
 			queryController: {},
 			alias: ["array"],
+		})
+	},
+	varchar: (maxLength: number): Type => {
+		return Type.create({
+			key: `varchar(${maxLength})`,
+			validate: (value: unknown): boolean => {
+				if (typeof value !== "string") return false
+				return value.length <= maxLength
+			},
+			example: `example varchar`.substring(0, Math.min(15, maxLength)),
+			queryController: {
+				equals: { key: "text" },
+				notEquals: { key: "text" },
+				like: { key: "text" },
+				ilike: { key: "text" },
+				in: { key: "text", isArray: true },
+				notIn: { key: "text", isArray: true },
+				isNull: { key: "boolean" },
+			},
+			alias: ["varchar", "character varying"],
 		})
 	},
 	uuid: Type.create({
@@ -128,22 +148,6 @@ export const types = {
 			isNull: { key: "boolean" },
 		},
 		alias: ["text"],
-	}) as Type,
-
-	varchar: Type.create({
-		key: "varchar",
-		validate: Utils.isString,
-		example: "example varchar",
-		queryController: {
-			equals: { key: "varchar" },
-			notEquals: { key: "varchar" },
-			like: { key: "varchar" },
-			ilike: { key: "varchar" },
-			in: { key: "varchar", isArray: true },
-			notIn: { key: "varchar", isArray: true },
-			isNull: { key: "boolean" },
-		},
-		alias: ["varchar", "character varying"],
 	}) as Type,
 
 	jsonb: Type.create({

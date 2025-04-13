@@ -7,11 +7,11 @@ export default Rule.create<Model, Method>({
 	key: "check_type",
 	execute: async function (payload) {
 		for (const field in payload.body) {
-			const type = (payload.model.schema() as Record<string, any>)[field].type
+			const type = (payload.model.schema())[field].type
 
 			if (
-				!lodash.isNull((payload.body as Record<string, any>)[field]) &&
-				!type.validate((payload.body as Record<string, any>)[field])
+				!lodash.isNull(payload.body[field]) &&
+				!type.validate(payload.body[field])
 			) {
 				return false
 			}

@@ -19,9 +19,7 @@ export default Rule.create({
 		}
 
 		for (const key in newPayload) {
-			;(payload as Record<string, any>)[key] = (
-				newPayload as Record<string, any>
-			)[key]
+			payload[key] = newPayload[key]
 		}
 
 		if (!lodash.has(payload.query, "offset")) {

@@ -92,7 +92,7 @@ export function readRun<T extends Model>(
 			query,
 			options,
 			model: this,
-			body: {} as Partial<T>,
+			body: {},
 		})
 		return runLifecycle(payload, method)
 	}
@@ -131,7 +131,7 @@ export function deleteRun<T extends Model>(
 			query,
 			options,
 			model: this,
-			body: {} as Partial<T>,
+			body: {},
 		})
 		return runLifecycle(payload, method)
 	}

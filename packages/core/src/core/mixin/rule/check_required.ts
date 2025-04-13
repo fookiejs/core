@@ -9,11 +9,11 @@ export default Rule.create({
 		const keys = payload.method == "create" ? Utils.keys(payload.model.schema()) : Utils.keys(payload.body)
 		for (const key of keys) {
 			if (
-				(payload.model.schema() as Record<string, any>)[key].features.includes(
+				(payload.model.schema())[key].features.includes(
 					defaults.feature.required,
 				)
 			) {
-				if (search.includes((payload.body as Record<string, any>)[key])) {
+				if (search.includes(payload.body[key])) {
 					return false
 				}
 			}

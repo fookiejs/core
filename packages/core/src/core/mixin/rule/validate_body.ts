@@ -7,10 +7,10 @@ export default Rule.create({
 	execute: async function (payload) {
 		const validationErrors: Record<string, string[]> = {}
 		for (const field_name in payload.body) {
-			const field = (payload.model.schema() as Record<string, any>)[field_name]
+			const field = (payload.model.schema())[field_name]
 			if (lodash.isArray(field.validators)) {
 				for (const validator of field.validators) {
-					const value = (payload.body as Record<string, any>)[field_name]
+					const value = payload.body[field_name]
 					const validationResult = await validator(value)
 					if (typeof validationResult === "string") {
 						if (!validationErrors[field_name]) {
