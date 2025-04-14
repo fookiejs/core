@@ -18,7 +18,6 @@ const filterTypeMap: Record<string, string> = {
 	"Int": "int_filter",
 	"Float": "float_filter",
 	"Boolean": "boolean_filter",
-	"DateTime": "date_filter",
 }
 
 function generate_filter_types(): string {
@@ -452,16 +451,6 @@ export function createGraphQL() {
 
 	const schemaString = `
 scalar DateTime
-
-input DateFilter {
-  equals: DateTime
-  notEquals: DateTime
-  gt: DateTime
-  gte: DateTime
-  lt: DateTime
-  lte: DateTime
-  isNull: Boolean
-}
 
 ${filter_types}
 

@@ -19,20 +19,4 @@ export const types = {
 		},
 		alias: ["numeric", "decimal"],
 	}) as Type,
-
-	varchar: Type.create({
-		key: "varchar",
-		validate: Utils.isString,
-		example: "example varchar",
-		queryController: {
-			equals: { key: "varchar" },
-			notEquals: { key: "varchar" },
-			like: { key: "varchar" },
-			ilike: { key: "varchar" },
-			in: { key: "varchar", isArray: true },
-			notIn: { key: "varchar", isArray: true },
-			isNull: { key: "boolean" },
-		},
-		alias: ["varchar", "character varying"],
-	}) as Type,
 }

@@ -19,12 +19,6 @@ export function hasher(data: any): string {
 	return hash.digest("hex")
 }
 
-function hashToken(token: string): string {
-	const hash = crypto.createHash("sha256")
-	hash.update(token)
-	return hash.digest("hex")
-}
-
 interface CacheModule {
 	createMixin: (ttl: number) => Mixin
 	FookieCache: typeof Model & {
@@ -33,7 +27,6 @@ interface CacheModule {
 			hash: string
 			data: string
 			expiresAt: string
-			tokenHash?: string
 		}
 	}
 }
@@ -80,18 +73,12 @@ export function initCache(database: Database): CacheModule {
 			features: [defaults.feature.required],
 		})
 		expiresAt!: string
-
-		@Field.Decorator({
-			type: defaults.type.text,
-		})
-		tokenHash?: string
 	}
 
 	const isCached = Modify.create({
 		key: "isCached",
 		execute: async function (payload) {
 			const cacheKey = hasher({
-				token: payload.options.token,
 				query: payload.query,
 				model: payload.model.getName(),
 			})
@@ -100,11 +87,6 @@ export function initCache(database: Database): CacheModule {
 				hash: { equals: cacheKey },
 				model: { equals: payload.model.getName() },
 				expiresAt: { gt: moment().utc().toString() },
-			}
-
-			const token = payload.options.token
-			if (token && typeof token === "string") {
-				filter.tokenHash = { equals: hashToken(token) }
 			}
 
 			const entries = await FookieCache.read(
@@ -125,22 +107,16 @@ export function initCache(database: Database): CacheModule {
 			key: "cacheResponse",
 			execute: async (payload, response) => {
 				const cacheKey = hasher({
-					token: payload.options.token,
 					query: payload.query,
 					model: payload.model.getName(),
 				})
 
 				const expiresAt = moment().utc().add(ttl, "seconds").toString()
-				const cacheData: any = {
+				const cacheData = {
 					model: payload.model.getName(),
 					hash: cacheKey,
 					data: JSON.stringify(response),
 					expiresAt: expiresAt,
-				}
-
-				const token = payload.options.token
-				if (token && typeof token === "string") {
-					cacheData.tokenHash = hashToken(token)
 				}
 
 				try {
@@ -161,7 +137,6 @@ export function initCache(database: Database): CacheModule {
 			key: "cacheCreateResponse",
 			execute: async (payload, response) => {
 				const cacheKey = hasher({
-					token: payload.options?.token || "anonymous",
 					query: {
 						filter: {
 							id: {
@@ -174,16 +149,11 @@ export function initCache(database: Database): CacheModule {
 				})
 
 				const expiresAt = moment().utc().add(ttl, "seconds").toString()
-				const cacheData: any = {
+				const cacheData = {
 					model: payload.model.getName(),
 					hash: cacheKey,
 					data: JSON.stringify(response),
 					expiresAt: expiresAt,
-				}
-
-				const token = payload.options?.token
-				if (token && typeof token === "string" && String(token) !== String(Config.SYSTEM_TOKEN)) {
-					cacheData.tokenHash = hashToken(token)
 				}
 
 				try {
@@ -202,13 +172,8 @@ export function initCache(database: Database): CacheModule {
 	const clearModelCache = Effect.create({
 		key: "clearCache",
 		execute: async (payload) => {
-			const filter: any = {
+			const filter = {
 				model: { equals: payload.model.getName() },
-			}
-
-			const token = payload.options?.token
-			if (token && typeof token === "string" && String(token) !== String(Config.SYSTEM_TOKEN)) {
-				filter.tokenHash = { equals: hashToken(token) }
 			}
 
 			await FookieCache.delete(
