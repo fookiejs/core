@@ -5,6 +5,7 @@
 	"license": "MIT",
 	"imports": {
 		"@fookiejs/core": "jsr:@fookiejs/core@0.6.0",
+		"pg": "npm:pg@^8.14.1",
 		"typeorm": "npm:typeorm@0.3.21"
 	}
 }

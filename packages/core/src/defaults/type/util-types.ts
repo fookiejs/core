@@ -29,24 +29,4 @@ export const utilTypes = {
 			alias: ["array"],
 		})
 	},
-
-	varchar: (maxLength: number): Type => {
-		return Type.create({
-			key: `varchar(${maxLength})`,
-			validate: (value: unknown): boolean => {
-				if (typeof value !== "string") return false
-				return value.length <= maxLength
-			},
-			example: `a`.substring(0, Math.min(15, maxLength)),
-			queryController: {
-				equals: { key: "text" },
-				notEquals: { key: "text" },
-				like: { key: "text" },
-				in: { key: "text", isArray: true },
-				notIn: { key: "text", isArray: true },
-				isNull: { key: "boolean" },
-			},
-			alias: ["varchar", "character varying"],
-		})
-	},
 }

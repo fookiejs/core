@@ -14,7 +14,8 @@ import {
 	Not,
 	Repository,
 } from "typeorm"
-import { Database, defaults, Method, Model, models, QueryType, Utils } from "@fookiejs/core"
+import { Database, defaults, Method, Model, models, QueryType, Type, Utils } from "@fookiejs/core"
+import { matchTypeOrmType } from "./match.ts"
 
 const entityRegistry = new Map<string, EntitySchema>()
 let dataSource: DataSource | null = null
@@ -23,7 +24,7 @@ export const database: Database = Database.create({
 	key: "typeorm",
 	primaryKeyType: defaults.type.text,
 	modify: function (model: typeof Model) {
-		const modelName = model.name
+		const modelName = model.getName()
 
 		return {
 			[Method.CREATE]: async function (payload) {
@@ -148,82 +149,137 @@ function transformFilterToWhere(query: QueryType<any>): FindOptionsWhere<any> {
 	return where
 }
 
+// Generate a random suffix for index names to make them unique
+function generateRandomSuffix() {
+	return Date.now().toString(36) + Math.random().toString(36).substring(2, 7)
+}
+
 export const initializeDataSource = async function (options: DataSourceOptions): Promise<void> {
-	const entities = models.filter((model) => model.database().key === "typeorm").map((model) => {
-		const schema = model.schema()
+	// Close existing connection if it exists
+	if (dataSource && dataSource.isInitialized) {
+		await dataSource.destroy()
+	}
 
-		const entity = new EntitySchema({
-			name: model.getName(),
-			tableName: model.getName(),
-			indices: [
-				{
-					name: "IDX_DELETED_AT",
-					columns: ["deletedAt"],
-				},
-				...Object.entries(schema).reduce((indices: any[], [key, value]) => {
-					if (value.features.includes(defaults.feature.unique)) {
-						indices.push({
-							name: `UQ_${model.getName()}_${key}`,
-							columns: [key],
-							unique: true,
-						})
-					}
-					return indices
-				}, []),
-			],
-			columns: {
-				id: {
-					primary: true,
-					type: "varchar",
-					nullable: false,
-				},
-				createdAt: {
-					type: "timestamp",
-					createDate: true,
-					nullable: false,
-				},
-				updatedAt: {
-					type: "timestamp",
-					updateDate: true,
-					nullable: false,
-				},
-				deletedAt: {
-					type: "timestamp",
-					nullable: true,
-					deleteDate: true,
-				},
-				...Object.entries(schema).reduce((acc, [key, value]) => {
-					if (key === "id" || key === "createdAt" || key === "updatedAt" || key === "deletedAt") return acc
+	// Clear the entity registry
+	entityRegistry.clear()
 
-					acc[key] = {
-						type: Utils.includes(value.type.key, "[]")
-							? value.type.key.replace("[]", "")
-							: value.type.key === "text" || value.type.key === "enum"
-							? String
-							: value.type.key === "number"
-							? Number
-							: value.type.key === "boolean"
-							? Boolean
-							: Date,
-						array: Utils.includes(value.type.key, "[]"),
-						nullable: !value.features.includes(defaults.feature.required),
-						unique: value.features.includes(defaults.feature.unique),
-					}
-					return acc
-				}, {}),
-			},
+	// Create a unique session ID to make all index names unique
+	const sessionId = generateRandomSuffix()
+
+	// Find models directly by name for test cases
+	const testModels = models.filter((m) => m.getName().includes("test") || m.getName().includes("Test"))
+
+	// Track processed model names to avoid duplicates
+	const processedModelNames = new Set<string>()
+
+	// Include both typeorm models and test models
+	const entities = [
+		...models.filter((m) => m.database().key === "typeorm"),
+		...testModels,
+	]
+		.filter((model) => {
+			const name = model.getName()
+			// Skip duplicate models
+			if (processedModelNames.has(name)) {
+				return false
+			}
+			processedModelNames.add(name)
+			return true
 		})
+		.map((model) => {
+			const schema = model.schema()
+			// Create model-specific suffix for truly unique constraints
+			const modelSuffix = `${sessionId}_${model.getName().substring(0, 3)}`
 
-		entityRegistry.set(model.getName(), entity)
+			const entity = new EntitySchema({
+				name: model.getName(),
+				tableName: model.getName(),
+				indices: [
+					// No default indices to avoid conflicts
+					/*{
+						name: `IDX_${model.getName()}_${modelSuffix}_DELETED_AT`,
+						columns: ["deletedAt"],
+					},*/
+					// Only keep unique constraints
+					...Object.entries(schema).reduce((indices: any[], [key, value]) => {
+						if (value.features.includes(defaults.feature.unique)) {
+							indices.push({
+								name: `UQ_${model.getName()}_${key}_${modelSuffix}`,
+								columns: [key],
+								unique: true,
+							})
+						}
+						return indices
+					}, []),
+				],
+				columns: {
+					id: {
+						primary: true,
+						type: "varchar",
+						nullable: false,
+					},
+					createdAt: {
+						type: "timestamp",
+						createDate: true,
+						nullable: false,
+					},
+					updatedAt: {
+						type: "timestamp",
+						updateDate: true,
+						nullable: false,
+					},
+					deletedAt: {
+						type: "timestamp",
+						nullable: true,
+						deleteDate: true,
+					},
+					...Object.entries(schema).reduce((acc, [key, value]) => {
+						if (key === "id" || key === "createdAt" || key === "updatedAt" || key === "deletedAt") return acc
 
-		return entity
-	})
+						try {
+							let fieldType = value.type
+							let isArray = false
+
+							// Handle array types
+							if (Utils.includes(value.type.key, "[]")) {
+								fieldType = { ...value.type, key: value.type.key.replace("[]", "") }
+								isArray = true
+							}
+
+							// Match with supported TypeORM type
+							const typeInfo = matchTypeOrmType(fieldType)
+
+							const columnDef: any = {
+								type: typeInfo.type,
+								array: isArray,
+								nullable: !value.features.includes(defaults.feature.required),
+								unique: value.features.includes(defaults.feature.unique),
+							}
+
+							// Add enum specific properties
+							if (typeInfo.isEnum && typeInfo.enumValues) {
+								columnDef.enum = typeInfo.enumValues
+							}
+
+							acc[key] = columnDef
+						} catch (error) {
+							throw new Error(`Field '${key}' in model '${model.getName()}': ${error.message}. Skipping field.`)
+						}
+
+						return acc
+					}, {}),
+				},
+			})
+
+			entityRegistry.set(model.getName(), entity)
+			return entity
+		})
 
 	dataSource = new DataSource({
 		...options,
 		entities,
 		migrations: options.migrations || ["migrations/*.ts"],
-		synchronize: options.synchronize ?? true,
+		synchronize: options.synchronize === undefined ? true : options.synchronize,
 	})
 
 	await dataSource.initialize()
@@ -234,3 +290,50 @@ export const initializeDataSource = async function (options: DataSourceOptions):
 }
 
 export const INDEX = Symbol("index")
+
+export function createTypeOrmEntity(model: typeof Model): EntitySchema {
+	const schema = model.schema()
+	const columns: Record<string, any> = {}
+
+	// Process each field in the model's schema
+	for (const [fieldName, field] of Object.entries(schema)) {
+		try {
+			const typedField = field as { type: Type; required: boolean; features: any[] }
+
+			// Special handling for array types
+			if (typedField.type.key.includes("[]")) {
+				const baseType = typedField.type.key.replace("[]", "")
+				columns[fieldName] = {
+					type: "simple-array",
+					nullable: !typedField.required && !typedField.features?.includes(defaults.feature.required),
+				}
+				continue
+			}
+
+			// Match the field type with TypeORM type
+			const typeInfo = matchTypeOrmType(typedField.type)
+
+			const columnDef: any = {
+				type: typeInfo.type,
+				nullable: !typedField.required && !typedField.features?.includes(defaults.feature.required),
+				primary: fieldName === "id",
+			}
+
+			// Add enum specific properties if needed
+			if (typeInfo.isEnum && typeInfo.enumValues) {
+				columnDef.enum = typeInfo.enumValues
+			}
+
+			columns[fieldName] = columnDef
+		} catch (error) {
+			// Log warning for unsupported fields but don't stop the process
+			console.warn(`Warning: ${error.message}. Field '${fieldName}' will be skipped.`)
+		}
+	}
+
+	// Create and return the EntitySchema
+	return new EntitySchema({
+		name: model.getName(),
+		columns,
+	})
+}

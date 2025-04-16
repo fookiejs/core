@@ -53,7 +53,7 @@ export const advancedTypes = {
 	}),
 
 	jsonb: Type.create({
-		key: "jsonb",
+		key: "json",
 		validate: Utils.isObject,
 		example: "object",
 		queryController: {
@@ -96,17 +96,5 @@ export const advancedTypes = {
 			isNull: { key: "boolean" },
 		},
 		alias: ["timestamptz", "timestamp with time zone", "DateTime"],
-	}),
-
-	point: Type.create({
-		key: "point",
-		validate: Utils.isPoint,
-		example: { x: "float", y: "float" },
-		queryController: {
-			equals: { key: "point" },
-			notEquals: { key: "point" },
-			isNull: { key: "boolean" },
-		},
-		alias: ["point"],
 	}),
 }
