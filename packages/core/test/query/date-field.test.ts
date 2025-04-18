@@ -14,7 +14,7 @@ Deno.test("QueryDateModel Query Tests", async () => {
 		},
 	})
 	class QueryDateModel extends Model {
-		@Field.Decorator({ type: defaults.type.timestamp })
+		@Field.Decorator({ type: defaults.type.date })
 		dateField!: string
 	}
 

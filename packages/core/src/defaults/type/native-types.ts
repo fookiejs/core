@@ -50,7 +50,7 @@ export const nativeTypes = {
 			notIn: { key: "text", isArray: true },
 			isNull: { key: "boolean" },
 		},
-		alias: ["text"],
+		alias: ["text", "string"],
 	}),
 
 	boolean: Type.create({
@@ -63,5 +63,33 @@ export const nativeTypes = {
 			isNull: { key: "boolean" },
 		},
 		alias: ["boolean", "bool"],
+	}),
+
+	date: Type.create({
+		key: "date",
+		validate: Utils.isDate,
+		example: new Date(),
+		queryController: {
+			equals: { key: "date" },
+			notEquals: { key: "date" },
+			lt: { key: "date" },
+			lte: { key: "date" },
+			gt: { key: "date" },
+			gte: { key: "date" },
+			in: { key: "date", isArray: true },
+			notIn: { key: "date", isArray: true },
+			isNull: { key: "boolean" },
+		},
+		alias: ["date", "timestamp", "datetime"],
+	}),
+
+	json: Type.create({
+		key: "json",
+		validate: Utils.isObject,
+		example: "object",
+		queryController: {
+			isNull: { key: "boolean" },
+		},
+		alias: ["object"],
 	}),
 }

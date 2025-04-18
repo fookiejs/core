@@ -1,6 +1,5 @@
 import { defaults, Field, FookieError, Model } from "@fookiejs/core"
 import { expect } from "jsr:@std/expect"
-
 @Model.Decorator({
 	database: defaults.database.store,
 	binds: {
@@ -11,17 +10,13 @@ import { expect } from "jsr:@std/expect"
 class QueryTypeModel extends Model {
 	@Field.Decorator({ type: defaults.type.integer })
 	intField!: number
-
-	@Field.Decorator({ type: defaults.type.integer })
+	@Field.Decorator({ type: defaults.type.float })
 	floatField!: number
-
 	@Field.Decorator({ type: defaults.type.text })
 	textField!: string
-
-	@Field.Decorator({ type: defaults.type.timestamp })
+	@Field.Decorator({ type: defaults.type.date })
 	dateField!: string
 }
-
 Deno.test("QueryTypeModel CRUD Operations", () => {
 	Deno.test("should create multiple entities", async () => {
 		for (let i = 1; i <= 30; i++) {
@@ -31,11 +26,9 @@ Deno.test("QueryTypeModel CRUD Operations", () => {
 				textField: `test${i}`,
 				dateField: `2024-05-${i < 10 ? "0" + i : i}`,
 			})
-
 			if (entity instanceof FookieError) {
 				throw Error("QueryTypeModel creation error")
 			}
-
 			expect(entity instanceof QueryTypeModel).toBe(true)
 			expect(entity.intField).toBe(i)
 			expect(entity.floatField).toBe(i + 0.1)
@@ -43,7 +36,6 @@ Deno.test("QueryTypeModel CRUD Operations", () => {
 			expect(entity.dateField).toBe(`2024-05-${i < 10 ? "0" + i : i}`)
 		}
 	})
-
 	Deno.test("should read entities with individual filters", async () => {
 		let results = await QueryTypeModel.read({
 			filter: {
@@ -54,7 +46,6 @@ Deno.test("QueryTypeModel CRUD Operations", () => {
 		results.forEach((entity) => {
 			expect((entity as QueryTypeModel).intField).toBeGreaterThanOrEqual(15)
 		})
-
 		results = await QueryTypeModel.read({
 			filter: {
 				floatField: { lte: 10.5 },
@@ -64,7 +55,6 @@ Deno.test("QueryTypeModel CRUD Operations", () => {
 		results.forEach((entity) => {
 			expect((entity as QueryTypeModel).floatField).toBeLessThanOrEqual(10.5)
 		})
-
 		results = await QueryTypeModel.read({
 			filter: {
 				textField: { equals: "test5" },
@@ -74,7 +64,6 @@ Deno.test("QueryTypeModel CRUD Operations", () => {
 		results.forEach((entity) => {
 			expect((entity as QueryTypeModel).textField).toBe("test5")
 		})
-
 		results = await QueryTypeModel.read({
 			filter: {
 				dateField: { gte: "2024-05-10" },
@@ -87,7 +76,6 @@ Deno.test("QueryTypeModel CRUD Operations", () => {
 			).toBeGreaterThanOrEqual(new Date("2024-05-10").getTime())
 		})
 	})
-
 	Deno.test("should read entities with combined filters", async () => {
 		const results = await QueryTypeModel.read({
 			filter: {
@@ -97,7 +85,6 @@ Deno.test("QueryTypeModel CRUD Operations", () => {
 				dateField: { lt: "2024-05-30" },
 			},
 		})
-
 		expect(results.length).toBe(1)
 		const entity = results[0] as QueryTypeModel
 		expect(entity.intField).toBe(20)

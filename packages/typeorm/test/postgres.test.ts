@@ -1,9 +1,8 @@
 import { expect } from "jsr:@std/expect"
 import { DataSource } from "typeorm"
-import { defaults, Field, Method, Model, models } from "@fookiejs/core"
+import { defaults, Field, Method, Model } from "@fookiejs/core"
 import { database, initializeDataSource } from "../src/index.ts"
 
-// Define enum values explicitly to ensure they're correctly processed
 enum TestRole {
 	ADMIN = "ADMIN",
 	USER = "USER",
@@ -28,34 +27,28 @@ class PostgresTestModel extends Model {
 	requiredField!: string
 
 	@Field.Decorator({
-		type: defaults.type.jsonb,
+		type: defaults.type.integer,
 		features: [],
 	})
-	jsonData?: Record<string, unknown>
+	integerField?: number
 
 	@Field.Decorator({
-		type: defaults.type.timestamp,
+		type: defaults.type.float,
 		features: [],
 	})
-	timestampField?: Date
+	floatField?: number
 
 	@Field.Decorator({
-		type: defaults.type.timestamptz,
+		type: defaults.type.boolean,
 		features: [],
 	})
-	timestamptzField?: Date
+	booleanField?: boolean
 
 	@Field.Decorator({
-		type: defaults.type.decimal,
+		type: defaults.type.date,
 		features: [],
 	})
-	numericField?: string
-
-	@Field.Decorator({
-		type: defaults.type.uuid,
-		features: [],
-	})
-	uuidField?: string
+	dateField?: Date
 
 	@Field.Decorator({
 		type: defaults.type.array(defaults.type.text),
@@ -64,10 +57,10 @@ class PostgresTestModel extends Model {
 	textArrayField?: string[]
 
 	@Field.Decorator({
-		type: defaults.type.bigint,
+		type: defaults.type.varchar(50),
 		features: [],
 	})
-	bigintField?: string
+	varcharField?: string
 
 	@Field.Decorator({
 		type: defaults.type.enum(TestRole),
@@ -76,18 +69,20 @@ class PostgresTestModel extends Model {
 	roleField?: TestRole
 }
 
-// Create a globally unique test identifier
 const TEST_RUN_ID = Date.now().toString(36) + Math.random().toString(36).substring(2, 5)
 
 const getConfig = () => {
-	// Check for required environment variables
 	const host = Deno.env.get("POSTGRES_HOST")
 	const port = Deno.env.get("POSTGRES_PORT")
 	const user = Deno.env.get("POSTGRES_USER")
 	const password = Deno.env.get("POSTGRES_PASSWORD")
 
-	// Generate a safe database name without hyphens
-	const timestamp = Date.now()
+	if (!host || !port || !user || !password) {
+		throw new Error(
+			"Required environment variables are missing. Please set POSTGRES_HOST, POSTGRES_PORT, POSTGRES_USER, and POSTGRES_PASSWORD",
+		)
+	}
+
 	const randomSuffix = crypto.randomUUID().replace(/-/g, "")
 
 	return {
@@ -101,17 +96,15 @@ const getConfig = () => {
 }
 
 Deno.test({
-	name: "PostgreSQL Advanced Types and Features",
+	name: "PostgreSQL Basic Types and Features",
 	async fn() {
 		const config = getConfig()
 
 		try {
-			// Create test database
 			const tempConfig = { ...config, database: "postgres" }
 			const tempDS = new DataSource(tempConfig as any)
 			await tempDS.initialize()
 
-			// Drop database if it exists already (to clean up from previous failed tests)
 			try {
 				await tempDS.query(`
 					SELECT pg_terminate_backend(pg_stat_activity.pid)
@@ -121,18 +114,15 @@ Deno.test({
 				`)
 				await tempDS.query(`DROP DATABASE IF EXISTS "${config.database}"`)
 			} catch (error) {
-				// Silently continue if cleanup fails
+				console.error("Failed to clean up existing database:", error instanceof Error ? error.message : String(error))
 			}
 
-			// Create fresh database
 			await tempDS.query(`CREATE DATABASE "${config.database}"`)
 			await tempDS.destroy()
 
-			// Initialize with test database
 			await initializeDataSource(config as any)
 
-			// Test unique constraint
-			const uniqueTest = await PostgresTestModel.create({
+			await PostgresTestModel.create({
 				uniqueField: "unique1",
 				requiredField: "required1",
 			})
@@ -147,7 +137,6 @@ Deno.test({
 				expect(error instanceof Error).toBe(true)
 			}
 
-			// Test required constraint
 			try {
 				await PostgresTestModel.create({
 					uniqueField: "unique2",
@@ -158,53 +147,57 @@ Deno.test({
 				expect(error instanceof Error).toBe(true)
 			}
 
-			// Test JSONB
-			const jsonTest = await PostgresTestModel.create({
-				requiredField: "json_test",
-				jsonData: { test: true, nested: { value: 42 } },
-				uniqueField: "json_unique",
+			const integerTest = await PostgresTestModel.create({
+				requiredField: "integer_test",
+				integerField: 42,
+				uniqueField: "integer_unique",
 			})
-			const jsonResult = await PostgresTestModel.read({
-				filter: { id: { equals: jsonTest.id } },
+			const integerResult = await PostgresTestModel.read({
+				filter: { id: { equals: integerTest.id } },
 			})
-			expect((jsonResult[0].jsonData as any).nested.value).toBe(42)
+			expect(integerResult[0].integerField).toBe(42)
 
-			// Test Timestamp
+			const floatTest = await PostgresTestModel.create({
+				requiredField: "float_test",
+				floatField: 3.14159,
+				uniqueField: "float_unique",
+			})
+			const floatResult = await PostgresTestModel.read({
+				filter: { id: { equals: floatTest.id } },
+			})
+			expect(floatResult[0].floatField).toBe(3.14159)
+
+			const booleanTest = await PostgresTestModel.create({
+				requiredField: "boolean_test",
+				booleanField: true,
+				uniqueField: "boolean_unique",
+			})
+			const booleanResult = await PostgresTestModel.read({
+				filter: { id: { equals: booleanTest.id } },
+			})
+			expect(booleanResult[0].booleanField).toBe(true)
+
 			const now = new Date()
-			const timestampTest = await PostgresTestModel.create({
-				requiredField: "timestamp_test",
-				timestampField: now,
-				timestamptzField: now,
-				uniqueField: "timestamp_unique",
+			const dateTest = await PostgresTestModel.create({
+				requiredField: "date_test",
+				dateField: now,
+				uniqueField: "date_unique",
 			})
-			const timestampResult = await PostgresTestModel.read({
-				filter: { id: { equals: timestampTest.id } },
+			const dateResult = await PostgresTestModel.read({
+				filter: { id: { equals: dateTest.id } },
 			})
-			expect(new Date(timestampResult[0].timestampField).getTime()).toBe(now.getTime())
+			expect(new Date(dateResult[0].dateField).getTime()).toBe(now.getTime())
 
-			// Test Numeric with precision
-			const numericTest = await PostgresTestModel.create({
-				requiredField: "numeric_test",
-				numericField: "123456.789",
-				uniqueField: "numeric_unique",
+			const varcharTest = await PostgresTestModel.create({
+				requiredField: "varchar_test",
+				varcharField: "test string under 50 chars",
+				uniqueField: "varchar_unique",
 			})
-			const numericResult = await PostgresTestModel.read({
-				filter: { id: { equals: numericTest.id } },
+			const varcharResult = await PostgresTestModel.read({
+				filter: { id: { equals: varcharTest.id } },
 			})
-			expect(numericResult[0].numericField).toBe("123456.789")
+			expect(varcharResult[0].varcharField).toBe("test string under 50 chars")
 
-			// Test UUID
-			const uuidTest = await PostgresTestModel.create({
-				requiredField: "uuid_test",
-				uuidField: "123e4567-e89b-12d3-a456-426614174000",
-				uniqueField: "uuid_unique",
-			})
-			const uuidResult = await PostgresTestModel.read({
-				filter: { id: { equals: uuidTest.id } },
-			})
-			expect(uuidResult[0].uuidField).toBe("123e4567-e89b-12d3-a456-426614174000")
-
-			// Test Array
 			const arrayTest = await PostgresTestModel.create({
 				requiredField: "array_test",
 				textArrayField: ["one", "two", "three"],
@@ -215,18 +208,6 @@ Deno.test({
 			})
 			expect(JSON.stringify(arrayResult[0].textArrayField)).toBe(JSON.stringify(["one", "two", "three"]))
 
-			// Test Bigint
-			const bigintTest = await PostgresTestModel.create({
-				requiredField: "bigint_test",
-				bigintField: "9223372036854775807", // Max value for bigint
-				uniqueField: "bigint_unique",
-			})
-			const bigintResult = await PostgresTestModel.read({
-				filter: { id: { equals: bigintTest.id } },
-			})
-			expect(bigintResult[0].bigintField).toBe("9223372036854775807")
-
-			// Test Enum type
 			const enumTest = await PostgresTestModel.create({
 				requiredField: "enum_test",
 				roleField: TestRole.ADMIN,
@@ -236,14 +217,45 @@ Deno.test({
 				filter: { id: { equals: enumTest.id } },
 			})
 			expect(enumResult[0].roleField).toBe(TestRole.ADMIN)
+
+			try {
+				await PostgresTestModel.create({
+					requiredField: "varchar_test_long",
+					varcharField: "x".repeat(51),
+					uniqueField: "varchar_unique_long",
+				})
+				expect(false).toBe(true)
+			} catch (error) {
+				expect(error instanceof Error).toBe(true)
+			}
+
+			try {
+				await PostgresTestModel.create({
+					requiredField: "enum_test_invalid",
+					roleField: "INVALID_ROLE" as any,
+					uniqueField: "enum_unique_invalid",
+				})
+				expect(false).toBe(true)
+			} catch (error) {
+				expect(error instanceof Error).toBe(true)
+			}
+
+			try {
+				await PostgresTestModel.create({
+					requiredField: "array_test_invalid",
+					textArrayField: [1, 2, 3] as any,
+					uniqueField: "array_unique_invalid",
+				})
+				expect(false).toBe(true)
+			} catch (error) {
+				expect(error instanceof Error).toBe(true)
+			}
 		} finally {
-			// Cleanup: Drop test database
 			try {
 				const tempConfig = { ...config, database: "postgres" }
 				const tempDS = new DataSource(tempConfig as any)
 				await tempDS.initialize()
 
-				// Disconnect all active connections first
 				await tempDS.query(`
 					SELECT pg_terminate_backend(pg_stat_activity.pid)
 					FROM pg_stat_activity
@@ -251,11 +263,10 @@ Deno.test({
 					AND pid <> pg_backend_pid()
 				`)
 
-				// Drop the database
-				//await tempDS.query(`DROP DATABASE IF EXISTS "${config.database}"`)
+				await tempDS.query(`DROP DATABASE IF EXISTS "${config.database}"`)
 				await tempDS.destroy()
 			} catch (error) {
-				// Silently continue if cleanup fails
+				console.error("Failed to clean up test database:", error instanceof Error ? error.message : String(error))
 			}
 		}
 	},

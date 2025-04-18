@@ -5,7 +5,6 @@ import { everybody } from "./role/everybody.ts"
 import { Database } from "../database/database.ts"
 import { Role } from "../lifecycle-function/lifecycle-function.ts"
 import { types } from "./type/types.ts"
-
 type DefaultsType = {
 	type: typeof types
 	database: {
@@ -21,7 +20,6 @@ type DefaultsType = {
 		unique: symbol
 	}
 }
-
 export const defaults: DefaultsType = {
 	type: types,
 	database: {

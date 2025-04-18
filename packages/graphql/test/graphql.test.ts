@@ -151,7 +151,7 @@ export class UserPaymentHistory extends Model {
 	amount!: number
 
 	@Field.Decorator({
-		type: defaults.type.timestamp,
+		type: defaults.type.date,
 	})
 	paymentDate!: Date
 }

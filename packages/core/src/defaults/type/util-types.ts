@@ -29,4 +29,21 @@ export const utilTypes = {
 			alias: ["array"],
 		})
 	},
+
+	varchar: (length: number): Type => {
+		return Type.create({
+			key: `varchar(${length})`,
+			validate: (value: any) => typeof value === "string" && value.length <= length,
+			example: "example text",
+			queryController: {
+				equals: { key: "text" },
+				notEquals: { key: "text" },
+				like: { key: "text" },
+				in: { key: "text", isArray: true },
+				notIn: { key: "text", isArray: true },
+				isNull: { key: "boolean" },
+			},
+			alias: ["varchar"],
+		})
+	},
 }

@@ -6,4 +6,4 @@ alwaysApply: true
 
 # Fookie JS AI Rules
 
-- Dont add comments to make the code understandable.
+- Dont add comment lines to code.

@@ -12,10 +12,8 @@ import {
 	Role,
 	Utils,
 } from "@fookiejs/core"
-
 import { verifyGoogleAccessToken } from "./google/google.ts"
 import { v4 } from "uuid"
-
 type IAccount = typeof Model & {
 	new (): Model & {
 		iss: string
@@ -25,23 +23,18 @@ type IAccount = typeof Model & {
 		picture: string
 	}
 }
-
 export const ACCOUNT = Symbol("account")
-
 export interface AuthReturn {
 	Account: IAccount
 	loggedIn: Role<Model, Method>
 }
-
 export function initAuth(
 	database: Database,
 ): AuthReturn {
 	const loggedIn = Role.create({
 		key: "loggedIn",
-
 		async execute(payload: any) {
 			const loggedIn = payload.state[ACCOUNT] instanceof Account
-
 			if (!loggedIn) {
 				throw FookieError.create({
 					message: `User is not logged in.`,
@@ -49,11 +42,9 @@ export function initAuth(
 					code: "NOT_LOGGED_IN",
 				})
 			}
-
 			return true
 		},
 	})
-
 	const belongsToUser = Modify.create({
 		key: "belongsToUser",
 		async execute(payload) {
@@ -62,7 +53,6 @@ export function initAuth(
 			}
 		},
 	})
-
 	const anonymizeEmail = Effect.create<Account, Method.DELETE>({
 		key: "anonymizeEmail",
 		async execute(_payload, response) {
@@ -71,7 +61,6 @@ export function initAuth(
 			})
 		},
 	})
-
 	@Model.Decorator({
 		database,
 		binds: {
@@ -96,48 +85,36 @@ export function initAuth(
 	class Account extends Model {
 		@Field.Decorator({ type: defaults.type.text })
 		iss!: string
-
 		@Field.Decorator({ type: defaults.type.text })
 		sub!: string
-
 		@Field.Decorator({ type: defaults.type.text })
 		email!: string
-
 		@Field.Decorator({ type: defaults.type.text })
 		name!: string
-
 		@Field.Decorator({ type: defaults.type.text })
 		picture!: string
 	}
-
 	const parseToken = Modify.create({
 		key: "parseToken",
 		execute: async function (payload) {
 			if (!Utils.isString(payload.options.token)) {
 				return
 			}
-
 			let token = `${payload.options.token as string}`
-
 			if (token.startsWith("Bearer ")) {
 				token = token.replace("Bearer ", "")
 			}
-
 			let userData = null
-
 			if (token.startsWith("google_")) {
 				token = token.slice(7)
 				userData = await verifyGoogleAccessToken(token)
 			}
-
 			if (userData === null) {
 				return
 			}
-
 			const userExists = await Account.read({ filter: { email: { equals: userData.email } } }, {
 				token: Config.SYSTEM_TOKEN,
 			})
-
 			if (userExists.length === 0) {
 				const account = await Account.create({
 					iss: userData.iss,
@@ -148,19 +125,15 @@ export function initAuth(
 				}, {
 					token: Config.SYSTEM_TOKEN,
 				})
-
 				payload.state[ACCOUNT] = account
 			} else {
 				payload.state[ACCOUNT] = userExists[0]
 			}
 		},
 	})
-
 	globalPreModifies.push(parseToken)
-
 	return { loggedIn, Account }
 }
-
 export function initBelongsToUser(field: string) {
 	return Modify.create({
 		key: "belongsToUser",

@@ -146,15 +146,15 @@ export class Model {
 				type: primaryKeyType,
 			})
 			schemaMeta["deletedAt"] = fillSchema({
-				type: defaults.type.timestamp,
+				type: defaults.type.date,
 				default: null,
 			})
 			schemaMeta["createdAt"] = fillSchema({
-				type: defaults.type.timestamp,
+				type: defaults.type.date,
 				features: [defaults.feature.required],
 			})
 			schemaMeta["updatedAt"] = fillSchema({
-				type: defaults.type.timestamp,
+				type: defaults.type.date,
 				features: [defaults.feature.required],
 			})
 

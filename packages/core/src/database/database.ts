@@ -2,7 +2,6 @@ import { Method } from "../method/method.ts"
 import { Model } from "../model/model.ts"
 import { Payload } from "../payload/payload.ts"
 import { Type } from "../type/type.ts"
-
 export class Database {
 	key!: string
 	primaryKeyType!: Type
@@ -14,7 +13,6 @@ export class Database {
 		update: (payload: Payload<T, Method.UPDATE>) => Promise<string[]>
 		delete: (payload: Payload<T, Method.DELETE>) => Promise<string[]>
 	}
-
 	static create(data: Database): Database {
 		const instance = new Database()
 		return Object.assign(instance, data)

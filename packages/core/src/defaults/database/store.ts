@@ -6,7 +6,6 @@ import { Payload } from "../../payload/payload.ts"
 import { types } from "../type/types.ts"
 import { defaults } from "../index.ts"
 import { Utils } from "../../utils/util.ts"
-
 function checkUniqueConstraints<T extends Model>(
 	model: typeof Model,
 	entity: T,
@@ -29,7 +28,6 @@ function checkUniqueConstraints<T extends Model>(
 	}
 	return true
 }
-
 export const store = Database.create({
 	key: "store",
 	primaryKeyType: types.text,
@@ -40,9 +38,7 @@ export const store = Database.create({
 				const now = new Date().toISOString()
 				payload.body.createdAt = now
 				payload.body.updatedAt = now
-
 				checkUniqueConstraints(model, payload.body, pool)
-
 				pool.push(payload.body)
 				return payload.body
 			},
@@ -53,15 +49,12 @@ export const store = Database.create({
 						matchingEntities.push(entity)
 					}
 				}
-
 				if (payload.query.orderBy && Object.keys(payload.query.orderBy).length > 0) {
 					sortEntities(matchingEntities, payload.query.orderBy || {})
 				}
-
 				const start = payload.query.offset || 0
 				const end = start + (payload.query.limit || matchingEntities.length)
 				const paginatedResults = matchingEntities.slice(start, end)
-
 				if (payload.query.attributes && payload.query.attributes.length > 0) {
 					return paginatedResults.map((entity) => {
 						const result: Partial<T> = {}
@@ -71,7 +64,6 @@ export const store = Database.create({
 						return result as T
 					})
 				}
-
 				return paginatedResults
 			},
 			[Method.UPDATE]: async (payload: Payload<T, Method.UPDATE>) => {
@@ -82,9 +74,7 @@ export const store = Database.create({
 						Object.keys(payload.body).forEach((key) => {
 							updatedEntity[key] = payload.body[key]
 						})
-
 						checkUniqueConstraints(model, updatedEntity as T, pool, entity.id)
-
 						Object.assign(entity, updatedEntity)
 						if (entity.id) {
 							updatedIds.push(entity.id)
@@ -115,28 +105,22 @@ export const store = Database.create({
 		}
 	},
 }) as Database
-
 function sortEntities<T extends Model>(entities: T[], orderBy: Record<string, "asc" | "desc">) {
 	entities.sort((a, b) => {
 		for (const [key, direction] of Object.entries(orderBy)) {
 			const aValue = a[key]
 			const bValue = b[key]
-
 			if (aValue === bValue) continue
-
 			if (aValue === null || aValue === undefined) return direction === "asc" ? -1 : 1
 			if (bValue === null || bValue === undefined) return direction === "asc" ? 1 : -1
-
 			const comparison = aValue < bValue ? -1 : 1
 			return direction === "asc" ? comparison : -comparison
 		}
 		return 0
 	})
 }
-
 export function isEntityMatchingQuery<T extends Model>(entity: T, query: QueryType<T>): boolean {
 	const filter = query.filter || {}
-
 	for (const [key, condition] of Object.entries(filter)) {
 		const value = entity[key]
 		const typedCondition = condition as {
@@ -151,7 +135,6 @@ export function isEntityMatchingQuery<T extends Model>(entity: T, query: QueryTy
 			like?: string
 			isNull?: boolean
 		}
-
 		if (typedCondition.equals !== undefined && value !== typedCondition.equals) return false
 		if (typedCondition.notEquals !== undefined && value === typedCondition.notEquals) return false
 		if (typedCondition.in && !typedCondition.in.includes(value)) return false
@@ -167,6 +150,5 @@ export function isEntityMatchingQuery<T extends Model>(entity: T, query: QueryTy
 		}
 		if (typedCondition.isNull !== undefined && (value === null) !== typedCondition.isNull) return false
 	}
-
 	return true
 }
