@@ -1,4 +1,4 @@
-import { defaults, Field, FookieError, Model } from "@fookiejs/core"
+import { defaults, Field, FookieError, Model, TypeStandartization } from "@fookiejs/core"
 import { expect } from "jsr:@std/expect"
 @Model.Decorator({
 	database: defaults.database.store,
@@ -6,8 +6,9 @@ import { expect } from "jsr:@std/expect"
 })
 class ArrayFieldModel extends Model {
 	@Field.Decorator({
-		type: defaults.type.array(defaults.type.text),
+		type: defaults.types[TypeStandartization.String],
 		features: [defaults.feature.required],
+		isArray: true,
 	})
 	field!: string[]
 }

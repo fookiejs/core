@@ -1,4 +1,4 @@
-import { defaults, Field, FookieError, Model } from "@fookiejs/core"
+import { defaults, Field, FookieError, Model, TypeStandartization } from "@fookiejs/core"
 import { v4 } from "uuid"
 import { expect } from "jsr:@std/expect"
 
@@ -15,7 +15,7 @@ Deno.test("Relation", () => {
 		},
 	})
 	class RelationExistParent extends Model {
-		@Field.Decorator({ type: defaults.type.text })
+		@Field.Decorator({ type: defaults.types[TypeStandartization.String] })
 		name?: string
 	}
 

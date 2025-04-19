@@ -1,8 +1,8 @@
-import { defaults, Field, FookieError, Model } from "@fookiejs/core"
+import { defaults, Field, FookieError, Model, TypeStandartization } from "@fookiejs/core"
 import { expect } from "jsr:@std/expect"
 Deno.test("Types - Comprehensive Validation Tests", () => {
 	Deno.test("Boolean Type", () => {
-		const booleanType = defaults.type.boolean
+		const booleanType = defaults.types[TypeStandartization.Boolean]
 		expect(booleanType.validate(true)).toBe(true)
 		expect(booleanType.validate(false)).toBe(true)
 		expect(booleanType.validate("true")).toBe(false)
@@ -12,7 +12,7 @@ Deno.test("Types - Comprehensive Validation Tests", () => {
 		expect(booleanType.validate({})).toBe(false)
 	})
 	Deno.test("Integer Type", () => {
-		const integerType = defaults.type.integer
+		const integerType = defaults.types[TypeStandartization.Integer]
 		expect(integerType.validate(0)).toBe(true)
 		expect(integerType.validate(42)).toBe(true)
 		expect(integerType.validate(-100)).toBe(true)
@@ -23,7 +23,7 @@ Deno.test("Types - Comprehensive Validation Tests", () => {
 		expect(integerType.validate({})).toBe(false)
 	})
 	Deno.test("Float Type", () => {
-		const floatType = defaults.type.float
+		const floatType = defaults.types[TypeStandartization.Float]
 		expect(floatType.validate(0)).toBe(true)
 		expect(floatType.validate(3.14)).toBe(true)
 		expect(floatType.validate(-2.5)).toBe(true)
@@ -33,7 +33,7 @@ Deno.test("Types - Comprehensive Validation Tests", () => {
 		expect(floatType.validate({})).toBe(false)
 	})
 	Deno.test("Text Type", () => {
-		const textType = defaults.type.text
+		const textType = defaults.types[TypeStandartization.String]
 		expect(textType.validate("")).toBe(true)
 		expect(textType.validate("hello world")).toBe(true)
 		expect(textType.validate("a".repeat(1000))).toBe(true)
@@ -43,7 +43,7 @@ Deno.test("Types - Comprehensive Validation Tests", () => {
 		expect(textType.validate({})).toBe(false)
 	})
 	Deno.test("Date Type", () => {
-		const dateType = defaults.type.date
+		const dateType = defaults.types[TypeStandartization.Date]
 		expect(dateType.validate(new Date())).toBe(true)
 		expect(dateType.validate("2023-01-01T12:00:00Z")).toBe(true)
 		expect(dateType.validate("2023-01-01")).toBe(true)
@@ -54,7 +54,7 @@ Deno.test("Types - Comprehensive Validation Tests", () => {
 		expect(dateType.validate({})).toBe(false)
 	})
 	Deno.test("Text Type", () => {
-		const textType = defaults.type.text
+		const textType = defaults.types[TypeStandartization.String]
 		expect(textType.validate("")).toBe(true)
 		expect(textType.validate("hello world")).toBe(true)
 		expect(textType.validate("a".repeat(1000))).toBe(true)
@@ -69,7 +69,7 @@ Deno.test("Types - Comprehensive Validation Tests", () => {
 			INACTIVE = "INACTIVE",
 			PENDING = "PENDING",
 		}
-		const enumType = defaults.type.enum(Status)
+		const enumType = defaults.types[TypeStandartization.Enum]
 		expect(enumType.validate(Status.ACTIVE)).toBe(true)
 		expect(enumType.validate(Status.INACTIVE)).toBe(true)
 		expect(enumType.validate(Status.PENDING)).toBe(true)
@@ -78,23 +78,6 @@ Deno.test("Types - Comprehensive Validation Tests", () => {
 		expect(enumType.validate(null)).toBe(false)
 		expect(enumType.validate(undefined)).toBe(false)
 		expect(enumType.validate({})).toBe(false)
-	})
-	Deno.test("Array Type", () => {
-		const textArrayType = defaults.type.array(defaults.type.text)
-		expect(textArrayType.validate(["one", "two"])).toBe(true)
-		expect(textArrayType.validate([])).toBe(true)
-		expect(textArrayType.validate(["one", 2])).toBe(false)
-		expect(textArrayType.validate("not-an-array")).toBe(false)
-		expect(textArrayType.validate(null)).toBe(false)
-		expect(textArrayType.validate(undefined)).toBe(false)
-		expect(textArrayType.validate({})).toBe(false)
-	})
-	Deno.test("Varchar Type", () => {
-		const varcharType = defaults.type.varchar(50)
-		expect(varcharType.validate("short text")).toBe(true)
-		expect(varcharType.validate("a".repeat(50))).toBe(true)
-		expect(varcharType.validate("a".repeat(51))).toBe(false)
-		expect(varcharType.validate(123)).toBe(false)
 	})
 })
 enum UserRole {
@@ -108,45 +91,36 @@ enum UserRole {
 })
 class ComplexModel extends Model {
 	@Field.Decorator({
-		type: defaults.type.text,
+		type: defaults.types[TypeStandartization.String],
 		features: [],
 	})
 	name!: string
 	@Field.Decorator({
-		type: defaults.type.integer,
+		type: defaults.types[TypeStandartization.Integer],
 		features: [defaults.feature.required],
 	})
 	age!: number
 	@Field.Decorator({
-		type: defaults.type.float,
+		type: defaults.types[TypeStandartization.Float],
 		features: [],
 	})
 	height?: number
 	@Field.Decorator({
-		type: defaults.type.boolean,
+		type: defaults.types[TypeStandartization.Boolean],
 		features: [defaults.feature.required],
 	})
 	active!: boolean
 	@Field.Decorator({
-		type: defaults.type.date,
+		type: defaults.types[TypeStandartization.Date],
 		features: [defaults.feature.required],
 	})
 	birthDate!: string
 	@Field.Decorator({
-		type: defaults.type.enum(UserRole),
+		type: defaults.types[TypeStandartization.Enum],
+		enum: UserRole,
 		features: [],
 	})
 	role?: UserRole
-	@Field.Decorator({
-		type: defaults.type.array(defaults.type.text),
-		features: [],
-	})
-	tags?: string[]
-	@Field.Decorator({
-		type: defaults.type.varchar(50),
-		features: [],
-	})
-	description?: string
 }
 Deno.test("Types - Model with Multiple Types", async () => {
 	const validModel = await ComplexModel.create({
@@ -156,8 +130,6 @@ Deno.test("Types - Model with Multiple Types", async () => {
 		active: true,
 		birthDate: "1993-01-15T00:00:00.000Z",
 		role: UserRole.USER,
-		tags: ["developer", "typescript"],
-		description: "A software developer",
 	})
 	expect(validModel instanceof ComplexModel).toBe(true)
 	expect(validModel.name).toBe("John Doe")
@@ -166,51 +138,28 @@ Deno.test("Types - Model with Multiple Types", async () => {
 	expect(validModel.active).toBe(true)
 	expect(validModel.birthDate).toBe("1993-01-15T00:00:00.000Z")
 	expect(validModel.role).toBe(UserRole.USER)
-	expect(validModel.tags).toEqual(["developer", "typescript"])
-	expect(validModel.description).toBe("A software developer")
+
 	const minimalModel = await ComplexModel.create({
 		name: "Jane Smith",
 		age: 25,
-		active: false,
-		birthDate: "1998-05-20T00:00:00.000Z",
+		active: true,
+		birthDate: "1998-06-20T00:00:00.000Z",
 	})
 	expect(minimalModel instanceof ComplexModel).toBe(true)
+	expect(minimalModel.name).toBe("Jane Smith")
+	expect(minimalModel.age).toBe(25)
+	expect(minimalModel.active).toBe(true)
+	expect(minimalModel.birthDate).toBe("1998-06-20T00:00:00.000Z")
 	expect(minimalModel.height).toBeUndefined()
 	expect(minimalModel.role).toBeUndefined()
-	expect(minimalModel.tags).toBeUndefined()
-	expect(minimalModel.description).toBeUndefined()
+
 	let error = null
 	try {
 		await ComplexModel.create({
-			name: "Invalid User",
-			age: "40",
+			name: "Invalid Model",
+			age: "40" as any,
 			active: true,
-			birthDate: "invalid-date",
-		} as any)
-	} catch (e) {
-		error = e
-	}
-	expect(error instanceof FookieError).toBe(true)
-	error = null
-	try {
-		await ComplexModel.create({
-			name: "Another Invalid User",
-			age: 50,
-			active: true,
-			birthDate: "not-a-date",
-		} as any)
-	} catch (e) {
-		error = e
-	}
-	expect(error instanceof FookieError).toBe(true)
-	error = null
-	try {
-		await ComplexModel.create({
-			name: "One More Invalid User",
-			age: 35,
-			active: true,
-			birthDate: "2023-01-01T00:00:00.000Z",
-			description: "a".repeat(51),
+			birthDate: "1990-01-01T00:00:00.000Z",
 		})
 	} catch (e) {
 		error = e

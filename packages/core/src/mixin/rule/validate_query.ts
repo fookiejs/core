@@ -3,14 +3,13 @@ import { Type } from "../../type/type.ts"
 import * as lodash from "lodash"
 
 function isValidFilterKey(type: Type, currentKey: string, value: any): boolean {
-	const key = type.queryController[currentKey].key
-	const keyType: Type = lodash.find(Type.list(), { key: key })
+	const queryValidator = type.queryController[currentKey]
 
-	if (type.queryController[currentKey].isArray) {
-		return value.every((val: any) => keyType.validate(val))
+	if (queryValidator.isArray) {
+		return Array.isArray(value) && value.every((val: any) => type.validate(val))
 	}
 
-	return keyType.validate(value)
+	return type.validate(value)
 }
 
 export default Rule.create({

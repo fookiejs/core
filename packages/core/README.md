@@ -32,13 +32,13 @@ Models are the central building blocks, representing both data structure and bus
 })
 class Product extends Model {
 	@Field.Decorator({
-		type: defaults.type.text,
+		type: defaults.types[TypeStandartization.String],
 		features: [defaults.feature.required],
 	})
 	name!: string
 
 	@Field.Decorator({
-		type: defaults.type.float,
+		type: defaults.types[TypeStandartization.Float],
 		features: [defaults.feature.required],
 	})
 	price!: number
@@ -79,7 +79,7 @@ The database layer is completely abstracted and pluggable:
 ```typescript
 const database = Database.create({
 	key: "custom-db",
-	primaryKeyType: defaults.type.text,
+	primaryKeyType: defaults.types[TypeStandartization.String],
 	modify: function (model) {
 		return {
 			[Method.CREATE]: async (payload) => {/* ... */},
@@ -304,13 +304,13 @@ import { Model, Field, defaults } from "@fookiejs/core"
 })
 class User extends Model {
 	@Field.Decorator({
-		type: defaults.type.text,
+		type: defaults.types[TypeStandartization.String],
 		features: [defaults.feature.required],
 	})
 	name!: string
 
 	@Field.Decorator({
-		type: defaults.type.text,
+		type: defaults.types[TypeStandartization.String],
 		features: [defaults.feature.required],
 	})
 	email!: string

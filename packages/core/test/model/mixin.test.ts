@@ -1,5 +1,5 @@
 import { expect } from "jsr:@std/expect"
-import { defaults, Field, Mixin, Model, Role } from "@fookiejs/core"
+import { defaults, Field, Mixin, Model, Role, TypeStandartization } from "@fookiejs/core"
 
 let createFlag = false
 
@@ -27,7 +27,7 @@ const sampleMixin = Mixin.create({
 })
 class TestModel extends Model {
 	@Field.Decorator({
-		type: defaults.type.text,
+		type: defaults.types[TypeStandartization.String],
 		features: [defaults.feature.required],
 	})
 	name!: string

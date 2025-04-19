@@ -1,6 +1,6 @@
 import { expect } from "jsr:@std/expect"
 
-import { defaults, Field, Model, Role } from "@fookiejs/core"
+import { defaults, Field, Model, Role, TypeStandartization } from "@fookiejs/core"
 
 @Model.Decorator({
 	database: defaults.database.store,
@@ -29,13 +29,13 @@ import { defaults, Field, Model, Role } from "@fookiejs/core"
 class User extends Model {
 	@Field.Decorator({
 		features: [defaults.feature.required],
-		type: defaults.type.text,
+		type: defaults.types[TypeStandartization.String],
 	})
 	email!: string
 
 	@Field.Decorator({
 		features: [defaults.feature.required],
-		type: defaults.type.integer,
+		type: defaults.types[TypeStandartization.Integer],
 	})
 	usage!: number
 }

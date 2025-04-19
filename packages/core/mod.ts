@@ -15,5 +15,5 @@ export * from "./src/mixin/index.ts"
 export * from "./src/defaults/index.ts"
 export * from "./src/utils/util.ts"
 export * from "./src/otel/index.ts"
-export * from "./src/type/type-matcher.ts"
+export * from "./src/type/standartization.ts"
 export const fookieInstanceId: string = v4()

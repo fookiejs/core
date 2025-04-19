@@ -1,4 +1,4 @@
-import { defaults, Field, FookieError, Model } from "@fookiejs/core"
+import { defaults, Field, FookieError, Model, TypeStandartization } from "@fookiejs/core"
 import { expect } from "jsr:@std/expect"
 
 Deno.test("QueryFloatModel Query Tests", async () => {
@@ -14,7 +14,7 @@ Deno.test("QueryFloatModel Query Tests", async () => {
 		},
 	})
 	class QueryFloatModel extends Model {
-		@Field.Decorator({ type: defaults.type.float })
+		@Field.Decorator({ type: defaults.types[TypeStandartization.Float] })
 		floatField!: number
 	}
 

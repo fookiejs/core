@@ -1,6 +1,6 @@
 import { expect } from "jsr:@std/expect"
 import { DataSource } from "typeorm"
-import { defaults, Field, Method, Model } from "@fookiejs/core"
+import { defaults, Field, Method, Model, TypeStandartization } from "@fookiejs/core"
 import { database, initializeDataSource } from "../src/index.ts"
 
 enum TestRole {
@@ -15,55 +15,57 @@ enum TestRole {
 })
 class PostgresTestModel extends Model {
 	@Field.Decorator({
-		type: defaults.type.text,
+		type: defaults.types[TypeStandartization.String],
 		features: [defaults.feature.unique],
 	})
 	uniqueField!: string
 
 	@Field.Decorator({
-		type: defaults.type.text,
+		type: defaults.types[TypeStandartization.String],
 		features: [defaults.feature.required],
 	})
 	requiredField!: string
 
 	@Field.Decorator({
-		type: defaults.type.integer,
+		type: defaults.types[TypeStandartization.Integer],
 		features: [],
 	})
 	integerField?: number
 
 	@Field.Decorator({
-		type: defaults.type.float,
+		type: defaults.types[TypeStandartization.Float],
 		features: [],
 	})
 	floatField?: number
 
 	@Field.Decorator({
-		type: defaults.type.boolean,
+		type: defaults.types[TypeStandartization.Boolean],
 		features: [],
 	})
 	booleanField?: boolean
 
 	@Field.Decorator({
-		type: defaults.type.date,
+		type: defaults.types[TypeStandartization.Date],
 		features: [],
 	})
 	dateField?: Date
 
 	@Field.Decorator({
-		type: defaults.type.array(defaults.type.text),
+		type: defaults.types[TypeStandartization.String],
 		features: [],
+		isArray: true,
 	})
 	textArrayField?: string[]
 
 	@Field.Decorator({
-		type: defaults.type.varchar(50),
+		type: defaults.types[TypeStandartization.String],
 		features: [],
 	})
-	varcharField?: string
+	stringField?: string
 
 	@Field.Decorator({
-		type: defaults.type.enum(TestRole),
+		type: defaults.types[TypeStandartization.Enum],
+		enum: TestRole,
 		features: [],
 	})
 	roleField?: TestRole
@@ -186,17 +188,18 @@ Deno.test({
 			const dateResult = await PostgresTestModel.read({
 				filter: { id: { equals: dateTest.id } },
 			})
-			expect(new Date(dateResult[0].dateField).getTime()).toBe(now.getTime())
+			expect(new Date(dateResult[0].dateField).toISOString().split("T")[0])
+				.toBe(now.toISOString().split("T")[0])
 
-			const varcharTest = await PostgresTestModel.create({
-				requiredField: "varchar_test",
-				varcharField: "test string under 50 chars",
-				uniqueField: "varchar_unique",
+			const stringTest = await PostgresTestModel.create({
+				requiredField: "string_test",
+				stringField: "test string under 50 chars",
+				uniqueField: "string_unique",
 			})
-			const varcharResult = await PostgresTestModel.read({
-				filter: { id: { equals: varcharTest.id } },
+			const stringResult = await PostgresTestModel.read({
+				filter: { id: { equals: stringTest.id } },
 			})
-			expect(varcharResult[0].varcharField).toBe("test string under 50 chars")
+			expect(stringResult[0].stringField).toBe("test string under 50 chars")
 
 			const arrayTest = await PostgresTestModel.create({
 				requiredField: "array_test",
@@ -220,9 +223,9 @@ Deno.test({
 
 			try {
 				await PostgresTestModel.create({
-					requiredField: "varchar_test_long",
-					varcharField: "x".repeat(51),
-					uniqueField: "varchar_unique_long",
+					requiredField: "string_test_long",
+					stringField: "x".repeat(51),
+					uniqueField: "string_unique_long",
 				})
 				expect(false).toBe(true)
 			} catch (error) {

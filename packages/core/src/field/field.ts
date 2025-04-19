@@ -18,6 +18,8 @@ export class Field {
 	validators?: [(value: unknown) => boolean | string]
 	relation?: typeof Model
 	features?: symbol[]
+	isArray?: boolean
+	enum?: Record<string, string | number>
 
 	static Decorator(field: Field): (target: any, descriptor: FookieDecoratorContext) => void {
 		return function (_value: any, descriptor: FookieDecoratorContext) {

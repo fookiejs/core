@@ -1,5 +1,5 @@
 import { expect } from "jsr:@std/expect"
-import { Config, defaults, Field, FookieError, Method, Model } from "@fookiejs/core"
+import { Config, defaults, Field, FookieError, Method, Model, TypeStandartization } from "@fookiejs/core"
 import { initCache } from "@fookiejs/cache"
 const database = defaults.database.store
 const cacheModule = initCache(database)
@@ -25,7 +25,7 @@ const cacheModel = cacheModule.FookieCache
 })
 class TestModel extends Model {
 	@Field.Decorator({
-		type: defaults.type.text,
+		type: defaults.types[TypeStandartization.String],
 	})
 	name!: string
 }

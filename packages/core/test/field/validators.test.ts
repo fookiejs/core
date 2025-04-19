@@ -1,5 +1,5 @@
 import { expect } from "jsr:@std/expect"
-import { defaults, Field, FookieError, Model } from "@fookiejs/core"
+import { defaults, Field, FookieError, Model, TypeStandartization } from "@fookiejs/core"
 
 Deno.test("Field with a validator passing validation", async () => {
 	@Model.Decorator({
@@ -10,7 +10,7 @@ Deno.test("Field with a validator passing validation", async () => {
 	})
 	class ValidatorModel extends Model {
 		@Field.Decorator({
-			type: defaults.type.integer,
+			type: defaults.types[TypeStandartization.Integer],
 			validators: [
 				(value: any) => {
 					return value >= 10 && value <= 20
@@ -33,7 +33,7 @@ Deno.test("Field with a validator failing validation", async () => {
 	})
 	class ValidatorModel2 extends Model {
 		@Field.Decorator({
-			type: defaults.type.integer,
+			type: defaults.types[TypeStandartization.Integer],
 			validators: [
 				(value: any) => {
 					const isValid = value >= 10 && value <= 20

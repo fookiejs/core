@@ -1,2 +1,2 @@
 export * from "./type.ts"
-export * from "./type-matcher.ts"
+export * from "./standartization.ts"

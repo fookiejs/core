@@ -1,5 +1,5 @@
 import { expect } from "jsr:@std/expect"
-import { defaults, Field, FookieError, Model } from "@fookiejs/core"
+import { defaults, Field, FookieError, Model, TypeStandartization } from "@fookiejs/core"
 
 @Model.Decorator({
 	database: defaults.database.store,
@@ -13,7 +13,7 @@ import { defaults, Field, FookieError, Model } from "@fookiejs/core"
 	},
 })
 class QueryTextModel extends Model {
-	@Field.Decorator({ type: defaults.type.text })
+	@Field.Decorator({ type: defaults.types[TypeStandartization.String] })
 	textField!: string
 }
 

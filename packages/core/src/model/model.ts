@@ -13,6 +13,7 @@ import { Utils } from "../utils/util.ts"
 import { Type } from "../type/type.ts"
 import { Field } from "../field/field.ts"
 import { defaults } from "../defaults/index.ts"
+import { TypeStandartization } from "../type/standartization.ts"
 
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
 
@@ -146,15 +147,15 @@ export class Model {
 				type: primaryKeyType,
 			})
 			schemaMeta["deletedAt"] = fillSchema({
-				type: defaults.type.date,
+				type: defaults.types[TypeStandartization.Timestamp],
 				default: null,
 			})
 			schemaMeta["createdAt"] = fillSchema({
-				type: defaults.type.date,
+				type: defaults.types[TypeStandartization.Timestamp],
 				features: [defaults.feature.required],
 			})
 			schemaMeta["updatedAt"] = fillSchema({
-				type: defaults.type.date,
+				type: defaults.types[TypeStandartization.Timestamp],
 				features: [defaults.feature.required],
 			})
 

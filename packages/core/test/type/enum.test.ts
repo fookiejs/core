@@ -1,4 +1,4 @@
-import { defaults, Field, FookieError, Model } from "@fookiejs/core"
+import { defaults, Field, FookieError, Model, TypeStandartization } from "@fookiejs/core"
 import { expect } from "jsr:@std/expect"
 enum UserRole {
 	ADMIN = "ADMIN",
@@ -11,7 +11,8 @@ enum UserRole {
 })
 class EnumFieldModel extends Model {
 	@Field.Decorator({
-		type: defaults.type.enum(UserRole),
+		type: defaults.types[TypeStandartization.Enum],
+		enum: UserRole,
 		features: [defaults.feature.required],
 	})
 	role!: UserRole

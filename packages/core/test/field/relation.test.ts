@@ -1,4 +1,4 @@
-import { defaults, Field, FookieError, Model } from "@fookiejs/core"
+import { defaults, Field, FookieError, Model, TypeStandartization } from "@fookiejs/core"
 import { expect } from "jsr:@std/expect"
 
 Deno.test("Relation", () => {
@@ -14,10 +14,10 @@ Deno.test("Relation", () => {
 		},
 	})
 	class RelationAddressModel extends Model {
-		@Field.Decorator({ type: defaults.type.text })
+		@Field.Decorator({ type: defaults.types[TypeStandartization.String] })
 		street?: string
 
-		@Field.Decorator({ type: defaults.type.text })
+		@Field.Decorator({ type: defaults.types[TypeStandartization.String] })
 		city?: string
 	}
 
@@ -33,7 +33,7 @@ Deno.test("Relation", () => {
 		},
 	})
 	class RelationUserModel extends Model {
-		@Field.Decorator({ type: defaults.type.text })
+		@Field.Decorator({ type: defaults.types[TypeStandartization.String] })
 		name?: string
 
 		@Field.Decorator({ relation: RelationAddressModel })

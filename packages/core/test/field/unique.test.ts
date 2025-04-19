@@ -1,5 +1,5 @@
 import { expect } from "jsr:@std/expect"
-import { defaults, Field, FookieError, Model } from "@fookiejs/core"
+import { defaults, Field, FookieError, Model, TypeStandartization } from "@fookiejs/core"
 
 Deno.test("Define a unique field with Error", async () => {
 	@Model.Decorator({
@@ -12,7 +12,7 @@ Deno.test("Define a unique field with Error", async () => {
 	class UniqueField extends Model {
 		@Field.Decorator({
 			features: [defaults.feature.unique],
-			type: defaults.type.text,
+			type: defaults.types[TypeStandartization.String],
 		})
 		username!: string
 	}

@@ -75,7 +75,7 @@ Field decorator defines the properties of model fields.
 
 ```typescript
 @Field({
-	type: defaults.type.text,
+	type:defaults.types[TypeStandartization.String],
 	features: [
 		defaults.feature.required,
 		defaults.feature.unique

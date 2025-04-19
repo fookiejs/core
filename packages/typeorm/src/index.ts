@@ -15,12 +15,18 @@ import {
 	Not,
 	Repository,
 } from "typeorm"
-import { Database, defaults, Method, Model, models, QueryType, Type } from "@fookiejs/core"
-import { TypeOrmTypeMatcher } from "./type-matcher.ts"
+import { Database, defaults, Method, Model, models, QueryType, Type, TypeStandartization } from "@fookiejs/core"
+import { mapCoreTypeToTypeOrm } from "./type-mapping.ts"
+
+interface TypedField {
+	type: Type
+	features: any[]
+	isArray?: boolean
+	enum?: Record<string, string | number>
+}
 
 const entityRegistry = new Map<string, EntitySchema>()
 let dataSource: DataSource | null = null
-const typeMatcher = new TypeOrmTypeMatcher()
 
 type TypeOrmConfig = DataSourceOptions & {
 	type: "postgres"
@@ -33,7 +39,7 @@ type TypeOrmConfig = DataSourceOptions & {
 
 export const database: Database = Database.create({
 	key: "typeorm",
-	primaryKeyType: defaults.type.text,
+	primaryKeyType: defaults.types[TypeStandartization.String],
 	modify: function (model: typeof Model) {
 		const modelName = model.getName()
 
@@ -133,7 +139,7 @@ function transformQueryToFindOptions(query: QueryType<any>): FindManyOptions {
 	if (query.orderBy && Object.keys(query.orderBy).length > 0) {
 		options.order = {}
 		for (const [key, direction] of Object.entries(query.orderBy)) {
-			options.order[key] = direction.toUpperCase()
+			options.order[key] = direction.toUpperCase() as "ASC" | "DESC"
 		}
 	}
 
@@ -242,12 +248,21 @@ export const initializeDataSource = async function (options: DataSourceOptions):
 						deleteDate: true,
 					},
 					...Object.entries(schema).reduce((columns: any, [key, value]) => {
-						const typeInfo = typeMatcher.match(value.type)
-						columns[key] = {
-							type: typeInfo.type,
-							enum: typeInfo.enumValues,
-							array: typeInfo.arrayType !== undefined,
-							nullable: !value.features.includes(defaults.feature.required),
+						try {
+							const typedField = value as TypedField
+							const typeInfo = mapCoreTypeToTypeOrm(typedField.type.type, {
+								isArray: typedField.isArray,
+								enum: typedField.enum,
+							})
+
+							columns[key] = {
+								...typeInfo.options,
+								type: typeInfo.type,
+								nullable: !typedField.features?.includes(defaults.feature.required),
+								primary: key === "id",
+							}
+						} catch (error) {
+							console.warn(`Warning: ${error.message}. Field '${key}' will be skipped.`)
 						}
 						return columns
 					}, {}),
@@ -279,25 +294,18 @@ export function createTypeOrmEntity(model: typeof Model): EntitySchema {
 
 	for (const [fieldName, field] of Object.entries(schema)) {
 		try {
-			const typedField = field as { type: Type; required: boolean; features: any[] }
-			const typeInfo = typeMatcher.match(typedField.type)
+			const typedField = field as TypedField
+			const typeInfo = mapCoreTypeToTypeOrm(typedField.type.type, {
+				isArray: typedField.isArray,
+				enum: typedField.enum,
+			})
 
-			const columnDef: any = {
+			columns[fieldName] = {
+				...typeInfo.options,
 				type: typeInfo.type,
-				nullable: !typedField.required && !typedField.features?.includes(defaults.feature.required),
+				nullable: !typedField.features?.includes(defaults.feature.required),
 				primary: fieldName === "id",
-				array: typeInfo.arrayType !== undefined,
 			}
-
-			if (typeInfo.isEnum && typeInfo.enumValues) {
-				columnDef.enum = typeInfo.enumValues
-			}
-
-			if (typeInfo.arrayType) {
-				columnDef.type = typeInfo.arrayType
-			}
-
-			columns[fieldName] = columnDef
 		} catch (error) {
 			console.warn(`Warning: ${error.message}. Field '${fieldName}' will be skipped.`)
 		}

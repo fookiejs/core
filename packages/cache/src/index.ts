@@ -11,6 +11,7 @@ import {
 	Mixin,
 	Model,
 	Modify,
+	TypeStandartization,
 } from "@fookiejs/core"
 export function hasher(data: any): string {
 	const hash = crypto.createHash("sha256")
@@ -48,22 +49,22 @@ export function initCache(database: Database): CacheModule {
 	})
 	class FookieCache extends Model {
 		@Field.Decorator({
-			type: defaults.type.text,
+			type: defaults.types[TypeStandartization.String],
 			features: [defaults.feature.required],
 		})
 		model!: string
 		@Field.Decorator({
-			type: defaults.type.text,
+			type: defaults.types[TypeStandartization.String],
 			features: [defaults.feature.required, defaults.feature.unique],
 		})
 		hash!: string
 		@Field.Decorator({
-			type: defaults.type.text,
+			type: defaults.types[TypeStandartization.String],
 			features: [defaults.feature.required],
 		})
 		data!: string
 		@Field.Decorator({
-			type: defaults.type.date,
+			type: defaults.types[TypeStandartization.Date],
 			features: [defaults.feature.required],
 		})
 		expiresAt!: string

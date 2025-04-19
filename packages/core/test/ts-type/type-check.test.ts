@@ -1,4 +1,4 @@
-import { defaults, Field, type Method, Model, Rule } from "@fookiejs/core"
+import { defaults, Field, type Method, Model, Rule, TypeStandartization } from "@fookiejs/core"
 
 Deno.test("Payload Type Safety Tests", () => {
 	@Model.Decorator({
@@ -13,10 +13,10 @@ Deno.test("Payload Type Safety Tests", () => {
 		},
 	})
 	class _TypeCheckUser extends Model {
-		@Field.Decorator({ type: defaults.type.text })
+		@Field.Decorator({ type: defaults.types[TypeStandartization.String] })
 		email!: string
 
-		@Field.Decorator({ type: defaults.type.text })
+		@Field.Decorator({ type: defaults.types[TypeStandartization.String] })
 		username!: string
 	}
 

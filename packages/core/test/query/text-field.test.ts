@@ -1,4 +1,4 @@
-import { defaults, Field, FookieError, Model } from "@fookiejs/core"
+import { defaults, Field, FookieError, Model, TypeStandartization } from "@fookiejs/core"
 import { expect } from "jsr:@std/expect"
 
 Deno.test("QueryTextModel Query Tests", async () => {
@@ -14,7 +14,7 @@ Deno.test("QueryTextModel Query Tests", async () => {
 		},
 	})
 	class QueryTextModel extends Model {
-		@Field.Decorator({ type: defaults.type.text })
+		@Field.Decorator({ type: defaults.types[TypeStandartization.String] })
 		textField!: string
 	}
 

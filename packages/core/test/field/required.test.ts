@@ -1,4 +1,4 @@
-import { defaults, Field, FookieError, Model } from "@fookiejs/core"
+import { defaults, Field, FookieError, Model, TypeStandartization } from "@fookiejs/core"
 import { expect } from "jsr:@std/expect"
 
 Deno.test("Define a required field with Error", async () => {
@@ -9,7 +9,7 @@ Deno.test("Define a required field with Error", async () => {
 	class RequiredField extends Model {
 		@Field.Decorator({
 			features: [defaults.feature.required],
-			type: defaults.type.text,
+			type: defaults.types[TypeStandartization.String],
 		})
 		field?: string
 	}
@@ -31,7 +31,7 @@ Deno.test("Define a required field with Success", async () => {
 	class RequiredField2 extends Model {
 		@Field.Decorator({
 			features: [defaults.feature.required],
-			type: defaults.type.text,
+			type: defaults.types[TypeStandartization.String],
 		})
 		field!: string
 	}

@@ -1,5 +1,5 @@
 import { expect } from "jsr:@std/expect"
-import { defaults, Field, FookieError, Model, Role } from "@fookiejs/core"
+import { defaults, Field, FookieError, Model, Role, TypeStandartization } from "@fookiejs/core"
 import { v4 } from "uuid"
 
 Deno.test("Relation", () => {
@@ -19,7 +19,7 @@ Deno.test("Relation", () => {
 		},
 	})
 	class Token extends Model {
-		@Field.Decorator({ type: defaults.type.text })
+		@Field.Decorator({ type: defaults.types[TypeStandartization.String] })
 		name!: string
 	}
 

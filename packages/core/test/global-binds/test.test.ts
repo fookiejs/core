@@ -9,6 +9,7 @@ import {
 	Model,
 	type Payload,
 	Rule,
+	TypeStandartization,
 } from "@fookiejs/core"
 
 Deno.test("fillModel Function Tests", () => {
@@ -22,7 +23,7 @@ Deno.test("fillModel Function Tests", () => {
 	})
 	class TestModel extends Model {
 		@Field.Decorator({
-			type: defaults.type.text,
+			type: defaults.types[TypeStandartization.String],
 			features: [defaults.feature.required],
 		})
 		exampleField!: string

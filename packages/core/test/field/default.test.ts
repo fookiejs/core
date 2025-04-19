@@ -1,5 +1,5 @@
 import { expect } from "jsr:@std/expect"
-import { defaults, Field, Model } from "@fookiejs/core"
+import { defaults, Field, Model, TypeStandartization } from "@fookiejs/core"
 
 Deno.test("Define a field with a default value", async () => {
 	@Model.Decorator({
@@ -12,7 +12,7 @@ Deno.test("Define a field with a default value", async () => {
 	})
 	class DefaultFieldModel extends Model {
 		@Field.Decorator({
-			type: defaults.type.text,
+			type: defaults.types[TypeStandartization.String],
 			default: "defaultVal",
 		})
 		myField?: string

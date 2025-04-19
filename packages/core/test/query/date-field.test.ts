@@ -1,5 +1,5 @@
 import { expect } from "jsr:@std/expect"
-import { defaults, Field, FookieError, Model } from "@fookiejs/core"
+import { defaults, Field, FookieError, Model, TypeStandartization } from "@fookiejs/core"
 
 Deno.test("QueryDateModel Query Tests", async () => {
 	@Model.Decorator({
@@ -14,7 +14,7 @@ Deno.test("QueryDateModel Query Tests", async () => {
 		},
 	})
 	class QueryDateModel extends Model {
-		@Field.Decorator({ type: defaults.type.date })
+		@Field.Decorator({ type: defaults.types[TypeStandartization.Date] })
 		dateField!: string
 	}
 

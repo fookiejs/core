@@ -1,4 +1,4 @@
-import { defaults, Field, Model } from "@fookiejs/core"
+import { defaults, Field, Model, TypeStandartization } from "@fookiejs/core"
 import { expect } from "jsr:@std/expect"
 
 @Model.Decorator({
@@ -11,13 +11,13 @@ import { expect } from "jsr:@std/expect"
 	},
 })
 class OrderByModel extends Model {
-	@Field.Decorator({ type: defaults.type.text })
+	@Field.Decorator({ type: defaults.types[TypeStandartization.String] })
 	textField!: string
 
-	@Field.Decorator({ type: defaults.type.integer })
+	@Field.Decorator({ type: defaults.types[TypeStandartization.Integer] })
 	integerField!: number
 
-	@Field.Decorator({ type: defaults.type.float })
+	@Field.Decorator({ type: defaults.types[TypeStandartization.Float] })
 	floatField!: number
 }
 

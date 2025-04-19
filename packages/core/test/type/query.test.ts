@@ -1,4 +1,4 @@
-import { defaults, Field, FookieError, Model } from "@fookiejs/core"
+import { defaults, Field, FookieError, Model, TypeStandartization } from "@fookiejs/core"
 import { expect } from "jsr:@std/expect"
 @Model.Decorator({
 	database: defaults.database.store,
@@ -8,13 +8,13 @@ import { expect } from "jsr:@std/expect"
 	},
 })
 class QueryTypeModel extends Model {
-	@Field.Decorator({ type: defaults.type.integer })
+	@Field.Decorator({ type: defaults.types[TypeStandartization.Integer] })
 	intField!: number
-	@Field.Decorator({ type: defaults.type.float })
+	@Field.Decorator({ type: defaults.types[TypeStandartization.Float] })
 	floatField!: number
-	@Field.Decorator({ type: defaults.type.text })
+	@Field.Decorator({ type: defaults.types[TypeStandartization.String] })
 	textField!: string
-	@Field.Decorator({ type: defaults.type.date })
+	@Field.Decorator({ type: defaults.types[TypeStandartization.Date] })
 	dateField!: string
 }
 Deno.test("QueryTypeModel CRUD Operations", () => {

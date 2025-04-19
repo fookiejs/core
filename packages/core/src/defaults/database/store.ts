@@ -3,9 +3,11 @@ import { Model } from "../../model/model.ts"
 import type { QueryType } from "../../model/model.ts"
 import { Method } from "../../method/method.ts"
 import { Payload } from "../../payload/payload.ts"
-import { types } from "../type/types.ts"
+
 import { defaults } from "../index.ts"
 import { Utils } from "../../utils/util.ts"
+import { CoreTypes } from "../type/types.ts"
+import { TypeStandartization } from "../../type/standartization.ts"
 function checkUniqueConstraints<T extends Model>(
 	model: typeof Model,
 	entity: T,
@@ -30,7 +32,7 @@ function checkUniqueConstraints<T extends Model>(
 }
 export const store = Database.create({
 	key: "store",
-	primaryKeyType: types.text,
+	primaryKeyType: CoreTypes[TypeStandartization.String],
 	modify: function <T extends Model>(model: typeof Model) {
 		const pool: T[] = []
 		return {

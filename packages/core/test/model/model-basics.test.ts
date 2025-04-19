@@ -1,4 +1,4 @@
-import { defaults, Field, Model, Role } from "@fookiejs/core"
+import { defaults, Field, Model, Role, TypeStandartization } from "@fookiejs/core"
 
 Deno.test("Define a simple model", async () => {
 	@Model.Decorator({
@@ -22,7 +22,7 @@ Deno.test("Define a simple model", async () => {
 	class User extends Model {
 		@Field.Decorator({
 			features: [defaults.feature.required],
-			type: defaults.type.text,
+			type: defaults.types[TypeStandartization.String],
 		})
 		email!: string
 	}
@@ -36,7 +36,7 @@ Deno.test("Define a model with relations.", async () => {
 	})
 	class Address extends Model {
 		@Field.Decorator({
-			type: defaults.type.text,
+			type: defaults.types[TypeStandartization.String],
 			features: [defaults.feature.unique, defaults.feature.required],
 		})
 		city!: string
@@ -48,7 +48,7 @@ Deno.test("Define a model with relations.", async () => {
 	})
 	class Place extends Model {
 		@Field.Decorator({
-			type: defaults.type.text,
+			type: defaults.types[TypeStandartization.String],
 			relation: Address,
 			features: [defaults.feature.required],
 		})

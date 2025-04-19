@@ -1,12 +1,17 @@
-import { BaseClass } from "../base-class/base-class.ts"
+import { plainToClass } from "class-transformer"
+import { TypeStandartization } from "./standartization.ts"
 
-export class Type extends BaseClass {
+export class Type {
+	example?: any
+	type!: TypeStandartization
 	validate!: (value: unknown) => boolean
-	example!: unknown
 	queryController!: {
 		[key: string]: _QueryValidator
 	}
-	alias: string[]
+
+	static create(data: Type): Type {
+		return plainToClass(Type, data)
+	}
 }
 
 class _QueryValidator {

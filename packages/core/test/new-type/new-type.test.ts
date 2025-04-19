@@ -1,4 +1,4 @@
-import { defaults, Field, Model } from "@fookiejs/core"
+import { defaults, Field, Model, TypeStandartization } from "@fookiejs/core"
 
 @Model.Decorator({
 	database: defaults.database.store,
@@ -7,7 +7,7 @@ import { defaults, Field, Model } from "@fookiejs/core"
 	},
 })
 class RootObject extends Model {
-	@Field.Decorator({ type: defaults.type.text })
+	@Field.Decorator({ type: defaults.types[TypeStandartization.String] })
 	name!: string
 }
 
@@ -18,7 +18,7 @@ class RootObject extends Model {
 	},
 })
 class ChildObject extends Model {
-	@Field.Decorator({ type: defaults.type.text })
+	@Field.Decorator({ type: defaults.types[TypeStandartization.String] })
 	name!: string
 
 	@Field.Decorator({ relation: RootObject })
