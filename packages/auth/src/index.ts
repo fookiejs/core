@@ -36,14 +36,7 @@ export function initAuth(
 		key: "loggedIn",
 		async execute(payload: any) {
 			const loggedIn = payload.state[ACCOUNT] instanceof Account
-			if (!loggedIn) {
-				throw FookieError.create({
-					message: `User is not logged in.`,
-					status: 401,
-					code: "NOT_LOGGED_IN",
-				})
-			}
-			return true
+			return loggedIn
 		},
 	})
 	const belongsToUser = Modify.create({

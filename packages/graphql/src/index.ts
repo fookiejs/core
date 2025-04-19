@@ -1,9 +1,46 @@
 import { defaults, Method, Model, models, TypeStandartization } from "@fookiejs/core"
 import { FookieDataLoader } from "./dataloader.ts"
-import { MutationField, QueryField, Resolvers, SubscriptionField, TypeDefs, TypeField } from "./types.ts"
+import {
+	AsyncIteratorLike,
+	MutationField,
+	QueryField,
+	Resolvers,
+	SubscriptionField,
+	TypeDefs,
+	TypeField,
+} from "./types.ts"
 import { PubSub } from "npm:graphql-subscriptions@2.0.0"
+import { CoreTypes } from "../../core/src/defaults/type/types.ts"
 
 const pubsub = new PubSub()
+
+class AsyncIteratorWrapper<T> implements AsyncIteratorLike<T> {
+	constructor(private iterator: AsyncIterator<T>) {}
+
+	async next(): Promise<{ value: T; done: boolean }> {
+		const result = await this.iterator.next()
+		return {
+			value: result.value as T,
+			done: result.done ?? false,
+		}
+	}
+
+	async return?(value?: T): Promise<{ value: T; done: boolean }> {
+		const result = await this.iterator.return?.(value as any)
+		return {
+			value: result?.value as T,
+			done: true,
+		}
+	}
+
+	async throw?(error: any): Promise<{ value: T; done: boolean }> {
+		const result = await this.iterator.throw?.(error)
+		return {
+			value: result?.value as T,
+			done: true,
+		}
+	}
+}
 
 let resolveRooms: ((token: string) => Promise<string[]>) | null = null
 
@@ -315,7 +352,7 @@ export function createResolvers(): { resolvers: Resolvers } {
 				if (!rooms.length) throw new Error("No rooms available")
 
 				const eventNames = rooms.map((room) => `${modelName}_${Method.CREATE}.${room}`)
-				return pubsub.asyncIterator(eventNames)
+				return new AsyncIteratorWrapper(pubsub.asyncIterator(eventNames))
 			},
 			resolve: (payload) => payload,
 		}
@@ -329,7 +366,7 @@ export function createResolvers(): { resolvers: Resolvers } {
 				if (!rooms.length) throw new Error("No rooms available")
 
 				const eventNames = rooms.map((room) => `${modelName}_${Method.UPDATE}.${room}`)
-				return pubsub.asyncIterator(eventNames)
+				return new AsyncIteratorWrapper(pubsub.asyncIterator(eventNames))
 			},
 			resolve: (payload) => {
 				if (!payload.ids || !payload.body) {
@@ -348,7 +385,7 @@ export function createResolvers(): { resolvers: Resolvers } {
 				if (!rooms.length) throw new Error("No rooms available")
 
 				const eventNames = rooms.map((room) => `${modelName}_${Method.DELETE}.${room}`)
-				return pubsub.asyncIterator(eventNames)
+				return new AsyncIteratorWrapper(pubsub.asyncIterator(eventNames))
 			},
 			resolve: (payload) => {
 				if (!payload.ids) {
@@ -415,9 +452,17 @@ export function createGraphQL() {
 			ids: { value: "[ID!]!" },
 		}
 
-		typeDefs.Subscription[`${modelName}Created`] = modelName
-		typeDefs.Subscription[`${modelName}Updated`] = `${modelName}UpdatePayload`
-		typeDefs.Subscription[`${modelName}Deleted`] = `${modelName}DeletePayload`
+		typeDefs.Subscription[`${modelName}Created`] = {
+			value: modelName,
+		} as SubscriptionField
+
+		typeDefs.Subscription[`${modelName}Updated`] = {
+			value: `${modelName}UpdatePayload`,
+		} as SubscriptionField
+
+		typeDefs.Subscription[`${modelName}Deleted`] = {
+			value: `${modelName}DeletePayload`,
+		} as SubscriptionField
 
 		resolvers.Subscription[`${modelName}Created`] = {
 			subscribe: async (_, __, context) => {
@@ -428,7 +473,7 @@ export function createGraphQL() {
 				if (!rooms.length) throw new Error("No rooms available")
 
 				const eventNames = rooms.map((room) => `${modelName}_${Method.CREATE}.${room}`)
-				return pubsub.asyncIterator(eventNames)
+				return new AsyncIteratorWrapper(pubsub.asyncIterator(eventNames))
 			},
 			resolve: (payload) => payload,
 		}
@@ -442,7 +487,7 @@ export function createGraphQL() {
 				if (!rooms.length) throw new Error("No rooms available")
 
 				const eventNames = rooms.map((room) => `${modelName}_${Method.UPDATE}.${room}`)
-				return pubsub.asyncIterator(eventNames)
+				return new AsyncIteratorWrapper(pubsub.asyncIterator(eventNames))
 			},
 			resolve: (payload) => {
 				if (!payload.ids || !payload.body) {
@@ -461,7 +506,7 @@ export function createGraphQL() {
 				if (!rooms.length) throw new Error("No rooms available")
 
 				const eventNames = rooms.map((room) => `${modelName}_${Method.DELETE}.${room}`)
-				return pubsub.asyncIterator(eventNames)
+				return new AsyncIteratorWrapper(pubsub.asyncIterator(eventNames))
 			},
 			resolve: (payload) => {
 				if (!payload.ids) {
@@ -471,7 +516,7 @@ export function createGraphQL() {
 			},
 		}
 
-		typeDefs.input[modelName] = Object.fromEntries(
+		typeDefs.input[`${modelName}_input`] = Object.fromEntries(
 			Object.entries(schema)
 				.filter(([key]) => key !== "id")
 				.map(([key, field]) => [
@@ -480,7 +525,7 @@ export function createGraphQL() {
 				]),
 		)
 
-		typeDefs.Query[modelName] = { value: `${modelName}_query` }
+		typeDefs.Query[modelName] = { value: `[${modelName}]` }
 
 		resolvers.Query[modelName] = async (_: any, { query = {} }: any, context: any) => {
 			const token = context.token || ""
@@ -544,7 +589,7 @@ type ${modelName}DeletePayload {\n${deletePayloadFields}\n}`
 type Query {
 ${
 		Object.entries(typeDefs.Query)
-			.map(([key, value]) => `  ${key}(query: ${value.value}): [${key}]`)
+			.map(([key]) => `  ${key}(query: ${key}_query): ${typeDefs.Query[key].value}`)
 			.join("\n")
 	}
 }
@@ -581,7 +626,7 @@ input ${modelName}_query {
 
 input ${modelName}_input {
 ${
-				Object.entries(typeDefs.input[modelName] || {})
+				Object.entries(typeDefs.input[`${modelName}_input`] || {})
 					.map(([key, value]) => `  ${key}: ${value.value}`)
 					.join("\n")
 			}
@@ -592,7 +637,7 @@ ${
 type Subscription {
 ${
 		Object.entries(typeDefs.Subscription)
-			.map(([key, value]) => `  ${key}: ${value}`)
+			.map(([key, field]) => `  ${key}: ${field.value}`)
 			.join("\n")
 	}
 }

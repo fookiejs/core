@@ -52,16 +52,23 @@ export interface TypeDefs {
 
 export interface AsyncIteratorLike<T> {
 	next(): Promise<{ value: T; done: boolean }>
-	return?(): Promise<{ value: T; done: boolean }>
+	return?(value?: T): Promise<{ value: T; done: boolean }>
 	throw?(error: any): Promise<{ value: T; done: boolean }>
+}
+
+export interface SubscriptionResolver<TPayload = any> {
+	subscribe: (
+		parent: any,
+		args: any,
+		context: any,
+	) => Promise<AsyncIteratorLike<TPayload>> | AsyncIteratorLike<TPayload>
+	resolve?: (payload: TPayload) => any
 }
 
 export interface Resolvers {
 	Query: Record<string, (parent: any, args: any, context: any) => Promise<any> | any>
 	Mutation: Record<string, (parent: any, args: any, context: any) => Promise<any> | any>
-	Subscription: Record<string, {
-		subscribe: (parent: any, args: any, context: any) => Promise<AsyncIteratorLike<any>> | AsyncIteratorLike<any>
-	}>
+	Subscription: Record<string, SubscriptionResolver>
 	[key: string]: any
 }
 

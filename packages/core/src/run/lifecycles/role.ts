@@ -32,7 +32,7 @@ const role = async function (payload: Payload<Model, Method>) {
 
 	throw FookieError.create({
 		message: `Access denied. None of the required roles were satisfied.`,
-		status: 403,
+		status: 401,
 		code: "ACCESS_DENIED",
 	})
 }
