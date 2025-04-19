@@ -1,6 +1,6 @@
-import { defaults, Method, Model, models } from "@fookiejs/core"
+import { defaults, Method, Model, models, TypeStandartization } from "@fookiejs/core"
 import { FookieDataLoader } from "./dataloader.ts"
-import { Resolvers, TypeDefs, TypeField } from "./types.ts"
+import { MutationField, QueryField, Resolvers, SubscriptionField, TypeDefs, TypeField } from "./types.ts"
 import { PubSub } from "npm:graphql-subscriptions@2.0.0"
 
 const pubsub = new PubSub()
@@ -21,7 +21,7 @@ const filterTypeMap: Record<string, string> = {
 }
 
 function generate_filter_types(): string {
-	const fookieTypes = Object.values(defaults.type)
+	const fookieTypes = Object.values(CoreTypes)
 		.filter((t) => typeof t === "object" && t !== null && "key" in t && "queryController" in t)
 
 	let result = ""
@@ -78,8 +78,8 @@ function generate_filter_types(): string {
 
 const filter_types = generate_filter_types()
 
-function resolve_type(field: any): string {
-	if (!field || !field.type) return "String"
+function resolve_type(field: any): TypeStandartization | string {
+	if (!field || !field.type) return TypeStandartization.String
 
 	if (field.type && field.type.key) {
 		const key = field.type.key.toLowerCase()
@@ -92,16 +92,16 @@ function resolve_type(field: any): string {
 		for (const graphqlType of graphqlNativeTypes) {
 			const lowerGraphqlType = graphqlType.toLowerCase()
 			if (key.includes(lowerGraphqlType) || aliases.some((a) => a.toLowerCase().includes(lowerGraphqlType))) {
-				return graphqlType
+				return graphqlType as TypeStandartization
 			}
 		}
 
 		if (key.includes("date") || key.includes("timestamp") || aliases.some((a) => a.toLowerCase().includes("date"))) {
-			return "DateTime"
+			return TypeStandartization.DateTime
 		}
 	}
 
-	return "String"
+	return TypeStandartization.String
 }
 
 function resolve_input(typeStr: string, field: any = null): string {
@@ -149,82 +149,146 @@ export function createTypeDefs(): { typeDefs: string } {
 	for (const model of models) {
 		const modelName = model.getName()
 
-		typeDefs.type[modelName] = {
-			id: { value: "ID" } as TypeField,
-			...Object.fromEntries(
-				Object.entries((model as any).fields).map(([key, field]) => [
-					key,
-					{ value: resolve_type(field) } as TypeField,
-				]),
-			),
+		const modelFields: Record<string, TypeField> = {
+			id: { value: TypeStandartization.String, is_pk: true },
 		}
 
+		Object.entries((model as any).fields).forEach(([key, field]) => {
+			modelFields[key] = {
+				value: resolve_type(field),
+				field: field,
+				operations: {
+					equals: true,
+					notEquals: true,
+					in: true,
+					notIn: true,
+					isNull: true,
+				},
+			}
+		})
+
+		typeDefs.type[modelName] = modelFields
+
 		typeDefs.type[`${modelName}UpdatePayload`] = {
-			ids: { value: "[ID!]!" },
+			ids: { value: "[ID!]!" as TypeStandartization },
 			body: { value: modelName },
 		}
 
 		typeDefs.type[`${modelName}DeletePayload`] = {
-			ids: { value: "[ID!]!" },
+			ids: { value: "[ID!]!" as TypeStandartization },
 		}
 
-		typeDefs.Subscription[`${modelName}Created`] = modelName
-		typeDefs.Subscription[`${modelName}Updated`] = `${modelName}UpdatePayload`
-		typeDefs.Subscription[`${modelName}Deleted`] = `${modelName}DeletePayload`
+		typeDefs.Query[modelName] = {
+			value: modelName,
+			args: {
+				filter: { value: `${modelName}WhereInput` },
+				limit: { value: TypeStandartization.Integer },
+				offset: { value: TypeStandartization.Integer },
+				orderBy: { value: `${modelName}OrderByInput` },
+			},
+		} as QueryField
+
+		typeDefs.Query[`${modelName}s`] = {
+			value: `[${modelName}]`,
+			args: {
+				filter: { value: `${modelName}WhereInput` },
+				limit: { value: TypeStandartization.Integer },
+				offset: { value: TypeStandartization.Integer },
+				orderBy: { value: `${modelName}OrderByInput` },
+			},
+		} as QueryField
+
+		typeDefs.Mutation[`create${modelName}`] = {
+			value: modelName,
+			args: {
+				data: { value: `${modelName}CreateInput` },
+			},
+		} as MutationField
+
+		typeDefs.Mutation[`update${modelName}`] = {
+			value: `${modelName}UpdatePayload`,
+			args: {
+				where: { value: `${modelName}WhereInput` },
+				data: { value: `${modelName}UpdateInput` },
+			},
+		} as MutationField
+
+		typeDefs.Mutation[`delete${modelName}`] = {
+			value: `${modelName}DeletePayload`,
+			args: {
+				where: { value: `${modelName}WhereInput` },
+			},
+		} as MutationField
+
+		typeDefs.Subscription[`${modelName}Created`] = {
+			value: modelName,
+		} as SubscriptionField
+
+		typeDefs.Subscription[`${modelName}Updated`] = {
+			value: `${modelName}UpdatePayload`,
+		} as SubscriptionField
+
+		typeDefs.Subscription[`${modelName}Deleted`] = {
+			value: `${modelName}DeletePayload`,
+		} as SubscriptionField
+
+		typeDefs.input[`${modelName}WhereInput`] = modelFields
+		typeDefs.input[`${modelName}CreateInput`] = modelFields
+		typeDefs.input[`${modelName}UpdateInput`] = modelFields
+		typeDefs.input[`${modelName}OrderByInput`] = Object.fromEntries(
+			Object.keys(modelFields).map((key) => [key, { value: "OrderByEnum" }]),
+		)
 	}
 
-	const subscriptionFields = Object.entries(typeDefs.Subscription)
-		.map(([key, value]) => `  ${key}: ${value}`)
-		.join("\n")
-
-	const modelTypes = models.map((model) => {
-		const modelName = model.getName()
-		const fields = Object.entries(typeDefs.type[modelName] || {})
-			.map(([key, value]) => `  ${key}: ${value.value}`)
-			.join("\n")
-
-		const updatePayloadFields = Object.entries(typeDefs.type[`${modelName}UpdatePayload`] || {})
-			.map(([key, value]) => `  ${key}: ${value.value}`)
-			.join("\n")
-
-		const deletePayloadFields = Object.entries(typeDefs.type[`${modelName}DeletePayload`] || {})
-			.map(([key, value]) => `  ${key}: ${value.value}`)
-			.join("\n")
-
-		return `type ${modelName} {\n${fields}\n}
-
-type ${modelName}UpdatePayload {\n${updatePayloadFields}\n}
-
-type ${modelName}DeletePayload {\n${deletePayloadFields}\n}`
-	}).filter(Boolean).join("\n\n")
-
-	const typeDefsString = `
-scalar DateTime
-
-input DateFilter {
-  equals: DateTime
-  notEquals: DateTime
-  gt: DateTime
-  gte: DateTime
-  lt: DateTime
-  lte: DateTime
-  isNull: Boolean
+	const typeDefsString = generateTypeDefsString(typeDefs)
+	return { typeDefs: typeDefsString }
 }
 
-${filter_types}
+function generateTypeDefsString(typeDefs: TypeDefs): string {
+	let result = "scalar DateTime\n\n"
+	result += "enum OrderByEnum {\n  ASC\n  DESC\n}\n\n"
 
-${modelTypes}
+	Object.entries(typeDefs.type).forEach(([typeName, fields]) => {
+		result += `type ${typeName} {\n`
+		Object.entries(fields).forEach(([fieldName, field]) => {
+			result += `  ${fieldName}: ${field.value}\n`
+		})
+		result += "}\n\n"
+	})
 
-${
-		subscriptionFields
-			? `type Subscription {
-${subscriptionFields}
-}`
+	Object.entries(typeDefs.input).forEach(([inputName, fields]) => {
+		result += `input ${inputName} {\n`
+		Object.entries(fields).forEach(([fieldName, field]) => {
+			result += `  ${fieldName}: ${field.value}\n`
+		})
+		result += "}\n\n"
+	})
+
+	result += "type Query {\n"
+	Object.entries(typeDefs.Query).forEach(([queryName, field]) => {
+		const args = field.args
+			? `(${Object.entries(field.args).map(([name, arg]) => `${name}: ${arg.value}`).join(", ")})`
 			: ""
-	}
-`
+		result += `  ${queryName}${args}: ${field.value}\n`
+	})
+	result += "}\n\n"
 
-	return { typeDefs: typeDefsString }
+	result += "type Mutation {\n"
+	Object.entries(typeDefs.Mutation).forEach(([mutationName, field]) => {
+		const args = field.args
+			? `(${Object.entries(field.args).map(([name, arg]) => `${name}: ${arg.value}`).join(", ")})`
+			: ""
+		result += `  ${mutationName}${args}: ${field.value}\n`
+	})
+	result += "}\n\n"
+
+	result += "type Subscription {\n"
+	Object.entries(typeDefs.Subscription).forEach(([subscriptionName, field]) => {
+		result += `  ${subscriptionName}: ${field.value}\n`
+	})
+	result += "}\n"
+
+	return result
 }
 
 export function createContext(req: any) {

@@ -1,28 +1,78 @@
+import { Model } from "@fookiejs/core"
+import { TypeStandartization } from "@fookiejs/core"
+
+export type ScalarOperations = {
+	equals?: boolean
+	notEquals?: boolean
+	gt?: boolean
+	gte?: boolean
+	lt?: boolean
+	lte?: boolean
+	in?: boolean
+	notIn?: boolean
+	like?: boolean
+	isNull?: boolean
+}
+
 export interface TypeField {
-	value: string
+	value: TypeStandartization | string
 	field?: any
 	is_pk?: boolean
 	all?: boolean
 	sum?: boolean
 	count?: boolean
-	model?: any
+	model?: typeof Model
+	operations?: ScalarOperations
+	isArray?: boolean
+	args?: Record<string, TypeField>
 }
 
-interface QueryField {
+export interface QueryField {
 	value: string
+	args?: Record<string, TypeField>
+}
+
+export interface MutationField {
+	value: string
+	args?: Record<string, TypeField>
+}
+
+export interface SubscriptionField {
+	value: string
+	args?: Record<string, TypeField>
 }
 
 export interface TypeDefs {
 	input: Record<string, Record<string, TypeField>>
 	type: Record<string, Record<string, TypeField>>
 	Query: Record<string, QueryField>
-	Mutation: Record<string, string>
-	Subscription: Record<string, string>
+	Mutation: Record<string, MutationField>
+	Subscription: Record<string, SubscriptionField>
+}
+
+export interface AsyncIteratorLike<T> {
+	next(): Promise<{ value: T; done: boolean }>
+	return?(): Promise<{ value: T; done: boolean }>
+	throw?(error: any): Promise<{ value: T; done: boolean }>
 }
 
 export interface Resolvers {
-	Query: Record<string, any>
-	Mutation: Record<string, any>
-	Subscription: Record<string, any>
+	Query: Record<string, (parent: any, args: any, context: any) => Promise<any> | any>
+	Mutation: Record<string, (parent: any, args: any, context: any) => Promise<any> | any>
+	Subscription: Record<string, {
+		subscribe: (parent: any, args: any, context: any) => Promise<AsyncIteratorLike<any>> | AsyncIteratorLike<any>
+	}>
 	[key: string]: any
+}
+
+export type CreateTypeDefsOptions = {
+	excludeFields?: string[]
+	includeFields?: string[]
+	operations?: ScalarOperations
+	isInput?: boolean
+}
+
+export interface GraphQLTypeBuilder {
+	createTypeDefs(model: typeof Model, options?: CreateTypeDefsOptions): Partial<TypeDefs>
+	createResolvers(model: typeof Model): Partial<Resolvers>
 }
