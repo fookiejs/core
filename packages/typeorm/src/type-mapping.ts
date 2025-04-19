@@ -1,88 +1,43 @@
-import { TypeStandartization } from "../../core/src/type/standartization.ts"
+import { TypeStandartization } from "@fookiejs/core"
+import { ColumnType } from "typeorm"
 
-export type TypeOrmTypeResult = {
-	type: string
-	options?: Record<string, any>
-}
-
-export type TypeOrmMappingOptions = {
-	enumValues?: string[]
-	isArray?: boolean
-	enum?: Record<string, string | number>
-}
-
-export function mapCoreTypeToTypeOrm(type: TypeStandartization, options?: TypeOrmMappingOptions): TypeOrmTypeResult {
-	const mapper = typeOrmTypeMapping[type]
-	if (!mapper) {
-		throw new Error(`Unsupported Type: ${type}`)
+export function mapCoreTypeToTypeOrm(type: TypeStandartization): ColumnType | "relation" {
+	switch (type) {
+		case TypeStandartization.String:
+			return "varchar"
+		case TypeStandartization.Integer:
+			return "int"
+		case TypeStandartization.Float:
+			return "float"
+		case TypeStandartization.Decimal:
+			return "decimal"
+		case TypeStandartization.BigInt:
+			return "bigint"
+		case TypeStandartization.Boolean:
+			return "boolean"
+		case TypeStandartization.Enum:
+			return "enum"
+		case TypeStandartization.Date:
+			return "date"
+		case TypeStandartization.Time:
+			return "time"
+		case TypeStandartization.DateTime:
+			return "datetime"
+		case TypeStandartization.Timestamp:
+			return "timestamp"
+		case TypeStandartization.Duration:
+			return "interval"
+		case TypeStandartization.GeoPoint:
+			return "point"
+		case TypeStandartization.GeoShape:
+			return "geometry"
+		case TypeStandartization.UUID:
+			return "uuid"
+		case TypeStandartization.Binary:
+			return "bytea"
+		case TypeStandartization.JSON:
+			return "jsonb"
+		default:
+			return "relation"
 	}
-	const result = mapper()
-
-	if (options?.enum && type === TypeStandartization.Enum) {
-		result.options = { ...result.options, enum: Object.values(options.enum) }
-	}
-
-	if (options?.isArray) {
-		result.options = { ...result.options, array: true }
-	}
-
-	return result
-}
-
-export const typeOrmTypeMapping: Record<TypeStandartization, () => TypeOrmTypeResult> = {
-	[TypeStandartization.String]: () => ({
-		type: "text",
-	}),
-	[TypeStandartization.Integer]: () => ({
-		type: "integer",
-	}),
-	[TypeStandartization.Float]: () => ({
-		type: "double precision",
-	}),
-	[TypeStandartization.Decimal]: () => ({
-		type: "decimal",
-		options: {
-			precision: 10,
-			scale: 2,
-		},
-	}),
-	[TypeStandartization.BigInt]: () => ({
-		type: "bigint",
-	}),
-	[TypeStandartization.Boolean]: () => ({
-		type: "boolean",
-	}),
-	[TypeStandartization.Enum]: () => ({
-		type: "enum",
-	}),
-	[TypeStandartization.Date]: () => ({
-		type: "date",
-	}),
-	[TypeStandartization.Time]: () => ({
-		type: "time",
-	}),
-	[TypeStandartization.DateTime]: () => ({
-		type: "timestamp",
-	}),
-	[TypeStandartization.Timestamp]: () => ({
-		type: "timestamp with time zone",
-	}),
-	[TypeStandartization.Duration]: () => ({
-		type: "interval",
-	}),
-	[TypeStandartization.GeoPoint]: () => ({
-		type: "point",
-	}),
-	[TypeStandartization.GeoShape]: () => ({
-		type: "geometry",
-	}),
-	[TypeStandartization.UUID]: () => ({
-		type: "uuid",
-	}),
-	[TypeStandartization.Binary]: () => ({
-		type: "bytea",
-	}),
-	[TypeStandartization.JSON]: () => ({
-		type: "jsonb",
-	}),
 }

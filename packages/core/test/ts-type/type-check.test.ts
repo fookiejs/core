@@ -13,10 +13,10 @@ Deno.test("Payload Type Safety Tests", () => {
 		},
 	})
 	class _TypeCheckUser extends Model {
-		@Field.Decorator({ type: defaults.types[TypeStandartization.String] })
+		@Field.Decorator({ type: TypeStandartization.String })
 		email!: string
 
-		@Field.Decorator({ type: defaults.types[TypeStandartization.String] })
+		@Field.Decorator({ type: TypeStandartization.String })
 		username!: string
 	}
 

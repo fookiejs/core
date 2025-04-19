@@ -11,7 +11,7 @@ enum UserRole {
 })
 class EnumFieldModel extends Model {
 	@Field.Decorator({
-		type: defaults.types[TypeStandartization.Enum],
+		type: TypeStandartization.Enum,
 		enum: UserRole,
 		features: [defaults.feature.required],
 	})

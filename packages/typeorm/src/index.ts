@@ -15,15 +15,9 @@ import {
 	Not,
 	Repository,
 } from "typeorm"
-import { Database, defaults, Method, Model, models, QueryType, Type, TypeStandartization } from "@fookiejs/core"
+import { Database, defaults, Method, Model, models, QueryType, TypeStandartization } from "@fookiejs/core"
 import { mapCoreTypeToTypeOrm } from "./type-mapping.ts"
-
-interface TypedField {
-	type: Type
-	features: any[]
-	isArray?: boolean
-	enum?: Record<string, string | number>
-}
+import { CoreTypes } from "../../core/src/defaults/type/types.ts"
 
 const entityRegistry = new Map<string, EntitySchema>()
 let dataSource: DataSource | null = null
@@ -39,7 +33,7 @@ type TypeOrmConfig = DataSourceOptions & {
 
 export const database: Database = Database.create({
 	key: "typeorm",
-	primaryKeyType: defaults.types[TypeStandartization.String],
+	primaryKeyType: TypeStandartization.String,
 	modify: function (model: typeof Model) {
 		const modelName = model.getName()
 
@@ -231,42 +225,44 @@ export const initializeDataSource = async function (options: DataSourceOptions):
 				],
 				columns: {
 					id: {
-						type: String,
+						type: "text",
 						primary: true,
-						generated: "uuid",
 					},
 					createdAt: {
-						type: Date,
+						type: "timestamp",
 						createDate: true,
 					},
 					updatedAt: {
-						type: Date,
+						type: "timestamp",
 						updateDate: true,
 					},
 					deletedAt: {
-						type: Date,
+						type: "timestamp",
 						deleteDate: true,
+						nullable: true,
 					},
-					...Object.entries(schema).reduce((columns: any, [key, value]) => {
-						try {
-							const typedField = value as TypedField
-							const typeInfo = mapCoreTypeToTypeOrm(typedField.type.type, {
-								isArray: typedField.isArray,
-								enum: typedField.enum,
-							})
-
-							columns[key] = {
-								...typeInfo.options,
-								type: typeInfo.type,
-								nullable: !typedField.features?.includes(defaults.feature.required),
-								primary: key === "id",
-							}
-						} catch (error) {
-							console.warn(`Warning: ${error.message}. Field '${key}' will be skipped.`)
-						}
-						return columns
-					}, {}),
 				},
+				relations: {},
+			}
+
+			for (const [key, field] of Object.entries(schema)) {
+				if (key === "id" || key === "createdAt" || key === "updatedAt" || key === "deletedAt") continue
+
+				const columnType = mapCoreTypeToTypeOrm(field.type)
+				if (columnType === "relation") {
+					entityOptions.relations[key] = {
+						type: "many-to-one",
+						target: field.relation.getName(),
+						nullable: !field.features.includes(defaults.feature.required),
+					}
+				} else {
+					entityOptions.columns[key] = {
+						type: columnType,
+						array: field.isArray || false,
+						nullable: !field.features.includes(defaults.feature.required),
+						enum: field.enum,
+					}
+				}
 			}
 
 			const entity = new EntitySchema(entityOptions)
@@ -290,29 +286,50 @@ export const INDEX = Symbol("index")
 
 export function createTypeOrmEntity(model: typeof Model): EntitySchema {
 	const schema = model.schema()
-	const columns: Record<string, any> = {}
+	const options: EntitySchemaOptions<any> = {
+		name: model.getName(),
+		columns: {
+			id: {
+				type: "uuid",
+				primary: true,
+				generated: "uuid",
+			},
+			createdAt: {
+				type: "timestamp",
+				createDate: true,
+			},
+			updatedAt: {
+				type: "timestamp",
+				updateDate: true,
+			},
+			deletedAt: {
+				type: "timestamp",
+				deleteDate: true,
+				nullable: true,
+			},
+		},
+		relations: {},
+	}
 
-	for (const [fieldName, field] of Object.entries(schema)) {
-		try {
-			const typedField = field as TypedField
-			const typeInfo = mapCoreTypeToTypeOrm(typedField.type.type, {
-				isArray: typedField.isArray,
-				enum: typedField.enum,
-			})
+	for (const [key, field] of Object.entries(schema)) {
+		if (key === "id" || key === "createdAt" || key === "updatedAt" || key === "deletedAt") continue
 
-			columns[fieldName] = {
-				...typeInfo.options,
-				type: typeInfo.type,
-				nullable: !typedField.features?.includes(defaults.feature.required),
-				primary: fieldName === "id",
+		const columnType = mapCoreTypeToTypeOrm(field.type)
+		if (columnType === "relation") {
+			options.relations[key] = {
+				type: "many-to-one",
+				target: field.relation.getName(),
+				nullable: !field.features.includes(defaults.feature.required),
 			}
-		} catch (error) {
-			console.warn(`Warning: ${error.message}. Field '${fieldName}' will be skipped.`)
+		} else {
+			options.columns[key] = {
+				type: columnType,
+				array: field.isArray || false,
+				nullable: !field.features.includes(defaults.feature.required),
+				enum: field.enum,
+			}
 		}
 	}
 
-	return new EntitySchema({
-		name: model.getName(),
-		columns,
-	})
+	return new EntitySchema(options)
 }

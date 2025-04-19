@@ -1,5 +1,6 @@
 import type { Model } from "../model/model.ts"
 import { schemaSymbol } from "../model/model.ts"
+import { TypeStandartization } from "../type/standartization.ts"
 import type { Type } from "../type/type.ts"
 import { fillSchema } from "./utils/fill-schema.ts"
 import * as lodash from "lodash"
@@ -13,7 +14,7 @@ interface FookieDecoratorContext {
 }
 
 export class Field {
-	type?: Type
+	type?: TypeStandartization
 	default?: unknown
 	validators?: [(value: unknown) => boolean | string]
 	relation?: typeof Model

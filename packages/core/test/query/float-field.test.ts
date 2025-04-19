@@ -14,7 +14,7 @@ Deno.test("QueryFloatModel Query Tests", async () => {
 		},
 	})
 	class QueryFloatModel extends Model {
-		@Field.Decorator({ type: defaults.types[TypeStandartization.Float] })
+		@Field.Decorator({ type: TypeStandartization.Float })
 		floatField!: number
 	}
 
@@ -120,6 +120,7 @@ Deno.test("QueryFloatModel Query Tests", async () => {
 	Deno.test("notExist query", async () => {
 		const results = await QueryFloatModel.read({
 			filter: {
+				// @ts-ignore
 				floatField: { notExist: false },
 			},
 		})

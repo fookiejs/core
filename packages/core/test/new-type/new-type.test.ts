@@ -7,7 +7,7 @@ import { defaults, Field, Model, TypeStandartization } from "@fookiejs/core"
 	},
 })
 class RootObject extends Model {
-	@Field.Decorator({ type: defaults.types[TypeStandartization.String] })
+	@Field.Decorator({ type: TypeStandartization.String })
 	name!: string
 }
 
@@ -18,7 +18,7 @@ class RootObject extends Model {
 	},
 })
 class ChildObject extends Model {
-	@Field.Decorator({ type: defaults.types[TypeStandartization.String] })
+	@Field.Decorator({ type: TypeStandartization.String })
 	name!: string
 
 	@Field.Decorator({ relation: RootObject })

@@ -1,15 +1,22 @@
 import { Rule } from "../../lifecycle-function/lifecycle-function.ts"
 import { Type } from "../../type/type.ts"
 import * as lodash from "lodash"
+import { CoreTypes } from "../../defaults/type/types.ts"
+import { TypeStandartization } from "../../type/standartization.ts"
 
-function isValidFilterKey(type: Type, currentKey: string, value: any): boolean {
-	const queryValidator = type.queryController[currentKey]
+function isValidFilterKey(type: TypeStandartization, currentKey: string, value: any): boolean {
+	if (lodash.isNull(value)) return true
+
+	const queryValidator = CoreTypes[type].queryController[currentKey]
 
 	if (queryValidator.isArray) {
-		return Array.isArray(value) && value.every((val: any) => type.validate(val))
+		if (Array.isArray(value) && value.some((val) => lodash.isNull(val))) {
+			return false
+		}
+		return Array.isArray(value) && value.every((val) => CoreTypes[type].validate(val))
 	}
 
-	return type.validate(value)
+	return CoreTypes[type].validate(value)
 }
 
 export default Rule.create({
@@ -48,11 +55,12 @@ export default Rule.create({
 			const currentKeys = lodash.keys(
 				payload.query.filter[filterKey],
 			)
-			const type: Type = schema[filterKey].type
+			const type = schema[filterKey].type as TypeStandartization
 
-			const availableFilterKeys = lodash.keys(type.queryController)
+			const availableFilterKeys = lodash.keys(CoreTypes[type].queryController)
 
 			if (lodash.difference(currentKeys, availableFilterKeys).length !== 0) {
+				console.log(lodash.difference(currentKeys, availableFilterKeys), 111, filterKey)
 				return false
 			}
 

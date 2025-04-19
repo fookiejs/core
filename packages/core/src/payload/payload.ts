@@ -1,5 +1,6 @@
 import type { Method } from "../method/method.ts"
-import type { Model, QueryType } from "../model/model.ts"
+import type { Model } from "../model/model.ts"
+import { QueryType } from "../query/query.ts"
 import type { Options } from "./option.ts"
 import type { State } from "./state.ts"
 

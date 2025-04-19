@@ -14,7 +14,7 @@ Deno.test("QueryTextModel Query Tests", async () => {
 		},
 	})
 	class QueryTextModel extends Model {
-		@Field.Decorator({ type: defaults.types[TypeStandartization.String] })
+		@Field.Decorator({ type: TypeStandartization.String })
 		textField!: string
 	}
 
@@ -87,6 +87,7 @@ Deno.test("QueryTextModel Query Tests", async () => {
 	Deno.test("notExist query", async () => {
 		const results = await QueryTextModel.read({
 			filter: {
+				// @ts-ignore
 				textField: { notExist: false },
 			},
 		})

@@ -1,8 +1,10 @@
 import { defaults, Field, FookieError, Model, TypeStandartization } from "@fookiejs/core"
 import { expect } from "jsr:@std/expect"
+import { CoreTypes } from "../../src/defaults/type/types.ts"
+
 Deno.test("Types - Comprehensive Validation Tests", () => {
 	Deno.test("Boolean Type", () => {
-		const booleanType = defaults.types[TypeStandartization.Boolean]
+		const booleanType = CoreTypes[TypeStandartization.Boolean]
 		expect(booleanType.validate(true)).toBe(true)
 		expect(booleanType.validate(false)).toBe(true)
 		expect(booleanType.validate("true")).toBe(false)
@@ -12,7 +14,7 @@ Deno.test("Types - Comprehensive Validation Tests", () => {
 		expect(booleanType.validate({})).toBe(false)
 	})
 	Deno.test("Integer Type", () => {
-		const integerType = defaults.types[TypeStandartization.Integer]
+		const integerType = CoreTypes[TypeStandartization.Integer]
 		expect(integerType.validate(0)).toBe(true)
 		expect(integerType.validate(42)).toBe(true)
 		expect(integerType.validate(-100)).toBe(true)
@@ -23,7 +25,7 @@ Deno.test("Types - Comprehensive Validation Tests", () => {
 		expect(integerType.validate({})).toBe(false)
 	})
 	Deno.test("Float Type", () => {
-		const floatType = defaults.types[TypeStandartization.Float]
+		const floatType = CoreTypes[TypeStandartization.Float]
 		expect(floatType.validate(0)).toBe(true)
 		expect(floatType.validate(3.14)).toBe(true)
 		expect(floatType.validate(-2.5)).toBe(true)
@@ -33,7 +35,7 @@ Deno.test("Types - Comprehensive Validation Tests", () => {
 		expect(floatType.validate({})).toBe(false)
 	})
 	Deno.test("Text Type", () => {
-		const textType = defaults.types[TypeStandartization.String]
+		const textType = CoreTypes[TypeStandartization.String]
 		expect(textType.validate("")).toBe(true)
 		expect(textType.validate("hello world")).toBe(true)
 		expect(textType.validate("a".repeat(1000))).toBe(true)
@@ -43,7 +45,7 @@ Deno.test("Types - Comprehensive Validation Tests", () => {
 		expect(textType.validate({})).toBe(false)
 	})
 	Deno.test("Date Type", () => {
-		const dateType = defaults.types[TypeStandartization.Date]
+		const dateType = CoreTypes[TypeStandartization.Date]
 		expect(dateType.validate(new Date())).toBe(true)
 		expect(dateType.validate("2023-01-01T12:00:00Z")).toBe(true)
 		expect(dateType.validate("2023-01-01")).toBe(true)
@@ -54,7 +56,7 @@ Deno.test("Types - Comprehensive Validation Tests", () => {
 		expect(dateType.validate({})).toBe(false)
 	})
 	Deno.test("Text Type", () => {
-		const textType = defaults.types[TypeStandartization.String]
+		const textType = CoreTypes[TypeStandartization.String]
 		expect(textType.validate("")).toBe(true)
 		expect(textType.validate("hello world")).toBe(true)
 		expect(textType.validate("a".repeat(1000))).toBe(true)
@@ -69,7 +71,7 @@ Deno.test("Types - Comprehensive Validation Tests", () => {
 			INACTIVE = "INACTIVE",
 			PENDING = "PENDING",
 		}
-		const enumType = defaults.types[TypeStandartization.Enum]
+		const enumType = CoreTypes[TypeStandartization.Enum]
 		expect(enumType.validate(Status.ACTIVE)).toBe(true)
 		expect(enumType.validate(Status.INACTIVE)).toBe(true)
 		expect(enumType.validate(Status.PENDING)).toBe(true)
@@ -91,32 +93,32 @@ enum UserRole {
 })
 class ComplexModel extends Model {
 	@Field.Decorator({
-		type: defaults.types[TypeStandartization.String],
+		type: TypeStandartization.String,
 		features: [],
 	})
 	name!: string
 	@Field.Decorator({
-		type: defaults.types[TypeStandartization.Integer],
+		type: TypeStandartization.Integer,
 		features: [defaults.feature.required],
 	})
 	age!: number
 	@Field.Decorator({
-		type: defaults.types[TypeStandartization.Float],
+		type: TypeStandartization.Float,
 		features: [],
 	})
 	height?: number
 	@Field.Decorator({
-		type: defaults.types[TypeStandartization.Boolean],
+		type: TypeStandartization.Boolean,
 		features: [defaults.feature.required],
 	})
 	active!: boolean
 	@Field.Decorator({
-		type: defaults.types[TypeStandartization.Date],
+		type: TypeStandartization.Date,
 		features: [defaults.feature.required],
 	})
 	birthDate!: string
 	@Field.Decorator({
-		type: defaults.types[TypeStandartization.Enum],
+		type: TypeStandartization.Enum,
 		enum: UserRole,
 		features: [],
 	})

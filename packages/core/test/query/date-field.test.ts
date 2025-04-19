@@ -14,7 +14,7 @@ Deno.test("QueryDateModel Query Tests", async () => {
 		},
 	})
 	class QueryDateModel extends Model {
-		@Field.Decorator({ type: defaults.types[TypeStandartization.Date] })
+		@Field.Decorator({ type: TypeStandartization.Date })
 		dateField!: string
 	}
 
@@ -132,6 +132,7 @@ Deno.test("QueryDateModel Query Tests", async () => {
 	Deno.test("notExist query", async () => {
 		const results = await QueryDateModel.read({
 			filter: {
+				// @ts-ignore
 				dateField: { notExist: false },
 			},
 		})

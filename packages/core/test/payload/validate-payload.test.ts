@@ -13,7 +13,7 @@ import { defaults, Field, FookieError, Model, TypeStandartization } from "@fooki
 	},
 })
 class QueryTextModel extends Model {
-	@Field.Decorator({ type: defaults.types[TypeStandartization.String] })
+	@Field.Decorator({ type: TypeStandartization.String })
 	textField!: string
 }
 

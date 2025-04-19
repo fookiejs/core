@@ -15,7 +15,7 @@ Deno.test("Relation", () => {
 		},
 	})
 	class RelationExistParent extends Model {
-		@Field.Decorator({ type: defaults.types[TypeStandartization.String] })
+		@Field.Decorator({ type: TypeStandartization.String })
 		name?: string
 	}
 

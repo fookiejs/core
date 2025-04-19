@@ -14,7 +14,7 @@ Deno.test("QueryBooleanModel Query Tests", async () => {
 		},
 	})
 	class QueryBooleanModel extends Model {
-		@Field.Decorator({ type: defaults.types[TypeStandartization.Boolean] })
+		@Field.Decorator({ type: TypeStandartization.Boolean })
 		booleanField!: boolean
 	}
 
@@ -55,6 +55,7 @@ Deno.test("QueryBooleanModel Query Tests", async () => {
 	Deno.test("notExist query", async () => {
 		const results = await QueryBooleanModel.read({
 			filter: {
+				// @ts-ignore
 				booleanField: { notExist: false },
 			},
 		})

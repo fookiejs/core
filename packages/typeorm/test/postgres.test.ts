@@ -15,56 +15,56 @@ enum TestRole {
 })
 class PostgresTestModel extends Model {
 	@Field.Decorator({
-		type: defaults.types[TypeStandartization.String],
+		type: TypeStandartization.String,
 		features: [defaults.feature.unique],
 	})
 	uniqueField!: string
 
 	@Field.Decorator({
-		type: defaults.types[TypeStandartization.String],
+		type: TypeStandartization.String,
 		features: [defaults.feature.required],
 	})
 	requiredField!: string
 
 	@Field.Decorator({
-		type: defaults.types[TypeStandartization.Integer],
+		type: TypeStandartization.Integer,
 		features: [],
 	})
 	integerField?: number
 
 	@Field.Decorator({
-		type: defaults.types[TypeStandartization.Float],
+		type: TypeStandartization.Float,
 		features: [],
 	})
 	floatField?: number
 
 	@Field.Decorator({
-		type: defaults.types[TypeStandartization.Boolean],
+		type: TypeStandartization.Boolean,
 		features: [],
 	})
 	booleanField?: boolean
 
 	@Field.Decorator({
-		type: defaults.types[TypeStandartization.Date],
+		type: TypeStandartization.Date,
 		features: [],
 	})
 	dateField?: Date
 
 	@Field.Decorator({
-		type: defaults.types[TypeStandartization.String],
+		type: TypeStandartization.String,
 		features: [],
 		isArray: true,
 	})
 	textArrayField?: string[]
 
 	@Field.Decorator({
-		type: defaults.types[TypeStandartization.String],
+		type: TypeStandartization.String,
 		features: [],
 	})
 	stringField?: string
 
 	@Field.Decorator({
-		type: defaults.types[TypeStandartization.Enum],
+		type: TypeStandartization.Enum,
 		enum: TestRole,
 		features: [],
 	})

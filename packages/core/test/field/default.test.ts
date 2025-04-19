@@ -12,7 +12,7 @@ Deno.test("Define a field with a default value", async () => {
 	})
 	class DefaultFieldModel extends Model {
 		@Field.Decorator({
-			type: defaults.types[TypeStandartization.String],
+			type: TypeStandartization.String,
 			default: "defaultVal",
 		})
 		myField?: string

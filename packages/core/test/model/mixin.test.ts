@@ -27,7 +27,7 @@ const sampleMixin = Mixin.create({
 })
 class TestModel extends Model {
 	@Field.Decorator({
-		type: defaults.types[TypeStandartization.String],
+		type: TypeStandartization.String,
 		features: [defaults.feature.required],
 	})
 	name!: string

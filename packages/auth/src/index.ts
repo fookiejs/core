@@ -83,15 +83,15 @@ export function initAuth(
 		},
 	})
 	class Account extends Model {
-		@Field.Decorator({ type: defaults.types[TypeStandartization.String] })
+		@Field.Decorator({ type: TypeStandartization.String })
 		iss!: string
-		@Field.Decorator({ type: defaults.types[TypeStandartization.String] })
+		@Field.Decorator({ type: TypeStandartization.String })
 		sub!: string
-		@Field.Decorator({ type: defaults.types[TypeStandartization.String] })
+		@Field.Decorator({ type: TypeStandartization.String })
 		email!: string
-		@Field.Decorator({ type: defaults.types[TypeStandartization.String] })
+		@Field.Decorator({ type: TypeStandartization.String })
 		name!: string
-		@Field.Decorator({ type: defaults.types[TypeStandartization.String] })
+		@Field.Decorator({ type: TypeStandartization.String })
 		picture!: string
 	}
 	const parseToken = Modify.create({

@@ -14,6 +14,8 @@ import { Type } from "../type/type.ts"
 import { Field } from "../field/field.ts"
 import { defaults } from "../defaults/index.ts"
 import { TypeStandartization } from "../type/standartization.ts"
+import { QueryType } from "../query/query.ts"
+import { CoreTypes } from "../defaults/type/types.ts"
 
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
 
@@ -140,29 +142,29 @@ export class Model {
 			if (!modelCopy.database.primaryKeyType) {
 				throw new Error(`Database definition for model "${modelName}" must include primaryKeyType.`)
 			}
-			const primaryKeyType = modelCopy.database.primaryKeyType as Type
+			const primaryKeyType = modelCopy.database.primaryKeyType
 
 			const schemaMeta = descriptor.metadata[schemaSymbol] as Record<string, Field>
 			schemaMeta["id"] = fillSchema({
 				type: primaryKeyType,
 			})
 			schemaMeta["deletedAt"] = fillSchema({
-				type: defaults.types[TypeStandartization.Timestamp],
+				type: TypeStandartization.Timestamp,
 				default: null,
 			})
 			schemaMeta["createdAt"] = fillSchema({
-				type: defaults.types[TypeStandartization.Timestamp],
+				type: TypeStandartization.Timestamp,
 				features: [defaults.feature.required],
 			})
 			schemaMeta["updatedAt"] = fillSchema({
-				type: defaults.types[TypeStandartization.Timestamp],
+				type: TypeStandartization.Timestamp,
 				features: [defaults.feature.required],
 			})
 
 			for (const key in schemaMeta) {
 				const field = schemaMeta[key]
 				if (Utils.has(field, "relation")) {
-					field.type = field.relation.database().primaryKeyType
+					field.type = CoreTypes[field.relation.database().primaryKeyType].type
 				}
 			}
 
@@ -212,32 +214,4 @@ export type BindsTypeField = {
 	rule?: Rule<Model>[]
 	filter?: Filter<Model>[]
 	effect?: Effect<Model>[]
-}
-
-export class QueryType<model extends Model> {
-	limit?: number
-	offset?: number
-	orderBy?: {
-		[key in Exclude<keyof model, "deletedAt">]?: "asc" | "desc"
-	}
-	attributes?: string[]
-	filter?: Partial<
-		Record<
-			Exclude<keyof model, "deletedAt">,
-			{
-				gte?: number | string | Date
-				gt?: number | string | Date
-				lte?: number | string | Date
-				lt?: number | string | Date
-				equals?: number | string | Date | boolean
-				notEquals?: number | string | Date | boolean
-				in?: number[] | string[]
-				notIn?: number[] | string[]
-				like?: string
-				notLike?: string | Date
-				isNull?: boolean
-				[keyword: string]: unknown
-			}
-		>
-	>
 }

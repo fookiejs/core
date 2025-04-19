@@ -7,7 +7,7 @@ import { expect } from "jsr:@std/expect"
 })
 class StringArrayModel extends Model {
 	@Field.Decorator({
-		type: defaults.types[TypeStandartization.String],
+		type: TypeStandartization.String,
 		isArray: true,
 		features: [defaults.feature.required],
 	})
@@ -20,7 +20,7 @@ class StringArrayModel extends Model {
 })
 class IntArrayModel extends Model {
 	@Field.Decorator({
-		type: defaults.types[TypeStandartization.Integer],
+		type: TypeStandartization.Integer,
 		isArray: true,
 		features: [defaults.feature.required],
 	})
@@ -33,21 +33,21 @@ class IntArrayModel extends Model {
 })
 class MultiArrayModel extends Model {
 	@Field.Decorator({
-		type: defaults.types[TypeStandartization.String],
+		type: TypeStandartization.String,
 		isArray: true,
 		features: [defaults.feature.required],
 	})
 	categories!: string[]
 
 	@Field.Decorator({
-		type: defaults.types[TypeStandartization.Integer],
+		type: TypeStandartization.Integer,
 		isArray: true,
 		features: [],
 	})
 	quantities?: number[]
 
 	@Field.Decorator({
-		type: defaults.types[TypeStandartization.String],
+		type: TypeStandartization.String,
 		features: [defaults.feature.required],
 	})
 	name!: string
@@ -116,33 +116,33 @@ Deno.test("Array Type - Real World Use Case", async () => {
 	})
 	class Product extends Model {
 		@Field.Decorator({
-			type: defaults.types[TypeStandartization.String],
+			type: TypeStandartization.String,
 			features: [defaults.feature.required],
 		})
 		name!: string
 
 		@Field.Decorator({
-			type: defaults.types[TypeStandartization.Float],
+			type: TypeStandartization.Float,
 			features: [defaults.feature.required],
 		})
 		price!: number
 
 		@Field.Decorator({
-			type: defaults.types[TypeStandartization.String],
+			type: TypeStandartization.String,
 			isArray: true,
 			features: [defaults.feature.required],
 		})
 		categories!: string[]
 
 		@Field.Decorator({
-			type: defaults.types[TypeStandartization.String],
+			type: TypeStandartization.String,
 			isArray: true,
 			features: [],
 		})
 		tags?: string[]
 
 		@Field.Decorator({
-			type: defaults.types[TypeStandartization.Date],
+			type: TypeStandartization.Date,
 			features: [defaults.feature.required],
 		})
 		createdOn!: Date

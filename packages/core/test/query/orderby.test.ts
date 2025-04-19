@@ -11,13 +11,13 @@ import { expect } from "jsr:@std/expect"
 	},
 })
 class OrderByModel extends Model {
-	@Field.Decorator({ type: defaults.types[TypeStandartization.String] })
+	@Field.Decorator({ type: TypeStandartization.String })
 	textField!: string
 
-	@Field.Decorator({ type: defaults.types[TypeStandartization.Integer] })
+	@Field.Decorator({ type: TypeStandartization.Integer })
 	integerField!: number
 
-	@Field.Decorator({ type: defaults.types[TypeStandartization.Float] })
+	@Field.Decorator({ type: TypeStandartization.Float })
 	floatField!: number
 }
 

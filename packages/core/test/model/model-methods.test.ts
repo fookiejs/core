@@ -29,13 +29,13 @@ import { defaults, Field, Model, Role, TypeStandartization } from "@fookiejs/cor
 class User extends Model {
 	@Field.Decorator({
 		features: [defaults.feature.required],
-		type: defaults.types[TypeStandartization.String],
+		type: TypeStandartization.String,
 	})
 	email!: string
 
 	@Field.Decorator({
 		features: [defaults.feature.required],
-		type: defaults.types[TypeStandartization.Integer],
+		type: TypeStandartization.Integer,
 	})
 	usage!: number
 }

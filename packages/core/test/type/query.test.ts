@@ -8,13 +8,13 @@ import { expect } from "jsr:@std/expect"
 	},
 })
 class QueryTypeModel extends Model {
-	@Field.Decorator({ type: defaults.types[TypeStandartization.Integer] })
+	@Field.Decorator({ type: TypeStandartization.Integer })
 	intField!: number
-	@Field.Decorator({ type: defaults.types[TypeStandartization.Float] })
+	@Field.Decorator({ type: TypeStandartization.Float })
 	floatField!: number
-	@Field.Decorator({ type: defaults.types[TypeStandartization.String] })
+	@Field.Decorator({ type: TypeStandartization.String })
 	textField!: string
-	@Field.Decorator({ type: defaults.types[TypeStandartization.Date] })
+	@Field.Decorator({ type: TypeStandartization.Date })
 	dateField!: string
 }
 Deno.test("QueryTypeModel CRUD Operations", () => {

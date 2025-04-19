@@ -14,7 +14,7 @@ Deno.test("QueryIntModel Query Tests", async () => {
 		},
 	})
 	class QueryIntModel extends Model {
-		@Field.Decorator({ type: defaults.types[TypeStandartization.Integer] })
+		@Field.Decorator({ type: TypeStandartization.Integer })
 		intField!: number
 	}
 
@@ -130,6 +130,7 @@ Deno.test("QueryIntModel Query Tests", async () => {
 	Deno.test("notExist query", async () => {
 		const results = await QueryIntModel.read({
 			filter: {
+				// @ts-ignore
 				intField: { notExist: false },
 			},
 		})

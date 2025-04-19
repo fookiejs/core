@@ -1,27 +1,44 @@
 import { Rule } from "../../lifecycle-function/lifecycle-function.ts"
-import type { Model } from "../../model/model.ts"
-import type { Method } from "../../method/method.ts"
-import { Utils } from "../../utils/util.ts"
+import { Type } from "../../type/type.ts"
 import * as lodash from "lodash"
+import { CoreTypes } from "../../defaults/type/types.ts"
+import { Field } from "../../field/field.ts"
+import { TypeStandartization } from "../../type/standartization.ts"
 
-export default Rule.create<Model, Method>({
+export default Rule.create({
 	key: "check_type",
 	execute: async function (payload) {
-		for (const field in payload.body) {
-			const fieldSchema = (payload.model.schema())[field]
-			const type = fieldSchema.type
-			const value = payload.body[field]
+		const schema = payload.model.schema()
+		const keys = lodash.keys(payload.body)
+
+		for (const key of keys) {
+			const field = schema[key] as Field
+			const type = field.type as TypeStandartization
+			const value = payload.body[key]
 
 			if (lodash.isNull(value)) continue
 
-			if (fieldSchema.isArray) {
-				if (!Utils.isArrayOf(value, (item) => type.validate(item))) {
+			if (field.isArray) {
+				if (!Array.isArray(value)) {
 					return false
 				}
-			} else if (!type.validate(value)) {
-				return false
+
+				if (value.some((val) => lodash.isNull(val))) {
+					return false
+				}
+
+				for (const val of value) {
+					if (!CoreTypes[type].validate(val)) {
+						return false
+					}
+				}
+			} else {
+				if (!CoreTypes[type].validate(value)) {
+					return false
+				}
 			}
 		}
+
 		return true
 	},
 })
