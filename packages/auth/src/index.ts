@@ -10,6 +10,7 @@ import {
 	Model,
 	Modify,
 	Role,
+	TypeStandartization,
 	Utils,
 } from "@fookiejs/core"
 import { verifyGoogleAccessToken } from "./google/google.ts"
@@ -72,8 +73,8 @@ export function initAuth(
 				modify: [belongsToUser],
 			},
 			[Method.UPDATE]: {
-				role: [defaults.role.system, loggedIn],
-				modify: [belongsToUser],
+				role: [defaults.role.system],
+				modify: [],
 			},
 			[Method.DELETE]: {
 				role: [defaults.role.system, loggedIn],
