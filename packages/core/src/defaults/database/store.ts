@@ -123,6 +123,7 @@ function sortEntities<T extends Model>(entities: T[], orderBy: Record<string, "a
 }
 export function isEntityMatchingQuery<T extends Model>(entity: T, query: QueryType<T>): boolean {
 	const filter = query.filter || {}
+
 	for (const [key, condition] of Object.entries(filter)) {
 		const value = entity[key]
 		const typedCondition = condition as {
@@ -137,20 +138,67 @@ export function isEntityMatchingQuery<T extends Model>(entity: T, query: QueryTy
 			like?: string
 			isNull?: boolean
 		}
+
+		// Handle null values first
+		if (typedCondition.isNull !== undefined) {
+			if ((value === null || value === undefined) !== typedCondition.isNull) {
+				return false
+			}
+			continue
+		}
+
+		// Skip other checks if value is null/undefined
+		if (value === null || value === undefined) {
+			return false
+		}
+
 		if (typedCondition.equals !== undefined && value !== typedCondition.equals) return false
 		if (typedCondition.notEquals !== undefined && value === typedCondition.notEquals) return false
+
 		if (typedCondition.in && !typedCondition.in.includes(value)) return false
 		if (typedCondition.notIn && typedCondition.notIn.includes(value)) return false
-		if (typedCondition.lt !== undefined && (value === null || value >= typedCondition.lt)) return false
-		if (typedCondition.lte !== undefined && (value === null || value > typedCondition.lte)) return false
-		if (typedCondition.gt !== undefined && (value === null || value <= typedCondition.gt)) return false
-		if (typedCondition.gte !== undefined && (value === null || value < typedCondition.gte)) return false
-		if (typedCondition.like !== undefined) {
-			const pattern = typedCondition.like.replace(/%/g, ".*")
-			const regex = new RegExp(`^${pattern}$`)
-			if (!regex.test(String(value))) return false
+
+		// Date and Number comparisons
+		if (
+			typedCondition.lt !== undefined || typedCondition.lte !== undefined ||
+			typedCondition.gt !== undefined || typedCondition.gte !== undefined
+		) {
+			let compareValue = value
+			let compareCondition = typedCondition
+
+			// Convert dates to timestamps for comparison
+			if (value instanceof Date || (typeof value === "string" && !isNaN(Date.parse(value)))) {
+				compareValue = new Date(value).getTime()
+				if (typedCondition.lt) compareCondition.lt = new Date(typedCondition.lt).getTime()
+				if (typedCondition.lte) compareCondition.lte = new Date(typedCondition.lte).getTime()
+				if (typedCondition.gt) compareCondition.gt = new Date(typedCondition.gt).getTime()
+				if (typedCondition.gte) compareCondition.gte = new Date(typedCondition.gte).getTime()
+			}
+
+			if (compareCondition.lt !== undefined && compareValue >= compareCondition.lt) return false
+			if (compareCondition.lte !== undefined && compareValue > compareCondition.lte) return false
+			if (compareCondition.gt !== undefined && compareValue <= compareCondition.gt) return false
+			if (compareCondition.gte !== undefined && compareValue < compareCondition.gte) return false
 		}
-		if (typedCondition.isNull !== undefined && (value === null) !== typedCondition.isNull) return false
+
+		// Like operator
+		if (typedCondition.like !== undefined) {
+			const stringValue = String(value)
+			const pattern = typedCondition.like
+				.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&") // Escape regex special chars
+				.replace(/%/g, ".*") // Convert SQL LIKE to regex pattern
+
+			try {
+				const regex = new RegExp(pattern, "i") // Case insensitive
+				if (!regex.test(stringValue)) {
+					return false
+				}
+			} catch (error) {
+				console.error("Invalid regex pattern:", error)
+				return false
+			}
+		}
 	}
+
 	return true
 }

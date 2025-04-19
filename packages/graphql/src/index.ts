@@ -1,46 +1,10 @@
-import { defaults, Method, Model, models, TypeStandartization } from "@fookiejs/core"
+import { Method, Model, models, TypeStandartization } from "@fookiejs/core"
 import { FookieDataLoader } from "./dataloader.ts"
-import {
-	AsyncIteratorLike,
-	MutationField,
-	QueryField,
-	Resolvers,
-	SubscriptionField,
-	TypeDefs,
-	TypeField,
-} from "./types.ts"
+import { MutationField, QueryField, Resolvers, SubscriptionField, TypeDefs, TypeField } from "./types.ts"
 import { PubSub } from "npm:graphql-subscriptions@2.0.0"
 import { CoreTypes } from "../../core/src/defaults/type/types.ts"
 
 const pubsub = new PubSub()
-
-class AsyncIteratorWrapper<T> implements AsyncIteratorLike<T> {
-	constructor(private iterator: AsyncIterator<T>) {}
-
-	async next(): Promise<{ value: T; done: boolean }> {
-		const result = await this.iterator.next()
-		return {
-			value: result.value as T,
-			done: result.done ?? false,
-		}
-	}
-
-	async return?(value?: T): Promise<{ value: T; done: boolean }> {
-		const result = await this.iterator.return?.(value as any)
-		return {
-			value: result?.value as T,
-			done: true,
-		}
-	}
-
-	async throw?(error: any): Promise<{ value: T; done: boolean }> {
-		const result = await this.iterator.throw?.(error)
-		return {
-			value: result?.value as T,
-			done: true,
-		}
-	}
-}
 
 let resolveRooms: ((token: string) => Promise<string[]>) | null = null
 
@@ -58,114 +22,96 @@ const filterTypeMap: Record<string, string> = {
 }
 
 function generate_filter_types(): string {
-	const fookieTypes = Object.values(CoreTypes)
-		.filter((t) => typeof t === "object" && t !== null && "key" in t && "queryController" in t)
-
 	let result = ""
 
-	const filterableTypes = graphqlNativeTypes.filter((type) => type !== "ID")
+	for (const [typeName, typeConfig] of Object.entries(CoreTypes)) {
+		if (!typeConfig.queryController || Object.keys(typeConfig.queryController).length === 0) continue
 
-	const typeMapping = {
-		"String": fookieTypes.filter((t) => resolve_type({ type: t }) === "String")[0],
-		"Int": fookieTypes.filter((t) => resolve_type({ type: t }) === "Int")[0],
-		"Float": fookieTypes.filter((t) => resolve_type({ type: t }) === "Float")[0],
-		"Boolean": fookieTypes.filter((t) => resolve_type({ type: t }) === "Boolean")[0],
-		"DateTime": fookieTypes.filter((t) => resolve_type({ type: t }) === "DateTime")[0],
+		const graphqlType = resolve_type({ type: typeName })
+		const filterName = `${graphqlType}_filter`
+
+		const fields = Object.entries(typeConfig.queryController)
+			.map(([operatorName, operatorConfig]) => {
+				const fieldType = operatorConfig.isArray ? `[${graphqlType}]` : graphqlType
+				return `  ${operatorName}: ${fieldType}`
+			})
+			.join("\n")
+
+		if (fields) {
+			result += `input ${filterName} {\n${fields}\n}\n\n`
+		}
 	}
 
-	const filterConfigs = filterableTypes.map((graphqlType) => {
-		const name = graphqlType.toLowerCase() + "_filter"
-		const fookieType = typeMapping[graphqlType]
-		const fields = []
-
-		fields.push({ name: "isNull", type: "Boolean" })
-
-		if (fookieType && fookieType.queryController && Object.keys(fookieType.queryController).length > 0) {
-			for (const opName of Object.keys(fookieType.queryController)) {
-				if (opName === "isNull") continue
-				const validator = fookieType.queryController[opName]
-				if (validator && typeof validator === "object" && validator.isArray) {
-					fields.push({ name: opName, type: `[${graphqlType}]` })
-				} else {
-					fields.push({ name: opName, type: graphqlType })
-				}
-			}
-		} else {
-			fields.push({ name: "equals", type: graphqlType })
-			fields.push({ name: "notEquals", type: graphqlType })
-		}
-
-		return {
-			name,
-			baseType: graphqlType,
-			fields,
-		}
-	})
-
-	for (const config of filterConfigs) {
-		result += `input ${config.name} {\n`
-		for (const field of config.fields) {
-			result += `  ${field.name}: ${field.type}\n`
-		}
-		result += `}\n\n`
-	}
-
-	return result.trim()
+	return result
 }
 
 const filter_types = generate_filter_types()
 
-function resolve_type(field: any): TypeStandartization | string {
-	if (!field || !field.type) return TypeStandartization.String
+function resolve_type(field: any): string {
+	if (!field?.type) return "String"
 
-	if (field.type && field.type.key) {
-		const key = field.type.key.toLowerCase()
-		const aliases = field.type.alias || []
-
-		if (key.includes("[]")) {
-			return `[${resolve_type({ type: { key: key.replace("[]", "") } })}]`
-		}
-
-		for (const graphqlType of graphqlNativeTypes) {
-			const lowerGraphqlType = graphqlType.toLowerCase()
-			if (key.includes(lowerGraphqlType) || aliases.some((a) => a.toLowerCase().includes(lowerGraphqlType))) {
-				return graphqlType as TypeStandartization
-			}
-		}
-
-		if (key.includes("date") || key.includes("timestamp") || aliases.some((a) => a.toLowerCase().includes("date"))) {
-			return TypeStandartization.DateTime
-		}
+	const type = field.type
+	if (type.relation) {
+		return type.relation.getName()
 	}
 
-	return TypeStandartization.String
+	switch (type) {
+		case TypeStandartization.String:
+			return "String"
+		case TypeStandartization.Integer:
+			return "Int"
+		case TypeStandartization.Float:
+			return "Float"
+		case TypeStandartization.Boolean:
+			return "Boolean"
+		case TypeStandartization.Date:
+		case TypeStandartization.DateTime:
+		case TypeStandartization.Timestamp:
+			return "DateTime"
+		case TypeStandartization.UUID:
+			return "ID"
+		default:
+			return "String"
+	}
 }
 
-function resolve_input(typeStr: string, field: any = null): string {
-	if (!typeStr) return "string_filter"
+function resolve_input(field: any): string {
+	if (!field?.field?.type) return "String_filter"
 
-	if (field && field.field && field.field.type && field.field.type.queryController) {
-		const queryController = field.field.type.queryController
-		const queryControllerKeys = Object.keys(queryController)
+	const type = field.field.type
+	if (type.relation) {
+		return `${type.relation.getName()}_filter`
+	}
 
-		if (queryControllerKeys.length > 0) {
-			const resolvedType = resolve_type(field.field)
-			if (filterTypeMap[resolvedType]) {
-				return filterTypeMap[resolvedType]
+	const resolvedType = resolve_type({ type })
+	const coreType = CoreTypes[type]
+
+	if (!coreType?.queryController || Object.keys(coreType.queryController).length === 0) {
+		return "String_filter"
+	}
+
+	return `${resolvedType}_filter`
+}
+
+function generate_model_filter(model: typeof Model, fields: Record<string, TypeField>): string {
+	const filterFields = Object.entries(fields)
+		.map(([key, field]) => {
+			const type = field.field?.type
+			if (!type) return null
+
+			const coreType = CoreTypes[type]
+			if (!coreType?.queryController || Object.keys(coreType.queryController).length === 0) {
+				return null
 			}
-		}
-	}
 
-	if (filterTypeMap[typeStr]) {
-		return filterTypeMap[typeStr]
-	}
+			return `  ${key}: ${resolve_input(field)}`
+		})
+		.filter(Boolean)
+		.join("\n")
 
-	if (typeStr && typeStr.startsWith("[") && typeStr.endsWith("]")) {
-		const innerType = typeStr.substring(1, typeStr.length - 1)
-		return resolve_input(innerType)
-	}
+	if (!filterFields) return ""
 
-	return "string_filter"
+	return `input ${model.getName()}_filter {\n${filterFields}\n}`
 }
 
 export function publishEvent(roomId: string, model: typeof Model, method: Method, data: any) {
@@ -352,7 +298,7 @@ export function createResolvers(): { resolvers: Resolvers } {
 				if (!rooms.length) throw new Error("No rooms available")
 
 				const eventNames = rooms.map((room) => `${modelName}_${Method.CREATE}.${room}`)
-				return new AsyncIteratorWrapper(pubsub.asyncIterator(eventNames))
+				return pubsub.asyncIterator(eventNames)
 			},
 			resolve: (payload) => payload,
 		}
@@ -366,7 +312,7 @@ export function createResolvers(): { resolvers: Resolvers } {
 				if (!rooms.length) throw new Error("No rooms available")
 
 				const eventNames = rooms.map((room) => `${modelName}_${Method.UPDATE}.${room}`)
-				return new AsyncIteratorWrapper(pubsub.asyncIterator(eventNames))
+				return pubsub.asyncIterator(eventNames)
 			},
 			resolve: (payload) => {
 				if (!payload.ids || !payload.body) {
@@ -385,7 +331,7 @@ export function createResolvers(): { resolvers: Resolvers } {
 				if (!rooms.length) throw new Error("No rooms available")
 
 				const eventNames = rooms.map((room) => `${modelName}_${Method.DELETE}.${room}`)
-				return new AsyncIteratorWrapper(pubsub.asyncIterator(eventNames))
+				return pubsub.asyncIterator(eventNames)
 			},
 			resolve: (payload) => {
 				if (!payload.ids) {
@@ -425,6 +371,7 @@ export function createGraphQL() {
 		},
 	}
 
+	// First pass: Create basic types and resolvers
 	for (const model of models) {
 		if (model.getName() === "Query") {
 			throw Error("Model name can not be 'Query'")
@@ -433,15 +380,41 @@ export function createGraphQL() {
 		const modelName = model.getName()
 		const schema = model.schema()
 
-		typeDefs.type[modelName] = {
-			id: { value: "ID" } as TypeField,
-			...Object.fromEntries(
-				Object.entries(schema).map(([key, field]) => [
-					key,
-					{ value: resolve_type(field) } as TypeField,
-				]),
-			),
+		const typeFields: Record<string, TypeField> = {
+			id: { value: "ID", field: { type: TypeStandartization.UUID } } as TypeField,
 		}
+
+		// Add regular fields and relation entity fields
+		Object.entries(schema).forEach(([key, field]: [string, any]) => {
+			typeFields[key] = { value: resolve_type(field), field } as TypeField
+
+			if (field.relation) {
+				typeFields[`${key}_entity`] = {
+					value: field.relation.getName(),
+				} as TypeField
+
+				if (!resolvers[modelName]) {
+					resolvers[modelName] = {}
+				}
+
+				resolvers[modelName][`${key}_entity`] = async (parent: any, _: any, context: any) => {
+					if (!parent[key]) return null
+					try {
+						const relatedModel = field.relation
+						const results = await relatedModel.read(
+							{ filter: { id: { equals: parent[key] } } },
+							{ token: context.token || "" },
+						)
+						return Array.isArray(results) && results.length > 0 ? results[0] : null
+					} catch (error) {
+						console.error("RELATION ERROR:", error)
+						return null
+					}
+				}
+			}
+		})
+
+		typeDefs.type[modelName] = typeFields
 
 		typeDefs.type[`${modelName}UpdatePayload`] = {
 			ids: { value: "[ID!]!" },
@@ -452,6 +425,24 @@ export function createGraphQL() {
 			ids: { value: "[ID!]!" },
 		}
 
+		typeDefs.input[`${modelName}_input`] = Object.fromEntries(
+			Object.entries(schema)
+				.filter(([key]) => key !== "id")
+				.map(([key, field]) => [
+					key,
+					{ value: resolve_type(field), field } as TypeField,
+				]),
+		)
+
+		typeDefs.Query[modelName] = { value: `[${modelName}]` }
+
+		resolvers.Query[modelName] = async (_: any, { query = {} }: any, context: any) => {
+			const token = context.token || ""
+			const response = await model.read(query, { token })
+			return Array.isArray(response) ? response : []
+		}
+
+		// Add subscription fields and resolvers
 		typeDefs.Subscription[`${modelName}Created`] = {
 			value: modelName,
 		} as SubscriptionField
@@ -473,7 +464,7 @@ export function createGraphQL() {
 				if (!rooms.length) throw new Error("No rooms available")
 
 				const eventNames = rooms.map((room) => `${modelName}_${Method.CREATE}.${room}`)
-				return new AsyncIteratorWrapper(pubsub.asyncIterator(eventNames))
+				return pubsub.asyncIterator(eventNames)
 			},
 			resolve: (payload) => payload,
 		}
@@ -487,7 +478,7 @@ export function createGraphQL() {
 				if (!rooms.length) throw new Error("No rooms available")
 
 				const eventNames = rooms.map((room) => `${modelName}_${Method.UPDATE}.${room}`)
-				return new AsyncIteratorWrapper(pubsub.asyncIterator(eventNames))
+				return pubsub.asyncIterator(eventNames)
 			},
 			resolve: (payload) => {
 				if (!payload.ids || !payload.body) {
@@ -506,7 +497,7 @@ export function createGraphQL() {
 				if (!rooms.length) throw new Error("No rooms available")
 
 				const eventNames = rooms.map((room) => `${modelName}_${Method.DELETE}.${room}`)
-				return new AsyncIteratorWrapper(pubsub.asyncIterator(eventNames))
+				return pubsub.asyncIterator(eventNames)
 			},
 			resolve: (payload) => {
 				if (!payload.ids) {
@@ -516,23 +507,7 @@ export function createGraphQL() {
 			},
 		}
 
-		typeDefs.input[`${modelName}_input`] = Object.fromEntries(
-			Object.entries(schema)
-				.filter(([key]) => key !== "id")
-				.map(([key, field]) => [
-					key,
-					{ value: resolve_type(field) } as TypeField,
-				]),
-		)
-
-		typeDefs.Query[modelName] = { value: `[${modelName}]` }
-
-		resolvers.Query[modelName] = async (_: any, { query = {} }: any, context: any) => {
-			const token = context.token || ""
-			const response = await model.read(query, { token })
-			return Array.isArray(response) ? response : []
-		}
-
+		// Add mutation resolvers
 		resolvers.Mutation = {
 			...resolvers.Mutation,
 			[`create_${modelName}`]: async (_: any, { body }: any, context: any) => {
@@ -558,6 +533,99 @@ export function createGraphQL() {
 		}
 	}
 
+	// Second pass: Add relation-based fields (all_, sum_, count_)
+	for (const model of models) {
+		const schema = model.schema()
+
+		Object.entries(schema).forEach(([field, fieldConfig]: [string, any]) => {
+			if (fieldConfig.relation) {
+				const relatedModel = fieldConfig.relation
+				const relatedModelName = relatedModel.getName()
+
+				if (!typeDefs.type[relatedModelName]) return
+
+				// Add all_ field
+				typeDefs.type[relatedModelName][`all_${model.getName()}`] = {
+					value: `[${model.getName()}]`,
+					args: {
+						query: { value: `${model.getName()}_query` },
+					},
+				}
+
+				// Add sum_ field
+				typeDefs.type[relatedModelName][`sum_${model.getName()}`] = {
+					value: "Float",
+					args: {
+						query: { value: `${model.getName()}_query` },
+						field: { value: "String" },
+					},
+				}
+
+				// Add count_ field
+				typeDefs.type[relatedModelName][`count_${model.getName()}`] = {
+					value: "Int",
+					args: {
+						query: { value: `${model.getName()}_query` },
+					},
+				}
+
+				if (!resolvers[relatedModelName]) {
+					resolvers[relatedModelName] = {}
+				}
+
+				// Add resolver for all_
+				resolvers[relatedModelName][`all_${model.getName()}`] = async (
+					parent: any,
+					{ query = {} }: any,
+					context: any,
+				) => {
+					const queryObj = { ...query }
+					if (!queryObj.filter) {
+						queryObj.filter = {}
+					}
+					queryObj.filter[field] = { equals: parent.id }
+
+					const response = await model.read(queryObj, { token: context.token || "" })
+					return Array.isArray(response) ? response : []
+				}
+
+				// Add resolver for sum_
+				resolvers[relatedModelName][`sum_${model.getName()}`] = async (
+					parent: any,
+					{ query = {}, field: sumField }: any,
+					context: any,
+				) => {
+					if (!sumField) return 0
+
+					const queryObj = { ...query }
+					if (!queryObj.filter) {
+						queryObj.filter = {}
+					}
+					queryObj.filter[field] = { equals: parent.id }
+
+					const items = await model.read(queryObj, { token: context.token || "" })
+					return Array.isArray(items) ? items.reduce((total, item: any) => total + (Number(item[sumField]) || 0), 0) : 0
+				}
+
+				// Add resolver for count_
+				resolvers[relatedModelName][`count_${model.getName()}`] = async (
+					parent: any,
+					{ query = {} }: any,
+					context: any,
+				) => {
+					const queryObj = { ...query }
+					if (!queryObj.filter) {
+						queryObj.filter = {}
+					}
+					queryObj.filter[field] = { equals: parent.id }
+
+					const items = await model.read(queryObj, { token: context.token || "" })
+					return Array.isArray(items) ? items.length : 0
+				}
+			}
+		})
+	}
+
 	const schemaString = `
 scalar DateTime
 
@@ -567,7 +635,15 @@ ${
 		models.map((model) => {
 			const modelName = model.getName()
 			const fields = Object.entries(typeDefs.type[modelName] || {})
-				.map(([key, value]) => `  ${key}: ${value.value}`)
+				.map(([key, field]) => {
+					if (field.args) {
+						const args = Object.entries(field.args)
+							.map(([argName, arg]) => `${argName}: ${arg.value}`)
+							.join(", ")
+						return `  ${key}(${args}): ${field.value}`
+					}
+					return `  ${key}: ${field.value}`
+				})
 				.join("\n")
 
 			const updatePayloadFields = Object.entries(typeDefs.type[`${modelName}UpdatePayload`] || {})
@@ -578,11 +654,15 @@ ${
 				.map(([key, value]) => `  ${key}: ${value.value}`)
 				.join("\n")
 
+			const modelFilter = generate_model_filter(model, typeDefs.type[modelName] || {})
+
 			return `type ${modelName} {\n${fields}\n}
 
 type ${modelName}UpdatePayload {\n${updatePayloadFields}\n}
 
-type ${modelName}DeletePayload {\n${deletePayloadFields}\n}`
+type ${modelName}DeletePayload {\n${deletePayloadFields}\n}
+
+${modelFilter}`
 		}).join("\n\n")
 	}
 
@@ -610,15 +690,7 @@ ${
 ${
 		models.map((model) => {
 			const modelName = model.getName()
-			return `input ${modelName}_filter {
-${
-				Object.entries(typeDefs.type[modelName] || {})
-					.map(([key, value]) => `  ${key}: ${resolve_input(value.value)}`)
-					.join("\n")
-			}
-}
-
-input ${modelName}_query {
+			return `input ${modelName}_query {
   offset: Int
   limit: Int
   filter: ${modelName}_filter

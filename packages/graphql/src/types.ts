@@ -61,7 +61,7 @@ export interface SubscriptionResolver<TPayload = any> {
 		parent: any,
 		args: any,
 		context: any,
-	) => Promise<AsyncIteratorLike<TPayload>> | AsyncIteratorLike<TPayload>
+	) => Promise<AsyncIterator<TPayload>> | AsyncIterator<TPayload>
 	resolve?: (payload: TPayload) => any
 }
 
