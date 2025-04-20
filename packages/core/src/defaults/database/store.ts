@@ -5,7 +5,6 @@ import { Payload } from "../../payload/payload.ts"
 
 import { defaults } from "../index.ts"
 import { Utils } from "../../utils/util.ts"
-import { CoreTypes } from "../type/types.ts"
 import { TypeStandartization } from "../../type/standartization.ts"
 import { QueryType } from "../../query/query.ts"
 function checkUniqueConstraints<T extends Model>(
