@@ -112,12 +112,14 @@ export function initAuth(database: Database): AuthReturn {
 	const belongsToApiKeyOwner = Modify.create<ApiKey, Method.READ | Method.CREATE | Method.DELETE>({
 		key: "belongsToApiKeyOwner",
 		async execute(payload: Payload<ApiKey, Method.READ | Method.CREATE | Method.DELETE>) {
-			if (payload.method === Method.READ || payload.method === Method.DELETE) {
-				payload.query.filter.accountId = { equals: payload.state[ACCOUNT]?.id }
-			}
+			if (payload.state.acceptedRoles.includes(loggedIn)) {
+				if (payload.method === Method.READ || payload.method === Method.DELETE) {
+					payload.query.filter.accountId = { equals: payload.state[ACCOUNT]?.id }
+				}
 
-			if (payload.method === Method.CREATE) {
-				payload.body.accountId = payload.state[ACCOUNT]?.id
+				if (payload.method === Method.CREATE) {
+					payload.body.accountId = payload.state[ACCOUNT]?.id
+				}
 			}
 		},
 	})
@@ -156,20 +158,17 @@ export function initAuth(database: Database): AuthReturn {
 		database,
 		binds: {
 			[Method.CREATE]: {
-				role: [loggedIn],
+				role: [defaults.role.system, loggedIn],
 				modify: [belongsToApiKeyOwner, AddRandomKey],
 				effect: [HashApiKey],
 			},
 			[Method.READ]: {
-				role: [loggedIn],
+				role: [defaults.role.system, loggedIn],
 				modify: [belongsToApiKeyOwner],
 				filter: [UglifyApiKey],
 			},
-			[Method.UPDATE]: {
-				role: [defaults.role.system],
-			},
 			[Method.DELETE]: {
-				role: [loggedIn],
+				role: [defaults.role.system, loggedIn],
 				modify: [belongsToApiKeyOwner],
 			},
 		},
