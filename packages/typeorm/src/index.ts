@@ -17,7 +17,6 @@ import {
 } from "typeorm"
 import { Database, defaults, Method, Model, models, QueryType, TypeStandartization } from "@fookiejs/core"
 import { mapCoreTypeToTypeOrm } from "./type-mapping.ts"
-import { CoreTypes } from "../../core/src/defaults/type/types.ts"
 
 const entityRegistry = new Map<string, EntitySchema>()
 let dataSource: DataSource | null = null

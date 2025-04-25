@@ -12,15 +12,6 @@ export function setResolveRooms(resolver: (token: string) => Promise<string[]>) 
 	resolveRooms = resolver
 }
 
-const graphqlNativeTypes = ["String", "Int", "Float", "Boolean", "ID"]
-
-const filterTypeMap: Record<string, string> = {
-	"String": "string_filter",
-	"Int": "int_filter",
-	"Float": "float_filter",
-	"Boolean": "boolean_filter",
-}
-
 function generate_filter_types(): string {
 	let result = ""
 
@@ -274,7 +265,7 @@ function generateTypeDefsString(typeDefs: TypeDefs): string {
 	return result
 }
 
-export function createContext(req: any) {
+export function createContext(req: any): { token: string } {
 	const token = req.headers.authorization?.replace("Bearer ", "") || ""
 	return { token }
 }
@@ -345,7 +336,7 @@ export function createResolvers(): { resolvers: Resolvers } {
 	return { resolvers }
 }
 
-export function createGraphQL() {
+export function createGraphQL(): { typeDefs: string; resolvers: Resolvers } {
 	const typeDefs: TypeDefs = {
 		input: {},
 		type: {},

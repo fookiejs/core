@@ -2,7 +2,9 @@ import { Type } from "../../type/type.ts"
 import { TypeStandartization } from "../../type/standartization.ts"
 import { Utils } from "../../utils/util.ts"
 
-export const CoreTypes = {
+type CoreTypesType = Record<TypeStandartization, Type>
+
+export const CoreTypes: CoreTypesType = {
 	[TypeStandartization.String]: Type.create({
 		queryController: {
 			equals: { key: "string" },

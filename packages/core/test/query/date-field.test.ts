@@ -132,7 +132,6 @@ Deno.test("QueryDateModel Query Tests", async () => {
 	Deno.test("notExist query", async () => {
 		const results = await QueryDateModel.read({
 			filter: {
-				// @ts-ignore
 				dateField: { notExist: false },
 			},
 		})

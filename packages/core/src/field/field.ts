@@ -1,7 +1,6 @@
 import type { Model } from "../model/model.ts"
 import { schemaSymbol } from "../model/model.ts"
 import { TypeStandartization } from "../type/standartization.ts"
-import type { Type } from "../type/type.ts"
 import { fillSchema } from "./utils/fill-schema.ts"
 import * as lodash from "lodash"
 

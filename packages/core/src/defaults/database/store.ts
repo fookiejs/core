@@ -163,7 +163,7 @@ export function isEntityMatchingQuery<T extends Model>(entity: T, query: QueryTy
 			typedCondition.gt !== undefined || typedCondition.gte !== undefined
 		) {
 			let compareValue = value
-			let compareCondition = typedCondition
+			const compareCondition = typedCondition
 
 			// Convert dates to timestamps for comparison
 			if (value instanceof Date || (typeof value === "string" && !isNaN(Date.parse(value)))) {

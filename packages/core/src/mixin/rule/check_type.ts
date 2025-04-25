@@ -1,5 +1,4 @@
 import { Rule } from "../../lifecycle-function/lifecycle-function.ts"
-import { Type } from "../../type/type.ts"
 import * as lodash from "lodash"
 import { CoreTypes } from "../../defaults/type/types.ts"
 import { Field } from "../../field/field.ts"

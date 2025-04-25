@@ -87,7 +87,6 @@ Deno.test("QueryTextModel Query Tests", async () => {
 	Deno.test("notExist query", async () => {
 		const results = await QueryTextModel.read({
 			filter: {
-				// @ts-ignore
 				textField: { notExist: false },
 			},
 		})

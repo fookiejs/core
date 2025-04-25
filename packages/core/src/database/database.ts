@@ -2,7 +2,7 @@ import { Method } from "../method/method.ts"
 import { Model } from "../model/model.ts"
 import { Payload } from "../payload/payload.ts"
 import { TypeStandartization } from "../type/standartization.ts"
-import { Type } from "../type/type.ts"
+
 export class Database {
 	key!: string
 	primaryKeyType!: TypeStandartization

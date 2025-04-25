@@ -1,5 +1,3 @@
-import { Model } from "@fookiejs/core"
-
 export type BatchLoadFn<TKey, TValue> = (keys: TKey[]) => Promise<TValue[]>
 
 export interface CacheStrategy {
@@ -7,6 +5,12 @@ export interface CacheStrategy {
 	set(key: string, value: any): void
 	clear(): void
 	delete(key: string): void
+}
+
+export interface DataLoaderOptions<TKey, TValue> {
+	cache: CacheStrategy
+	maxBatchSize: number
+	batchScheduleMs: number
 }
 
 export class MapCache implements CacheStrategy {
@@ -51,6 +55,10 @@ export class DataLoader<TKey = string, TValue = any> {
 		this.cache = this.options.cache
 	}
 
+	private getStringKey(key: TKey): string {
+		return typeof key === "object" ? JSON.stringify(key) : String(key)
+	}
+
 	async load(key: TKey): Promise<TValue> {
 		const stringKey = this.getStringKey(key)
 		const cachedValue = this.cache.get(stringKey)
@@ -68,7 +76,7 @@ export class DataLoader<TKey = string, TValue = any> {
 			}
 		}
 
-		return this.cache.get(key)
+		return this.cache.get(stringKey)
 	}
 
 	private async dispatchQueue() {
@@ -78,7 +86,7 @@ export class DataLoader<TKey = string, TValue = any> {
 		try {
 			const values = await this.batchLoadFn(keys)
 			keys.forEach((key, index) => {
-				this.cache.set(key, values[index])
+				this.cache.set(this.getStringKey(key), values[index])
 			})
 		} finally {
 			this.loading = false

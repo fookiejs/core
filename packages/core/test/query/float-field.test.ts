@@ -120,7 +120,6 @@ Deno.test("QueryFloatModel Query Tests", async () => {
 	Deno.test("notExist query", async () => {
 		const results = await QueryFloatModel.read({
 			filter: {
-				// @ts-ignore
 				floatField: { notExist: false },
 			},
 		})

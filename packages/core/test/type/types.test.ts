@@ -1,6 +1,6 @@
 import { expect } from "jsr:@std/expect"
-import { defaults } from "@fookiejs/core"
 import { CoreTypes } from "../../src/defaults/type/types.ts"
+
 Deno.test("Type Validation Tests", () => {
 	Deno.test("Integer Type", () => {
 		Deno.test("should validate a valid integer", () => {

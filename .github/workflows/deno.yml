@@ -45,7 +45,7 @@ jobs:
             for pkg in packages/*; do
               if echo "$changed_files" | grep -q "$pkg"; then
                 echo "Running tests for $pkg..."
-                (cd "$pkg" && deno test)
+                (cd "$pkg" && deno run test)
               fi
             done
           fi

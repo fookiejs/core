@@ -130,7 +130,6 @@ Deno.test("QueryIntModel Query Tests", async () => {
 	Deno.test("notExist query", async () => {
 		const results = await QueryIntModel.read({
 			filter: {
-				// @ts-ignore
 				intField: { notExist: false },
 			},
 		})

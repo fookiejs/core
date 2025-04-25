@@ -55,7 +55,6 @@ Deno.test("QueryBooleanModel Query Tests", async () => {
 	Deno.test("notExist query", async () => {
 		const results = await QueryBooleanModel.read({
 			filter: {
-				// @ts-ignore
 				booleanField: { notExist: false },
 			},
 		})

@@ -251,12 +251,3 @@ export function initAuth(database: Database): AuthReturn {
 
 	return { loggedIn, Account, ApiKey }
 }
-
-export function initBelongsToUser(field: string) {
-	return Modify.create({
-		key: "belongsToUser",
-		async execute(payload) {
-			payload.query.filter[field] = { equals: payload.state[ACCOUNT].id }
-		},
-	})
-}
