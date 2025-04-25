@@ -20,7 +20,7 @@
 	},
 	"tasks": {
 		"dev": "deno run --allow-net --allow-env --allow-read mod.ts",
-		"test": "deno test --allow-net --allow-env --allow-read",
+		"test": "deno test --allow-all",
 		"check": "deno check ./packages/**/*.ts",
 		"lint": "deno lint ./packages/**/*.ts",
 		"fmt": "deno fmt ./packages/**/*.ts"

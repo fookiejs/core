@@ -2,6 +2,7 @@ import { expect } from "jsr:@std/expect"
 import { DataSource } from "typeorm"
 import { defaults, Field, Method, Model, TypeStandartization } from "@fookiejs/core"
 import { database, initializeDataSource } from "../src/index.ts"
+export * as pg from "pg"
 
 enum TestRole {
 	ADMIN = "ADMIN",
@@ -180,6 +181,7 @@ Deno.test({
 			expect(booleanResult[0].booleanField).toBe(true)
 
 			const now = new Date()
+			now.setHours(0, 0, 0, 0)
 			const dateTest = await PostgresTestModel.create({
 				requiredField: "date_test",
 				dateField: now,
@@ -188,8 +190,9 @@ Deno.test({
 			const dateResult = await PostgresTestModel.read({
 				filter: { id: { equals: dateTest.id } },
 			})
-			expect(new Date(dateResult[0].dateField).toISOString().split("T")[0])
-				.toBe(now.toISOString().split("T")[0])
+			const resultDate = new Date(dateResult[0].dateField)
+			resultDate.setHours(0, 0, 0, 0)
+			expect(resultDate.getTime()).toBe(now.getTime())
 
 			const stringTest = await PostgresTestModel.create({
 				requiredField: "string_test",
