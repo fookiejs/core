@@ -1,8 +1,8 @@
 name: Test and Publish
 
 on:
-  push:
-    branches: [main]
+  release:
+    types: [created]
   pull_request:
     branches: [main]
 
@@ -23,42 +23,16 @@ jobs:
         with:
           deno-version: v2.x
 
-      - name: Detect changed packages
-        id: changed-packages
-        run: |
-          changed=$(git diff --name-only HEAD^ HEAD | grep 'packages/' || true)
-          echo "changed_files<<EOF" >> $GITHUB_ENV
-          echo "$changed" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-          if echo "$changed" | grep -q "packages/core/"; then
-            echo "core_changed=true" >> $GITHUB_ENV
-          else
-            echo "core_changed=false" >> $GITHUB_ENV
-          fi
-
-      - name: Run tests for changed packages
-        run: |
-          if [ "$core_changed" == "true" ]; then
-            echo "Core package changed, running all tests..."
-            deno task test
-          else
-            for pkg in packages/*; do
-              if echo "$changed_files" | grep -q "$pkg"; then
-                echo "Running tests for $pkg..."
-                (cd "$pkg" && deno run test)
-              fi
-            done
-          fi
+      - name: Run all tests
+        run: deno task test
 
   publish:
     needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
 
       - name: Setup Deno
         uses: denoland/setup-deno@v2
@@ -69,55 +43,37 @@ jobs:
         run: |
           bump_version() {
             local pkg_json="$1"
-            local bump_type="$2"
             local version=$(grep '"version"' "$pkg_json" | awk -F '"' '{print $4}')
             IFS='.' read -r major minor patch <<< "$version"
-
-            if [ "$bump_type" == "minor" ]; then
-              minor=$((minor + 1))
-              patch=0
-            elif [ "$bump_type" == "patch" ]; then
-              patch=$((patch + 1))
-            fi
-
+            minor=$((minor + 1))
+            patch=0
             new_version="$major.$minor.$patch"
             sed -i "s/"version": "$version"/"version": "$new_version"/" "$pkg_json"
             echo "Updated $pkg_json from $version to $new_version"
           }
 
-          if [ "$core_changed" == "true" ]; then
-            echo "Core package changed, bumping all packages minor..."
-            for pkg in packages/*; do
-              bump_version "$pkg/deno.json" minor
-            done
-          else
-            echo "Bumping only changed packages (patch)..."
-            for pkg in packages/*; do
-              if echo "$changed_files" | grep -q "$pkg"; then
-                bump_version "$pkg/deno.json" patch
-              fi
-            done
-          fi
+          echo "Bumping all packages to minor version..."
+          for pkg in packages/*; do
+            if [ -f "$pkg/deno.json" ]; then
+              bump_version "$pkg/deno.json"
+            fi
+          done
 
       - name: Commit bumped versions
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "chore: bump package versions"
+          commit_message: "chore: bump package versions for release"
 
       - name: Publish packages
         run: |
-          # First publish core package if it exists and has changes
-          if [ -f "packages/core/deno.json" ] && ([ "$core_changed" == "true" ] || echo "$changed_files" | grep -q "packages/core/"); then
+          if [ -f "packages/core/deno.json" ]; then
             echo "Publishing core package first..."
             (cd "packages/core" && deno publish)
           fi
 
-          # Then publish other packages
           for pkg in packages/*; do
             if [ "$pkg" != "packages/core" ] && [ -f "$pkg/deno.json" ]; then
-              if echo "$changed_files" | grep -q "$pkg"; then
-                echo "Publishing $pkg..."
-                (cd "$pkg" && deno publish)
-              fi
+              echo "Publishing $pkg..."
+              (cd "$pkg" && deno publish)
             fi
           done
