@@ -24,6 +24,12 @@ jobs:
           deno-version: v2.x
 
       - name: Run all tests
+        env:
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASS: ${{ secrets.DB_PASS }}
+          DB_NAME: ${{ secrets.DB_NAME }}
         run: deno task test
 
   publish:
@@ -48,7 +54,7 @@ jobs:
             minor=$((minor + 1))
             patch=0
             new_version="$major.$minor.$patch"
-            sed -i "s/"version": "$version"/"version": "$new_version"/" "$pkg_json"
+            sed -i "s/\"version\": \"$version\"/\"version\": \"$new_version\"/" "$pkg_json"
             echo "Updated $pkg_json from $version to $new_version"
           }
 
@@ -76,4 +82,3 @@ jobs:
               echo "Publishing $pkg..."
               (cd "$pkg" && deno publish)
             fi
-          done
