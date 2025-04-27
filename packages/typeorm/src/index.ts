@@ -249,10 +249,22 @@ export const initializeDataSource = async function (options: DataSourceOptions):
 
 				const columnType = mapCoreTypeToTypeOrm(field.type)
 				if (columnType === "relation") {
-					entityOptions.relations[key] = {
-						type: "many-to-one",
-						target: field.relation.getName(),
-						nullable: !field.features.includes(defaults.feature.required),
+					if (model.database().key === field.relation.database().key) {
+						entityOptions.relations[key] = {
+							type: "many-to-one",
+							target: field.relation.getName(),
+							nullable: !field.features.includes(defaults.feature.required),
+						}
+					} else {
+						entityOptions.indices.push({
+							name: `IDX_${model.getName()}_${key}_${modelSuffix}`,
+							columns: [key],
+						})
+
+						entityOptions.columns[key] = {
+							type: "varchar",
+							nullable: !field.features.includes(defaults.feature.required),
+						}
 					}
 				} else {
 					entityOptions.columns[key] = {
@@ -282,53 +294,3 @@ export const initializeDataSource = async function (options: DataSourceOptions):
 }
 
 export const INDEX = Symbol("index")
-
-export function createTypeOrmEntity(model: typeof Model): EntitySchema {
-	const schema = model.schema()
-	const options: EntitySchemaOptions<any> = {
-		name: model.getName(),
-		columns: {
-			id: {
-				type: "uuid",
-				primary: true,
-				generated: "uuid",
-			},
-			createdAt: {
-				type: "timestamp",
-				createDate: true,
-			},
-			updatedAt: {
-				type: "timestamp",
-				updateDate: true,
-			},
-			deletedAt: {
-				type: "timestamp",
-				deleteDate: true,
-				nullable: true,
-			},
-		},
-		relations: {},
-	}
-
-	for (const [key, field] of Object.entries(schema)) {
-		if (key === "id" || key === "createdAt" || key === "updatedAt" || key === "deletedAt") continue
-
-		const columnType = mapCoreTypeToTypeOrm(field.type)
-		if (columnType === "relation") {
-			options.relations[key] = {
-				type: "many-to-one",
-				target: field.relation.getName(),
-				nullable: !field.features.includes(defaults.feature.required),
-			}
-		} else {
-			options.columns[key] = {
-				type: columnType,
-				array: field.isArray || false,
-				nullable: !field.features.includes(defaults.feature.required),
-				enum: field.enum,
-			}
-		}
-	}
-
-	return new EntitySchema(options)
-}
