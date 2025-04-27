@@ -1,6 +1,6 @@
 import { Rule } from "../../lifecycle-function/lifecycle-function.ts"
 import * as lodash from "lodash"
-import { CoreTypes } from "../../defaults/type/types.ts"
+import { CoreTypes } from "../../type/types.ts"
 import { Field } from "../../field/field.ts"
 import { TypeStandartization } from "../../type/standartization.ts"
 

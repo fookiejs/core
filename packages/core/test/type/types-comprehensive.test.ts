@@ -1,6 +1,6 @@
 import { defaults, Field, FookieError, Model, TypeStandartization } from "@fookiejs/core"
 import { expect } from "jsr:@std/expect"
-import { CoreTypes } from "../../src/defaults/type/types.ts"
+import { CoreTypes } from "../../src/type/types.ts"
 
 Deno.test("Types - Comprehensive Validation Tests", () => {
 	Deno.test("Boolean Type", () => {

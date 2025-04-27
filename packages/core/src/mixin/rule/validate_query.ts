@@ -1,6 +1,6 @@
 import { Rule } from "../../lifecycle-function/lifecycle-function.ts"
 import * as lodash from "lodash"
-import { CoreTypes } from "../../defaults/type/types.ts"
+import { CoreTypes } from "../../type/types.ts"
 import { TypeStandartization } from "../../type/standartization.ts"
 
 function isValidFilterKey(type: TypeStandartization, currentKey: string, value: any): boolean {

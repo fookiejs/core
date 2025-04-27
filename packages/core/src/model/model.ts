@@ -14,7 +14,7 @@ import { Field } from "../field/field.ts"
 import { defaults } from "../defaults/index.ts"
 import { TypeStandartization } from "../type/standartization.ts"
 import { QueryType } from "../query/query.ts"
-import { CoreTypes } from "../defaults/type/types.ts"
+import { CoreTypes } from "../type/types.ts"
 
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
 

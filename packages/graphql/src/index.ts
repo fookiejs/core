@@ -2,7 +2,7 @@ import { Method, Model, models, TypeStandartization } from "@fookiejs/core"
 import { FookieDataLoader } from "./dataloader.ts"
 import { MutationField, QueryField, Resolvers, SubscriptionField, TypeDefs, TypeField } from "./types.ts"
 import { PubSub } from "npm:graphql-subscriptions@2.0.0"
-import { CoreTypes } from "../../core/src/defaults/type/types.ts"
+import { CoreTypes } from "@fookiejs/core"
 
 const pubsub = new PubSub()
 

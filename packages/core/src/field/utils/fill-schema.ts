@@ -1,6 +1,6 @@
 import type { Field } from "../field.ts"
 import { TypeStandartization } from "../../type/standartization.ts"
-import { CoreTypes } from "../../defaults/type/types.ts"
+import { CoreTypes } from "../../type/types.ts"
 
 export function fillSchema(field: Field): Field {
 	if (!Object.hasOwn(field, "features")) {

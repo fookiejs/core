@@ -1,6 +1,6 @@
-import { Type } from "../../type/type.ts"
-import { TypeStandartization } from "../../type/standartization.ts"
-import { Utils } from "../../utils/util.ts"
+import { Type } from "./type.ts"
+import { TypeStandartization } from "./standartization.ts"
+import { Utils } from "../utils/util.ts"
 
 type CoreTypesType = Record<TypeStandartization, Type>
 
