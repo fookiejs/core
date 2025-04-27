@@ -4,6 +4,6 @@
 	"exports": "./mod.ts",
 	"license": "MIT",
 	"imports": {
-		"@fookiejs/core": "jsr:@fookiejs/core@0.7.0"
+		"@fookiejs/core": "jsr:@fookiejs/core@0.8.0"
 	}
 }
