@@ -46,43 +46,55 @@ jobs:
         with:
           deno-version: v2.x
 
-      - name: Bump versions
+      - name: Bump core version
         run: |
-          bump_version() {
-            local pkg_json="$1"
-            local version=$(grep '"version"' "$pkg_json" | awk -F '"' '{print $4}')
-            IFS='.' read -r major minor patch <<< "$version"
-            minor=$((minor + 1))
-            patch=0
-            new_version="$major.$minor.$patch"
-            sed -i "s/\"version\": \"$version\"/\"version\": \"$new_version\"/" "$pkg_json"
-            echo "Updated $pkg_json from $version to $new_version"
-            # Update @fookiejs/core version in imports if present
-            if grep -q '@fookiejs/core' "$pkg_json"; then
-              sed -i "s/@fookiejs\/core@[0-9]*\.[0-9]*\.[0-9]*/@fookiejs\/core@$new_version/g" "$pkg_json"
-              echo "Updated @fookiejs/core version in $pkg_json to $new_version"
-            fi
-          }
+          core_json="packages/core/deno.json"
+          version=$(grep '"version"' "$core_json" | awk -F '"' '{print $4}')
+          IFS='.' read -r major minor patch <<< "$version"
+          minor=$((minor + 1))
+          patch=0
+          new_version="$major.$minor.$patch"
+          sed -i "s/\"version\": \"$version\"/\"version\": \"$new_version\"/" "$core_json"
+          echo "Updated core version from $version to $new_version"
+          echo "CORE_VERSION=$new_version" >> $GITHUB_ENV
 
-          echo "Bumping all packages to minor version..."
+      - name: Commit bumped core version
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: bump core package version for release"
+
+      - name: Publish core package
+        run: |
+          cd packages/core
+          deno publish
+          cd ../..
+
+      - name: Bump other packages' core dependency and their versions
+        run: |
           for pkg in packages/*; do
-            if [ -f "$pkg/deno.json" ]; then
-              bump_version "$pkg/deno.json"
+            if [ "$pkg" != "packages/core" ] && [ -f "$pkg/deno.json" ]; then
+              pkg_json="$pkg/deno.json"
+              version=$(grep '"version"' "$pkg_json" | awk -F '"' '{print $4}')
+              IFS='.' read -r major minor patch <<< "$version"
+              minor=$((minor + 1))
+              patch=0
+              new_version="$major.$minor.$patch"
+              sed -i "s/\"version\": \"$version\"/\"version\": \"$new_version\"/" "$pkg_json"
+              if grep -q '@fookiejs/core' "$pkg_json"; then
+                sed -i "s/@fookiejs\/core@[0-9]*\.[0-9]*\.[0-9]*/@fookiejs\/core@$CORE_VERSION/g" "$pkg_json"
+                echo "Updated @fookiejs/core version in $pkg_json to $CORE_VERSION"
+              fi
+              echo "Updated $pkg_json from $version to $new_version"
             fi
           done
 
-      - name: Commit bumped versions
+      - name: Commit bumped other packages
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "chore: bump package versions for release"
+          commit_message: "chore: bump other packages for new core version"
 
-      - name: Publish packages
+      - name: Publish other packages
         run: |
-          if [ -f "packages/core/deno.json" ]; then
-            echo "Publishing core package first..."
-            (cd "packages/core" && deno publish)
-          fi
-
           for pkg in packages/*; do
             if [ "$pkg" != "packages/core" ] && [ -f "$pkg/deno.json" ]; then
               echo "Publishing $pkg..."
