@@ -57,6 +57,11 @@ jobs:
             new_version="$major.$minor.$patch"
             sed -i "s/\"version\": \"$version\"/\"version\": \"$new_version\"/" "$pkg_json"
             echo "Updated $pkg_json from $version to $new_version"
+            # Update @fookiejs/core version in imports if present
+            if grep -q '@fookiejs/core' "$pkg_json"; then
+              sed -i "s/@fookiejs\/core@[0-9]*\.[0-9]*\.[0-9]*/@fookiejs\/core@$new_version/g" "$pkg_json"
+              echo "Updated @fookiejs/core version in $pkg_json to $new_version"
+            fi
           }
 
           echo "Bumping all packages to minor version..."
