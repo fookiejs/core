@@ -38,6 +38,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.target_commitish }}
 
       - name: Setup Deno
         uses: denoland/setup-deno@v2
@@ -81,3 +83,4 @@ jobs:
               echo "Publishing $pkg..."
               (cd "$pkg" && deno publish)
             fi
+          done
