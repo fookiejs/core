@@ -1,9 +1,7 @@
 name: Test and Publish
 
 on:
-  release:
-    types: [created]
-  pull_request:
+  push:
     branches: [main]
 
 permissions:
