@@ -21,6 +21,9 @@ jobs:
         with:
           deno-version: v2.x
 
+      - name: Check types
+        run: deno check packages/*/mod.ts
+
       - name: Run all tests
         env:
           POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
