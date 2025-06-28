@@ -1,4 +1,4 @@
-import type { Effect, Modify, Rule } from "../../lifecycle-function/lifecycle-function.ts"
+import type { Effect, Modify, Rule } from "../lifecycle-function.ts"
 import type { Method } from "../../method/method.ts"
 import type { Model } from "../../model/model.ts"
 import default_payload from "../modify/default_payload.ts"

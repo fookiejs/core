@@ -1,6 +1,7 @@
 import * as lodash from "lodash"
 import { Database } from "../database/database.ts"
-import { Effect, Filter, Modify, Role, Rule } from "../lifecycle-function/lifecycle-function.ts"
+import { Effect, Filter, Modify, Role, Rule } from "../run/lifecycle-function.ts"
+import { Lifecycle } from "../run/lifecycle.ts"
 import { Method } from "../method/method.ts"
 import { fillModel } from "./utils/create-model.ts"
 import { createRun, deleteRun, readRun, updateRun } from "../run/run.ts"
@@ -131,12 +132,11 @@ export class Model {
 
 			const modelCopy: ModelTypeInput = {
 				...model,
-				binds: model.binds ? lodash.cloneDeep(model.binds) : {},
 				mixins: model.mixins ? [...model.mixins] : [],
 			}
 
 			if (!modelCopy.database) {
-				throw new Error(`Model definition for "${modelName}" must include a database configuration.`)
+				throw new Error("Database is required")
 			}
 			if (!modelCopy.database.primaryKeyType) {
 				throw new Error(`Database definition for model "${modelName}" must include primaryKeyType.`)
@@ -188,12 +188,40 @@ export class Model {
 		const nameFromMeta = this[Symbol.metadata]?.[modelNameSymbol]
 		return typeof nameFromMeta === "string" && nameFromMeta ? nameFromMeta : this.name
 	}
+
+	static addLifecycle<model extends Model>(
+		this: new () => model,
+		method: Method,
+		lifecycle: Modify<model> | Role<model> | Rule<model> | Filter<model> | Effect<model>,
+	): void {
+		const binds = this[Symbol.metadata][bindsSymbol] as BindsType
+
+		if (!binds[method]) {
+			throw new Error(`Method ${method} is not initialized in binds. Make sure the model is properly decorated.`)
+		}
+
+		if (lifecycle instanceof Modify) {
+			binds[method]![Lifecycle.MODIFY] = binds[method]![Lifecycle.MODIFY] || []
+			binds[method]![Lifecycle.MODIFY]!.push(lifecycle as Modify<Model>)
+		} else if (lifecycle instanceof Role) {
+			binds[method]![Lifecycle.ROLE] = binds[method]![Lifecycle.ROLE] || []
+			binds[method]![Lifecycle.ROLE]!.push(lifecycle as Role<Model>)
+		} else if (lifecycle instanceof Rule) {
+			binds[method]![Lifecycle.RULE] = binds[method]![Lifecycle.RULE] || []
+			binds[method]![Lifecycle.RULE]!.push(lifecycle as Rule<Model>)
+		} else if (lifecycle instanceof Filter) {
+			binds[method]![Lifecycle.FILTER] = binds[method]![Lifecycle.FILTER] || []
+			binds[method]![Lifecycle.FILTER]!.push(lifecycle as Filter<Model>)
+		} else if (lifecycle instanceof Effect) {
+			binds[method]![Lifecycle.EFFECT] = binds[method]![Lifecycle.EFFECT] || []
+			binds[method]![Lifecycle.EFFECT]!.push(lifecycle as Effect<Model>)
+		}
+	}
 }
 
 export type ModelTypeInput = {
 	name?: string
 	database: Database
-	binds?: { [ls in Method]?: Partial<BindsTypeField> }
 	mixins?: Mixin[]
 }
 
@@ -208,9 +236,9 @@ export type BindsType = {
 }
 
 export type BindsTypeField = {
-	modify?: Modify<Model>[]
-	role?: Role<Model>[]
-	rule?: Rule<Model>[]
-	filter?: Filter<Model>[]
-	effect?: Effect<Model>[]
+	[Lifecycle.MODIFY]?: Modify<Model>[]
+	[Lifecycle.ROLE]?: Role<Model>[]
+	[Lifecycle.RULE]?: Rule<Model>[]
+	[Lifecycle.FILTER]?: Filter<Model>[]
+	[Lifecycle.EFFECT]?: Effect<Model>[]
 }

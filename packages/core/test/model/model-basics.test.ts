@@ -3,21 +3,6 @@ import { defaults, Field, Model, Role, TypeStandartization } from "@fookiejs/cor
 Deno.test("Define a simple model", async () => {
 	@Model.Decorator({
 		database: defaults.database.store,
-		binds: {
-			read: {
-				role: [],
-			},
-			create: {
-				role: [
-					Role.create({
-						key: "example-lifecycle",
-						execute: async function () {
-							return true
-						},
-					}),
-				],
-			},
-		},
 	})
 	class User extends Model {
 		@Field.Decorator({
@@ -32,7 +17,6 @@ Deno.test("Define a simple model", async () => {
 Deno.test("Define a model with relations.", async () => {
 	@Model.Decorator({
 		database: defaults.database.store,
-		binds: {},
 	})
 	class Address extends Model {
 		@Field.Decorator({
@@ -44,7 +28,6 @@ Deno.test("Define a model with relations.", async () => {
 
 	@Model.Decorator({
 		database: defaults.database.store,
-		binds: {},
 	})
 	class Place extends Model {
 		@Field.Decorator({

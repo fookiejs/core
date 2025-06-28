@@ -1,5 +1,5 @@
 import * as lodash from "lodash"
-import { Rule } from "../../lifecycle-function/lifecycle-function.ts"
+import { Rule } from "../lifecycle-function.ts"
 
 export default Rule.create({
 	key: "has_field",

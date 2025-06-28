@@ -1,7 +1,7 @@
-import { Rule } from "../../lifecycle-function/lifecycle-function.ts"
 import * as lodash from "lodash"
 import { CoreTypes } from "../../type/types.ts"
 import { TypeStandartization } from "../../type/standartization.ts"
+import { Rule } from "../lifecycle-function.ts"
 
 function isValidFilterKey(type: TypeStandartization, currentKey: string, value: any): boolean {
 	if (lodash.isNull(value)) return true
@@ -59,7 +59,6 @@ export default Rule.create({
 			const availableFilterKeys = lodash.keys(CoreTypes[type].queryController)
 
 			if (lodash.difference(currentKeys, availableFilterKeys).length !== 0) {
-				console.log(lodash.difference(currentKeys, availableFilterKeys), 111, filterKey)
 				return false
 			}
 
@@ -67,6 +66,7 @@ export default Rule.create({
 				const value = payload.query.filter[filterKey][
 					currentKey
 				]
+
 				if (!isValidFilterKey(type, currentKey, value)) {
 					return false
 				}

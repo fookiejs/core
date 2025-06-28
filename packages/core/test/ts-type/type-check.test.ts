@@ -3,14 +3,6 @@ import { defaults, Field, type Method, Model, Rule, TypeStandartization } from "
 Deno.test("Payload Type Safety Tests", () => {
 	@Model.Decorator({
 		database: defaults.database.store,
-		binds: {
-			read: {
-				role: [],
-			},
-			create: {
-				role: [],
-			},
-		},
 	})
 	class _TypeCheckUser extends Model {
 		@Field.Decorator({ type: TypeStandartization.String })

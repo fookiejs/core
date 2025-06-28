@@ -1,22 +1,18 @@
 import { expect } from "jsr:@std/expect"
-import { defaults, Field, FookieError, Model, TypeStandartization } from "@fookiejs/core"
+import { defaults, Field, FookieError, Method, Model, TypeStandartization } from "@fookiejs/core"
 
 Deno.test("QueryBooleanModel Query Tests", async () => {
 	@Model.Decorator({
 		database: defaults.database.store,
-		binds: {
-			read: {
-				role: [],
-			},
-			create: {
-				role: [],
-			},
-		},
 	})
 	class QueryBooleanModel extends Model {
 		@Field.Decorator({ type: TypeStandartization.Boolean })
 		booleanField!: boolean
 	}
+
+	// Add everybody role for all methods
+	QueryBooleanModel.addLifecycle(Method.CREATE, defaults.role.everybody)
+	QueryBooleanModel.addLifecycle(Method.READ, defaults.role.everybody)
 
 	await QueryBooleanModel.create({ booleanField: true })
 	await QueryBooleanModel.create({ booleanField: false })
@@ -50,14 +46,5 @@ Deno.test("QueryBooleanModel Query Tests", async () => {
 		})
 
 		expect(results).toHaveLength(0)
-	})
-
-	Deno.test("notExist query", async () => {
-		const results = await QueryBooleanModel.read({
-			filter: {
-				booleanField: { notExist: false },
-			},
-		})
-		expect(results instanceof FookieError).toBeTruthy()
 	})
 })

@@ -5,18 +5,6 @@ import { v4 } from "uuid"
 Deno.test("Relation", () => {
 	@Model.Decorator({
 		database: defaults.database.store,
-		binds: {
-			create: {
-				role: [
-					Role.create({
-						key: "token_role",
-						execute: async function (payload) {
-							return payload.options.token === "token"
-						},
-					}),
-				],
-			},
-		},
 	})
 	class Token extends Model {
 		@Field.Decorator({ type: TypeStandartization.String })

@@ -1,14 +1,9 @@
 import { expect } from "jsr:@std/expect"
-import { defaults, Field, Model, TypeStandartization } from "@fookiejs/core"
+import { defaults, Field, Method, Model, TypeStandartization } from "@fookiejs/core"
 
 Deno.test("Define a field with a default value", async () => {
 	@Model.Decorator({
 		database: defaults.database.store,
-		binds: {
-			create: {
-				role: [],
-			},
-		},
 	})
 	class DefaultFieldModel extends Model {
 		@Field.Decorator({
@@ -17,6 +12,12 @@ Deno.test("Define a field with a default value", async () => {
 		})
 		myField?: string
 	}
+
+	// Add everybody role for all methods
+	DefaultFieldModel.addLifecycle(Method.CREATE, defaults.role.everybody)
+	DefaultFieldModel.addLifecycle(Method.READ, defaults.role.everybody)
+	DefaultFieldModel.addLifecycle(Method.UPDATE, defaults.role.everybody)
+	DefaultFieldModel.addLifecycle(Method.DELETE, defaults.role.everybody)
 
 	const response = await DefaultFieldModel.create({})
 	expect(response instanceof DefaultFieldModel).toBe(true)

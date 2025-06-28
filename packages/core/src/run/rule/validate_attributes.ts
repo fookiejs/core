@@ -1,4 +1,4 @@
-import { Rule } from "../../lifecycle-function/lifecycle-function.ts"
+import { Rule } from "../lifecycle-function.ts"
 import { Method } from "../../method/method.ts"
 import * as lodash from "lodash"
 

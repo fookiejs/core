@@ -1,4 +1,4 @@
-import { defaults, Field, FookieError, Model, TypeStandartization } from "@fookiejs/core"
+import { defaults, Field, FookieError, Method, Model, TypeStandartization } from "@fookiejs/core"
 import { expect } from "jsr:@std/expect"
 import { CoreTypes } from "../../src/type/types.ts"
 
@@ -89,7 +89,6 @@ enum UserRole {
 }
 @Model.Decorator({
 	database: defaults.database.store,
-	binds: { create: { role: [] } },
 })
 class ComplexModel extends Model {
 	@Field.Decorator({
@@ -124,6 +123,10 @@ class ComplexModel extends Model {
 	})
 	role?: UserRole
 }
+
+// Add everybody role
+ComplexModel.addLifecycle(Method.CREATE, defaults.role.everybody)
+
 Deno.test("Types - Model with Multiple Types", async () => {
 	const validModel = await ComplexModel.create({
 		name: "John Doe",

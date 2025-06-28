@@ -1,5 +1,5 @@
 import { Method } from "../../method/method.ts"
-import { Role } from "../../lifecycle-function/lifecycle-function.ts"
+import { Role } from "../../run/lifecycle-function.ts"
 
 export const writeOnly = Role.create({
 	key: "write_only",

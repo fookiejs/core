@@ -1,7 +1,7 @@
 import type { Method } from "../method/method.ts"
 import { Model } from "../model/model.ts"
 import type { Payload } from "../payload/payload.ts"
-import type { MethodResponse } from "../run/response.ts"
+import type { MethodResponse } from "./response.ts"
 
 export class Modify<T extends Model = Model, M extends Method = Method> {
 	key!: string

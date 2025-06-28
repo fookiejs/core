@@ -1,15 +1,16 @@
-import { after } from "../../mixin/binds/after.ts"
-import { before } from "../../mixin/binds/before.ts"
 import { DisposableSpan } from "../../otel/index.ts"
 import { Payload } from "../../payload/payload.ts"
 import { Model } from "../../model/model.ts"
 import { Method } from "../../method/method.ts"
+import { after } from "../binds/after.ts"
+import { before } from "../binds/before.ts"
+import { Lifecycle } from "../lifecycle.ts"
 
 const modify = async function (payload: Payload<Model, Method>): Promise<void> {
 	const modifies = [
-		...(before[payload.method]?.modify || []),
-		...(payload.model.binds()[payload.method]?.modify || []),
-		...(after[payload.method]?.modify || []),
+		...(before[payload.method]?.[Lifecycle.MODIFY] || []),
+		...(payload.model.binds()[payload.method]?.[Lifecycle.MODIFY] || []),
+		...(after[payload.method]?.[Lifecycle.MODIFY] || []),
 	]
 
 	using _span = DisposableSpan.add(`modify`)

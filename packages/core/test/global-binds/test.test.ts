@@ -18,7 +18,6 @@ Deno.test("fillModel Function Tests", () => {
 
 	@Model.Decorator({
 		database: defaults.database.store,
-		binds: { create: { role: [] } },
 		mixins: [],
 	})
 	class TestModel extends Model {

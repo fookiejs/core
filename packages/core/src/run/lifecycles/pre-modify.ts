@@ -1,8 +1,8 @@
-import { globalPreModifies } from "../../mixin/binds/global.ts"
 import { DisposableSpan } from "../../otel/index.ts"
 import { Payload } from "../../payload/payload.ts"
 import { Model } from "../../model/model.ts"
 import { Method } from "../../method/method.ts"
+import { globalPreModifies } from "../binds/global.ts"
 
 const preModify = async function (
 	payload: Payload<Model, Method>,

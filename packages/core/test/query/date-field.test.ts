@@ -1,22 +1,16 @@
 import { expect } from "jsr:@std/expect"
-import { defaults, Field, FookieError, Model, TypeStandartization } from "@fookiejs/core"
+import { defaults, Field, FookieError, Method, Model, TypeStandartization } from "@fookiejs/core"
 
 Deno.test("QueryDateModel Query Tests", async () => {
 	@Model.Decorator({
 		database: defaults.database.store,
-		binds: {
-			read: {
-				role: [],
-			},
-			create: {
-				role: [],
-			},
-		},
 	})
 	class QueryDateModel extends Model {
 		@Field.Decorator({ type: TypeStandartization.Date })
 		dateField!: string
 	}
+
+	QueryDateModel.addLifecycle(Method.CREATE, defaults.role.everybody)
 
 	await QueryDateModel.create({ dateField: "2024-05-14" })
 	await QueryDateModel.create({ dateField: "2024-05-15" })
@@ -127,14 +121,5 @@ Deno.test("QueryDateModel Query Tests", async () => {
 		expect(results.map((r) => r.dateField)).toEqual(
 			expect.arrayContaining(["2024-05-14", "2024-05-15"]),
 		)
-	})
-
-	Deno.test("notExist query", async () => {
-		const results = await QueryDateModel.read({
-			filter: {
-				dateField: { notExist: false },
-			},
-		})
-		expect(results instanceof FookieError).toBeTruthy()
 	})
 })

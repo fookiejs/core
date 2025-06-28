@@ -1,11 +1,7 @@
-import { defaults, Field, FookieError, Model, TypeStandartization } from "@fookiejs/core"
+import { defaults, Field, FookieError, Method, Model, TypeStandartization } from "@fookiejs/core"
 import { expect } from "jsr:@std/expect"
 @Model.Decorator({
 	database: defaults.database.store,
-	binds: {
-		create: { role: [] },
-		read: { role: [] },
-	},
 })
 class QueryTypeModel extends Model {
 	@Field.Decorator({ type: TypeStandartization.Integer })
@@ -17,6 +13,11 @@ class QueryTypeModel extends Model {
 	@Field.Decorator({ type: TypeStandartization.Date })
 	dateField!: string
 }
+
+// Add everybody role for all methods
+QueryTypeModel.addLifecycle(Method.CREATE, defaults.role.everybody)
+QueryTypeModel.addLifecycle(Method.READ, defaults.role.everybody)
+
 Deno.test("QueryTypeModel CRUD Operations", () => {
 	Deno.test("should create multiple entities", async () => {
 		for (let i = 1; i <= 30; i++) {

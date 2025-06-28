@@ -1,10 +1,10 @@
 import * as lodash from "lodash"
-import { globalEffects } from "../../mixin/index.ts"
+import { globalEffects } from "../binds/global.ts"
 import { DisposableSpan } from "../../otel/index.ts"
 import { Payload } from "../../payload/payload.ts"
 import { Model } from "../../model/model.ts"
 import { Method } from "../../method/method.ts"
-import { Effect } from "../../lifecycle-function/lifecycle-function.ts"
+import { Effect } from "../lifecycle-function.ts"
 import { MethodResponse } from "../response.ts"
 
 export default async function globalEffect<T extends Model, M extends Method>(

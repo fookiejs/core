@@ -13,13 +13,17 @@ const method = async function <T extends Model, M extends Method>(
 ): Promise<MethodResponse<T>[M]> {
 	using _span = new DisposableSpan(`method:${payload.method}`)
 	try {
-		const response = plainToInstance(
-			payload.model,
-			lodash.isString(payload.state.cachedResponse)
-				? JSON.parse(payload.state.cachedResponse!)
-				: await dbMethod(payload),
-		) as MethodResponse<T>[M]
+		const dbResponse = lodash.isString(payload.state.cachedResponse)
+			? JSON.parse(payload.state.cachedResponse!)
+			: await dbMethod(payload)
 
+		// DELETE and UPDATE return string arrays, don't transform them
+		if (payload.method === Method.DELETE || payload.method === Method.UPDATE) {
+			return dbResponse as MethodResponse<T>[M]
+		}
+
+		// CREATE and READ return Model instances, transform them
+		const response = plainToInstance(payload.model, dbResponse) as MethodResponse<T>[M]
 		return response
 	} catch (error) {
 		throw FookieError.create({

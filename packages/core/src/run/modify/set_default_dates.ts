@@ -1,4 +1,4 @@
-import { Modify } from "../../lifecycle-function/lifecycle-function.ts"
+import { Modify } from "../lifecycle-function.ts"
 import { Method } from "../../method/method.ts"
 
 export default Modify.create({

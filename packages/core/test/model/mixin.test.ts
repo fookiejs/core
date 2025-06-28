@@ -22,7 +22,6 @@ const sampleMixin = Mixin.create({
 
 @Model.Decorator({
 	database: defaults.database.store,
-	binds: { create: { role: [] } },
 	mixins: [sampleMixin],
 })
 class TestModel extends Model {

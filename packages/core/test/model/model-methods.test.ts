@@ -1,30 +1,9 @@
 import { expect } from "jsr:@std/expect"
 
-import { defaults, Field, Model, Role, TypeStandartization } from "@fookiejs/core"
+import { defaults, Field, Method, Model, Role, TypeStandartization } from "@fookiejs/core"
 
 @Model.Decorator({
 	database: defaults.database.store,
-	binds: {
-		read: {
-			role: [],
-		},
-		update: {
-			role: [],
-		},
-		delete: {
-			role: [],
-		},
-		create: {
-			role: [
-				Role.create({
-					key: "example-lifecycle",
-					execute: async function () {
-						return true
-					},
-				}),
-			],
-		},
-	},
 })
 class User extends Model {
 	@Field.Decorator({
@@ -39,6 +18,12 @@ class User extends Model {
 	})
 	usage!: number
 }
+
+// Add everybody role for all methods
+User.addLifecycle(Method.CREATE, defaults.role.everybody)
+User.addLifecycle(Method.READ, defaults.role.everybody)
+User.addLifecycle(Method.UPDATE, defaults.role.everybody)
+User.addLifecycle(Method.DELETE, defaults.role.everybody)
 
 Deno.test("should create a user correctly", async () => {
 	const createResponse = await User.create({

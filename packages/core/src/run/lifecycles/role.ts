@@ -3,14 +3,15 @@ import { Payload } from "../../payload/payload.ts"
 import { Model } from "../../model/model.ts"
 import { Method } from "../../method/method.ts"
 import { FookieError } from "../../error/error.ts"
-import { before } from "../../mixin/binds/before.ts"
-import { after } from "../../mixin/binds/after.ts"
+import { before } from "../binds/before.ts"
+import { after } from "../binds/after.ts"
+import { Lifecycle } from "../lifecycle.ts"
 
 const role = async function (payload: Payload<Model, Method>) {
 	const roles = [
-		...before[payload.method]!.role!,
-		...payload.model.binds()![payload.method]!.role!,
-		...after[payload.method]!.role!,
+		...before[payload.method]![Lifecycle.ROLE]!,
+		...payload.model.binds()![payload.method]![Lifecycle.ROLE]!,
+		...after[payload.method]![Lifecycle.ROLE]!,
 	]
 
 	using _span = DisposableSpan.add(`role`)

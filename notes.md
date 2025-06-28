@@ -145,3 +145,19 @@ Add structured logging & monitoring
 Improve access control
 
 Strengthen input validation
+
+- Katı bir event-driven sistem kurardım.
+- Hexagonal Architecture + State Machine temel olurdu.
+- Fault Tolerance
+- failover
+- health check
+- Protobuf, gRPC
+- Event Sourcing
+- OpenTelemetry
+- Hot Swap
+- Versioned Communication
+- Safe Mode
+- Immutable Data Zones
+- Telemetry Compression
+- Priority Streaming
+- Failure Injection Testing

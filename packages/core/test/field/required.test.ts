@@ -1,10 +1,9 @@
-import { defaults, Field, FookieError, Model, TypeStandartization } from "@fookiejs/core"
+import { defaults, Field, FookieError, Method, Model, TypeStandartization } from "@fookiejs/core"
 import { expect } from "jsr:@std/expect"
 
 Deno.test("Define a required field with Error", async () => {
 	@Model.Decorator({
 		database: defaults.database.store,
-		binds: { create: { role: [] } },
 	})
 	class RequiredField extends Model {
 		@Field.Decorator({
@@ -13,6 +12,9 @@ Deno.test("Define a required field with Error", async () => {
 		})
 		field?: string
 	}
+
+	// Add everybody role for CREATE method
+	RequiredField.addLifecycle(Method.CREATE, defaults.role.everybody)
 
 	try {
 		await RequiredField.create({})
@@ -26,7 +28,6 @@ Deno.test("Define a required field with Error", async () => {
 Deno.test("Define a required field with Success", async () => {
 	@Model.Decorator({
 		database: defaults.database.store,
-		binds: { create: { role: [] } },
 	})
 	class RequiredField2 extends Model {
 		@Field.Decorator({
@@ -35,6 +36,9 @@ Deno.test("Define a required field with Success", async () => {
 		})
 		field!: string
 	}
+
+	// Add everybody role for CREATE method
+	RequiredField2.addLifecycle(Method.CREATE, defaults.role.everybody)
 
 	const response = await RequiredField2.create({
 		field: "fookie",

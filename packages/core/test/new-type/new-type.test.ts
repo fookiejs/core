@@ -2,9 +2,6 @@ import { defaults, Field, Model, TypeStandartization } from "@fookiejs/core"
 
 @Model.Decorator({
 	database: defaults.database.store,
-	binds: {
-		read: { role: [] },
-	},
 })
 class RootObject extends Model {
 	@Field.Decorator({ type: TypeStandartization.String })
@@ -13,9 +10,6 @@ class RootObject extends Model {
 
 @Model.Decorator({
 	database: defaults.database.store,
-	binds: {
-		read: { role: [] },
-	},
 })
 class ChildObject extends Model {
 	@Field.Decorator({ type: TypeStandartization.String })

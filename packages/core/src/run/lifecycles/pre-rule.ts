@@ -1,9 +1,9 @@
-import { globalRules } from "../../mixin/binds/global.ts"
 import { DisposableSpan } from "../../otel/index.ts"
 import { Payload } from "../../payload/payload.ts"
 import { Model } from "../../model/model.ts"
 import { Method } from "../../method/method.ts"
 import { FookieError } from "../../error/error.ts"
+import { globalRules } from "../binds/global.ts"
 
 const preRule = async function (
 	payload: Payload<Model, Method>,

@@ -1,5 +1,5 @@
 import { v4 } from "uuid"
-import { Modify } from "../../lifecycle-function/lifecycle-function.ts"
+import { Modify } from "../lifecycle-function.ts"
 
 export default Modify.create({
 	key: "set_id",

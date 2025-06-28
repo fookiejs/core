@@ -1,13 +1,9 @@
 import { expect } from "jsr:@std/expect"
-import { defaults, Field, FookieError, Model, TypeStandartization } from "@fookiejs/core"
+import { defaults, Field, FookieError, Method, Model, TypeStandartization } from "@fookiejs/core"
 
 Deno.test("Define a unique field with Error", async () => {
 	@Model.Decorator({
 		database: defaults.database.store,
-		binds: {
-			read: { role: [] },
-			create: { role: [] },
-		},
 	})
 	class UniqueField extends Model {
 		@Field.Decorator({
@@ -17,6 +13,9 @@ Deno.test("Define a unique field with Error", async () => {
 		username!: string
 	}
 
+	// Add everybody role for CREATE method
+	UniqueField.addLifecycle(Method.CREATE, defaults.role.everybody)
+
 	const firstResponse = await UniqueField.create({
 		username: "uniqueUser",
 	})
@@ -24,15 +23,13 @@ Deno.test("Define a unique field with Error", async () => {
 	expect(firstResponse instanceof UniqueField).toBe(true)
 
 	try {
-		const firstResponse = await UniqueField.create({
+		await UniqueField.create({
 			username: "uniqueUser",
 		})
 
-		const secondResponse = await UniqueField.create({
+		await UniqueField.create({
 			username: "uniqueUser",
 		})
-
-		console.log(firstResponse, secondResponse)
 
 		expect(false).toBe(true)
 	} catch (error) {

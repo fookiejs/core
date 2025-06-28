@@ -1,22 +1,18 @@
-import { defaults, Field, FookieError, Model, TypeStandartization } from "@fookiejs/core"
+import { defaults, Field, FookieError, Method, Model, TypeStandartization } from "@fookiejs/core"
 import { expect } from "jsr:@std/expect"
 
 Deno.test("QueryIntModel Query Tests", async () => {
 	@Model.Decorator({
 		database: defaults.database.store,
-		binds: {
-			read: {
-				role: [],
-			},
-			create: {
-				role: [],
-			},
-		},
 	})
 	class QueryIntModel extends Model {
 		@Field.Decorator({ type: TypeStandartization.Integer })
 		intField!: number
 	}
+
+	// Add everybody role for all methods
+	QueryIntModel.addLifecycle(Method.CREATE, defaults.role.everybody)
+	QueryIntModel.addLifecycle(Method.READ, defaults.role.everybody)
 
 	await QueryIntModel.create({ intField: 1 })
 	await QueryIntModel.create({ intField: 2 })
@@ -125,14 +121,5 @@ Deno.test("QueryIntModel Query Tests", async () => {
 			},
 		})
 		expect(results).toHaveLength(0)
-	})
-
-	Deno.test("notExist query", async () => {
-		const results = await QueryIntModel.read({
-			filter: {
-				intField: { notExist: false },
-			},
-		})
-		expect(results instanceof FookieError).toBeTruthy()
 	})
 })

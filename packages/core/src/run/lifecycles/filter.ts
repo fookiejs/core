@@ -1,19 +1,20 @@
-import { after } from "../../mixin/binds/after.ts"
-import { before } from "../../mixin/binds/before.ts"
+import { before } from "../binds/before.ts"
+import { after } from "../binds/after.ts"
 import { DisposableSpan } from "../../otel/index.ts"
 import { Payload } from "../../payload/payload.ts"
 import { Model } from "../../model/model.ts"
 import { Method } from "../../method/method.ts"
 import { MethodResponse } from "../response.ts"
+import { Lifecycle } from "../lifecycle.ts"
 
 export default async function filter<T extends Model, M extends Method>(
 	payload: Payload<T, M>,
 	response: MethodResponse<T>[M],
 ) {
 	const filters = [
-		...(before[payload.method]!.filter || []),
-		...(payload.model.binds()![payload.method]!.filter || []),
-		...(after[payload.method]!.filter || []),
+		...(before[payload.method]![Lifecycle.FILTER] || []),
+		...(payload.model.binds()![payload.method]![Lifecycle.FILTER] || []),
+		...(after[payload.method]![Lifecycle.FILTER] || []),
 	]
 	using _span = DisposableSpan.add(`filter`)
 	for (const filter of filters) {

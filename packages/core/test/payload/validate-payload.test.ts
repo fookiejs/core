@@ -1,21 +1,17 @@
 import { expect } from "jsr:@std/expect"
-import { defaults, Field, FookieError, Model, TypeStandartization } from "@fookiejs/core"
+import { defaults, Field, FookieError, Method, Model, TypeStandartization } from "@fookiejs/core"
 
 @Model.Decorator({
 	database: defaults.database.store,
-	binds: {
-		read: {
-			role: [],
-		},
-		create: {
-			role: [],
-		},
-	},
 })
 class QueryTextModel extends Model {
 	@Field.Decorator({ type: TypeStandartization.String })
 	textField!: string
 }
+
+// Add everybody role for all methods
+QueryTextModel.addLifecycle(Method.CREATE, defaults.role.everybody)
+QueryTextModel.addLifecycle(Method.READ, defaults.role.everybody)
 
 Deno.test("QueryTextModel validate_payload Tests", async () => {
 	await QueryTextModel.create({ textField: "abc" })

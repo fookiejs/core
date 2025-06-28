@@ -1,14 +1,8 @@
-import { defaults, Field, Model, TypeStandartization } from "@fookiejs/core"
+import { defaults, Field, Method, Model, TypeStandartization } from "@fookiejs/core"
 import { expect } from "jsr:@std/expect"
 
 @Model.Decorator({
 	database: defaults.database.store,
-	binds: {
-		create: { role: [] },
-		read: { role: [] },
-		update: { role: [] },
-		delete: { role: [] },
-	},
 })
 class OrderByModel extends Model {
 	@Field.Decorator({ type: TypeStandartization.String })
@@ -20,6 +14,11 @@ class OrderByModel extends Model {
 	@Field.Decorator({ type: TypeStandartization.Float })
 	floatField!: number
 }
+
+OrderByModel.addLifecycle(Method.CREATE, defaults.role.everybody)
+OrderByModel.addLifecycle(Method.READ, defaults.role.everybody)
+OrderByModel.addLifecycle(Method.UPDATE, defaults.role.everybody)
+OrderByModel.addLifecycle(Method.DELETE, defaults.role.everybody)
 
 Deno.test("OrderBy Tests", async (t) => {
 	await OrderByModel.delete({})

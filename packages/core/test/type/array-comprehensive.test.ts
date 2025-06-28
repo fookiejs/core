@@ -1,9 +1,8 @@
-import { defaults, Field, FookieError, Model, TypeStandartization } from "@fookiejs/core"
+import { defaults, Field, FookieError, Method, Model, TypeStandartization } from "@fookiejs/core"
 import { expect } from "jsr:@std/expect"
 
 @Model.Decorator({
 	database: defaults.database.store,
-	binds: { create: { role: [] } },
 })
 class StringArrayModel extends Model {
 	@Field.Decorator({
@@ -14,9 +13,11 @@ class StringArrayModel extends Model {
 	tags!: string[]
 }
 
+// Add everybody role
+StringArrayModel.addLifecycle(Method.CREATE, defaults.role.everybody)
+
 @Model.Decorator({
 	database: defaults.database.store,
-	binds: { create: { role: [] } },
 })
 class IntArrayModel extends Model {
 	@Field.Decorator({
@@ -27,9 +28,11 @@ class IntArrayModel extends Model {
 	scores!: number[]
 }
 
+// Add everybody role
+IntArrayModel.addLifecycle(Method.CREATE, defaults.role.everybody)
+
 @Model.Decorator({
 	database: defaults.database.store,
-	binds: { create: { role: [] } },
 })
 class MultiArrayModel extends Model {
 	@Field.Decorator({
@@ -52,6 +55,9 @@ class MultiArrayModel extends Model {
 	})
 	name!: string
 }
+
+// Add everybody role
+MultiArrayModel.addLifecycle(Method.CREATE, defaults.role.everybody)
 
 Deno.test("Array Type - Model Creation", async () => {
 	const stringModel = await StringArrayModel.create({
@@ -112,7 +118,6 @@ Deno.test("Array Type - Model Creation", async () => {
 Deno.test("Array Type - Real World Use Case", async () => {
 	@Model.Decorator({
 		database: defaults.database.store,
-		binds: { create: { role: [] } },
 	})
 	class Product extends Model {
 		@Field.Decorator({
@@ -147,6 +152,9 @@ Deno.test("Array Type - Real World Use Case", async () => {
 		})
 		createdOn!: Date
 	}
+
+	// Add everybody role
+	Product.addLifecycle(Method.CREATE, defaults.role.everybody)
 
 	try {
 		const product = await Product.create({

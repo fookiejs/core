@@ -1,4 +1,4 @@
-import { defaults, Field, FookieError, Model, TypeStandartization } from "@fookiejs/core"
+import { defaults, Field, FookieError, Method, Model, TypeStandartization } from "@fookiejs/core"
 import { expect } from "jsr:@std/expect"
 enum UserRole {
 	ADMIN = "ADMIN",
@@ -7,7 +7,6 @@ enum UserRole {
 }
 @Model.Decorator({
 	database: defaults.database.store,
-	binds: { create: { role: [] } },
 })
 class EnumFieldModel extends Model {
 	@Field.Decorator({
@@ -17,6 +16,10 @@ class EnumFieldModel extends Model {
 	})
 	role!: UserRole
 }
+
+// Add everybody role for CREATE method
+EnumFieldModel.addLifecycle(Method.CREATE, defaults.role.everybody)
+
 Deno.test("Enum Type - Valid Values", async () => {
 	const model = await EnumFieldModel.create({ role: UserRole.ADMIN })
 	expect(model instanceof EnumFieldModel).toBe(true)

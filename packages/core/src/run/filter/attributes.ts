@@ -1,4 +1,4 @@
-import { Filter } from "../../lifecycle-function/lifecycle-function.ts"
+import { Filter } from "../lifecycle-function.ts"
 import { Method } from "../../method/method.ts"
 import * as lodash from "lodash"
 

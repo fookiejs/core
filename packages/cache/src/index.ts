@@ -32,20 +32,6 @@ interface CacheModule {
 export function initCache(database: Database): CacheModule {
 	@Model.Decorator({
 		database: database,
-		binds: {
-			[Method.CREATE]: {
-				role: [defaults.role.system],
-			},
-			[Method.READ]: {
-				role: [defaults.role.system],
-			},
-			[Method.UPDATE]: {
-				role: [defaults.role.nobody],
-			},
-			[Method.DELETE]: {
-				role: [defaults.role.system],
-			},
-		},
 	})
 	class FookieCache extends Model {
 		@Field.Decorator({
@@ -69,6 +55,11 @@ export function initCache(database: Database): CacheModule {
 		})
 		expiresAt!: string
 	}
+
+	// Add lifecycles for FookieCache
+	// UPDATE method gets nobody role to prevent updates
+	FookieCache.addLifecycle(Method.UPDATE, defaults.role.nobody)
+
 	const isCached = Modify.create({
 		key: "isCached",
 		execute: async function (payload) {

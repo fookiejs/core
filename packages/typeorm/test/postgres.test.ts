@@ -12,7 +12,6 @@ enum TestRole {
 
 @Model.Decorator({
 	database: database,
-	binds: { [Method.CREATE]: { role: [] }, [Method.READ]: { role: [] } },
 })
 class PostgresTestModel extends Model {
 	@Field.Decorator({
@@ -71,6 +70,12 @@ class PostgresTestModel extends Model {
 	})
 	roleField?: TestRole
 }
+
+// Add everybody role for all methods
+PostgresTestModel.addLifecycle(Method.CREATE, defaults.role.everybody)
+PostgresTestModel.addLifecycle(Method.READ, defaults.role.everybody)
+PostgresTestModel.addLifecycle(Method.UPDATE, defaults.role.everybody)
+PostgresTestModel.addLifecycle(Method.DELETE, defaults.role.everybody)
 
 const TEST_RUN_ID = Date.now().toString(36) + Math.random().toString(36).substring(2, 5)
 

@@ -1,4 +1,4 @@
-import { Role } from "../lifecycle-function/lifecycle-function.ts"
+import { Role } from "../run/lifecycle-function.ts"
 
 export class State {
 	cachedResponse?: string

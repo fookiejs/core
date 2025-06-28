@@ -1,32 +1,25 @@
 import * as lodash from "lodash"
 import { methods } from "../../method/method.ts"
 import { system } from "../../defaults/role/system.ts"
-import { lifecycles } from "../../lifecycle/lifecycle.ts"
+import { Lifecycle, lifecycles } from "../../run/lifecycle.ts"
 import { type BindsType, type BindsTypeField, type ModelTypeInput, type ModelTypeOutput } from "../../model/model.ts"
 
 export function fillModel(model: ModelTypeInput): ModelTypeOutput {
-	model.binds = model.binds || ({} as BindsType)
+	const binds: BindsType = {}
 	model.mixins = lodash.isArray(model.mixins) ? model.mixins : []
 
-	const defaultBinds: BindsTypeField = {
-		modify: [],
-		role: [system],
-		rule: [],
-		filter: [],
-		effect: [],
-	}
-
 	for (const method of methods) {
-		model.binds[method] = lodash.isObject(model.binds[method]) ? model.binds[method] : { ...defaultBinds }
-
-		model.binds[method] = {
-			...defaultBinds,
-			...model.binds[method],
+		binds[method] = {
+			[Lifecycle.MODIFY]: [],
+			[Lifecycle.ROLE]: [system],
+			[Lifecycle.RULE]: [],
+			[Lifecycle.FILTER]: [],
+			[Lifecycle.EFFECT]: [],
 		}
 
 		for (const lifecycle of lifecycles) {
-			if (!lodash.isArray(model.binds[method][lifecycle])) {
-				model.binds[method][lifecycle] = []
+			if (!lodash.isArray(binds[method][lifecycle])) {
+				binds[method][lifecycle] = []
 			}
 		}
 	}
@@ -36,8 +29,8 @@ export function fillModel(model: ModelTypeInput): ModelTypeOutput {
 			if (lodash.isObject(mixin)) {
 				for (const method of methods) {
 					if (lodash.isObject(mixin.binds[method])) {
-						model.binds[method] = lodash.mergeWith(
-							model.binds[method],
+						binds[method] = lodash.mergeWith(
+							binds[method],
 							mixin.binds[method],
 							(objValue: any, srcValue: any) => {
 								if (lodash.isArray(objValue)) {
@@ -53,5 +46,8 @@ export function fillModel(model: ModelTypeInput): ModelTypeOutput {
 		}
 	}
 
-	return model as ModelTypeOutput
+	return {
+		...model,
+		binds,
+	} as ModelTypeOutput
 }

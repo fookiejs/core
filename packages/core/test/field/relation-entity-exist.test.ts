@@ -5,14 +5,6 @@ import { expect } from "jsr:@std/expect"
 Deno.test("Relation", () => {
 	@Model.Decorator({
 		database: defaults.database.store,
-		binds: {
-			create: {
-				role: [],
-			},
-			read: {
-				role: [],
-			},
-		},
 	})
 	class RelationExistParent extends Model {
 		@Field.Decorator({ type: TypeStandartization.String })
@@ -21,11 +13,6 @@ Deno.test("Relation", () => {
 
 	@Model.Decorator({
 		database: defaults.database.store,
-		binds: {
-			create: {
-				role: [],
-			},
-		},
 	})
 	class RelationExistChild extends Model {
 		@Field.Decorator({ relation: RelationExistParent })

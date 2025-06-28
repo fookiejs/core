@@ -8,6 +8,7 @@ import {
 	globalPreModifies,
 	Method,
 	Model,
+	models,
 	Modify,
 	Payload,
 	Role,
@@ -65,32 +66,22 @@ export function initAuth(database: Database): AuthReturn {
 	const anonymizeEmail = Effect.create<Account, Method.DELETE>({
 		key: "anonymizeEmail",
 		async execute(_payload, response) {
-			await Account.update({ filter: { id: { in: response } } }, { email: `${v4()}@anonymized.anonymized` }, {
-				token: Config.SYSTEM_TOKEN,
-			})
+			if (response && response.length > 0) {
+				await Account.update(
+					{
+						filter: { id: { in: response } },
+					},
+					{ email: `${v4()}@anonymized.anonymized` },
+					{
+						token: Config.SYSTEM_TOKEN,
+					},
+				)
+			}
 		},
 	})
 
 	@Model.Decorator({
 		database,
-		binds: {
-			[Method.CREATE]: {
-				role: [defaults.role.system],
-			},
-			[Method.READ]: {
-				role: [defaults.role.system, loggedIn],
-				modify: [belongsToUser],
-			},
-			[Method.UPDATE]: {
-				role: [defaults.role.system],
-				modify: [],
-			},
-			[Method.DELETE]: {
-				role: [defaults.role.system, loggedIn],
-				modify: [belongsToUser],
-				effect: [anonymizeEmail],
-			},
-		},
 	})
 	class Account extends Model {
 		@Field.Decorator({ type: TypeStandartization.String })
@@ -108,6 +99,19 @@ export function initAuth(database: Database): AuthReturn {
 		@Field.Decorator({ type: TypeStandartization.String })
 		picture!: string
 	}
+
+	// Add lifecycles for Account
+	Account.addLifecycle(Method.CREATE, defaults.role.system)
+	Account.addLifecycle(Method.READ, defaults.role.system)
+	Account.addLifecycle(Method.UPDATE, defaults.role.system)
+	Account.addLifecycle(Method.DELETE, defaults.role.system)
+
+	Account.addLifecycle(Method.READ, loggedIn)
+	Account.addLifecycle(Method.READ, belongsToUser)
+
+	Account.addLifecycle(Method.DELETE, loggedIn)
+	Account.addLifecycle(Method.DELETE, belongsToUser)
+	Account.addLifecycle(Method.DELETE, anonymizeEmail)
 
 	const belongsToApiKeyOwner = Modify.create<ApiKey, Method.READ | Method.CREATE | Method.DELETE>({
 		key: "belongsToApiKeyOwner",
@@ -137,11 +141,20 @@ export function initAuth(database: Database): AuthReturn {
 	const HashApiKey = Effect.create<ApiKey, Method.CREATE>({
 		key: "HashApiKey",
 		async execute(payload, response) {
-			await ApiKey.update({ filter: { id: { equals: response.id } } }, {
-				key: crypto.createHash("sha256").update(payload.body.key).digest("hex"),
-			}, {
-				token: Config.SYSTEM_TOKEN,
-			})
+			await ApiKey.update(
+				{
+					filter: { id: { equals: response.id } },
+					limit: Infinity,
+					offset: 0,
+					attributes: [],
+				},
+				{
+					key: crypto.createHash("sha256").update(payload.body.key).digest("hex"),
+				},
+				{
+					token: Config.SYSTEM_TOKEN,
+				},
+			)
 		},
 	})
 
@@ -156,22 +169,6 @@ export function initAuth(database: Database): AuthReturn {
 
 	@Model.Decorator({
 		database,
-		binds: {
-			[Method.CREATE]: {
-				role: [defaults.role.system, loggedIn],
-				modify: [belongsToApiKeyOwner, AddRandomKey],
-				effect: [HashApiKey],
-			},
-			[Method.READ]: {
-				role: [defaults.role.system, loggedIn],
-				modify: [belongsToApiKeyOwner],
-				filter: [UglifyApiKey],
-			},
-			[Method.DELETE]: {
-				role: [defaults.role.system, loggedIn],
-				modify: [belongsToApiKeyOwner],
-			},
-		},
 	})
 	class ApiKey extends Model {
 		@Field.Decorator({
@@ -186,6 +183,24 @@ export function initAuth(database: Database): AuthReturn {
 		@Field.Decorator({ relation: Account, features: [defaults.feature.required] })
 		accountId?: string
 	}
+
+	// Add lifecycles for ApiKey
+	ApiKey.addLifecycle(Method.CREATE, defaults.role.system)
+	ApiKey.addLifecycle(Method.READ, defaults.role.system)
+	ApiKey.addLifecycle(Method.UPDATE, defaults.role.system)
+	ApiKey.addLifecycle(Method.DELETE, defaults.role.system)
+
+	ApiKey.addLifecycle(Method.CREATE, loggedIn)
+	ApiKey.addLifecycle(Method.CREATE, belongsToApiKeyOwner)
+	ApiKey.addLifecycle(Method.CREATE, AddRandomKey)
+	ApiKey.addLifecycle(Method.CREATE, HashApiKey)
+
+	ApiKey.addLifecycle(Method.READ, loggedIn)
+	ApiKey.addLifecycle(Method.READ, belongsToApiKeyOwner)
+	ApiKey.addLifecycle(Method.READ, UglifyApiKey)
+
+	ApiKey.addLifecycle(Method.DELETE, loggedIn)
+	ApiKey.addLifecycle(Method.DELETE, belongsToApiKeyOwner)
 
 	async function authenticateWithGoogle(token: string): Promise<InstanceType<IAccount> | null> {
 		const userData = await verifyGoogleAccessToken(token)

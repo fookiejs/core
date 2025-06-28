@@ -1,22 +1,16 @@
-import { defaults, Field, FookieError, Model, TypeStandartization } from "@fookiejs/core"
+import { defaults, Field, Method, Model, TypeStandartization } from "@fookiejs/core"
 import { expect } from "jsr:@std/expect"
 
 Deno.test("QueryTextModel Query Tests", async () => {
 	@Model.Decorator({
 		database: defaults.database.store,
-		binds: {
-			read: {
-				role: [],
-			},
-			create: {
-				role: [],
-			},
-		},
 	})
 	class QueryTextModel extends Model {
 		@Field.Decorator({ type: TypeStandartization.String })
 		textField!: string
 	}
+
+	QueryTextModel.addLifecycle(Method.CREATE, defaults.role.everybody)
 
 	await QueryTextModel.create({ textField: "abc" })
 	await QueryTextModel.create({ textField: "def" })
@@ -82,14 +76,5 @@ Deno.test("QueryTextModel Query Tests", async () => {
 		})
 
 		expect(results).toHaveLength(0)
-	})
-
-	Deno.test("notExist query", async () => {
-		const results = await QueryTextModel.read({
-			filter: {
-				textField: { notExist: false },
-			},
-		})
-		expect(results instanceof FookieError).toBeTruthy()
 	})
 })

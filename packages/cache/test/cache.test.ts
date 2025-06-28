@@ -8,20 +8,6 @@ const cacheModel = cacheModule.FookieCache
 @Model.Decorator({
 	database: database,
 	mixins: [cacheMixin(1)],
-	binds: {
-		[Method.CREATE]: {
-			role: [defaults.role.everybody],
-		},
-		[Method.READ]: {
-			role: [defaults.role.everybody],
-		},
-		[Method.UPDATE]: {
-			role: [defaults.role.everybody],
-		},
-		[Method.DELETE]: {
-			role: [defaults.role.everybody],
-		},
-	},
 })
 class TestModel extends Model {
 	@Field.Decorator({
@@ -29,6 +15,12 @@ class TestModel extends Model {
 	})
 	name!: string
 }
+
+// Add lifecycles for TestModel
+TestModel.addLifecycle(Method.READ, defaults.role.everybody)
+TestModel.addLifecycle(Method.UPDATE, defaults.role.everybody)
+TestModel.addLifecycle(Method.DELETE, defaults.role.everybody)
+
 async function cleanup() {
 	await TestModel.delete(
 		{
