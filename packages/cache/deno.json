@@ -1,9 +1,9 @@
 {
 	"name": "@fookiejs/cache",
-	"version": "0.12.0",
+	"version": "0.13.0",
 	"exports": "./mod.ts",
 	"license": "MIT",
 	"imports": {
-		"@fookiejs/core": "jsr:@fookiejs/core@0.12.0"
+		"@fookiejs/core": "jsr:@fookiejs/core@0.13.0"
 	}
 }
