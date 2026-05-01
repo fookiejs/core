@@ -6,7 +6,8 @@
   "links": [
     { "title": "Home",    "type": "link", "url": "/d/fookie-home",       "icon": "home" },
     { "title": "Cluster", "type": "link", "url": "/d/fookie-cluster-ops","icon": "cube" },
-    { "title": "DB",      "type": "link", "url": "/d/fookie-db-health",  "icon": "database" }
+    { "title": "DB",      "type": "link", "url": "/d/fookie-db-health",  "icon": "database" },
+    { "title": "Saga",    "type": "link", "url": "/d/fookie-outbox-saga","icon": "share-alt" }
   ],
   "liveNow": true,
   "panels": [

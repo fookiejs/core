@@ -173,14 +173,63 @@ type BuiltinCall struct {
 
 func (BuiltinCall) expressionMarker() {}
 
+// QueryFilter is the structured filter block: { field: op val op val, field: ... }
+type QueryFilter struct {
+	Fields []*QueryFieldFilter
+}
+
+type QueryFieldFilter struct {
+	Field string
+	Ops   []*QueryOp
+}
+
+type QueryOp struct {
+	Op    string     // eq neq gt gte lt lte in notIn contains isNull isNotNull
+	Value Expression // nil for isNull/isNotNull
+}
+
 type ReadQuery struct {
 	Model  string
-	Filter []Expression
+	Filter *QueryFilter
 	Lock   bool
 	LineNo int
 }
 
 func (ReadQuery) expressionMarker() {}
+
+type CountQuery struct {
+	Model  string
+	Filter *QueryFilter
+	LineNo int
+}
+
+func (CountQuery) expressionMarker() {}
+
+type SumQuery struct {
+	Model  string
+	Field  string
+	Filter *QueryFilter
+	LineNo int
+}
+
+func (SumQuery) expressionMarker() {}
+
+type BulkUpdateStmt struct {
+	Model  string
+	Filter *QueryFilter
+	Fields []*ModifyAssignment
+	LineNo int
+}
+
+func (*BulkUpdateStmt) statementMarker() {}
+
+type BulkDeleteStmt struct {
+	Model  string
+	Filter *QueryFilter
+	LineNo int
+}
+
+func (*BulkDeleteStmt) statementMarker() {}
 
 type FieldAccess struct {
 	Object string
@@ -246,6 +295,23 @@ type EffectDeleteStmt struct {
 
 func (*EffectDeleteStmt) statementMarker() {}
 
+type EffectCreateStmt struct {
+	Model  string
+	Fields []*ModifyAssignment
+	LineNo int
+}
+
+func (*EffectCreateStmt) statementMarker() {}
+
+type IfStmt struct {
+	Condition Expression
+	Then      *Block
+	Else      *Block // nil if no else branch
+	LineNo    int
+}
+
+func (*IfStmt) statementMarker() {}
+
 type EffectNotifyStmt struct {
 	RoomName string
 	Payload  map[string]Expression
@@ -297,11 +363,12 @@ type External struct {
 }
 
 type Module struct {
-	Name   string
-	Role   *Block
-	Rule   *Block
-	Modify *Block
-	Effect *Block
+	Name       string
+	Role       *Block
+	Rule       *Block
+	Modify     *Block
+	Effect     *Block
+	Compensate *Block
 }
 
 type Context struct {

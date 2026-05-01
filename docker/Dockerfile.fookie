@@ -40,7 +40,8 @@ WORKDIR /app
 COPY --from=builder /out/fookie-server /app/fookie-server
 COPY --from=builder /out/fookie-worker /app/fookie-worker
 COPY docker/fookie-entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh && \
+RUN sed -i 's/\r//' /entrypoint.sh && \
+    chmod +x /entrypoint.sh && \
     chown -R fookie:fookie /app
 
 # ── Runtime config (all overridable via env / docker-compose) ─────────────────

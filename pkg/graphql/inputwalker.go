@@ -75,6 +75,9 @@ func walkModuleBlocks(mod *ast.Module, collector map[string]bool) {
 	if mod.Effect != nil {
 		walkBlock(mod.Effect, collector)
 	}
+	if mod.Compensate != nil {
+		walkBlock(mod.Compensate, collector)
+	}
 }
 
 func walkBlock(block *ast.Block, collector map[string]bool) {
@@ -153,8 +156,17 @@ func inferTypes(schema *ast.Schema, op *ast.Operation, uses []string) map[string
 				if mod.Role != nil {
 					blocks = append(blocks, mod.Role)
 				}
+				if mod.Rule != nil {
+					blocks = append(blocks, mod.Rule)
+				}
+				if mod.Modify != nil {
+					blocks = append(blocks, mod.Modify)
+				}
 				if mod.Effect != nil {
 					blocks = append(blocks, mod.Effect)
+				}
+				if mod.Compensate != nil {
+					blocks = append(blocks, mod.Compensate)
 				}
 			}
 		}

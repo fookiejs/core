@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -139,9 +140,82 @@ func RunServer(opts ServerOptions) error {
 	handler := otelhttp.NewHandler(mux, "fookie.http",
 		otelhttp.WithMessageEvents(otelhttp.ReadEvents, otelhttp.WriteEvents),
 	)
+	handler = withCORS(handler)
 
 	logger.Infof("Fookie server on %s -> /graphql (HTTP) /graphql/ws (WebSocket) /health", opts.Port)
 	return http.ListenAndServe(opts.Port, handler)
+}
+
+func withCORS(next http.Handler) http.Handler {
+	allowedOrigins := defaultAllowedOrigins()
+	allowAny := len(allowedOrigins) == 1 && allowedOrigins[0] == "*"
+
+	allowedMethods := "GET,POST,OPTIONS"
+	allowedHeaders := "Authorization,Content-Type,Idempotency-Key,X-Fookie-Admin-Key"
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := strings.TrimSpace(r.Header.Get("Origin"))
+		isGraphQLPost := r.URL.Path == "/graphql" && r.Method == http.MethodPost
+		hasAdminKey := strings.TrimSpace(r.Header.Get("X-Fookie-Admin-Key")) != ""
+		if isGraphQLPost && !hasAdminKey {
+			if origin == "" {
+				http.Error(w, "forbidden: browser origin required", http.StatusForbidden)
+				return
+			}
+			if !allowAny && !isAllowedOrigin(origin, allowedOrigins) {
+				http.Error(w, "forbidden: origin is not allowed", http.StatusForbidden)
+				return
+			}
+		}
+
+		if origin != "" {
+			if allowAny {
+				w.Header().Set("Access-Control-Allow-Origin", "*")
+			} else if isAllowedOrigin(origin, allowedOrigins) {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+				w.Header().Set("Vary", "Origin")
+			}
+			w.Header().Set("Access-Control-Allow-Methods", allowedMethods)
+			w.Header().Set("Access-Control-Allow-Headers", allowedHeaders)
+		}
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func defaultAllowedOrigins() []string {
+	raw := strings.TrimSpace(os.Getenv("CORS_ALLOWED_ORIGINS"))
+	if raw == "" {
+		return []string{
+			"http://localhost:3000",
+			"http://127.0.0.1:3000",
+		}
+	}
+
+	items := strings.Split(raw, ",")
+	origins := make([]string, 0, len(items))
+	for _, item := range items {
+		if origin := strings.TrimSpace(item); origin != "" {
+			origins = append(origins, origin)
+		}
+	}
+	if len(origins) == 0 {
+		return []string{"*"}
+	}
+	return origins
+}
+
+func isAllowedOrigin(origin string, allowed []string) bool {
+	for _, v := range allowed {
+		if v == origin {
+			return true
+		}
+	}
+	return false
 }
 
 func RunWorker(opts WorkerOptions) error {

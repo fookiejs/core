@@ -19,7 +19,7 @@ func TestCreateUser(t *testing.T) {
 	defer cleanup()
 	ctx := context.Background()
 
-	u, err := exec.Create(ctx, "User", sys(map[string]interface{}{
+	u, err := exec.Create(ctx, "AccountUser", sys(map[string]interface{}{
 		"email": "alice@example.com", "name": "Alice",
 	}))
 	require.NoError(t, err)
@@ -31,7 +31,7 @@ func TestCreateVillageWithOwner(t *testing.T) {
 	defer cleanup()
 	ctx := context.Background()
 
-	u, err := exec.Create(ctx, "User", sys(map[string]interface{}{
+	u, err := exec.Create(ctx, "AccountUser", sys(map[string]interface{}{
 		"email": "builder@example.com", "name": "Builder",
 	}))
 	require.NoError(t, err)
@@ -50,7 +50,7 @@ func TestUpdateVillage(t *testing.T) {
 	defer cleanup()
 	ctx := context.Background()
 
-	u, _ := exec.Create(ctx, "User", sys(map[string]interface{}{
+	u, _ := exec.Create(ctx, "AccountUser", sys(map[string]interface{}{
 		"email": "farmer@example.com", "name": "Farmer",
 	}))
 	v, _ := exec.Create(ctx, "Village", sys(map[string]interface{}{
@@ -66,7 +66,7 @@ func TestDeleteVillage(t *testing.T) {
 	defer cleanup()
 	ctx := context.Background()
 
-	u, _ := exec.Create(ctx, "User", sys(map[string]interface{}{
+	u, _ := exec.Create(ctx, "AccountUser", sys(map[string]interface{}{
 		"email": "chief@example.com", "name": "Chief",
 	}))
 	v, _ := exec.Create(ctx, "Village", sys(map[string]interface{}{

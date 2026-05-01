@@ -293,6 +293,12 @@ func (sg *SQLGenerator) buildFieldOps(col string, ft ast.FieldType, ops map[stri
 			}
 			parts = append(parts, col+` NOT IN (`+strings.Join(ph, ", ")+`)`)
 
+		case "isNull":
+			parts = append(parts, col+` IS NULL`)
+
+		case "isNotNull":
+			parts = append(parts, col+` IS NOT NULL`)
+
 		default:
 			return "", nil, paramStart, fmt.Errorf("unknown filter operator %q", opName)
 		}

@@ -6,6 +6,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math"
+	"math/rand"
 	"reflect"
 	"strconv"
 	"strings"
@@ -37,7 +39,7 @@ type Executor struct {
 	logSink       LogSink
 	roomBus       *events.RoomBus
 	roomNameCache map[string]string
-	outboxNotify  func(id string) // optional: called after every outbox INSERT (for Redis wake-up)
+	outboxNotify  func(id string)
 }
 
 func NewExecutor(db *sql.DB, schema *ast.Schema, logger Logger) *Executor {
@@ -319,6 +321,14 @@ func (e *Executor) Create(ctx context.Context, modelName string, req map[string]
 			return nil, fmt.Errorf("lock targets: %w", err)
 		}
 		pre, post := partitionCreateLockTargets(modelName, plannedID, lockT)
+		pre, err = e.expandRelationLockClosure(ctx, pre)
+		if err != nil {
+			return nil, fmt.Errorf("lock expansion: %w", err)
+		}
+		post, err = e.expandRelationLockClosure(ctx, post)
+		if err != nil {
+			return nil, fmt.Errorf("lock expansion: %w", err)
+		}
 		if err := e.acquireRowLocksGlobalOrder(ctx, pre); err != nil {
 			return nil, err
 		}
@@ -962,6 +972,10 @@ func (e *Executor) Update(ctx context.Context, modelName string, id string, req 
 	if err != nil {
 		return nil, fmt.Errorf("lock targets: %w", err)
 	}
+	allLocks, err = e.expandRelationLockClosure(ctx, allLocks)
+	if err != nil {
+		return nil, fmt.Errorf("lock expansion: %w", err)
+	}
 	if err := e.acquireRowLocksGlobalOrder(ctx, allLocks); err != nil {
 		return nil, err
 	}
@@ -1078,6 +1092,10 @@ func (e *Executor) Delete(ctx context.Context, modelName string, id string, req 
 	allLocks, err := collectLockTargetsForEntityAndEffect(ctx, e, modelName, id, op.Effect, rc)
 	if err != nil {
 		return fmt.Errorf("lock targets: %w", err)
+	}
+	allLocks, err = e.expandRelationLockClosure(ctx, allLocks)
+	if err != nil {
+		return fmt.Errorf("lock expansion: %w", err)
 	}
 	if err := e.acquireRowLocksGlobalOrder(ctx, allLocks); err != nil {
 		return err
@@ -1266,6 +1284,96 @@ func (e *Executor) execBlock(ctx context.Context, blockName string, block *ast.B
 				}
 			}
 			delete(rc.vars, s.Var)
+
+		case *ast.EffectCreateStmt:
+			if err := e.applyEffectCreateRow(ctx, s.Model, s.Fields, rc); err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
+				return err
+			}
+
+		case *ast.EffectUpdateStmt:
+			idVal, err := e.evalExpr(ctx, s.IDExpr, rc)
+			if err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
+				return fmt.Errorf("effect update %s id expr: %w", s.Model, err)
+			}
+			id, _ := idVal.(string)
+			if id != "" {
+				if err := e.applyEffectUpdateRow(ctx, s.Model, id, s.Fields, rc); err != nil {
+					span.RecordError(err)
+					span.SetStatus(codes.Error, err.Error())
+					return err
+				}
+			}
+
+		case *ast.EffectDeleteStmt:
+			idVal, err := e.evalExpr(ctx, s.IDExpr, rc)
+			if err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
+				return fmt.Errorf("effect delete %s id expr: %w", s.Model, err)
+			}
+			id, _ := idVal.(string)
+			if id != "" {
+				if err := e.applyEffectSoftDeleteRow(ctx, s.Model, id); err != nil {
+					span.RecordError(err)
+					span.SetStatus(codes.Error, err.Error())
+					return err
+				}
+			}
+
+		case *ast.BulkUpdateStmt:
+			filter, err := e.evalQueryFilter(ctx, s.Filter, rc)
+			if err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
+				return fmt.Errorf("bulk update %s filter: %w", s.Model, err)
+			}
+			patch := make(map[string]interface{}, len(s.Fields))
+			for _, ma := range s.Fields {
+				val, err := e.evalExpr(ctx, ma.Value, rc)
+				if err != nil {
+					return fmt.Errorf("bulk update %s.%s: %w", s.Model, ma.Field, err)
+				}
+				patch[ma.Field] = val
+			}
+			if _, err := e.UpdateMany(ctx, s.Model, map[string]interface{}{"filter": filter, "body": patch}); err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
+				return err
+			}
+
+		case *ast.BulkDeleteStmt:
+			filter, err := e.evalQueryFilter(ctx, s.Filter, rc)
+			if err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
+				return fmt.Errorf("bulk delete %s filter: %w", s.Model, err)
+			}
+			if _, err := e.DeleteMany(ctx, s.Model, map[string]interface{}{"filter": filter}); err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
+				return err
+			}
+
+		case *ast.IfStmt:
+			condVal, err := e.evalExpr(ctx, s.Condition, rc)
+			if err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
+				return fmt.Errorf("if condition: %w", err)
+			}
+			branch := s.Then
+			if b, ok := condVal.(bool); ok && !b {
+				branch = s.Else
+			}
+			if branch != nil {
+				if err := e.execBlock(ctx, blockName, branch, rc); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	return nil
@@ -1362,6 +1470,186 @@ func (e *Executor) evalExpr(ctx context.Context, expr ast.Expression, rc *runCtx
 			}
 			return val, nil
 		}
+		switch ex.Name {
+		case "random":
+			return rand.Float64(), nil
+		case "now":
+			return float64(time.Now().UnixMilli()), nil
+		case "floor":
+			if len(args) < 1 {
+				return nil, fmt.Errorf("floor requires 1 argument")
+			}
+			return math.Floor(asFloat(args[0])), nil
+		case "ceil":
+			if len(args) < 1 {
+				return nil, fmt.Errorf("ceil requires 1 argument")
+			}
+			return math.Ceil(asFloat(args[0])), nil
+		case "round":
+			if len(args) < 1 {
+				return nil, fmt.Errorf("round requires 1 argument")
+			}
+			return math.Round(asFloat(args[0])), nil
+		case "abs":
+			if len(args) < 1 {
+				return nil, fmt.Errorf("abs requires 1 argument")
+			}
+			return math.Abs(asFloat(args[0])), nil
+		case "sqrt":
+			if len(args) < 1 {
+				return nil, fmt.Errorf("sqrt requires 1 argument")
+			}
+			return math.Sqrt(asFloat(args[0])), nil
+		case "sin":
+			if len(args) < 1 {
+				return nil, fmt.Errorf("sin requires 1 argument")
+			}
+			return math.Sin(asFloat(args[0])), nil
+		case "cos":
+			if len(args) < 1 {
+				return nil, fmt.Errorf("cos requires 1 argument")
+			}
+			return math.Cos(asFloat(args[0])), nil
+		case "min_val":
+			if len(args) < 2 {
+				return nil, fmt.Errorf("min_val requires 2 arguments")
+			}
+			a, b := asFloat(args[0]), asFloat(args[1])
+			if a < b {
+				return a, nil
+			}
+			return b, nil
+		case "max_val":
+			if len(args) < 2 {
+				return nil, fmt.Errorf("max_val requires 2 arguments")
+			}
+			a, b := asFloat(args[0]), asFloat(args[1])
+			if a > b {
+				return a, nil
+			}
+			return b, nil
+		case "len":
+			if len(args) < 1 {
+				return nil, fmt.Errorf("len requires 1 argument")
+			}
+			rv := reflect.ValueOf(args[0])
+			if rv.Kind() == reflect.Slice || rv.Kind() == reflect.Array {
+				return float64(rv.Len()), nil
+			}
+			if s, ok := args[0].(string); ok {
+				return float64(len(s)), nil
+			}
+			return float64(0), nil
+		case "json_get":
+			if len(args) < 2 {
+				return nil, fmt.Errorf("json_get requires 2 arguments")
+			}
+			m := map[string]interface{}{}
+			if err := json.Unmarshal([]byte(fmt.Sprintf("%v", args[0])), &m); err != nil {
+				return float64(0), nil
+			}
+			key := fmt.Sprintf("%v", args[1])
+			if v, ok := m[key]; ok {
+				return asFloat(v), nil
+			}
+			return float64(0), nil
+		case "json_set":
+			if len(args) < 3 {
+				return nil, fmt.Errorf("json_set requires 3 arguments")
+			}
+			m := map[string]interface{}{}
+			_ = json.Unmarshal([]byte(fmt.Sprintf("%v", args[0])), &m)
+			m[fmt.Sprintf("%v", args[1])] = args[2]
+			b, _ := json.Marshal(m)
+			return string(b), nil
+		case "json_inc":
+			if len(args) < 3 {
+				return nil, fmt.Errorf("json_inc requires 3 arguments")
+			}
+			m := map[string]interface{}{}
+			_ = json.Unmarshal([]byte(fmt.Sprintf("%v", args[0])), &m)
+			key := fmt.Sprintf("%v", args[1])
+			cur := asFloat(m[key])
+			m[key] = cur + asFloat(args[2])
+			b, _ := json.Marshal(m)
+			return string(b), nil
+		case "json_del":
+			if len(args) < 2 {
+				return nil, fmt.Errorf("json_del requires 2 arguments")
+			}
+			m := map[string]interface{}{}
+			_ = json.Unmarshal([]byte(fmt.Sprintf("%v", args[0])), &m)
+			delete(m, fmt.Sprintf("%v", args[1]))
+			b, _ := json.Marshal(m)
+			return string(b), nil
+		case "move_toward_x":
+			if len(args) < 5 {
+				return nil, fmt.Errorf("move_toward_x requires 5 arguments")
+			}
+			px, py, tx, ty, speed := asFloat(args[0]), asFloat(args[1]), asFloat(args[2]), asFloat(args[3]), asFloat(args[4])
+			dx, dy := tx-px, ty-py
+			d := math.Sqrt(dx*dx + dy*dy)
+			if d == 0 {
+				return px, nil
+			}
+			return px + (dx/d)*speed, nil
+		case "move_toward_y":
+			if len(args) < 5 {
+				return nil, fmt.Errorf("move_toward_y requires 5 arguments")
+			}
+			px, py, tx, ty, speed := asFloat(args[0]), asFloat(args[1]), asFloat(args[2]), asFloat(args[3]), asFloat(args[4])
+			dx, dy := tx-px, ty-py
+			d := math.Sqrt(dx*dx + dy*dy)
+			if d == 0 {
+				return py, nil
+			}
+			return py + (dy/d)*speed, nil
+		case "dist":
+			if len(args) < 4 {
+				return nil, fmt.Errorf("dist requires 4 arguments")
+			}
+			ax, ay, bx, by := asFloat(args[0]), asFloat(args[1]), asFloat(args[2]), asFloat(args[3])
+			dx, dy := bx-ax, by-ay
+			return math.Sqrt(dx*dx + dy*dy), nil
+		case "str":
+			if len(args) < 1 {
+				return nil, fmt.Errorf("str requires 1 argument")
+			}
+			return fmt.Sprintf("%v", args[0]), nil
+		case "int_val":
+			if len(args) < 1 {
+				return nil, fmt.Errorf("int_val requires 1 argument")
+			}
+			return math.Floor(asFloat(args[0])), nil
+		case "concat":
+			parts := make([]string, len(args))
+			for i, a := range args {
+				parts[i] = fmt.Sprintf("%v", a)
+			}
+			return strings.Join(parts, ""), nil
+		case "query":
+			if len(args) < 1 {
+				return nil, fmt.Errorf("query requires 1 argument (model name)")
+			}
+			modelName := fmt.Sprintf("%v", args[0])
+			table := compiler.SnakeCase(modelName)
+			rows, qErr := e.execer(ctx).QueryContext(ctx,
+				fmt.Sprintf(`SELECT * FROM %q WHERE "deleted_at" IS NULL`, table))
+			if qErr != nil {
+				return nil, fmt.Errorf("query %s: %w", modelName, qErr)
+			}
+			scanned, sErr := scanRows(rows)
+			rows.Close()
+			if sErr != nil {
+				return nil, fmt.Errorf("query %s scan: %w", modelName, sErr)
+			}
+			out := make([]interface{}, len(scanned))
+			for i, r := range scanned {
+				out[i] = r
+			}
+			return out, nil
+		}
+
 		fn, ok := validator.GetBuiltin(ex.Name)
 		if !ok {
 			return nil, fmt.Errorf("unknown builtin validator: %s", ex.Name)
@@ -1378,6 +1666,35 @@ func (e *Executor) evalExpr(ctx context.Context, expr ast.Expression, rc *runCtx
 			out[i] = v
 		}
 		return out, nil
+
+	case *ast.ReadQuery:
+		filter, err := e.evalQueryFilter(ctx, ex.Filter, rc)
+		if err != nil {
+			return nil, err
+		}
+		rows, err := e.systemRead(ctx, ex.Model, filter)
+		if err != nil {
+			return nil, err
+		}
+		out := make([]interface{}, len(rows))
+		for i, r := range rows {
+			out[i] = r
+		}
+		return out, nil
+
+	case *ast.CountQuery:
+		filter, err := e.evalQueryFilter(ctx, ex.Filter, rc)
+		if err != nil {
+			return nil, err
+		}
+		return e.systemCount(ctx, ex.Model, filter)
+
+	case *ast.SumQuery:
+		filter, err := e.evalQueryFilter(ctx, ex.Filter, rc)
+		if err != nil {
+			return nil, err
+		}
+		return e.systemSum(ctx, ex.Model, ex.Field, filter)
 	}
 	return nil, fmt.Errorf("unsupported expression: %T", expr)
 }
@@ -1393,6 +1710,107 @@ func (e *Executor) configValue(key string) (interface{}, bool) {
 		}
 	}
 	return nil, false
+}
+
+func (e *Executor) evalQueryFilter(ctx context.Context, qf *ast.QueryFilter, rc *runCtx) (map[string]interface{}, error) {
+	if qf == nil {
+		return nil, nil
+	}
+	filter := make(map[string]interface{}, len(qf.Fields))
+	for _, ff := range qf.Fields {
+		fieldOps := make(map[string]interface{}, len(ff.Ops))
+		for _, qop := range ff.Ops {
+			if qop.Op == "isNull" || qop.Op == "isNotNull" {
+				fieldOps[qop.Op] = true
+				continue
+			}
+			val, err := e.evalExpr(ctx, qop.Value, rc)
+			if err != nil {
+				return nil, fmt.Errorf("filter %s %s: %w", ff.Field, qop.Op, err)
+			}
+			fieldOps[qop.Op] = val
+		}
+		filter[ff.Field] = fieldOps
+	}
+	return filter, nil
+}
+
+func (e *Executor) systemRead(ctx context.Context, modelName string, filter map[string]interface{}) ([]map[string]interface{}, error) {
+	_, model, err := e.resolveOp(modelName, "read")
+	if err != nil {
+		return nil, err
+	}
+	frag, args := "", []interface{}{}
+	if len(filter) > 0 {
+		var fErr error
+		frag, args, _, fErr = e.sqlGen.BuildWhereClause(model, filter, 1)
+		if fErr != nil {
+			return nil, fErr
+		}
+	}
+	table := compiler.SnakeCase(modelName)
+	q := fmt.Sprintf(`SELECT * FROM %q WHERE "deleted_at" IS NULL`, table)
+	if frag != "" {
+		q += " AND (" + frag + ")"
+	}
+	rows, err := e.execer(ctx).QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, fmt.Errorf("systemRead %s: %w", modelName, err)
+	}
+	scanned, err := scanRows(rows)
+	rows.Close()
+	return scanned, err
+}
+
+func (e *Executor) systemCount(ctx context.Context, modelName string, filter map[string]interface{}) (float64, error) {
+	_, model, err := e.resolveOp(modelName, "read")
+	if err != nil {
+		return 0, err
+	}
+	frag, args := "", []interface{}{}
+	if len(filter) > 0 {
+		var fErr error
+		frag, args, _, fErr = e.sqlGen.BuildWhereClause(model, filter, 1)
+		if fErr != nil {
+			return 0, fErr
+		}
+	}
+	table := compiler.SnakeCase(modelName)
+	q := fmt.Sprintf(`SELECT COUNT(*) FROM %q WHERE "deleted_at" IS NULL`, table)
+	if frag != "" {
+		q += " AND (" + frag + ")"
+	}
+	var n int64
+	if err := e.execer(ctx).QueryRowContext(ctx, q, args...).Scan(&n); err != nil {
+		return 0, fmt.Errorf("systemCount %s: %w", modelName, err)
+	}
+	return float64(n), nil
+}
+
+func (e *Executor) systemSum(ctx context.Context, modelName, field string, filter map[string]interface{}) (float64, error) {
+	_, model, err := e.resolveOp(modelName, "read")
+	if err != nil {
+		return 0, err
+	}
+	col := compiler.SnakeCase(field)
+	frag, args := "", []interface{}{}
+	if len(filter) > 0 {
+		var fErr error
+		frag, args, _, fErr = e.sqlGen.BuildWhereClause(model, filter, 1)
+		if fErr != nil {
+			return 0, fErr
+		}
+	}
+	table := compiler.SnakeCase(modelName)
+	q := fmt.Sprintf(`SELECT COALESCE(SUM("%s"), 0) FROM %q WHERE "deleted_at" IS NULL`, col, table)
+	if frag != "" {
+		q += " AND (" + frag + ")"
+	}
+	var sum float64
+	if err := e.execer(ctx).QueryRowContext(ctx, q, args...).Scan(&sum); err != nil {
+		return 0, fmt.Errorf("systemSum %s.%s: %w", modelName, field, err)
+	}
+	return sum, nil
 }
 
 func iterableToSlice(v interface{}) ([]interface{}, error) {
@@ -1484,10 +1902,16 @@ func toFloat(v interface{}) (float64, bool) {
 	return 0, false
 }
 
+// asFloat converts a value to float64, returning 0 on failure. Used by math builtins.
+func asFloat(v interface{}) float64 {
+	f, _ := toFloat(v)
+	return f
+}
+
 func (e *Executor) fetchByID(ctx context.Context, modelName string, id string) (map[string]interface{}, error) {
 	table := compiler.SnakeCase(modelName)
 	rows, err := e.execer(ctx).QueryContext(ctx,
-		fmt.Sprintf(`SELECT * FROM "%s" WHERE id = $1 AND deleted_at IS NULL FOR SHARE`, table), id)
+		fmt.Sprintf(`SELECT * FROM "%s" WHERE id = $1 AND deleted_at IS NULL FOR UPDATE`, table), id)
 	if err != nil {
 		return nil, err
 	}
@@ -1595,7 +2019,7 @@ func syncEffectStatements(effect *ast.Block) []ast.Statement {
 	var out []ast.Statement
 	for _, s := range effect.Statements {
 		switch s.(type) {
-		case *ast.EffectUpdateStmt, *ast.EffectDeleteStmt, *ast.EffectNotifyStmt:
+		case *ast.EffectUpdateStmt, *ast.EffectDeleteStmt, *ast.EffectCreateStmt, *ast.EffectNotifyStmt:
 			out = append(out, s)
 		}
 	}
@@ -1676,6 +2100,21 @@ func (e *Executor) applyEffectSoftDeleteRow(ctx context.Context, modelName, id s
 	return nil
 }
 
+func (e *Executor) applyEffectCreateRow(ctx context.Context, modelName string, fields []*ast.ModifyAssignment, rc *runCtx) error {
+	record := make(map[string]interface{}, len(fields))
+	for _, ma := range fields {
+		val, err := e.evalExpr(ctx, ma.Value, rc)
+		if err != nil {
+			return fmt.Errorf("effect create %s.%s: %w", modelName, ma.Field, err)
+		}
+		record[ma.Field] = val
+	}
+	if _, err := e.Create(ctx, modelName, WithSystemInput(record)); err != nil {
+		return fmt.Errorf("effect create %s: %w", modelName, err)
+	}
+	return nil
+}
+
 func (e *Executor) executeEffectStmtList(ctx context.Context, stmts []ast.Statement, rc *runCtx) error {
 	for _, stmt := range stmts {
 		switch s := stmt.(type) {
@@ -1701,6 +2140,10 @@ func (e *Executor) executeEffectStmtList(ctx context.Context, stmts []ast.Statem
 				continue
 			}
 			if err := e.applyEffectSoftDeleteRow(ctx, s.Model, id); err != nil {
+				return err
+			}
+		case *ast.EffectCreateStmt:
+			if err := e.applyEffectCreateRow(ctx, s.Model, s.Fields, rc); err != nil {
 				return err
 			}
 		case *ast.EffectNotifyStmt:
@@ -1757,6 +2200,82 @@ func (e *Executor) ExecuteEffectActions(ctx context.Context, stmts []ast.Stateme
 	return e.executeEffectStmtList(ctx, stmts, rc)
 }
 
+func mergeBlockChain(blocks ...*ast.Block) *ast.Block {
+	merged := make([]ast.Statement, 0)
+	for _, block := range blocks {
+		if block == nil || len(block.Statements) == 0 {
+			continue
+		}
+		merged = append(merged, block.Statements...)
+	}
+	if len(merged) == 0 {
+		return nil
+	}
+	return &ast.Block{Statements: merged}
+}
+
+func (e *Executor) resolveModelUses(model *ast.Model) ([]*ast.Module, error) {
+	if e == nil || e.schema == nil || model == nil || len(model.Uses) == 0 {
+		return nil, nil
+	}
+	moduleMap := make(map[string]*ast.Module, len(e.schema.Modules))
+	for _, mod := range e.schema.Modules {
+		moduleMap[strings.ToLower(mod.Name)] = mod
+	}
+	seen := make(map[string]bool, len(model.Uses))
+	resolved := make([]*ast.Module, 0, len(model.Uses))
+	for _, useName := range model.Uses {
+		key := strings.ToLower(useName)
+		if seen[key] {
+			return nil, fmt.Errorf("model %s uses module %s more than once", model.Name, useName)
+		}
+		seen[key] = true
+		mod, ok := moduleMap[key]
+		if !ok {
+			return nil, fmt.Errorf("model %s uses unknown module %s", model.Name, useName)
+		}
+		resolved = append(resolved, mod)
+	}
+	return resolved, nil
+}
+
+func (e *Executor) injectOperationUses(model *ast.Model, op *ast.Operation) (*ast.Operation, error) {
+	if model == nil || op == nil || len(model.Uses) == 0 {
+		return op, nil
+	}
+	modules, err := e.resolveModelUses(model)
+	if err != nil {
+		return nil, err
+	}
+	if len(modules) == 0 {
+		return op, nil
+	}
+	roleBlocks := make([]*ast.Block, 0, len(modules)+1)
+	ruleBlocks := make([]*ast.Block, 0, len(modules)+1)
+	modifyBlocks := make([]*ast.Block, 0, len(modules)+1)
+	effectBlocks := make([]*ast.Block, 0, len(modules)+1)
+	compensateBlocks := make([]*ast.Block, 0, len(modules)+1)
+	for _, mod := range modules {
+		roleBlocks = append(roleBlocks, mod.Role)
+		ruleBlocks = append(ruleBlocks, mod.Rule)
+		modifyBlocks = append(modifyBlocks, mod.Modify)
+		effectBlocks = append(effectBlocks, mod.Effect)
+		compensateBlocks = append(compensateBlocks, mod.Compensate)
+	}
+	roleBlocks = append(roleBlocks, op.Role)
+	ruleBlocks = append(ruleBlocks, op.Rule)
+	modifyBlocks = append(modifyBlocks, op.Modify)
+	effectBlocks = append(effectBlocks, op.Effect)
+	compensateBlocks = append(compensateBlocks, op.Compensate)
+	injected := *op
+	injected.Role = mergeBlockChain(roleBlocks...)
+	injected.Rule = mergeBlockChain(ruleBlocks...)
+	injected.Modify = mergeBlockChain(modifyBlocks...)
+	injected.Effect = mergeBlockChain(effectBlocks...)
+	injected.Compensate = mergeBlockChain(compensateBlocks...)
+	return &injected, nil
+}
+
 func (e *Executor) resolveOp(modelName, opType string) (*ast.Operation, *ast.Model, error) {
 	for _, m := range e.schema.Models {
 		if strings.EqualFold(m.Name, modelName) {
@@ -1764,7 +2283,11 @@ func (e *Executor) resolveOp(modelName, opType string) (*ast.Operation, *ast.Mod
 			if !ok {
 				return nil, nil, fmt.Errorf("model %s has no %s operation", modelName, opType)
 			}
-			return op, m, nil
+			injectedOp, err := e.injectOperationUses(m, op)
+			if err != nil {
+				return nil, nil, err
+			}
+			return injectedOp, m, nil
 		}
 	}
 	return nil, nil, fmt.Errorf("model %s not found", modelName)

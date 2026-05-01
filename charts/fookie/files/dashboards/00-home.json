@@ -12,6 +12,7 @@
     { "asDropdown": false, "icon": "bolt", "keepTime": true, "targetBlank": false, "title": "Redis →", "type": "link", "url": "/d/fookie-redis-health" },
     { "asDropdown": false, "icon": "signal", "keepTime": true, "targetBlank": false, "title": "Model detayı →", "type": "link", "url": "/d/fookie-models/fookie-modeller" },
     { "asDropdown": false, "icon": "cloud", "keepTime": true, "targetBlank": false, "title": "İzler →", "type": "link", "url": "/d/fookie-traces/fookie-izler" },
+    { "asDropdown": false, "icon": "share-alt", "keepTime": false, "targetBlank": false, "title": "Outbox saga →", "type": "link", "url": "/d/fookie-outbox-saga" },
     { "asDropdown": false, "icon": "compass", "keepTime": false, "targetBlank": false, "title": "Explore", "type": "link", "url": "/explore" }
   ],
   "liveNow": true,

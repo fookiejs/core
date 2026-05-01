@@ -65,6 +65,10 @@ func collectLockTargetsFromEffect(ctx context.Context, e *Executor, effect *ast.
 			if id != "" {
 				targets = append(targets, lockTarget{Model: s.Model, ID: id})
 			}
+		case *ast.BulkUpdateStmt:
+			// bulk ops lock at SQL level; no pre-lock needed here
+		case *ast.BulkDeleteStmt:
+			// bulk ops lock at SQL level; no pre-lock needed here
 		}
 	}
 	return dedupSortLockTargets(targets), nil

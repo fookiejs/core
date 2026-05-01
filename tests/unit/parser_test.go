@@ -119,6 +119,9 @@ module AuthenticateUser {
 
   effect {
   }
+
+  compensate {
+  }
 }
 `
 

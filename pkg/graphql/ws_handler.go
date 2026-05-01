@@ -1,18 +1,5 @@
 package fookiegql
 
-// ws_handler.go implements the graphql-transport-ws subprotocol over WebSocket.
-//
-// Protocol reference: https://github.com/graphql/graphql-ws/blob/main/PROTOCOL.md
-//
-// Message flow:
-//   Client → {"type":"connection_init", "payload":{"adminKey":"x","token":"jwt"}}
-//   Server → {"type":"connection_ack"}
-//   Client → {"type":"subscribe","id":"1","payload":{"query":"subscription {...}"}}
-//   Server → {"type":"next","id":"1","payload":{"data":{...}}}  (per event)
-//   Server → {"type":"complete","id":"1"}                        (stream done)
-//   Client → {"type":"complete","id":"1"}                        (client cancel)
-//   Client → {"type":"ping"} / Server → {"type":"pong"}
-
 import (
 	"context"
 	"encoding/json"
@@ -27,7 +14,7 @@ import (
 )
 
 var wsUpgrader = websocket.Upgrader{
-	CheckOrigin:  func(r *http.Request) bool { return true }, // allow all origins
+	CheckOrigin:  func(r *http.Request) bool { return true },
 	Subprotocols: []string{"graphql-transport-ws"},
 }
 
@@ -37,9 +24,6 @@ type wsMsg struct {
 	Payload json.RawMessage `json:"payload,omitempty"`
 }
 
-// NewWSHandler returns an http.Handler that upgrades connections to WebSocket
-// and serves GraphQL subscriptions using the graphql-transport-ws protocol.
-// It also handles queries and mutations sent over WebSocket.
 func NewWSHandler(executor *runtime.Executor, schema graphql.Schema) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		conn, err := wsUpgrader.Upgrade(w, r, nil)
@@ -48,14 +32,11 @@ func NewWSHandler(executor *runtime.Executor, schema graphql.Schema) http.Handle
 		}
 		defer conn.Close()
 
-		// Connection context — cancelled when socket closes
 		connCtx, connCancel := context.WithCancel(r.Context())
 		defer connCancel()
 
-		// Base context carries executor; auth is added after connection_init
 		baseCtx := WithExecutor(connCtx, executor)
 
-		// Header-based auth (server-to-server use; browsers can't set custom WS headers)
 		if auth := r.Header.Get("Authorization"); strings.HasPrefix(auth, "Bearer ") {
 			baseCtx = WithToken(baseCtx, strings.TrimPrefix(auth, "Bearer "))
 		}
@@ -63,7 +44,6 @@ func NewWSHandler(executor *runtime.Executor, schema graphql.Schema) http.Handle
 			baseCtx = WithAdminKey(baseCtx, ak)
 		}
 
-		// Track active subscriptions: id → cancel func
 		type activeSub struct{ cancel context.CancelFunc }
 		var subsMu sync.Mutex
 		subs := map[string]*activeSub{}
@@ -86,7 +66,7 @@ func NewWSHandler(executor *runtime.Executor, schema graphql.Schema) http.Handle
 		for {
 			_, raw, err := conn.ReadMessage()
 			if err != nil {
-				return // client disconnected
+				return
 			}
 
 			var msg wsMsg
@@ -97,7 +77,6 @@ func NewWSHandler(executor *runtime.Executor, schema graphql.Schema) http.Handle
 			switch msg.Type {
 
 			case "connection_init":
-				// Optional auth in payload: {"adminKey":"x","token":"jwt"}
 				if len(msg.Payload) > 0 {
 					var params struct {
 						AdminKey string `json:"adminKey"`
@@ -157,7 +136,6 @@ func NewWSHandler(executor *runtime.Executor, schema graphql.Schema) http.Handle
 				}(msg.ID, subCtx)
 
 			case "complete":
-				// Client cancelled a subscription
 				subsMu.Lock()
 				if s, ok := subs[msg.ID]; ok {
 					s.cancel()

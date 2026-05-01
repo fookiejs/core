@@ -83,8 +83,7 @@ services:
     # No static port — scale freely with --scale fookie-worker=N
 
   # ── Observability (opt-in) ──────────────────────────────────────────────────
-  # Start with: docker compose --profile observability up -d
-  # Grafana → http://localhost:3000  (anonymous admin, no login)
+  # Grafana → http://localhost:${GRAFANA_PORT:-3001}  (anonymous admin, no login)
 
   tempo:
     image: grafana/tempo:2.3.1
@@ -187,7 +186,7 @@ services:
       - ./deploy/compose/config/grafana/provisioning:/etc/grafana/provisioning:ro
       - grafana_data:/var/lib/grafana
     ports:
-      - "${GRAFANA_PORT:-3000}:3000"
+      - "${GRAFANA_PORT:-3001}:3000"
     depends_on: [loki, prometheus, tempo]
     restart: unless-stopped
 

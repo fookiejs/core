@@ -53,6 +53,13 @@ func (p *Parser) expect(tt TokenType) (Token, error) {
 	return p.eat(), nil
 }
 
+func (p *Parser) expectWord() (Token, error) {
+	if !isWordToken(p.cur()) {
+		return Token{}, p.errorf("expected identifier, got %q", p.cur().Value)
+	}
+	return p.eat(), nil
+}
+
 func (p *Parser) errorf(format string, args ...interface{}) error {
 	msg := fmt.Sprintf("line %d: "+format, append([]interface{}{p.cur().LineNo}, args...)...)
 	p.errors = append(p.errors, msg)
@@ -572,6 +579,24 @@ func (p *Parser) parseBlock() (*ast.Block, error) {
 			continue
 		}
 
+		if p.cur().Type == TOKEN_CREATE {
+			stmt, err := p.parseEffectCreate()
+			if err != nil {
+				return nil, err
+			}
+			block.Statements = append(block.Statements, stmt)
+			continue
+		}
+
+		if p.cur().Type == TOKEN_IF {
+			stmt, err := p.parseIfStmt()
+			if err != nil {
+				return nil, err
+			}
+			block.Statements = append(block.Statements, stmt)
+			continue
+		}
+
 		if p.cur().Type == TOKEN_IDENTIFIER && p.peek(1).Type == TOKEN_ASSIGN {
 			name := p.eat().Value
 			p.eat()
@@ -602,7 +627,7 @@ func (p *Parser) parseBlock() (*ast.Block, error) {
 	return block, nil
 }
 
-func (p *Parser) parseEffectUpdate() (*ast.EffectUpdateStmt, error) {
+func (p *Parser) parseEffectUpdate() (ast.Statement, error) {
 	lineNo := p.cur().LineNo
 	p.eat()
 
@@ -611,6 +636,20 @@ func (p *Parser) parseEffectUpdate() (*ast.EffectUpdateStmt, error) {
 	}
 	model := p.eat().Value
 
+	// bulk: update ModelName { filter } { fields }
+	if p.cur().Type == TOKEN_LBRACE {
+		filter, err := p.parseStructuredFilter()
+		if err != nil {
+			return nil, err
+		}
+		fields, err := p.parseModifyFields()
+		if err != nil {
+			return nil, err
+		}
+		return &ast.BulkUpdateStmt{Model: model, Filter: filter, Fields: fields, LineNo: lineNo}, nil
+	}
+
+	// single: update ModelName(id) { fields }
 	if _, err := p.expect(TOKEN_LPAREN); err != nil {
 		return nil, err
 	}
@@ -621,7 +660,14 @@ func (p *Parser) parseEffectUpdate() (*ast.EffectUpdateStmt, error) {
 	if _, err := p.expect(TOKEN_RPAREN); err != nil {
 		return nil, err
 	}
+	fields, err := p.parseModifyFields()
+	if err != nil {
+		return nil, err
+	}
+	return &ast.EffectUpdateStmt{Model: model, IDExpr: idExpr, Fields: fields, LineNo: lineNo}, nil
+}
 
+func (p *Parser) parseModifyFields() ([]*ast.ModifyAssignment, error) {
 	if _, err := p.expect(TOKEN_LBRACE); err != nil {
 		return nil, err
 	}
@@ -638,25 +684,15 @@ func (p *Parser) parseEffectUpdate() (*ast.EffectUpdateStmt, error) {
 		if err != nil {
 			return nil, err
 		}
-		fields = append(fields, &ast.ModifyAssignment{
-			Field:  fieldName,
-			Value:  val,
-			LineNo: p.cur().LineNo,
-		})
+		fields = append(fields, &ast.ModifyAssignment{Field: fieldName, Value: val, LineNo: p.cur().LineNo})
 	}
 	if _, err := p.expect(TOKEN_RBRACE); err != nil {
 		return nil, err
 	}
-
-	return &ast.EffectUpdateStmt{
-		Model:  model,
-		IDExpr: idExpr,
-		Fields: fields,
-		LineNo: lineNo,
-	}, nil
+	return fields, nil
 }
 
-func (p *Parser) parseEffectDelete() (*ast.EffectDeleteStmt, error) {
+func (p *Parser) parseEffectDelete() (ast.Statement, error) {
 	lineNo := p.cur().LineNo
 	p.eat()
 
@@ -665,6 +701,16 @@ func (p *Parser) parseEffectDelete() (*ast.EffectDeleteStmt, error) {
 	}
 	model := p.eat().Value
 
+	// bulk: delete ModelName { filter }
+	if p.cur().Type == TOKEN_LBRACE {
+		filter, err := p.parseStructuredFilter()
+		if err != nil {
+			return nil, err
+		}
+		return &ast.BulkDeleteStmt{Model: model, Filter: filter, LineNo: lineNo}, nil
+	}
+
+	// single: delete ModelName(id)
 	if _, err := p.expect(TOKEN_LPAREN); err != nil {
 		return nil, err
 	}
@@ -675,12 +721,83 @@ func (p *Parser) parseEffectDelete() (*ast.EffectDeleteStmt, error) {
 	if _, err := p.expect(TOKEN_RPAREN); err != nil {
 		return nil, err
 	}
+	return &ast.EffectDeleteStmt{Model: model, IDExpr: idExpr, LineNo: lineNo}, nil
+}
 
-	return &ast.EffectDeleteStmt{
+func (p *Parser) parseEffectCreate() (*ast.EffectCreateStmt, error) {
+	lineNo := p.cur().LineNo
+	p.eat() // consume TOKEN_CREATE
+
+	if !isWordToken(p.cur()) {
+		return nil, p.errorf("expected model name after 'create', got %q", p.cur().Value)
+	}
+	model := p.eat().Value
+
+	if _, err := p.expect(TOKEN_LBRACE); err != nil {
+		return nil, err
+	}
+	var fields []*ast.ModifyAssignment
+	for p.cur().Type != TOKEN_RBRACE && p.cur().Type != TOKEN_EOF {
+		if !isWordToken(p.cur()) {
+			return nil, p.errorf("expected field name in create block, got %q", p.cur().Value)
+		}
+		fieldName := p.eat().Value
+		if _, err := p.expect(TOKEN_ASSIGN); err != nil {
+			return nil, err
+		}
+		val, err := p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
+		fields = append(fields, &ast.ModifyAssignment{
+			Field:  fieldName,
+			Value:  val,
+			LineNo: p.cur().LineNo,
+		})
+		if p.cur().Type == TOKEN_COMMA {
+			p.eat()
+		}
+	}
+	if _, err := p.expect(TOKEN_RBRACE); err != nil {
+		return nil, err
+	}
+	return &ast.EffectCreateStmt{
 		Model:  model,
-		IDExpr: idExpr,
+		Fields: fields,
 		LineNo: lineNo,
 	}, nil
+}
+
+func (p *Parser) parseIfStmt() (*ast.IfStmt, error) {
+	lineNo := p.cur().LineNo
+	p.eat() // consume TOKEN_IF
+
+	cond, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+
+	then, err := p.parseBlock()
+	if err != nil {
+		return nil, err
+	}
+
+	stmt := &ast.IfStmt{
+		Condition: cond,
+		Then:      then,
+		LineNo:    lineNo,
+	}
+
+	if p.cur().Type == TOKEN_ELSE {
+		p.eat()
+		elseBranch, err := p.parseBlock()
+		if err != nil {
+			return nil, err
+		}
+		stmt.Else = elseBranch
+	}
+
+	return stmt, nil
 }
 
 func (p *Parser) parseForIn() (*ast.ForIn, error) {
@@ -759,7 +876,8 @@ func isWordToken(t Token) bool {
 		TOKEN_ROLE, TOKEN_RULE, TOKEN_MODIFY, TOKEN_EFFECT, TOKEN_COMPENSATE,
 		TOKEN_FILTER, TOKEN_ORDERBY, TOKEN_CURSOR, TOKEN_RETURN,
 		TOKEN_USE, TOKEN_FIELDS, TOKEN_BODY, TOKEN_OUTPUT,
-		TOKEN_SETUP, TOKEN_NOTIFY, TOKEN_CONFIG:
+		TOKEN_SETUP, TOKEN_NOTIFY, TOKEN_CONFIG,
+		TOKEN_IF, TOKEN_ELSE:
 		return true
 	}
 	return false
@@ -1023,11 +1141,27 @@ func (p *Parser) parseInList() ([]ast.Expression, error) {
 }
 
 func (p *Parser) parseAddSub() (ast.Expression, error) {
-	left, err := p.parseUnary()
+	left, err := p.parseMulDiv()
 	if err != nil {
 		return nil, err
 	}
 	for p.cur().Type == TOKEN_PLUS || p.cur().Type == TOKEN_MINUS {
+		op := p.eat().Value
+		right, err := p.parseMulDiv()
+		if err != nil {
+			return nil, err
+		}
+		left = &ast.BinaryOp{Left: left, Op: op, Right: right, LineNo: p.cur().LineNo}
+	}
+	return left, nil
+}
+
+func (p *Parser) parseMulDiv() (ast.Expression, error) {
+	left, err := p.parseUnary()
+	if err != nil {
+		return nil, err
+	}
+	for p.cur().Type == TOKEN_MULT || p.cur().Type == TOKEN_DIV {
 		op := p.eat().Value
 		right, err := p.parseUnary()
 		if err != nil {
@@ -1113,6 +1247,16 @@ func (p *Parser) parsePrimary() (ast.Expression, error) {
 
 	first := p.eat()
 
+	if first.Value == "read" && isWordToken(p.cur()) {
+		return p.parseReadQuery(first.LineNo)
+	}
+	if first.Value == "count" && isWordToken(p.cur()) {
+		return p.parseCountQuery(first.LineNo)
+	}
+	if first.Value == "sum" && isWordToken(p.cur()) {
+		return p.parseSumQuery(first.LineNo)
+	}
+
 	if p.cur().Type == TOKEN_LPAREN {
 		if isBuiltinValidator(first.Value) {
 			return p.parseBuiltinCall(first.Value, first.LineNo)
@@ -1134,6 +1278,182 @@ func (p *Parser) parsePrimary() (ast.Expression, error) {
 		Fields: path[1:],
 		LineNo: first.LineNo,
 	}, nil
+}
+
+// parseStructuredFilter parses: { field: op val op val, field: op val, ... }
+// Returns nil if no { is present, or if { is not followed by "word:" (likely a block body).
+func (p *Parser) parseStructuredFilter() (*ast.QueryFilter, error) {
+	if p.cur().Type != TOKEN_LBRACE {
+		return nil, nil
+	}
+	// Disambiguate: { field: ... } vs { body statements }
+	// A filter block always starts with an identifier followed by colon.
+	if !isWordToken(p.peek(1)) || p.peek(2).Type != TOKEN_COLON {
+		return nil, nil
+	}
+	p.eat()
+	qf := &ast.QueryFilter{}
+	for p.cur().Type != TOKEN_RBRACE && p.cur().Type != TOKEN_EOF {
+		if !isWordToken(p.cur()) {
+			return nil, p.errorf("expected field name in filter, got %q", p.cur().Value)
+		}
+		fieldName := p.eat().Value
+		if _, err := p.expect(TOKEN_COLON); err != nil {
+			return nil, err
+		}
+		ff := &ast.QueryFieldFilter{Field: fieldName}
+		for p.cur().Type != TOKEN_COMMA && p.cur().Type != TOKEN_RBRACE && p.cur().Type != TOKEN_EOF {
+			qop, err := p.parseQueryOp()
+			if err != nil {
+				return nil, err
+			}
+			ff.Ops = append(ff.Ops, qop)
+		}
+		qf.Fields = append(qf.Fields, ff)
+		if p.cur().Type == TOKEN_COMMA {
+			p.eat()
+		}
+	}
+	if _, err := p.expect(TOKEN_RBRACE); err != nil {
+		return nil, err
+	}
+	return qf, nil
+}
+
+func (p *Parser) parseQueryOp() (*ast.QueryOp, error) {
+	tok := p.cur()
+
+	// null checks: = null  != null
+	if tok.Type == TOKEN_ASSIGN && p.peek(1).Type == TOKEN_NULL {
+		p.eat()
+		p.eat()
+		return &ast.QueryOp{Op: "isNull"}, nil
+	}
+	if tok.Type == TOKEN_NE && p.peek(1).Type == TOKEN_NULL {
+		p.eat()
+		p.eat()
+		return &ast.QueryOp{Op: "isNotNull"}, nil
+	}
+
+	// in [...]  not in [...]
+	if isWordToken(tok) && tok.Value == "not" && isWordToken(p.peek(1)) && p.peek(1).Value == "in" {
+		p.eat()
+		p.eat()
+		val, err := p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
+		return &ast.QueryOp{Op: "notIn", Value: val}, nil
+	}
+	if isWordToken(tok) && tok.Value == "in" {
+		p.eat()
+		val, err := p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
+		return &ast.QueryOp{Op: "in", Value: val}, nil
+	}
+
+	// ~ "pattern"  (contains / ilike)
+	if tok.Type == TOKEN_TILDE {
+		p.eat()
+		val, err := p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
+		return &ast.QueryOp{Op: "contains", Value: val}, nil
+	}
+
+	// word-style function operators: eq(expr), gt(expr), gte(expr), …
+	wordOpMap := map[string]string{
+		"eq": "eq", "neq": "neq", "ne": "neq",
+		"gt": "gt", "gte": "gte", "lt": "lt", "lte": "lte",
+		"contains": "contains",
+	}
+	if isWordToken(tok) {
+		if sqlOp, wok := wordOpMap[tok.Value]; wok && p.peek(1).Type == TOKEN_LPAREN {
+			p.eat()
+			p.eat() // eat (
+			val, err := p.parseExpr()
+			if err != nil {
+				return nil, err
+			}
+			if _, err := p.expect(TOKEN_RPAREN); err != nil {
+				return nil, err
+			}
+			return &ast.QueryOp{Op: sqlOp, Value: val}, nil
+		}
+	}
+
+	opMap := map[TokenType]string{
+		TOKEN_EQ:     "eq",
+		TOKEN_ASSIGN: "eq",
+		TOKEN_NE:     "neq",
+		TOKEN_GT:     "gt",
+		TOKEN_GE:     "gte",
+		TOKEN_LT:     "lt",
+		TOKEN_LE:     "lte",
+	}
+	sqlOp, ok := opMap[tok.Type]
+	if !ok {
+		// bare value with no operator → implicit eq: { status: "pending" }
+		val, err := p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
+		return &ast.QueryOp{Op: "eq", Value: val}, nil
+	}
+	p.eat()
+	val, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+	return &ast.QueryOp{Op: sqlOp, Value: val}, nil
+}
+
+// read ModelName [{ filter }]
+// When used in for-in, filter block is optional; the { after is the loop body.
+// read is always followed by model name; if next token is { it's the filter.
+func (p *Parser) parseReadQuery(lineNo int) (ast.Expression, error) {
+	modelTok, err := p.expectWord()
+	if err != nil {
+		return nil, err
+	}
+	filter, err := p.parseStructuredFilter()
+	if err != nil {
+		return nil, err
+	}
+	return &ast.ReadQuery{Model: modelTok.Value, Filter: filter, LineNo: lineNo}, nil
+}
+
+// count ModelName [{ filter }]
+func (p *Parser) parseCountQuery(lineNo int) (ast.Expression, error) {
+	modelTok, err := p.expectWord()
+	if err != nil {
+		return nil, err
+	}
+	filter, err := p.parseStructuredFilter()
+	if err != nil {
+		return nil, err
+	}
+	return &ast.CountQuery{Model: modelTok.Value, Filter: filter, LineNo: lineNo}, nil
+}
+
+// sum ModelName field [{ filter }]
+func (p *Parser) parseSumQuery(lineNo int) (ast.Expression, error) {
+	modelTok, err := p.expectWord()
+	if err != nil {
+		return nil, err
+	}
+	fieldTok, err := p.expectWord()
+	if err != nil {
+		return nil, err
+	}
+	filter, err := p.parseStructuredFilter()
+	if err != nil {
+		return nil, err
+	}
+	return &ast.SumQuery{Model: modelTok.Value, Field: fieldTok.Value, Filter: filter, LineNo: lineNo}, nil
 }
 
 func isBuiltinValidator(name string) bool {
@@ -1359,6 +1679,13 @@ func (p *Parser) parseModule() (*ast.Module, error) {
 				return nil, err
 			}
 			mod.Effect = b
+		case TOKEN_COMPENSATE:
+			p.eat()
+			b, err := p.parseBlock()
+			if err != nil {
+				return nil, err
+			}
+			mod.Compensate = b
 		default:
 			return nil, p.errorf("unexpected token in module %q: %q", mod.Name, p.cur().Value)
 		}

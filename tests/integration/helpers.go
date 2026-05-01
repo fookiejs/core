@@ -19,7 +19,7 @@ import (
 )
 
 const integrationSchemaFQL = `
-model User {
+model AccountUser {
   fields {
     email: email
     name: string
@@ -35,7 +35,7 @@ model User {
 
 model Village {
   fields {
-    owner: relation(User)
+    owner: relation(AccountUser)
     name: string
     food: number
   }
@@ -53,9 +53,9 @@ model Village {
 }
 `
 
-func parseIntegrationSchema(t *testing.T) *ast.Schema {
+func parseSchemaString(t *testing.T, fql string) *ast.Schema {
 	t.Helper()
-	lexer := parser.NewLexer(integrationSchemaFQL)
+	lexer := parser.NewLexer(fql)
 	tokens := lexer.Tokenize()
 	p := parser.NewParser(tokens)
 	schema, err := p.Parse()
@@ -63,7 +63,7 @@ func parseIntegrationSchema(t *testing.T) *ast.Schema {
 	return schema
 }
 
-func setupDB(t *testing.T) (*fookieruntime.Executor, *sql.DB, func()) {
+func setupDBWithSchema(t *testing.T, schema *ast.Schema) (*fookieruntime.Executor, *sql.DB, func()) {
 	t.Helper()
 	ctx := context.Background()
 
@@ -87,7 +87,6 @@ func setupDB(t *testing.T) (*fookieruntime.Executor, *sql.DB, func()) {
 	require.NoError(t, err)
 	require.NoError(t, db.Ping())
 
-	schema := parseIntegrationSchema(t)
 	sqlGen := compiler.NewSQLGenerator(schema)
 	sqls, err := sqlGen.Generate()
 	require.NoError(t, err)
@@ -105,6 +104,12 @@ func setupDB(t *testing.T) (*fookieruntime.Executor, *sql.DB, func()) {
 		pgContainer.Terminate(ctx)
 	}
 	return exec, db, cleanup
+}
+
+func setupDB(t *testing.T) (*fookieruntime.Executor, *sql.DB, func()) {
+	t.Helper()
+	schema := parseSchemaString(t, integrationSchemaFQL)
+	return setupDBWithSchema(t, schema)
 }
 
 type testLogger struct{ t *testing.T }

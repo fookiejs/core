@@ -37,6 +37,8 @@ const (
 	TOKEN_OUTPUT
 	TOKEN_FIELDS
 	TOKEN_FOR
+	TOKEN_IF
+	TOKEN_ELSE
 
 	TOKEN_SUM
 	TOKEN_COUNT
@@ -91,6 +93,7 @@ const (
 	TOKEN_RBRACE
 	TOKEN_LBRACKET
 	TOKEN_RBRACKET
+	TOKEN_TILDE
 
 	TOKEN_CONSTRAINT
 	TOKEN_ILLEGAL
@@ -133,7 +136,9 @@ var keywords = map[string]TokenType{
 	"body":    TOKEN_BODY,
 	"output":  TOKEN_OUTPUT,
 	"fields":  TOKEN_FIELDS,
-	"for":     TOKEN_FOR,
+	"for":  TOKEN_FOR,
+	"if":   TOKEN_IF,
+	"else": TOKEN_ELSE,
 
 	"sum":      TOKEN_SUM,
 	"count":    TOKEN_COUNT,
@@ -393,6 +398,10 @@ func (l *Lexer) NextToken() Token {
 	case c == ':':
 		l.eat()
 		return Token{Type: TOKEN_COLON, Value: ":", LineNo: line, ColNo: col}
+
+	case c == '~':
+		l.eat()
+		return Token{Type: TOKEN_TILDE, Value: "~", LineNo: line, ColNo: col}
 
 	case c == '(':
 		l.eat()

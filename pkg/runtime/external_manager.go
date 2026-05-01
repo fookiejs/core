@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -361,6 +363,7 @@ type OutboxProcessor struct {
 	done        chan struct{}
 	rdb         *redis.Client  // optional: nil = poll mode
 	runAfterCh  chan struct{}   // kicks run_after scheduler to re-evaluate next wakeup
+	maxPerCycle int
 }
 
 func NewOutboxProcessor(exec *Executor) *OutboxProcessor {
@@ -370,6 +373,7 @@ func NewOutboxProcessor(exec *Executor) *OutboxProcessor {
 		db:         exec.DB(),
 		done:       make(chan struct{}),
 		runAfterCh: make(chan struct{}, 1),
+		maxPerCycle: outboxMaxPerCycle(),
 	}
 }
 
@@ -381,6 +385,7 @@ func NewOutboxProcessorWithRedis(exec *Executor, rdb *redis.Client) *OutboxProce
 		done:       make(chan struct{}),
 		rdb:        rdb,
 		runAfterCh: make(chan struct{}, 1),
+		maxPerCycle: outboxMaxPerCycle(),
 	}
 }
 
@@ -425,7 +430,7 @@ func (op *OutboxProcessor) runRedisMode() {
 	ctx := context.Background()
 
 	go func() {
-		t := time.NewTicker(5 * time.Second)
+		t := time.NewTicker(500 * time.Millisecond)
 		defer t.Stop()
 		for {
 			select {
@@ -597,14 +602,20 @@ func (op *OutboxProcessor) processPending() {
 	op.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM outbox WHERE status = 'pending'`).Scan(&pendingCount)
 	telemetry.RecordOutboxPending(pendingCount)
 
-	op.processForwardStep(ctx)
-	op.processCompensationStep(ctx)
+	// Drain multiple jobs per cycle so cron/tick workloads feel realtime under burst.
+	for i := 0; i < op.maxPerCycle; i++ {
+		processedForward := op.processForwardStep(ctx)
+		processedComp := op.processCompensationStep(ctx)
+		if !processedForward && !processedComp {
+			break
+		}
+	}
 }
 
-func (op *OutboxProcessor) processForwardStep(ctx context.Context) {
+func (op *OutboxProcessor) processForwardStep(ctx context.Context) bool {
 	tx, err := op.db.BeginTx(ctx, nil)
 	if err != nil {
-		return
+		return false
 	}
 	defer tx.Rollback()
 
@@ -626,10 +637,10 @@ func (op *OutboxProcessor) processForwardStep(ctx context.Context) {
 
 	if err == sql.ErrNoRows {
 		tx.Commit()
-		return
+		return false
 	}
 	if err != nil {
-		return
+		return false
 	}
 
 	var params map[string]interface{}
@@ -742,12 +753,13 @@ func (op *OutboxProcessor) processForwardStep(ctx context.Context) {
 			tx.Commit()
 		}
 	}
+	return true
 }
 
-func (op *OutboxProcessor) processCompensationStep(ctx context.Context) {
+func (op *OutboxProcessor) processCompensationStep(ctx context.Context) bool {
 	tx, err := op.db.BeginTx(ctx, nil)
 	if err != nil {
-		return
+		return false
 	}
 	defer tx.Rollback()
 
@@ -764,10 +776,10 @@ func (op *OutboxProcessor) processCompensationStep(ctx context.Context) {
 
 	if err == sql.ErrNoRows {
 		tx.Commit()
-		return
+		return false
 	}
 	if err != nil {
-		return
+		return false
 	}
 
 	var params map[string]interface{}
@@ -806,6 +818,22 @@ func (op *OutboxProcessor) processCompensationStep(ctx context.Context) {
 			}
 		}
 	}
+	return true
+}
+
+func outboxMaxPerCycle() int {
+	raw := strings.TrimSpace(os.Getenv("OUTBOX_MAX_PER_CYCLE"))
+	if raw == "" {
+		return 64
+	}
+	v, err := strconv.Atoi(raw)
+	if err != nil || v <= 0 {
+		return 64
+	}
+	if v > 1000 {
+		return 1000
+	}
+	return v
 }
 
 func (op *OutboxProcessor) checkSagaCompletion(ctx context.Context, sagaID, entityType, entityID string) {

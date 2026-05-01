@@ -63,6 +63,30 @@ var builtins = map[string]ValidatorFunc{
 	"nobody":          Nobody,
 
 	"log": nil,
+
+	// math / utility builtins (implemented in runtime executor)
+	"random":       nil,
+	"now":          nil,
+	"floor":        nil,
+	"ceil":         nil,
+	"round":        nil,
+	"abs":          nil,
+	"sqrt":         nil,
+	"sin":          nil,
+	"cos":          nil,
+	"min_val":      nil,
+	"max_val":      nil,
+	"len":          nil,
+	"json_get":     nil,
+	"json_set":     nil,
+	"json_inc":     nil,
+	"json_del":     nil,
+	"move_toward_x": nil,
+	"move_toward_y": nil,
+	"dist":         nil,
+	"str":          nil,
+	"int_val":      nil,
+	"concat":       nil,
 }
 
 func BuiltinRegistered(name string) bool {
