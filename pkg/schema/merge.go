@@ -188,10 +188,19 @@ func mergeSchemasStrict(parts []parsedSchemaSource) (*ast.Schema, error) {
 	moduleByName := map[string]string{}
 	modelByName := map[string]string{}
 	externalByName := map[string]string{}
+	enumByName := map[string]string{}
 	configByKey := map[string]string{}
 	cronByName := map[string]string{}
 
 	for _, part := range parts {
+		for _, en := range part.schema.Enums {
+			if prev, exists := enumByName[en.Name]; exists {
+				return nil, fmt.Errorf("duplicate enum %q in %q and %q", en.Name, prev, part.path)
+			}
+			enumByName[en.Name] = part.path
+			merged.Enums = append(merged.Enums, en)
+		}
+
 		for _, mod := range part.schema.Modules {
 			if prev, exists := moduleByName[mod.Name]; exists {
 				return nil, fmt.Errorf("duplicate module %q in %q and %q", mod.Name, prev, part.path)
@@ -238,5 +247,23 @@ func mergeSchemasStrict(parts []parsedSchemaSource) (*ast.Schema, error) {
 		}
 	}
 
+	resolveEnumTypes(merged)
 	return merged, nil
+}
+
+func resolveEnumTypes(schema *ast.Schema) {
+	enumNames := map[string]bool{}
+	for _, en := range schema.Enums {
+		enumNames[en.Name] = true
+	}
+	for _, model := range schema.Models {
+		for _, f := range model.Fields {
+			if f.Type == ast.TypeRelation && f.Relation != nil && enumNames[*f.Relation] {
+				name := *f.Relation
+				f.Type = ast.TypeEnum
+				f.EnumRef = &name
+				f.Relation = nil
+			}
+		}
+	}
 }

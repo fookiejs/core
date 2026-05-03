@@ -17,6 +17,7 @@ const (
 	executorKey contextKey = "executor"
 	tokenKey    contextKey = "token"
 	adminKeyKey contextKey = "fookie_admin_key"
+	headersKey  contextKey = "fookie_headers"
 )
 
 func WithExecutor(ctx context.Context, exec *runtime.Executor) context.Context {
@@ -52,6 +53,23 @@ func tokenFromCtx(ctx context.Context) string {
 func injectTokenCtx(ctx context.Context, req map[string]interface{}) {
 	if token := tokenFromCtx(ctx); token != "" {
 		req["token"] = token
+	}
+}
+
+func WithHeaders(ctx context.Context, headers map[string]interface{}) context.Context {
+	return context.WithValue(ctx, headersKey, headers)
+}
+
+func headersFromCtx(ctx context.Context) map[string]interface{} {
+	if v, ok := ctx.Value(headersKey).(map[string]interface{}); ok {
+		return v
+	}
+	return map[string]interface{}{}
+}
+
+func injectHeaders(ctx context.Context, req map[string]interface{}) {
+	if h := headersFromCtx(ctx); len(h) > 0 {
+		req["headers"] = h
 	}
 }
 
@@ -104,6 +122,7 @@ func resolveCreate(modelName string) graphql.FieldResolveFn {
 		req := map[string]interface{}{"body": body}
 		injectTokenCtx(p.Context, req)
 		injectAdminKey(p.Context, req)
+		injectHeaders(p.Context, req)
 		return exec.Create(p.Context, modelName, req)
 	})
 }
@@ -120,6 +139,7 @@ func resolveRead(modelName string) graphql.FieldResolveFn {
 		}
 		injectTokenCtx(p.Context, req)
 		injectAdminKey(p.Context, req)
+		injectHeaders(p.Context, req)
 		return exec.Read(p.Context, modelName, req)
 	})
 }
@@ -150,10 +170,18 @@ func resolveUpdate(modelName string) graphql.FieldResolveFn {
 		id := p.Args["id"].(string)
 		body := p.Args["body"].(map[string]interface{})
 		stripClientSystemFromBody(body)
-		req := map[string]interface{}{"body": body}
+		req := map[string]interface{}{
+			"filter": map[string]interface{}{"id": map[string]interface{}{"eq": id}},
+			"body":   body,
+		}
 		injectTokenCtx(p.Context, req)
 		injectAdminKey(p.Context, req)
-		return exec.Update(p.Context, modelName, id, req)
+		injectHeaders(p.Context, req)
+		n, err := exec.UpdateMany(p.Context, modelName, req)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]interface{}{"count": int(n)}, nil
 	})
 }
 
@@ -161,11 +189,13 @@ func resolveDelete(modelName string) graphql.FieldResolveFn {
 	return instrumentResolver("delete", modelName, func(p graphql.ResolveParams) (interface{}, error) {
 		exec := executorFromCtx(p.Context)
 		id := p.Args["id"].(string)
-		req := map[string]interface{}{}
+		req := map[string]interface{}{
+			"filter": map[string]interface{}{"id": map[string]interface{}{"eq": id}},
+		}
 		injectTokenCtx(p.Context, req)
 		injectAdminKey(p.Context, req)
-		err := exec.Delete(p.Context, modelName, id, req)
-		if err != nil {
+		injectHeaders(p.Context, req)
+		if _, err := exec.DeleteMany(p.Context, modelName, req); err != nil {
 			return false, err
 		}
 		return true, nil

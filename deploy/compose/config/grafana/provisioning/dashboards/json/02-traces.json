@@ -5,64 +5,58 @@
   "graphTooltip": 1,
   "id": null,
   "links": [
-    {
-      "asDropdown": false,
-      "icon": "home",
-      "includeVars": false,
-      "keepTime": true,
-      "tags": [],
-      "targetBlank": false,
-      "title": "Genel Bakış",
-      "type": "link",
-      "url": "/d/fookie-home/fookie-genel-bakis"
-    },
-    {
-      "asDropdown": false,
-      "icon": "signal",
-      "includeVars": false,
-      "keepTime": true,
-      "tags": [],
-      "targetBlank": false,
-      "title": "Modeller",
-      "type": "link",
-      "url": "/d/fookie-models/fookie-modeller"
-    }
+    { "asDropdown": false, "icon": "home", "keepTime": true, "targetBlank": false, "title": "Overview", "type": "link", "url": "/d/fookie-home" },
+    { "asDropdown": false, "icon": "signal", "keepTime": true, "targetBlank": false, "title": "Models", "type": "link", "url": "/d/fookie-models" }
   ],
-  "liveNow": true,
+  "liveNow": false,
   "panels": [
     {
-      "gridPos": { "h": 2, "w": 24, "x": 0, "y": 0 },
-      "id": 2,
-      "options": {
-        "code": { "language": "markdown", "showLineNumbers": false, "showMiniMap": false },
-        "content": "**Son fookie-* servislerinin izleri** — otomatik yenileniyor. Satıra tıkla: trace detay. Trace → log köprüsü Loki'ye gider.",
-        "mode": "markdown"
-      },
-      "title": "",
-      "transparent": true,
-      "type": "text"
-    },
-    {
       "datasource": { "type": "tempo", "uid": "tempo" },
-      "fieldConfig": { "defaults": {}, "overrides": [] },
-      "gridPos": { "h": 22, "w": 24, "x": 0, "y": 2 },
-      "id": 1,
-      "interval": "",
-      "options": {
-        "spanFilters": { "criticalPathOnly": false }
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "traceID" },
+            "properties": [
+              { "id": "custom.width", "value": 280 },
+              {
+                "id": "links",
+                "value": [{
+                  "title": "Open in Explore",
+                  "url": "/explore?orgId=1&left={\"datasource\":{\"type\":\"tempo\",\"uid\":\"tempo\"},\"queries\":[{\"refId\":\"A\",\"queryType\":\"traceId\",\"query\":\"${__value.raw}\"}],\"range\":{\"from\":\"now-1h\",\"to\":\"now\"}}",
+                  "targetBlank": true
+                }]
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "startTime" },
+            "properties": [
+              { "id": "unit", "value": "dateTimeAsIso" },
+              { "id": "custom.width", "value": 200 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "duration" },
+            "properties": [
+              { "id": "unit", "value": "ms" },
+              { "id": "custom.width", "value": 100 }
+            ]
+          }
+        ]
       },
-      "targets": [
-        {
-          "datasource": { "type": "tempo", "uid": "tempo" },
-          "limit": 50,
-          "query": "{ resource.service.name =~ \"fookie.*\" }",
-          "queryType": "traceql",
-          "refId": "A",
-          "tableType": "traces"
-        }
-      ],
-      "title": "Tempo — son izler",
-      "type": "traces"
+      "gridPos": { "h": 24, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "options": { "showHeader": true, "sortBy": [{ "desc": true, "displayName": "startTime" }] },
+      "targets": [{
+        "datasource": { "type": "tempo", "uid": "tempo" },
+        "queryType": "nativeSearch",
+        "refId": "A",
+        "limit": 50,
+        "serviceName": "fookie-server"
+      }],
+      "title": "Recent traces",
+      "type": "table"
     }
   ],
   "refresh": "10s",
@@ -72,7 +66,7 @@
   "time": { "from": "now-30m", "to": "now" },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Fookie — İzler",
+  "title": "Fookie — Traces",
   "uid": "fookie-traces",
   "version": 1
 }

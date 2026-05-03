@@ -9,6 +9,7 @@ import (
 )
 
 func BuildSchema(schema *ast.Schema, eventBus *events.Bus, roomBus *events.RoomBus) (graphql.Schema, error) {
+	enumTypes := buildEnumTypes(schema)
 	strF, numF, boolF, idF := buildScalarFilterInputs()
 	filterByModel := map[string]*graphql.InputObject{}
 	for _, model := range schema.Models {
@@ -17,7 +18,7 @@ func BuildSchema(schema *ast.Schema, eventBus *events.Bus, roomBus *events.RoomB
 	batchPayload := buildBatchPayloadType()
 	cursorInput := buildCursorInputType()
 
-	objectTypes := buildObjectTypes(schema, filterByModel, cursorInput)
+	objectTypes := buildObjectTypes(schema, filterByModel, cursorInput, enumTypes)
 	aggregateTypes := buildAggregateTypes(schema)
 
 	queryFields := graphql.Fields{}
@@ -54,7 +55,7 @@ func BuildSchema(schema *ast.Schema, eventBus *events.Bus, roomBus *events.RoomB
 		}
 
 		if op, ok := model.CRUD["create"]; ok {
-			bodyType := buildCreateBody(model, op, schema)
+			bodyType := buildCreateBody(model, op, schema, enumTypes)
 			if objType, ok := objectTypes[model.Name]; ok {
 				mutationFields["create_"+modelSnake] = &graphql.Field{
 					Type: objType,
@@ -69,10 +70,10 @@ func BuildSchema(schema *ast.Schema, eventBus *events.Bus, roomBus *events.RoomB
 		}
 
 		if op, ok := model.CRUD["update"]; ok {
-			bodyType := buildUpdateBody(model, op, schema)
-			if objType, ok := objectTypes[model.Name]; ok {
+			bodyType := buildUpdateBody(model, op, schema, enumTypes)
+			if _, ok := objectTypes[model.Name]; ok {
 				mutationFields["update_"+modelSnake] = &graphql.Field{
-					Type: objType,
+					Type: batchPayload,
 					Args: graphql.FieldConfigArgument{
 						"id": &graphql.ArgumentConfig{
 							Type: graphql.NewNonNull(graphql.ID),
@@ -267,7 +268,7 @@ func BuildSchema(schema *ast.Schema, eventBus *events.Bus, roomBus *events.RoomB
 	return graphql.NewSchema(config)
 }
 
-func buildObjectTypes(schema *ast.Schema, filterByModel map[string]*graphql.InputObject, cursorInput *graphql.InputObject) map[string]*graphql.Object {
+func buildObjectTypes(schema *ast.Schema, filterByModel map[string]*graphql.InputObject, cursorInput *graphql.InputObject, enumTypes map[string]*graphql.Enum) map[string]*graphql.Object {
 	types := map[string]*graphql.Object{}
 
 	for _, model := range schema.Models {
@@ -295,7 +296,7 @@ func buildObjectTypes(schema *ast.Schema, filterByModel map[string]*graphql.Inpu
 						}
 					} else {
 						fields[f.Name] = &graphql.Field{
-							Type:    MapFieldType(f.Type),
+							Type:    resolveFieldOutput(f, enumTypes),
 							Resolve: modelFieldResolver(f.Name),
 						}
 					}
@@ -435,11 +436,11 @@ func inputFieldName(f *ast.Field) string {
 	return f.Name
 }
 
-func buildCreateBody(model *ast.Model, op *ast.Operation, schema *ast.Schema) *graphql.InputObject {
+func buildCreateBody(model *ast.Model, op *ast.Operation, schema *ast.Schema, enumTypes map[string]*graphql.Enum) *graphql.InputObject {
 	fields := graphql.InputObjectConfigFieldMap{}
 	for _, f := range model.Fields {
 		fields[inputFieldName(f)] = &graphql.InputObjectFieldConfig{
-			Type: graphql.NewNonNull(mapFieldTypeToInput(f.Type)),
+			Type: graphql.NewNonNull(resolveFieldInput(f, enumTypes)),
 		}
 	}
 	extras := DetectExtraInputFields(model, op, schema)
@@ -456,11 +457,11 @@ func buildCreateBody(model *ast.Model, op *ast.Operation, schema *ast.Schema) *g
 	})
 }
 
-func buildUpdateBody(model *ast.Model, op *ast.Operation, schema *ast.Schema) *graphql.InputObject {
+func buildUpdateBody(model *ast.Model, op *ast.Operation, schema *ast.Schema, enumTypes map[string]*graphql.Enum) *graphql.InputObject {
 	fields := graphql.InputObjectConfigFieldMap{}
 	for _, f := range model.Fields {
 		fields[inputFieldName(f)] = &graphql.InputObjectFieldConfig{
-			Type: mapFieldTypeToInput(f.Type),
+			Type: resolveFieldInput(f, enumTypes),
 		}
 	}
 	fields["status"] = &graphql.InputObjectFieldConfig{Type: graphql.String}

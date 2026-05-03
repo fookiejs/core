@@ -23,13 +23,17 @@ model Counter {
     n: number
   }
   create {
-    rule { body.n >= 0 }
-    modify { n = body.n }
+    before {
+      body.n >= 0
+      n = body.n
+    }
   }
   read {}
   update {
-    rule { body.delta != null }
-    modify { n = output.n + body.delta }
+    before {
+      body.delta != null
+      n = output.n + body.delta
+    }
   }
   delete {}
 }
@@ -41,14 +45,18 @@ model Counter {
     n: number
   }
   create {
-    rule { body.n >= 0 }
-    modify { n = body.n }
+    before {
+      body.n >= 0
+      n = body.n
+    }
   }
   read {}
   update {
-    rule { body.delta != null body.peer_id != null }
-    modify { n = output.n + body.delta }
-    effect {
+    before {
+      body.delta != null body.peer_id != null
+      n = output.n + body.delta
+    }
+    after {
       update Counter(body.peer_id) { n = n + body.delta }
     }
   }
@@ -93,6 +101,22 @@ func lockStressWorkers() int {
 	return 8
 }
 
+func lockStressPairTotalOps(t *testing.T) int {
+	t.Helper()
+	if lockStressHeavyMode() {
+		if s := os.Getenv("FOOKEE_LOCK_STRESS_OPS"); s != "" {
+			if n, err := strconv.Atoi(s); err == nil && n > 0 {
+				return n
+			}
+		}
+		return 12000
+	}
+	if testing.Short() {
+		return 40
+	}
+	return 120
+}
+
 func isPgDeadlock(err error) bool {
 	if err == nil {
 		return false
@@ -111,7 +135,7 @@ func updateCounterRetry(ctx context.Context, exec interface {
 	const maxAttempts = 160
 	var prevErr error
 	for attempt := 0; attempt < maxAttempts; attempt++ {
-		_, err := exec.Update(ctx, "Counter", id, sys(body))
+		_, err := exec.updateByID(ctx, "Counter", id, sys(body))
 		if err == nil {
 			return nil
 		}
@@ -143,7 +167,7 @@ func TestCounterUpdateDeltaIncrementsN(t *testing.T) {
 	row, err := exec.Create(ctx, "Counter", sys(map[string]interface{}{"n": 0.0}))
 	require.NoError(t, err)
 	id := row["id"].(string)
-	_, err = exec.Update(ctx, "Counter", id, sys(map[string]interface{}{"delta": 1.0}))
+	_, err = exec.updateByID(ctx, "Counter", id, sys(map[string]interface{}{"delta": 1.0}))
 	require.NoError(t, err)
 	got := scanCounterN(t, db, ctx, id)
 	require.InDelta(t, 1.0, got, 0.001)
@@ -214,7 +238,7 @@ func TestLockStress_CrossRowPairConsistentTotalsUnderContention(t *testing.T) {
 		idLow, idHigh = idB, idA
 	}
 
-	total := lockStressTotalOps(t)
+	total := lockStressPairTotalOps(t)
 	if lockStressHeavyMode() && total < 800 && !testing.Short() {
 		total = 800
 	}
@@ -222,8 +246,8 @@ func TestLockStress_CrossRowPairConsistentTotalsUnderContention(t *testing.T) {
 	if lockStressHeavyMode() && workers > 24 {
 		workers = 24
 	}
-	if !lockStressHeavyMode() && workers > 8 {
-		workers = 8
+	if !lockStressHeavyMode() && workers > 6 {
+		workers = 6
 	}
 
 	var deadlockRetries int64

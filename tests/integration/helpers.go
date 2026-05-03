@@ -25,11 +25,10 @@ model AccountUser {
     name: string
   }
   create {
-    rule { notEmptyString(body.email) notEmptyString(body.name) }
-    modify {}
+    before { notEmptyString(body.email) notEmptyString(body.name) }
   }
   read {}
-  update { modify {} }
+  update { before {} }
   delete {}
 }
 
@@ -40,15 +39,14 @@ model Village {
     food: number
   }
   create {
-    rule {
+    before {
       body.owner_id != null
       notEmptyString(body.name)
       body.food >= 0
     }
-    modify {}
   }
   read {}
-  update { modify {} }
+  update { before {} }
   delete {}
 }
 `

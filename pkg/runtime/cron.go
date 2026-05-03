@@ -5,7 +5,12 @@ import (
 	"database/sql"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 	"github.com/fookiejs/fookie/pkg/ast"
+	"github.com/fookiejs/fookie/pkg/telemetry"
 	cronlib "github.com/robfig/cron/v3"
 )
 
@@ -23,11 +28,17 @@ func ExecuteCrons(ctx context.Context, schema *ast.Schema, db *sql.DB) error {
 				continue
 			}
 
+			cronCarrier := propagation.MapCarrier{}
+			propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}).Inject(ctx, cronCarrier)
+			var cronTraceCtx interface{} = nil
+			if tp := cronCarrier["traceparent"]; tp != "" {
+				cronTraceCtx = tp
+			}
 			db.ExecContext(ctx, `
 				INSERT INTO outbox
-				  (entity_type, entity_id, external_name, payload, status, recur_cron, run_after)
-				VALUES ('cron', NULL, $1, '{}', 'pending', $2, NOW())`,
-				entry.Name, entry.CronExpr)
+				  (entity_type, entity_id, external_name, payload, status, recur_cron, run_after, trace_context)
+				VALUES ('cron', NULL, $1, '{}', 'pending', $2, NOW(), $3)`,
+				entry.Name, entry.CronExpr, cronTraceCtx)
 		}
 	}
 	return nil
@@ -63,6 +74,14 @@ func (e *Executor) ExecuteCronBody(ctx context.Context, entry *ast.CronEntry) er
 	if entry == nil || entry.Body == nil {
 		return nil
 	}
+	ctx, span := telemetry.Tracer().Start(ctx, "fookie.cron "+entry.Name,
+		trace.WithAttributes(
+			attribute.String("cron.name", entry.Name),
+			attribute.String("cron.expr", entry.CronExpr),
+		),
+	)
+	defer span.End()
+
 	rc, ctx := e.rootRC(ctx, map[string]interface{}{"__system": true}, "cron", entry.Name)
 	start := time.Now()
 	e.emitRuntime(ctx, rc, "info", "cron firing", map[string]interface{}{
@@ -73,6 +92,7 @@ func (e *Executor) ExecuteCronBody(ctx context.Context, entry *ast.CronEntry) er
 	err := e.execBlock(ctx, "cron", entry.Body, rc)
 	dur := time.Since(start)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		e.emitRuntime(ctx, rc, "error", "cron failed", map[string]interface{}{
 			"cron_name":   entry.Name,
 			"duration_ms": dur.Milliseconds(),

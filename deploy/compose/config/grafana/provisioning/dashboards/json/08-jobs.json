@@ -4,15 +4,14 @@
   "graphTooltip": 1,
   "id": null,
   "links": [
-    { "title": "Home",    "type": "link", "url": "/d/fookie-home",       "icon": "home" },
-    { "title": "Cluster", "type": "link", "url": "/d/fookie-cluster-ops","icon": "cube" },
-    { "title": "DB",      "type": "link", "url": "/d/fookie-db-health",  "icon": "database" },
-    { "title": "Saga",    "type": "link", "url": "/d/fookie-outbox-saga","icon": "share-alt" }
+    { "title": "Overview", "type": "link", "url": "/d/fookie-home",        "icon": "home" },
+    { "title": "Cluster Ops", "type": "link", "url": "/d/fookie-cluster-ops", "icon": "cube" },
+    { "title": "Saga",    "type": "link", "url": "/d/fookie-outbox-saga", "icon": "share-alt" }
   ],
   "liveNow": true,
   "panels": [
 
-    { "type": "row", "title": "Genel Bakış", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "id": 50, "collapsed": false },
+    { "type": "row", "title": "Overview", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "id": 50, "collapsed": false },
 
     {
       "datasource": { "type": "postgres", "uid": "fookie-db" },
@@ -32,7 +31,7 @@
     },
     {
       "datasource": { "type": "postgres", "uid": "fookie-db" },
-      "title": "Processed (son 1 saat)", "type": "stat", "id": 3,
+      "title": "Processed (last 1h)", "type": "stat", "id": 3,
       "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
       "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } } },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area", "textMode": "value" },
@@ -67,7 +66,7 @@
 
     {
       "datasource": { "type": "postgres", "uid": "fookie-db" },
-      "title": "İşlenen iş / dakika",
+      "title": "Jobs processed / minute",
       "type": "timeseries", "id": 10,
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
       "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "drawStyle": "bars", "fillOpacity": 60, "lineWidth": 1 }, "unit": "short" } },
@@ -80,7 +79,7 @@
     },
     {
       "datasource": { "type": "postgres", "uid": "fookie-db" },
-      "title": "External name bazında iş sayısı",
+      "title": "Jobs by external name",
       "type": "bargauge", "id": 11,
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
       "fieldConfig": { "defaults": { "color": { "mode": "continuous-BlPu" }, "unit": "short" } },
@@ -92,11 +91,11 @@
       }]
     },
 
-    { "type": "row", "title": "Pending İşler", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 }, "id": 52, "collapsed": false },
+    { "type": "row", "title": "Pending Jobs", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 }, "id": 52, "collapsed": false },
 
     {
       "datasource": { "type": "postgres", "uid": "fookie-db" },
-      "title": "Pending — bekleyen işler",
+      "title": "Pending jobs",
       "type": "table", "id": 20,
       "gridPos": { "h": 10, "w": 24, "x": 0, "y": 15 },
       "options": { "showHeader": true, "sortBy": [{ "desc": false, "displayName": "created_at" }] },
@@ -114,11 +113,11 @@
       }]
     },
 
-    { "type": "row", "title": "Dead-Letter Queue — Başarısız İşler", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 25 }, "id": 53, "collapsed": false },
+    { "type": "row", "title": "Dead-Letter Queue", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 25 }, "id": 53, "collapsed": false },
 
     {
       "datasource": { "type": "postgres", "uid": "fookie-db" },
-      "title": "Failed işler (son hata mesajıyla)",
+      "title": "Failed jobs",
       "type": "table", "id": 30,
       "gridPos": { "h": 10, "w": 24, "x": 0, "y": 26 },
       "options": { "showHeader": true, "sortBy": [{ "desc": true, "displayName": "created_at" }] },
@@ -135,11 +134,11 @@
       }]
     },
 
-    { "type": "row", "title": "Retry Geçmişi", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 36 }, "id": 54, "collapsed": false },
+    { "type": "row", "title": "Retry History", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 36 }, "id": 54, "collapsed": false },
 
     {
       "datasource": { "type": "postgres", "uid": "fookie-db" },
-      "title": "Retry dağılımı (retry_count'a göre)",
+      "title": "Retry distribution",
       "type": "bargauge", "id": 40,
       "gridPos": { "h": 6, "w": 12, "x": 0, "y": 37 },
       "fieldConfig": { "defaults": { "color": { "mode": "continuous-RdYlGr" }, "unit": "short" } },
@@ -152,7 +151,7 @@
     },
     {
       "datasource": { "type": "postgres", "uid": "fookie-db" },
-      "title": "External name bazında başarısızlık oranı",
+      "title": "Failure rate by external name",
       "type": "table", "id": 41,
       "gridPos": { "h": 6, "w": 12, "x": 12, "y": 37 },
       "options": { "showHeader": true, "sortBy": [{ "desc": true, "displayName": "fail_rate" }] },
@@ -163,11 +162,11 @@
       }]
     },
 
-    { "type": "row", "title": "Saga Durumu", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 43 }, "id": 55, "collapsed": false },
+    { "type": "row", "title": "Saga Status", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 43 }, "id": 55, "collapsed": false },
 
     {
       "datasource": { "type": "postgres", "uid": "fookie-db" },
-      "title": "Aktif saga'lar (adım bazında)",
+      "title": "Active sagas (by step)",
       "type": "table", "id": 45,
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 44 },
       "options": { "showHeader": true, "sortBy": [{ "desc": false, "displayName": "saga_step" }] },

@@ -1,5 +1,7 @@
 server:
   http_listen_port: 3200
+  http_server_read_timeout: 2m
+  http_server_write_timeout: 2m
   log_level: warn
 
 distributor:
@@ -13,6 +15,10 @@ distributor:
 
 ingester:
   max_block_duration: 5m
+
+querier:
+  search:
+    query_timeout: 2m
 
 compactor:
   compaction:

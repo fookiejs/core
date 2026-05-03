@@ -6,9 +6,12 @@ import (
 	"net/http"
 	"strings"
 
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"github.com/fookiejs/fookie/pkg/runtime"
+	"github.com/fookiejs/fookie/pkg/telemetry"
 	"github.com/graphql-go/graphql"
 )
 
@@ -71,6 +74,31 @@ func NewHandler(executor *runtime.Executor, schema graphql.Schema, idem *runtime
 		if ak := strings.TrimSpace(r.Header.Get("X-Fookie-Admin-Key")); ak != "" {
 			ctx = WithAdminKey(ctx, ak)
 		}
+		headers := make(map[string]interface{})
+		for k, v := range r.Header {
+			if len(v) > 0 {
+				headers[strings.ToLower(k)] = v[0]
+			}
+		}
+		ctx = WithHeaders(ctx, headers)
+
+		kind, _ := operationKind(params.Query, params.OperationName)
+		if kind == "" {
+			kind = "query"
+		}
+		spanName := "graphql." + kind
+		if params.OperationName != "" {
+			spanName = "graphql." + kind + " " + params.OperationName
+		}
+		var gqlSpan trace.Span
+		ctx, gqlSpan = telemetry.Tracer().Start(ctx, spanName,
+			trace.WithSpanKind(trace.SpanKindServer),
+			trace.WithAttributes(
+				attribute.String("graphql.operation.type", kind),
+				attribute.String("graphql.operation.name", params.OperationName),
+			),
+		)
+		defer gqlSpan.End()
 
 		isSub, err := IsSubscriptionOperation(params.Query, params.OperationName)
 		if err != nil {
@@ -111,6 +139,9 @@ func NewHandler(executor *runtime.Executor, schema graphql.Schema, idem *runtime
 				OperationName:  params.OperationName,
 				Context:        ctx,
 			})
+			if len(result.Errors) > 0 {
+				gqlSpan.SetStatus(codes.Error, result.Errors[0].Message)
+			}
 
 			_ = idem.Commit(ctx, idemKey, result)
 
@@ -129,6 +160,9 @@ func NewHandler(executor *runtime.Executor, schema graphql.Schema, idem *runtime
 			OperationName:  params.OperationName,
 			Context:        ctx,
 		})
+		if len(result.Errors) > 0 {
+			gqlSpan.SetStatus(codes.Error, result.Errors[0].Message)
+		}
 
 		w.Header().Set("Content-Type", "application/json")
 		if sc := trace.SpanContextFromContext(ctx); sc.IsValid() && sc.HasTraceID() {

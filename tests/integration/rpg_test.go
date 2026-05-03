@@ -56,7 +56,7 @@ func TestUpdateVillage(t *testing.T) {
 	v, _ := exec.Create(ctx, "Village", sys(map[string]interface{}{
 		"owner_id": u["id"], "name": "Sprout", "food": 10.0,
 	}))
-	updated, err := exec.Update(ctx, "Village", v["id"].(string), sys(map[string]interface{}{"food": 40.0}))
+	updated, err := exec.updateByID(ctx, "Village", v["id"].(string), sys(map[string]interface{}{"food": 40.0}))
 	require.NoError(t, err)
 	assert.Equal(t, 40.0, updated["food"])
 }
@@ -72,6 +72,6 @@ func TestDeleteVillage(t *testing.T) {
 	v, _ := exec.Create(ctx, "Village", sys(map[string]interface{}{
 		"owner_id": u["id"], "name": "Ashfall", "food": 5.0,
 	}))
-	err := exec.Delete(ctx, "Village", v["id"].(string), sys(map[string]interface{}{}))
+	err := exec.deleteByID(ctx, "Village", v["id"].(string), sys(map[string]interface{}{}))
 	require.NoError(t, err)
 }

@@ -24,7 +24,7 @@ include "./seed/base.fql"
 include "./cron/tick.fql"
 `)
 	writeFQLFile(t, dir, "modules/jwt_guard.fql", `module JwtGuard {
-  rule {}
+  before {}
 }
 `)
 	writeFQLFile(t, dir, "models/person.fql", `model Person {
@@ -73,8 +73,8 @@ func TestLoadSchema_DuplicateModuleReturnsError(t *testing.T) {
 	mainPath := writeFQLFile(t, dir, "main.fql", `include "./a.fql"
 include "./b.fql"
 `)
-	writeFQLFile(t, dir, "a.fql", `module JwtGuard { rule {} }`)
-	writeFQLFile(t, dir, "b.fql", `module JwtGuard { rule {} }`)
+	writeFQLFile(t, dir, "a.fql", `module JwtGuard { before {} }`)
+	writeFQLFile(t, dir, "b.fql", `module JwtGuard { before {} }`)
 
 	_, err := LoadSchema(mainPath)
 	require.Error(t, err)

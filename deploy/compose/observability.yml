@@ -7,6 +7,12 @@ services:
       - tempo_data:/var/tempo
     ports:
       - "3200:3200"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3200/ready >/dev/null 2>&1 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 25s
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.96.0
@@ -99,6 +105,7 @@ services:
       GF_HELP_ENABLED: "false"
       GF_EXPLORE_ENABLED: "true"
       GF_LOG_LEVEL: warn
+      GF_DATAPROXY_TIMEOUT: 120
       # Infinity datasource drives the GraphQL explorer dashboard.
       GF_INSTALL_PLUGINS: "yesoreyeram-infinity-datasource,grafana-polystat-panel"
       # Default landing page = Home dashboard (configured as home in preferences).
@@ -109,9 +116,12 @@ services:
     ports:
       - "3001:3000"
     depends_on:
-      - loki
-      - prometheus
-      - tempo
+      loki:
+        condition: service_started
+      prometheus:
+        condition: service_started
+      tempo:
+        condition: service_healthy
 
 volumes:
   grafana_data:

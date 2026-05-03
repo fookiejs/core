@@ -11,6 +11,7 @@ const (
 	TOKEN_MODEL
 	TOKEN_EXTERNAL
 	TOKEN_MODULE
+	TOKEN_ENUM
 	TOKEN_SEED
 	TOKEN_CRON
 	TOKEN_CONFIG
@@ -23,10 +24,8 @@ const (
 	TOKEN_UPDATE
 	TOKEN_DELETE
 
-	TOKEN_ROLE
-	TOKEN_RULE
-	TOKEN_MODIFY
-	TOKEN_EFFECT
+	TOKEN_BEFORE
+	TOKEN_AFTER
 	TOKEN_COMPENSATE
 
 	TOKEN_FILTER
@@ -37,8 +36,6 @@ const (
 	TOKEN_OUTPUT
 	TOKEN_FIELDS
 	TOKEN_FOR
-	TOKEN_IF
-	TOKEN_ELSE
 
 	TOKEN_SUM
 	TOKEN_COUNT
@@ -96,6 +93,17 @@ const (
 	TOKEN_TILDE
 
 	TOKEN_CONSTRAINT
+
+	TOKEN_REQUIRED
+	TOKEN_PATTERN
+	TOKEN_NOT_EMPTY
+	TOKEN_STARTS_WITH
+	TOKEN_ENDS_WITH
+	TOKEN_CONTAINS_V
+	TOKEN_INTEGER
+	TOKEN_POSITIVE
+	TOKEN_MULTIPLE_OF
+
 	TOKEN_ILLEGAL
 )
 
@@ -110,6 +118,7 @@ var keywords = map[string]TokenType{
 	"model":    TOKEN_MODEL,
 	"external": TOKEN_EXTERNAL,
 	"module":   TOKEN_MODULE,
+	"enum":     TOKEN_ENUM,
 	"seed":     TOKEN_SEED,
 	"cron":     TOKEN_CRON,
 	"config":   TOKEN_CONFIG,
@@ -122,10 +131,8 @@ var keywords = map[string]TokenType{
 	"update": TOKEN_UPDATE,
 	"delete": TOKEN_DELETE,
 
-	"role":       TOKEN_ROLE,
-	"rule":       TOKEN_RULE,
-	"modify":     TOKEN_MODIFY,
-	"effect":     TOKEN_EFFECT,
+	"before":     TOKEN_BEFORE,
+	"after":      TOKEN_AFTER,
 	"compensate": TOKEN_COMPENSATE,
 
 	"filter":  TOKEN_FILTER,
@@ -136,9 +143,7 @@ var keywords = map[string]TokenType{
 	"body":    TOKEN_BODY,
 	"output":  TOKEN_OUTPUT,
 	"fields":  TOKEN_FIELDS,
-	"for":  TOKEN_FOR,
-	"if":   TOKEN_IF,
-	"else": TOKEN_ELSE,
+	"for": TOKEN_FOR,
 
 	"sum":      TOKEN_SUM,
 	"count":    TOKEN_COUNT,
@@ -147,6 +152,16 @@ var keywords = map[string]TokenType{
 	"max":      TOKEN_MAX,
 	"stddev":   TOKEN_STDDEV,
 	"variance": TOKEN_VARIANCE,
+
+	"required":   TOKEN_REQUIRED,
+	"pattern":    TOKEN_PATTERN,
+	"notEmpty":   TOKEN_NOT_EMPTY,
+	"startsWith": TOKEN_STARTS_WITH,
+	"endsWith":   TOKEN_ENDS_WITH,
+	"contains":   TOKEN_CONTAINS_V,
+	"integer":    TOKEN_INTEGER,
+	"positive":   TOKEN_POSITIVE,
+	"multipleOf": TOKEN_MULTIPLE_OF,
 
 	"size":  TOKEN_SIZE,
 	"asc":   TOKEN_ASC,

@@ -12,20 +12,20 @@ model Room {
   }
 
   create {
-    role { true }
-    rule { notEmptyString(body.name) }
-    modify {}
+    before {
+      true
+      notEmptyString(body.name)
+    }
   }
 
   read {}
 
   update {
-    role { true }
-    modify {}
+    before { true }
   }
 
   delete {
-    role { true }
+    before { true }
   }
 }
 
@@ -37,22 +37,20 @@ model RoomMember {
   }
 
   create {
-    role { true }
-    rule {
+    before {
+      true
       body.room_id != null
       notEmptyString(body.principal_id)
     }
-    modify {}
   }
 
   read {}
 
   update {
-    role { true }
-    modify {}
+    before { true }
   }
 
   delete {
-    role { true }
+    before { true }
   }
 }

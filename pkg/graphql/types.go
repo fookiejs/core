@@ -32,6 +32,40 @@ func mapFieldTypeToInput(ft ast.FieldType) graphql.Input {
 	}
 }
 
+func buildEnumTypes(schema *ast.Schema) map[string]*graphql.Enum {
+	enumTypes := make(map[string]*graphql.Enum, len(schema.Enums))
+	for _, en := range schema.Enums {
+		values := graphql.EnumValueConfigMap{}
+		for _, v := range en.Values {
+			v := v
+			values[v] = &graphql.EnumValueConfig{Value: v}
+		}
+		enumTypes[en.Name] = graphql.NewEnum(graphql.EnumConfig{
+			Name:   en.Name,
+			Values: values,
+		})
+	}
+	return enumTypes
+}
+
+func resolveFieldOutput(f *ast.Field, enumTypes map[string]*graphql.Enum) graphql.Output {
+	if f.Type == ast.TypeEnum && f.EnumRef != nil {
+		if et, ok := enumTypes[*f.EnumRef]; ok {
+			return et
+		}
+	}
+	return MapFieldType(f.Type)
+}
+
+func resolveFieldInput(f *ast.Field, enumTypes map[string]*graphql.Enum) graphql.Input {
+	if f.Type == ast.TypeEnum && f.EnumRef != nil {
+		if et, ok := enumTypes[*f.EnumRef]; ok {
+			return et
+		}
+	}
+	return mapFieldTypeToInput(f.Type)
+}
+
 func systemFields() graphql.Fields {
 	return graphql.Fields{
 		"id":         &graphql.Field{Type: graphql.ID, Resolve: fieldResolver("id")},

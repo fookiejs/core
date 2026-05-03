@@ -87,6 +87,10 @@ var builtins = map[string]ValidatorFunc{
 	"str":          nil,
 	"int_val":      nil,
 	"concat":       nil,
+	"range":        nil,
+	"random_int":   nil,
+	"pick":         nil,
+	"pad":          nil,
 }
 
 func BuiltinRegistered(name string) bool {

@@ -2,6 +2,7 @@ package telemetry
 
 import (
 	"context"
+	cryptorand "crypto/rand"
 	"os"
 	"strconv"
 
@@ -12,6 +13,26 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.opentelemetry.io/otel/trace"
 )
+
+// fullHexIDGenerator ensures trace IDs always have a non-zero high nibble so
+// Tempo (which serialises IDs as integers) never produces a 31-char hex string
+// that Grafana's Tempo plugin rejects.
+type fullHexIDGenerator struct{}
+
+func (g *fullHexIDGenerator) NewIDs(ctx context.Context) (trace.TraceID, trace.SpanID) {
+	var tid trace.TraceID
+	var sid trace.SpanID
+	_, _ = cryptorand.Read(tid[:])
+	_, _ = cryptorand.Read(sid[:])
+	tid[0] |= 0x80 // pin MSB → first nibble is always 8–F
+	return tid, sid
+}
+
+func (g *fullHexIDGenerator) NewSpanID(ctx context.Context, traceID trace.TraceID) trace.SpanID {
+	var sid trace.SpanID
+	_, _ = cryptorand.Read(sid[:])
+	return sid
+}
 
 const instrumentationName = "fookie"
 
@@ -52,6 +73,7 @@ func InitTracer(ctx context.Context, serviceName string) (func(context.Context) 
 		sdktrace.WithBatcher(exporter),
 		sdktrace.WithResource(res),
 		sdktrace.WithSampler(sampler),
+		sdktrace.WithIDGenerator(&fullHexIDGenerator{}),
 	)
 	otel.SetTracerProvider(tp)
 

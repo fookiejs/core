@@ -30,10 +30,8 @@ func assignmentNames(block *ast.Block) []string {
 func TestResolveOpInjectsUseBlocksPerPhaseInOrder(t *testing.T) {
 	op := &ast.Operation{
 		Type:       "update",
-		Role:       &ast.Block{Statements: []ast.Statement{assignmentStmt("op_role", "r")}},
-		Rule:       &ast.Block{Statements: []ast.Statement{assignmentStmt("op_rule", "r")}},
-		Modify:     &ast.Block{Statements: []ast.Statement{assignmentStmt("op_modify", "m")}},
-		Effect:     &ast.Block{Statements: []ast.Statement{assignmentStmt("op_effect", "e")}},
+		Before:     &ast.Block{Statements: []ast.Statement{assignmentStmt("op_before", "m")}},
+		After:      &ast.Block{Statements: []ast.Statement{assignmentStmt("op_after", "e")}},
 		Compensate: &ast.Block{Statements: []ast.Statement{assignmentStmt("op_compensate", "c")}},
 	}
 	model := &ast.Model{
@@ -46,18 +44,14 @@ func TestResolveOpInjectsUseBlocksPerPhaseInOrder(t *testing.T) {
 		Modules: []*ast.Module{
 			{
 				Name:       "GuardA",
-				Role:       &ast.Block{Statements: []ast.Statement{assignmentStmt("a_role", "r")}},
-				Rule:       &ast.Block{Statements: []ast.Statement{assignmentStmt("a_rule", "r")}},
-				Modify:     &ast.Block{Statements: []ast.Statement{assignmentStmt("a_modify", "m")}},
-				Effect:     &ast.Block{Statements: []ast.Statement{assignmentStmt("a_effect", "e")}},
+				Before:     &ast.Block{Statements: []ast.Statement{assignmentStmt("a_before", "m")}},
+				After:      &ast.Block{Statements: []ast.Statement{assignmentStmt("a_after", "e")}},
 				Compensate: &ast.Block{Statements: []ast.Statement{assignmentStmt("a_compensate", "c")}},
 			},
 			{
 				Name:       "GuardB",
-				Role:       &ast.Block{Statements: []ast.Statement{assignmentStmt("b_role", "r")}},
-				Rule:       &ast.Block{Statements: []ast.Statement{assignmentStmt("b_rule", "r")}},
-				Modify:     &ast.Block{Statements: []ast.Statement{assignmentStmt("b_modify", "m")}},
-				Effect:     &ast.Block{Statements: []ast.Statement{assignmentStmt("b_effect", "e")}},
+				Before:     &ast.Block{Statements: []ast.Statement{assignmentStmt("b_before", "m")}},
+				After:      &ast.Block{Statements: []ast.Statement{assignmentStmt("b_after", "e")}},
 				Compensate: &ast.Block{Statements: []ast.Statement{assignmentStmt("b_compensate", "c")}},
 			},
 		},
@@ -66,17 +60,15 @@ func TestResolveOpInjectsUseBlocksPerPhaseInOrder(t *testing.T) {
 
 	injectedOp, _, err := exec.resolveOp("Person", "update")
 	require.NoError(t, err)
-	require.Equal(t, []string{"a_role", "b_role", "op_role"}, assignmentNames(injectedOp.Role))
-	require.Equal(t, []string{"a_rule", "b_rule", "op_rule"}, assignmentNames(injectedOp.Rule))
-	require.Equal(t, []string{"a_modify", "b_modify", "op_modify"}, assignmentNames(injectedOp.Modify))
-	require.Equal(t, []string{"a_effect", "b_effect", "op_effect"}, assignmentNames(injectedOp.Effect))
+	require.Equal(t, []string{"a_before", "b_before", "op_before"}, assignmentNames(injectedOp.Before))
+	require.Equal(t, []string{"a_after", "b_after", "op_after"}, assignmentNames(injectedOp.After))
 	require.Equal(t, []string{"a_compensate", "b_compensate", "op_compensate"}, assignmentNames(injectedOp.Compensate))
 }
 
 func TestResolveOpDoesNotMixBlockTypes(t *testing.T) {
 	op := &ast.Operation{
-		Type: "read",
-		Role: &ast.Block{Statements: []ast.Statement{assignmentStmt("op_role", "r")}},
+		Type:   "read",
+		Before: &ast.Block{Statements: []ast.Statement{assignmentStmt("op_before", "r")}},
 	}
 	model := &ast.Model{
 		Name: "Person",
@@ -88,7 +80,7 @@ func TestResolveOpDoesNotMixBlockTypes(t *testing.T) {
 		Modules: []*ast.Module{
 			{
 				Name:   "EffectOnly",
-				Effect: &ast.Block{Statements: []ast.Statement{assignmentStmt("module_effect", "e")}},
+				After: &ast.Block{Statements: []ast.Statement{assignmentStmt("module_after", "e")}},
 			},
 		},
 	}
@@ -96,15 +88,15 @@ func TestResolveOpDoesNotMixBlockTypes(t *testing.T) {
 
 	injectedOp, _, err := exec.resolveOp("Person", "read")
 	require.NoError(t, err)
-	require.Equal(t, []string{"op_role"}, assignmentNames(injectedOp.Role))
-	require.Equal(t, []string{"module_effect"}, assignmentNames(injectedOp.Effect))
+	require.Equal(t, []string{"op_before"}, assignmentNames(injectedOp.Before))
+	require.Equal(t, []string{"module_after"}, assignmentNames(injectedOp.After))
 }
 
-func TestUseRuleDenyStopsModelRuleExecution(t *testing.T) {
+func TestUseBeforeDenyStopsModelBeforeExecution(t *testing.T) {
 	op := &ast.Operation{
 		Type: "read",
-		Rule: &ast.Block{Statements: []ast.Statement{
-			assignmentStmt("model_rule_ran", true),
+		Before: &ast.Block{Statements: []ast.Statement{
+			assignmentStmt("model_before_ran", true),
 		}},
 	}
 	model := &ast.Model{
@@ -117,7 +109,7 @@ func TestUseRuleDenyStopsModelRuleExecution(t *testing.T) {
 		Modules: []*ast.Module{
 			{
 				Name: "DenyRule",
-				Rule: &ast.Block{Statements: []ast.Statement{
+				Before: &ast.Block{Statements: []ast.Statement{
 					&ast.PredicateExpr{Expr: &ast.Literal{Value: false}},
 				}},
 			},
@@ -128,9 +120,9 @@ func TestUseRuleDenyStopsModelRuleExecution(t *testing.T) {
 	injectedOp, _, err := exec.resolveOp("Person", "read")
 	require.NoError(t, err)
 	rc := newRunCtx(map[string]interface{}{})
-	err = exec.execBlock(context.Background(), "rule", injectedOp.Rule, rc)
+	err = exec.execBlock(context.Background(), "before", injectedOp.Before, rc)
 	require.Error(t, err)
-	_, ok := rc.vars["model_rule_ran"]
+	_, ok := rc.vars["model_before_ran"]
 	require.False(t, ok)
 }
 

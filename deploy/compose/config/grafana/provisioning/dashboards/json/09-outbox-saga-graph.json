@@ -4,48 +4,35 @@
   "graphTooltip": 1,
   "id": null,
   "links": [
-    { "title": "Home", "type": "link", "url": "/d/fookie-home", "icon": "home" },
-    { "title": "Jobs", "type": "link", "url": "/d/fookie-jobs", "icon": "apps" },
-    { "title": "DB", "type": "link", "url": "/d/fookie-db-health", "icon": "database" }
+    { "title": "Overview", "type": "link", "url": "/d/fookie-home", "icon": "home" },
+    { "title": "Jobs", "type": "link", "url": "/d/fookie-jobs", "icon": "apps" }
   ],
   "liveNow": true,
   "panels": [
     {
-      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
-      "id": 901,
-      "options": {
-        "code": { "language": "markdown", "showLineNumbers": false, "showMiniMap": false },
-        "content": "**Outbox saga** — Üstten saga seçmezsen **son oluşan saga** kullanılır. Graf çoğunlukla oklarla (`saga_step` sırası); tek adımda tek düğüm. İsim ve durum **Adım detayı** tablosunda. Bu veritabanında hiç `saga_id` dolu satır yoksa her şey boş kalır (çoğu tek-adım outbox satırında `saga_id` null olabilir).",
-        "mode": "markdown"
-      },
-      "title": "",
-      "transparent": true,
-      "type": "text"
-    },
-    {
       "datasource": { "type": "postgres", "uid": "fookie-db" },
       "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] } } },
-      "gridPos": { "h": 3, "w": 6, "x": 0, "y": 3 },
+      "gridPos": { "h": 3, "w": 6, "x": 0, "y": 0 },
       "id": 904,
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none", "textMode": "value_and_name" },
       "targets": [{ "format": "table", "rawSql": "SELECT count(DISTINCT saga_id)::bigint AS value FROM outbox WHERE saga_id IS NOT NULL", "refId": "A" }],
-      "title": "Farklı saga",
+      "title": "Distinct sagas",
       "type": "stat"
     },
     {
       "datasource": { "type": "postgres", "uid": "fookie-db" },
       "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "purple", "value": null }] } } },
-      "gridPos": { "h": 3, "w": 6, "x": 6, "y": 3 },
+      "gridPos": { "h": 3, "w": 6, "x": 6, "y": 0 },
       "id": 905,
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none", "textMode": "value_and_name" },
       "targets": [{ "format": "table", "rawSql": "SELECT count(*)::bigint AS value FROM outbox WHERE saga_id IS NOT NULL", "refId": "A" }],
-      "title": "Saga satırı",
+      "title": "Saga rows",
       "type": "stat"
     },
     {
       "datasource": { "type": "postgres", "uid": "fookie-db" },
       "fieldConfig": { "defaults": {}, "overrides": [] },
-      "gridPos": { "h": 5, "w": 12, "x": 12, "y": 3 },
+      "gridPos": { "h": 5, "w": 12, "x": 12, "y": 0 },
       "id": 906,
       "options": { "showHeader": true },
       "targets": [{
@@ -53,13 +40,13 @@
         "rawSql": "SELECT saga_id::text, count(*) AS steps, max(saga_step) AS max_step, bool_or(is_compensation) AS has_comp, min(created_at) AS started FROM outbox WHERE saga_id IS NOT NULL GROUP BY saga_id ORDER BY started DESC LIMIT 15",
         "refId": "A"
       }],
-      "title": "Son saga özetleri (değişkenden bağımsız)",
+      "title": "Recent sagas",
       "type": "table"
     },
     {
       "datasource": { "type": "postgres", "uid": "fookie-db" },
       "fieldConfig": { "defaults": {}, "overrides": [] },
-      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 8 },
+      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 5 },
       "id": 902,
       "options": {
         "edges": { "mainStatUnit": "none", "secondaryStatUnit": "none" },
@@ -73,7 +60,7 @@
           "refId": "A"
         }
       ],
-      "title": "Saga akışı",
+      "title": "Saga flow",
       "type": "nodeGraph"
     },
     {
@@ -86,7 +73,7 @@
           { "matcher": { "id": "byName", "options": "root_request_id" }, "properties": [{ "id": "custom.width", "value": 200 }] }
         ]
       },
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 22 },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 19 },
       "id": 903,
       "options": { "showHeader": true, "sortBy": [{ "desc": false, "displayName": "saga_step" }] },
       "targets": [
@@ -96,7 +83,7 @@
           "refId": "A"
         }
       ],
-      "title": "Adım detayı",
+      "title": "Step details",
       "type": "table"
     }
   ],
@@ -126,7 +113,7 @@
   },
   "time": { "from": "now-24h", "to": "now" },
   "timezone": "browser",
-  "title": "Fookie — Outbox saga",
+  "title": "Fookie — Outbox Saga",
   "uid": "fookie-outbox-saga",
   "version": 1
 }

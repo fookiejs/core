@@ -4,8 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"os"
-	"strconv"
 	"strings"
 
 	"github.com/fookiejs/fookie/pkg/ast"
@@ -39,19 +37,11 @@ func buildIncomingFKIndex(models []*ast.Model) map[string][]fkIncoming {
 }
 
 func disableRelationLockExpand() bool {
-	return os.Getenv("FOOKEE_DISABLE_RELATION_LOCK_EXPAND") == "true"
+	return false
 }
 
 func lockGraphMaxTargets() int {
-	s := os.Getenv("FOOKEE_LOCK_GRAPH_MAX")
-	if s == "" {
-		return 5000
-	}
-	n, err := strconv.Atoi(s)
-	if err != nil || n < 1 {
-		return 5000
-	}
-	return n
+	return 5000
 }
 
 func relationFields(m *ast.Model) []*ast.Field {

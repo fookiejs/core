@@ -4,15 +4,14 @@
   "graphTooltip": 1,
   "id": null,
   "links": [
-    { "title": "Home", "type": "link", "url": "/d/fookie-home", "icon": "home" },
-    { "title": "Cluster", "type": "link", "url": "/d/fookie-cluster-ops", "icon": "cube" },
-    { "title": "GraphQL", "type": "link", "url": "/d/fookie-graphql", "icon": "bolt" }
+    { "title": "Overview", "type": "link", "url": "/d/fookie-home", "icon": "home" },
+    { "title": "Cluster Ops", "type": "link", "url": "/d/fookie-cluster-ops", "icon": "cube" }
   ],
   "liveNow": false,
   "panels": [
     {
       "datasource": { "type": "postgres", "uid": "fookie-db" },
-      "title": "Toplam tablo sayısı",
+      "title": "Tables",
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
       "id": 1,
@@ -24,7 +23,7 @@
     },
     {
       "datasource": { "type": "postgres", "uid": "fookie-db" },
-      "title": "Toplam DB boyutu",
+      "title": "DB size",
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
       "id": 2,
@@ -36,7 +35,7 @@
     },
     {
       "datasource": { "type": "postgres", "uid": "fookie-db" },
-      "title": "Aktif bağlantı",
+      "title": "Active connections",
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
       "id": 3,
@@ -48,7 +47,7 @@
     },
     {
       "datasource": { "type": "postgres", "uid": "fookie-db" },
-      "title": "Outbox bekleyen",
+      "title": "Outbox pending",
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
       "id": 4,
@@ -57,14 +56,14 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT COALESCE((SELECT count(*) FROM outbox WHERE published_at IS NULL), 0) AS value;",
+          "rawSql": "SELECT count(*) AS value FROM outbox WHERE status = 'pending';",
           "refId": "A"
         }
       ]
     },
     {
       "datasource": { "type": "postgres", "uid": "fookie-db" },
-      "title": "Tablo başına satır sayısı (top 20)",
+      "title": "Rows per table (top 20)",
       "type": "table",
       "gridPos": { "h": 10, "w": 12, "x": 0, "y": 4 },
       "id": 5,
@@ -79,7 +78,7 @@
     },
     {
       "datasource": { "type": "postgres", "uid": "fookie-db" },
-      "title": "Tablo boyutları (top 20)",
+      "title": "Table sizes (top 20)",
       "type": "bargauge",
       "gridPos": { "h": 10, "w": 12, "x": 12, "y": 4 },
       "id": 6,
@@ -95,7 +94,7 @@
     },
     {
       "datasource": { "type": "postgres", "uid": "fookie-db" },
-      "title": "Son 10 dk row growth (insert - delete)",
+      "title": "Row growth last 10m (inserts - deletes)",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 14 },
       "id": 7,

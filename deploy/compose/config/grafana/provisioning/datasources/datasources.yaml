@@ -24,7 +24,8 @@ datasources:
     uid: tempo
     isDefault: false
     jsonData:
-      httpMethod: GET
+      httpMethod: POST
+      timeout: 120
       tracesToLogs:
         datasourceUid: loki
         filterByTraceID: false

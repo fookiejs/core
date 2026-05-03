@@ -6,10 +6,17 @@ type Schema struct {
 	Models    []*Model
 	Externals []*External
 	Modules   []*Module
+	Enums     []*Enum
 	Seeds     []*SeedBlock
 	Crons     []*CronBlock
 	Setups    []*SeedBlock
 	Configs   []*ConfigEntry
+}
+
+type Enum struct {
+	Name   string
+	Values []string
+	LineNo int
 }
 
 type ConfigEntry struct {
@@ -20,7 +27,12 @@ type ConfigEntry struct {
 }
 
 type SeedBlock struct {
-	Entries []*SeedEntry
+	Parts []*SeedPart
+}
+
+type SeedPart struct {
+	Legacy *SeedEntry
+	Stmts  []Statement
 }
 
 type SeedEntry struct {
@@ -54,11 +66,22 @@ type Model struct {
 	Indexes []IndexDef
 }
 
+// Validator is a field-level validation rule parsed from the schema.
+// Arg is nil for zero-argument validators (required), a float64 for numeric
+// constraints (min/max), and a string for pattern.
+type Validator struct {
+	Name string
+	Arg  interface{}
+}
+
 type Field struct {
 	Name        string
 	Type        FieldType
 	Relation    *string
+	EnumRef     *string
+	Default     interface{}
 	Constraints []string
+	Validators  []Validator
 }
 
 type FieldType string
@@ -73,6 +96,8 @@ const (
 	TypeJSON      FieldType = "json"
 	TypeRelation  FieldType = "relation"
 
+	TypeEnum       FieldType = "enum"
+
 	TypeEmail      FieldType = "email"
 	TypeURL        FieldType = "url"
 	TypePhone      FieldType = "phone"
@@ -86,17 +111,17 @@ const (
 )
 
 type Operation struct {
-	Type       string
-	Field      string
-	Role       *Block
-	Rule       *Block
-	Modify     *Block
-	Effect     *Block
-	Compensate *Block
-	Filter     *FilterClause
-	OrderBy    []*OrderBy
-	Cursor     *Cursor
-	Select     []*SelectField
+	Type         string
+	Field        string
+	Before       *Block
+	BeforeParams []string // declared scope vars e.g. ["headers","body"]
+	After        *Block
+	AfterParams  []string // declared scope vars e.g. ["record","headers"]
+	Compensate   *Block
+	Filter       *FilterClause
+	OrderBy      []*OrderBy
+	Cursor       *Cursor
+	Select       []*SelectField
 }
 
 type SelectField struct {
@@ -146,8 +171,9 @@ type ModifyAssignment struct {
 func (ModifyAssignment) statementMarker() {}
 
 type PredicateExpr struct {
-	Expr   Expression
-	LineNo int
+	Expr    Expression
+	Message string // optional: expr : "message"
+	LineNo  int
 }
 
 func (PredicateExpr) statementMarker()  {}
@@ -303,14 +329,6 @@ type EffectCreateStmt struct {
 
 func (*EffectCreateStmt) statementMarker() {}
 
-type IfStmt struct {
-	Condition Expression
-	Then      *Block
-	Else      *Block // nil if no else branch
-	LineNo    int
-}
-
-func (*IfStmt) statementMarker() {}
 
 type EffectNotifyStmt struct {
 	RoomName string
@@ -364,10 +382,8 @@ type External struct {
 
 type Module struct {
 	Name       string
-	Role       *Block
-	Rule       *Block
-	Modify     *Block
-	Effect     *Block
+	Before     *Block
+	After      *Block
 	Compensate *Block
 }
 

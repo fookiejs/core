@@ -37,6 +37,7 @@ func (sg *SQLGenerator) Generate() ([]string, error) {
 		`ALTER TABLE "outbox" ADD COLUMN IF NOT EXISTS "run_after" TIMESTAMPTZ`,
 		`ALTER TABLE "outbox" ADD COLUMN IF NOT EXISTS "recur_cron" VARCHAR(64)`,
 		`ALTER TABLE "outbox" ADD COLUMN IF NOT EXISTS "root_request_id" TEXT`,
+		`ALTER TABLE "outbox" ADD COLUMN IF NOT EXISTS "trace_context" TEXT`,
 		`CREATE INDEX IF NOT EXISTS idx_outbox_root_request ON "outbox"("root_request_id")`,
 	)
 
@@ -67,7 +68,7 @@ func (sg *SQLGenerator) modelColumnMigrations(m *ast.Model) []string {
 	var out []string
 	for _, f := range m.Fields {
 		col := fieldColumn(f)
-		sqlType := fieldSQLType(f)
+		sqlType := sg.fieldSQLTypeResolved(f)
 		out = append(out, fmt.Sprintf(
 			`ALTER TABLE "%s" ADD COLUMN IF NOT EXISTS "%s" %s`,
 			table, col, sqlType,
@@ -76,10 +77,31 @@ func (sg *SQLGenerator) modelColumnMigrations(m *ast.Model) []string {
 	return out
 }
 
+func (sg *SQLGenerator) fieldSQLTypeResolved(f *ast.Field) string {
+	if f.Type == ast.TypeEnum && f.EnumRef != nil {
+		for _, en := range sg.schema.Enums {
+			if en.Name == *f.EnumRef {
+				quoted := make([]string, len(en.Values))
+				for i, v := range en.Values {
+					quoted[i] = fmt.Sprintf("'%s'", v)
+				}
+				return fmt.Sprintf("VARCHAR(50) CHECK (\"%s\" IN (%s))", snake(f.Name), strings.Join(quoted, ", "))
+			}
+		}
+	}
+	return fieldSQLType(f)
+}
+
 func (sg *SQLGenerator) fieldDDL(f *ast.Field) string {
 	col := fieldColumn(f)
-	sqlType := fieldSQLType(f)
+	sqlType := sg.fieldSQLTypeResolved(f)
 	def := fmt.Sprintf(`"%s" %s`, col, sqlType)
+
+	if f.Default != nil {
+		def += " DEFAULT " + formatDefault(f.Default)
+	} else if f.Type == ast.TypeBoolean {
+		def += " DEFAULT FALSE"
+	}
 
 	for _, c := range f.Constraints {
 		switch c {
@@ -88,6 +110,21 @@ func (sg *SQLGenerator) fieldDDL(f *ast.Field) string {
 		}
 	}
 	return def
+}
+
+func formatDefault(v interface{}) string {
+	switch val := v.(type) {
+	case bool:
+		if val {
+			return "true"
+		}
+		return "false"
+	case string:
+		escaped := strings.ReplaceAll(val, "'", "''")
+		return fmt.Sprintf("'%s'", escaped)
+	default:
+		return fmt.Sprintf("%v", val)
+	}
 }
 
 func fieldColumn(f *ast.Field) string {
@@ -105,7 +142,7 @@ func fieldSQLType(f *ast.Field) string {
 	case ast.TypeNumber:
 		return "NUMERIC(18,4)"
 	case ast.TypeBoolean:
-		return "BOOLEAN NOT NULL DEFAULT FALSE"
+		return "BOOLEAN NOT NULL"
 	case ast.TypeID:
 		return "UUID"
 	case ast.TypeDate:
@@ -184,7 +221,8 @@ func (sg *SQLGenerator) outboxDDL() string {
   "result_payload" JSONB,
   "target_field" VARCHAR(255),
   "run_after"  TIMESTAMPTZ,
-  "recur_cron" VARCHAR(64)
+  "recur_cron" VARCHAR(64),
+  "trace_context" TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_outbox_status ON "outbox"("status");
 CREATE INDEX IF NOT EXISTS idx_outbox_entity ON "outbox"("entity_type", "entity_id");

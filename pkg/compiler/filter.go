@@ -366,7 +366,7 @@ func (sg *SQLGenerator) CompileBulkUpdate(model *ast.Model, patch map[string]int
 	}
 	args = append(args, whereArgs...)
 	sql := fmt.Sprintf(
-		`UPDATE "%s" SET %s, "updated_at" = NOW() WHERE "deleted_at" IS NULL AND (%s)`,
+		`UPDATE "%s" SET %s, "updated_at" = NOW() WHERE "deleted_at" IS NULL AND (%s) RETURNING "id"`,
 		table, strings.Join(sets, ", "), whereSQL,
 	)
 	return sql, args, nil
@@ -385,7 +385,7 @@ func (sg *SQLGenerator) CompileBulkSoftDelete(model *ast.Model, filter map[strin
 		return "", nil, fmt.Errorf("where filter is required")
 	}
 	sql := fmt.Sprintf(
-		`UPDATE "%s" SET "deleted_at" = NOW(), "updated_at" = NOW() WHERE "deleted_at" IS NULL AND (%s)`,
+		`UPDATE "%s" SET "deleted_at" = NOW(), "updated_at" = NOW() WHERE "deleted_at" IS NULL AND (%s) RETURNING "id"`,
 		table, whereSQL,
 	)
 	return sql, whereArgs, nil

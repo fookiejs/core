@@ -44,20 +44,14 @@ model Transaction {
   }
 
   create {
-    role {
+    before {
       principal = ValidateToken(token: body.token)
-    }
-
-    rule {
       body.amount > 0
       fromWallet.balance >= body.amount
-    }
-
-    modify {
       amount = body.amount
     }
 
-    effect {
+    after {
     }
   }
 }
@@ -106,18 +100,12 @@ external FraudCheck {
 func TestParserModule(t *testing.T) {
 	input := `
 module AuthenticateUser {
-  role {
+  before {
     principal = ValidateToken(token: body.token)
-  }
-
-  rule {
     principal.userId != null
   }
 
-  modify {
-  }
-
-  effect {
+  after {
   }
 
   compensate {
@@ -252,7 +240,7 @@ external TickWorld {
 
 model WorldEvent {
   fields { name: string }
-  create { modify {} }
+  create { before {} }
   read {}
 }
 
@@ -304,11 +292,10 @@ model ItemCategory {
     max_stack: number
   }
   create {
-    rule { body.name != "" }
-    modify {}
+    before { body.name != "" }
   }
   read {}
-  update { modify {} }
+  update { before {} }
   delete {}
 }
 
@@ -329,9 +316,10 @@ seed {
 	require.Len(t, schema.Seeds, 1)
 
 	sb := schema.Seeds[0]
-	require.Len(t, sb.Entries, 1)
+	require.Len(t, sb.Parts, 1)
+	require.NotNil(t, sb.Parts[0].Legacy)
 
-	entry := sb.Entries[0]
+	entry := sb.Parts[0].Legacy
 	assert.Equal(t, "ItemCategory", entry.Model)
 	assert.Equal(t, "name", entry.KeyField)
 	require.Len(t, entry.Records, 3)
@@ -348,17 +336,17 @@ func TestParserSeedBlock_MultipleModels(t *testing.T) {
 	input := `
 model Category {
   fields { name: string }
-  create { modify {} }
+  create { before {} }
   read {}
-  update { modify {} }
+  update { before {} }
   delete {}
 }
 
 model Player {
   fields { username: string }
-  create { modify {} }
+  create { before {} }
   read {}
-  update { modify {} }
+  update { before {} }
   delete {}
 }
 
@@ -381,11 +369,11 @@ seed {
 	require.Len(t, schema.Seeds, 1)
 
 	sb := schema.Seeds[0]
-	require.Len(t, sb.Entries, 2)
-	assert.Equal(t, "Category", sb.Entries[0].Model)
-	assert.Len(t, sb.Entries[0].Records, 2)
-	assert.Equal(t, "Player", sb.Entries[1].Model)
-	assert.Len(t, sb.Entries[1].Records, 1)
+	require.Len(t, sb.Parts, 2)
+	assert.Equal(t, "Category", sb.Parts[0].Legacy.Model)
+	assert.Len(t, sb.Parts[0].Legacy.Records, 2)
+	assert.Equal(t, "Player", sb.Parts[1].Legacy.Model)
+	assert.Len(t, sb.Parts[1].Legacy.Records, 1)
 }
 
 func TestParserSeedBlock_ScalarTypes(t *testing.T) {
@@ -397,9 +385,9 @@ model Thing {
     active:   boolean
     score:    number
   }
-  create { modify {} }
+  create { before {} }
   read {}
-  update { modify {} }
+  update { before {} }
   delete {}
 }
 
@@ -417,7 +405,7 @@ seed {
 
 	require.NoError(t, err)
 	require.Len(t, schema.Seeds, 1)
-	records := schema.Seeds[0].Entries[0].Records
+	records := schema.Seeds[0].Parts[0].Legacy.Records
 	require.Len(t, records, 2)
 
 	assert.Equal(t, "A", records[0]["name"])
@@ -426,4 +414,47 @@ seed {
 	assert.Equal(t, 3.14, records[0]["score"])
 
 	assert.Equal(t, false, records[1]["active"])
+}
+
+func TestParserSeedBlock_ProceduralOrdered(t *testing.T) {
+	input := `
+model SeedThing {
+  fields { name: string required notEmpty code: number required positive }
+  create { before {} }
+  read {}
+  update { before {} }
+  delete {}
+}
+
+seed {
+  SeedThing(name) {
+    { name: "static", code: 1 }
+  }
+  for i in range(1, 3) {
+    create SeedThing { name = concat("g", i) code = i }
+  }
+  SeedThing(name) {
+    { name: "static2", code: 2 }
+  }
+}
+`
+	lexer := parser.NewLexer(input)
+	tokens := lexer.Tokenize()
+	p := parser.NewParser(tokens)
+	schema, err := p.Parse()
+	require.NoError(t, err)
+	require.Len(t, schema.Seeds[0].Parts, 3)
+	require.NotNil(t, schema.Seeds[0].Parts[0].Legacy)
+	assert.Equal(t, "static", schema.Seeds[0].Parts[0].Legacy.Records[0]["name"])
+	require.Len(t, schema.Seeds[0].Parts[1].Stmts, 1)
+	forIn, ok := schema.Seeds[0].Parts[1].Stmts[0].(*ast.ForIn)
+	require.True(t, ok)
+	rng, ok := forIn.Iterable.(*ast.BuiltinCall)
+	require.True(t, ok)
+	assert.Equal(t, "range", rng.Name)
+	require.Len(t, forIn.Body.Statements, 1)
+	_, ok = forIn.Body.Statements[0].(*ast.EffectCreateStmt)
+	require.True(t, ok)
+	require.NotNil(t, schema.Seeds[0].Parts[2].Legacy)
+	assert.Equal(t, "static2", schema.Seeds[0].Parts[2].Legacy.Records[0]["name"])
 }

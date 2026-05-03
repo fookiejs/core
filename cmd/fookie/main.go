@@ -30,6 +30,9 @@ Usage:
   fookie migrate plan    [--schema] [--db]        show pending DDL
   fookie migrate apply   [--schema] [--db] [--label]  apply DDL
   fookie migrate history [--db]                   show applied migrations
+  fookie migration generate [--schema] [--db] [--dir] [--name]  write pending DDL to file
+  fookie migration run      [--schema] [--db] [--label]         apply pending DDL
+  fookie migration revert   [--db] [--steps N] [--force-drop-table]  revert last applied migration(s)
   fookie dlq list        [--db] [--limit N]       list failed jobs
   fookie dlq retry <id>  [--db]                   re-queue one job
   fookie dlq retry-all   [--db]                   re-queue all failed jobs
@@ -54,6 +57,8 @@ func main() {
 		cmdDLQ(os.Args[2:])
 	case "migrate":
 		cmdMigrate(os.Args[2:])
+	case "migration":
+		cmdMigration(os.Args[2:])
 	case "serve":
 		cmdServe(os.Args[2:])
 	case "init":
@@ -211,13 +216,7 @@ func cmdMigrate(args []string) {
 
 	switch sub {
 	case "plan":
-		schema, err := loadSchema(*schemaPath)
-		if err != nil {
-			fatal(err)
-		}
-		db := openDB(*dbURL)
-		defer db.Close()
-		stmts, err := migrate.Plan(ctx, schema, db)
+		stmts, err := loadPlannedStatements(ctx, *schemaPath, *dbURL)
 		if err != nil {
 			fatal(err)
 		}
@@ -232,21 +231,7 @@ func cmdMigrate(args []string) {
 		}
 
 	case "apply":
-		schema, err := loadSchema(*schemaPath)
-		if err != nil {
-			fatal(err)
-		}
-		db := openDB(*dbURL)
-		defer db.Close()
-		stmts, err := migrate.Plan(ctx, schema, db)
-		if err != nil {
-			fatal(err)
-		}
-		if len(stmts) == 0 {
-			fmt.Println("✓ Schema is up to date — nothing to apply.")
-			return
-		}
-		n, err := migrate.Apply(ctx, db, stmts, *label)
+		n, err := applyPlannedStatements(ctx, *schemaPath, *dbURL, *label)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "apply failed after %d statements: %v\n", n, err)
 			os.Exit(1)
@@ -276,6 +261,73 @@ func cmdMigrate(args []string) {
 
 	default:
 		fmt.Fprintf(os.Stderr, "unknown migrate subcommand: %s\n", sub)
+		os.Exit(2)
+	}
+}
+
+func cmdMigration(args []string) {
+	if len(args) == 0 {
+		fmt.Fprintln(os.Stderr, "migration needs a subcommand: generate | run | revert")
+		os.Exit(2)
+	}
+
+	fs := flag.NewFlagSet("migration", flag.ExitOnError)
+	schemaPath := fs.String("schema", envOr("SCHEMA_PATH", "schema.fql"), "Path to .fql schema file or directory")
+	dbURL := fs.String("db", envOr("DB_URL", "postgres://fookie:fookie_dev@localhost:5432/fookie?sslmode=disable"), "PostgreSQL connection string")
+	label := fs.String("label", "manual-"+time.Now().Format("20060102-150405"), "Migration label (run only)")
+	dir := fs.String("dir", "migrations", "Directory to write generated migration file")
+	name := fs.String("name", "", "Optional migration name for generated file")
+	steps := fs.Int("steps", 1, "Number of most recent migrations to revert")
+	forceDropTable := fs.Bool("force-drop-table", false, "Allow reverting CREATE TABLE statements")
+
+	sub := args[0]
+	fs.Parse(args[1:])
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	switch sub {
+	case "generate":
+		stmts, err := loadPlannedStatements(ctx, *schemaPath, *dbURL)
+		if err != nil {
+			fatal(err)
+		}
+		if len(stmts) == 0 {
+			fmt.Println("✓ Schema is up to date — nothing to generate.")
+			return
+		}
+		path, err := writeMigrationFile(*dir, *name, stmts)
+		if err != nil {
+			fatal(err)
+		}
+		fmt.Printf("✓ Generated migration file: %s\n", path)
+	case "run":
+		n, err := applyPlannedStatements(ctx, *schemaPath, *dbURL, *label)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "run failed after %d statements: %v\n", n, err)
+			os.Exit(1)
+		}
+		fmt.Printf("✓ Applied %d statement(s) (label: %s)\n", n, *label)
+	case "revert":
+		if *steps <= 0 {
+			fatal(fmt.Errorf("--steps must be greater than 0"))
+		}
+		db := openDB(*dbURL)
+		defer db.Close()
+		n, err := migrate.Revert(ctx, db, migrate.RevertOptions{
+			Steps:          *steps,
+			ForceDropTable: *forceDropTable,
+		})
+		if err != nil {
+			fatal(err)
+		}
+		if n == 0 {
+			fmt.Println("No migrations recorded yet.")
+			return
+		}
+		fmt.Printf("✓ Reverted %d migration record(s)\n", n)
+	default:
+		fmt.Fprintf(os.Stderr, "unknown migration subcommand: %s\n", sub)
 		os.Exit(2)
 	}
 }
@@ -339,7 +391,7 @@ func cmdInit(args []string) {
 	fmt.Println()
 	fmt.Println("Next steps:")
 	fmt.Println("  1. Edit schema.fql to define your models")
-	fmt.Printf("  2. fookie migrate apply --schema %s/schema.fql\n", dir)
+	fmt.Printf("  2. fookie migration run --schema %s/schema.fql\n", dir)
 	fmt.Printf("  3. fookie serve --schema %s/schema.fql\n", dir)
 }
 
@@ -404,6 +456,83 @@ func cmdDoctor() {
 
 func loadSchema(path string) (*ast.Schema, error) {
 	return schemapkg.LoadSchema(path)
+}
+
+func loadPlannedStatements(ctx context.Context, schemaPath, dbURL string) ([]string, error) {
+	schema, err := loadSchema(schemaPath)
+	if err != nil {
+		return nil, err
+	}
+	db := openDB(dbURL)
+	defer db.Close()
+	return migrate.Plan(ctx, schema, db)
+}
+
+func applyPlannedStatements(ctx context.Context, schemaPath, dbURL, label string) (int, error) {
+	schema, err := loadSchema(schemaPath)
+	if err != nil {
+		return 0, err
+	}
+	db := openDB(dbURL)
+	defer db.Close()
+	stmts, err := migrate.Plan(ctx, schema, db)
+	if err != nil {
+		return 0, err
+	}
+	if len(stmts) == 0 {
+		fmt.Println("✓ Schema is up to date — nothing to apply.")
+		return 0, nil
+	}
+	return migrate.Apply(ctx, db, stmts, label)
+}
+
+func writeMigrationFile(dir, name string, stmts []string) (string, error) {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", err
+	}
+	base := time.Now().Format("20060102150405")
+	if cleaned := sanitizeMigrationName(name); cleaned != "" {
+		base += "_" + cleaned
+	}
+	fullPath := filepath.Join(dir, base+".sql")
+	var b strings.Builder
+	for _, stmt := range stmts {
+		s := strings.TrimSpace(stmt)
+		if s == "" {
+			continue
+		}
+		b.WriteString(s)
+		if !strings.HasSuffix(s, ";") {
+			b.WriteString(";")
+		}
+		b.WriteString("\n\n")
+	}
+	if err := os.WriteFile(fullPath, []byte(strings.TrimRight(b.String(), "\n")+"\n"), 0o644); err != nil {
+		return "", err
+	}
+	return fullPath, nil
+}
+
+func sanitizeMigrationName(name string) string {
+	name = strings.TrimSpace(strings.ToLower(name))
+	if name == "" {
+		return ""
+	}
+	var b strings.Builder
+	lastUnderscore := false
+	for _, r := range name {
+		isAlphaNum := (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9')
+		if isAlphaNum {
+			b.WriteRune(r)
+			lastUnderscore = false
+			continue
+		}
+		if !lastUnderscore {
+			b.WriteByte('_')
+			lastUnderscore = true
+		}
+	}
+	return strings.Trim(b.String(), "_")
 }
 
 func openDB(url string) *sql.DB {

@@ -45,17 +45,11 @@ func DetectExtraInputFields(model *ast.Model, op *ast.Operation, schema *ast.Sch
 }
 
 func walkOpBlocks(op *ast.Operation, collector map[string]bool) {
-	if op.Role != nil {
-		walkBlock(op.Role, collector)
+	if op.Before != nil {
+		walkBlock(op.Before, collector)
 	}
-	if op.Rule != nil {
-		walkBlock(op.Rule, collector)
-	}
-	if op.Modify != nil {
-		walkBlock(op.Modify, collector)
-	}
-	if op.Effect != nil {
-		walkBlock(op.Effect, collector)
+	if op.After != nil {
+		walkBlock(op.After, collector)
 	}
 	if op.Compensate != nil {
 		walkBlock(op.Compensate, collector)
@@ -63,17 +57,11 @@ func walkOpBlocks(op *ast.Operation, collector map[string]bool) {
 }
 
 func walkModuleBlocks(mod *ast.Module, collector map[string]bool) {
-	if mod.Role != nil {
-		walkBlock(mod.Role, collector)
+	if mod.Before != nil {
+		walkBlock(mod.Before, collector)
 	}
-	if mod.Rule != nil {
-		walkBlock(mod.Rule, collector)
-	}
-	if mod.Modify != nil {
-		walkBlock(mod.Modify, collector)
-	}
-	if mod.Effect != nil {
-		walkBlock(mod.Effect, collector)
+	if mod.After != nil {
+		walkBlock(mod.After, collector)
 	}
 	if mod.Compensate != nil {
 		walkBlock(mod.Compensate, collector)
@@ -141,11 +129,11 @@ func inferTypes(schema *ast.Schema, op *ast.Operation, uses []string) map[string
 	}
 
 	var blocks []*ast.Block
-	if op.Role != nil {
-		blocks = append(blocks, op.Role)
+	if op.Before != nil {
+		blocks = append(blocks, op.Before)
 	}
-	if op.Effect != nil {
-		blocks = append(blocks, op.Effect)
+	if op.After != nil {
+		blocks = append(blocks, op.After)
 	}
 	if op.Compensate != nil {
 		blocks = append(blocks, op.Compensate)
@@ -153,17 +141,11 @@ func inferTypes(schema *ast.Schema, op *ast.Operation, uses []string) map[string
 	for _, useName := range uses {
 		for _, mod := range schema.Modules {
 			if mod.Name == useName {
-				if mod.Role != nil {
-					blocks = append(blocks, mod.Role)
+				if mod.Before != nil {
+					blocks = append(blocks, mod.Before)
 				}
-				if mod.Rule != nil {
-					blocks = append(blocks, mod.Rule)
-				}
-				if mod.Modify != nil {
-					blocks = append(blocks, mod.Modify)
-				}
-				if mod.Effect != nil {
-					blocks = append(blocks, mod.Effect)
+				if mod.After != nil {
+					blocks = append(blocks, mod.After)
 				}
 				if mod.Compensate != nil {
 					blocks = append(blocks, mod.Compensate)

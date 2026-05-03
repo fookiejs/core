@@ -353,6 +353,7 @@ type outboxJob struct {
 	runAfter      sql.NullTime
 	recurCron     sql.NullString
 	rootRequestID sql.NullString
+	traceContext  sql.NullString
 }
 
 type OutboxProcessor struct {
@@ -403,7 +404,7 @@ func (op *OutboxProcessor) systemUpdateEntity(ctx context.Context, modelName, id
 	if op.exec == nil {
 		return fmt.Errorf("executor is nil")
 	}
-	_, err := op.exec.Update(ctx, modelName, id, WithSystemBody(input))
+	_, err := op.exec.updateByID(ctx, modelName, id, WithSystemBody(input))
 	return err
 }
 
@@ -623,7 +624,7 @@ func (op *OutboxProcessor) processForwardStep(ctx context.Context) bool {
 	err = tx.QueryRowContext(ctx, `
 		SELECT id, entity_type, entity_id, external_name, payload,
 		       saga_id, saga_step, retry_count, target_field,
-		       run_after, recur_cron, root_request_id
+		       run_after, recur_cron, root_request_id, trace_context
 		FROM outbox
 		WHERE status = 'pending'
 		  AND is_compensation = FALSE
@@ -633,7 +634,7 @@ func (op *OutboxProcessor) processForwardStep(ctx context.Context) bool {
 		FOR UPDATE SKIP LOCKED
 	`).Scan(&job.id, &job.entityType, &job.entityID, &job.externalName, &job.payload,
 		&job.sagaID, &job.sagaStep, &job.retryCount, &job.targetField,
-		&job.runAfter, &job.recurCron, &job.rootRequestID)
+		&job.runAfter, &job.recurCron, &job.rootRequestID, &job.traceContext)
 
 	if err == sql.ErrNoRows {
 		tx.Commit()
@@ -653,10 +654,22 @@ func (op *OutboxProcessor) processForwardStep(ctx context.Context) bool {
 			attribute.String("fookie.entity_type", job.entityType),
 		),
 	}
+	if job.entityType == "cron" {
+		spanOpts = append(spanOpts, trace.WithAttributes(
+			attribute.String("fookie.cron.name", job.externalName),
+		))
+	}
 	if job.rootRequestID.Valid && job.rootRequestID.String != "" {
 		spanOpts = append(spanOpts, trace.WithAttributes(
 			attribute.String("fookie.root_request_id", job.rootRequestID.String),
 		))
+	}
+	if job.traceContext.Valid && job.traceContext.String != "" {
+		prop := propagation.NewCompositeTextMapPropagator(propagation.TraceContext{})
+		linkedCtx := prop.Extract(context.Background(), propagation.MapCarrier{"traceparent": job.traceContext.String})
+		if sc := trace.SpanContextFromContext(linkedCtx); sc.IsValid() {
+			spanOpts = append(spanOpts, trace.WithLinks(trace.Link{SpanContext: sc}))
+		}
 	}
 	dispatchCtx, span := telemetry.Tracer().Start(ctx, "fookie.outbox.process", spanOpts...)
 	defer span.End()
@@ -717,7 +730,7 @@ func (op *OutboxProcessor) processForwardStep(ctx context.Context) bool {
 		}
 		if del, ok := result["__delete"].(bool); ok && del {
 			if job.entityID.Valid && job.entityID.String != "" {
-				if err := op.exec.Delete(ctx, job.entityType, job.entityID.String, WithSystemBody(map[string]interface{}{})); err != nil {
+				if err := op.exec.deleteByID(ctx, job.entityType, job.entityID.String, WithSystemBody(map[string]interface{}{})); err != nil {
 					log.Printf("outbox: __delete %s %s: %v", job.entityType, job.entityID.String, err)
 				}
 			}
@@ -765,14 +778,14 @@ func (op *OutboxProcessor) processCompensationStep(ctx context.Context) bool {
 
 	var job outboxJob
 	err = tx.QueryRowContext(ctx, `
-		SELECT id, entity_type, entity_id, external_name, payload, saga_id, saga_step, retry_count
+		SELECT id, entity_type, entity_id, external_name, payload, saga_id, saga_step, retry_count, trace_context
 		FROM outbox
 		WHERE status = 'pending' AND is_compensation = TRUE
 		ORDER BY saga_step DESC
 		LIMIT 1
 		FOR UPDATE SKIP LOCKED
 	`).Scan(&job.id, &job.entityType, &job.entityID, &job.externalName, &job.payload,
-		&job.sagaID, &job.sagaStep, &job.retryCount)
+		&job.sagaID, &job.sagaStep, &job.retryCount, &job.traceContext)
 
 	if err == sql.ErrNoRows {
 		tx.Commit()
@@ -917,18 +930,18 @@ func (op *OutboxProcessor) executeEffectActions(ctx context.Context, job outboxJ
 			continue
 		}
 		for _, crud := range m.CRUD {
-			if crud.Effect == nil || job.sagaStep >= len(crud.Effect.Statements) {
+			if crud.After == nil || job.sagaStep >= len(crud.After.Statements) {
 				continue
 			}
-			stmt := crud.Effect.Statements[job.sagaStep]
+			stmt := crud.After.Statements[job.sagaStep]
 			if extractStaticCallName(stmt) != job.externalName {
 				continue
 			}
 			if a, ok := stmt.(*ast.Assignment); ok {
 				varName = a.Name
 			}
-			for i := job.sagaStep + 1; i < len(crud.Effect.Statements); i++ {
-				s := crud.Effect.Statements[i]
+			for i := job.sagaStep + 1; i < len(crud.After.Statements); i++ {
+				s := crud.After.Statements[i]
 				if extractStaticCallName(s) != "" {
 					break
 				}
@@ -948,7 +961,7 @@ found:
 	}
 
 	if err := op.exec.ExecuteEffectActions(ctx, followingStmts, params, vars, entityID); err != nil {
-		log.Printf("outbox: effect actions %s.%s: %v", job.entityType, job.externalName, err)
+		log.Printf("outbox: after actions %s.%s: %v", job.entityType, job.externalName, err)
 	}
 }
 
@@ -1017,7 +1030,7 @@ func (op *OutboxProcessor) processDeletes(ctx context.Context, dels interface{})
 		if modelName == "" || id == "" {
 			continue
 		}
-		if err := op.exec.Delete(ctx, modelName, id, WithSystemBody(map[string]interface{}{})); err != nil {
+		if err := op.exec.deleteByID(ctx, modelName, id, WithSystemBody(map[string]interface{}{})); err != nil {
 			log.Printf("outbox: __deletes %s %s: %v", modelName, id, err)
 		}
 	}
@@ -1039,7 +1052,7 @@ func (op *OutboxProcessor) processUpdates(ctx context.Context, updates interface
 		if len(patch) == 0 {
 			continue
 		}
-		if _, err := op.exec.Update(ctx, modelName, id, WithSystemBody(patch)); err != nil {
+		if _, err := op.exec.updateByID(ctx, modelName, id, WithSystemBody(patch)); err != nil {
 			log.Printf("outbox: __updates %s %s: %v", modelName, id, err)
 		}
 	}

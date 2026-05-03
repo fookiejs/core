@@ -35,7 +35,7 @@
       "id": 2,
       "options": {
         "code": { "language": "markdown", "showLineNumbers": false, "showMiniMap": false },
-        "content": "**Son fookie-* servislerinin izleri** — otomatik yenileniyor. Satıra tıkla: trace detay. Trace → log köprüsü Loki'ye gider.",
+        "content": "**Model izleri:** TraceQL ör. `{ .fookie.model = \"Person\" }` veya cron: `{ .fookie.cron.name = \"my_cron\" }`. İfade içi okumalar `read_scope=expression`, effect SQL güncellemeler `path=effect`. Trafik veya cron tetikleyici gerekir.",
         "mode": "markdown"
       },
       "title": "",
@@ -55,7 +55,7 @@
         {
           "datasource": { "type": "tempo", "uid": "tempo" },
           "limit": 50,
-          "query": "{ resource.service.name =~ \"fookie.*\" }",
+          "query": "{ resource.service.name =~ \".+\" }",
           "queryType": "traceql",
           "refId": "A",
           "tableType": "traces"
