@@ -384,8 +384,10 @@ func (e *Executor) Create(ctx context.Context, modelName string, req map[string]
 			return nil, err
 		}
 
-		// inject hook vars for create.after
+		// inject hook vars for create.after — reset vars so before-scope doesn't leak
+		rc.vars = make(map[string]interface{})
 		rc.injectHookVars(op.AfterParams, map[string]interface{}{
+			"id":      id,
 			"body":    rc.payload(),
 			"headers": rc.req["headers"],
 		})
@@ -558,6 +560,7 @@ func (e *Executor) Read(ctx context.Context, modelName string, req map[string]in
 		for i, r := range result {
 			rows[i] = r
 		}
+		rc.vars = make(map[string]interface{})
 		rc.injectHookVars(op.AfterParams, map[string]interface{}{
 			"rows":    rows,
 			"headers": rc.req["headers"],
@@ -791,6 +794,7 @@ func (e *Executor) UpdateMany(ctx context.Context, modelName string, req map[str
 	dbSpan.End()
 
 	if op.After != nil {
+		rc.vars = make(map[string]interface{})
 		rc.injectHookVars(op.AfterParams, map[string]interface{}{
 			"affected_ids": affectedIDs,
 			"body":         rc.payload(),
@@ -865,6 +869,7 @@ func (e *Executor) DeleteMany(ctx context.Context, modelName string, req map[str
 	dbSpan.End()
 
 	if op.After != nil {
+		rc.vars = make(map[string]interface{})
 		rc.injectHookVars(op.AfterParams, map[string]interface{}{
 			"deleted_ids": deletedIDs,
 			"query":       filter,
@@ -1023,7 +1028,9 @@ func (e *Executor) updateByID(ctx context.Context, modelName string, id string, 
 	}
 
 	if op.After != nil {
+		rc.vars = make(map[string]interface{})
 		rc.injectHookVars(op.AfterParams, map[string]interface{}{
+			"id":           id,
 			"affected_ids": []interface{}{id},
 			"body":         rc.payload(),
 			"query":        rc.req["filter"],
@@ -1133,7 +1140,9 @@ func (e *Executor) deleteByID(ctx context.Context, modelName string, id string, 
 		return err
 	}
 	if op.After != nil {
+		rc.vars = make(map[string]interface{})
 		rc.injectHookVars(op.AfterParams, map[string]interface{}{
+			"id":          id,
 			"deleted_ids": []interface{}{id},
 			"query":       rc.req["filter"],
 			"headers":     rc.req["headers"],
