@@ -754,11 +754,9 @@ func (p *Parser) parseBlock() (*ast.Block, error) {
 			if err != nil {
 				return nil, err
 			}
-			msg := p.parsePredicateMessage()
 			block.Statements = append(block.Statements, &ast.PredicateExpr{
-				Expr:    expr,
-				Message: msg,
-				LineNo:  lineNo,
+				Expr:   expr,
+				LineNo: lineNo,
 			})
 		}
 	}
@@ -934,17 +932,6 @@ func (p *Parser) parseForIn() (*ast.ForIn, error) {
 	return &ast.ForIn{Var: v.Value, Iterable: iter, Body: body, LineNo: line}, nil
 }
 
-// parsePredicateMessage checks for an optional : "message" after a predicate expression.
-func (p *Parser) parsePredicateMessage() string {
-	if p.cur().Type != TOKEN_COLON {
-		return ""
-	}
-	p.eat() // consume :
-	if p.cur().Type == TOKEN_STRING {
-		return p.eat().Value
-	}
-	return ""
-}
 
 // parseHookParams parses an optional (param, param, ...) list after before/after keywords.
 // Returns the param names (may be empty if no parens present).
@@ -985,11 +972,9 @@ func (p *Parser) parseModifyBlock() (*ast.Block, error) {
 			if err != nil {
 				return nil, err
 			}
-			msg := p.parsePredicateMessage()
 			block.Statements = append(block.Statements, &ast.PredicateExpr{
-				Expr:    expr,
-				Message: msg,
-				LineNo:  lineNo,
+				Expr:   expr,
+				LineNo: lineNo,
 			})
 			continue
 		}
@@ -1013,11 +998,9 @@ func (p *Parser) parseModifyBlock() (*ast.Block, error) {
 		if err != nil {
 			return nil, err
 		}
-		msg := p.parsePredicateMessage()
 		block.Statements = append(block.Statements, &ast.PredicateExpr{
-			Expr:    expr,
-			Message: msg,
-			LineNo:  lineNo,
+			Expr:   expr,
+			LineNo: lineNo,
 		})
 	}
 

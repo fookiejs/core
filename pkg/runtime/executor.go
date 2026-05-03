@@ -1299,11 +1299,7 @@ func (e *Executor) execBlock(ctx context.Context, blockName string, block *ast.B
 				ApplyHandlerSideEffects(ctx, e, m)
 			}
 			if b, ok := val.(bool); ok && !b {
-				msg := s.Message
-				if msg == "" {
-					msg = "assertion failed"
-				}
-				err := fmt.Errorf("%s", msg)
+				err := fmt.Errorf("validation error")
 				span.RecordError(err)
 				span.SetStatus(codes.Error, err.Error())
 				return err
@@ -2588,11 +2584,7 @@ func (e *Executor) execBeforeStmts(ctx context.Context, stmts []ast.Statement, r
 				return fmt.Errorf("before predicate: %w", err)
 			}
 			if b, ok := val.(bool); ok && !b {
-				msg := s.Message
-				if msg == "" {
-					msg = "assertion failed"
-				}
-				return fmt.Errorf("%s", msg)
+				return fmt.Errorf("validation error")
 			}
 
 }
@@ -2601,6 +2593,7 @@ func (e *Executor) execBeforeStmts(ctx context.Context, stmts []ast.Statement, r
 }
 
 // injectHookVars injects the available hook variables into rc.vars.
+
 // If params is non-empty (declared), only those names are injected.
 // If params is nil/empty (old syntax), all available vars are injected.
 func (rc *runCtx) injectHookVars(params []string, available map[string]interface{}) {

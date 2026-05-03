@@ -171,9 +171,8 @@ type ModifyAssignment struct {
 func (ModifyAssignment) statementMarker() {}
 
 type PredicateExpr struct {
-	Expr    Expression
-	Message string // optional: expr : "message"
-	LineNo  int
+	Expr   Expression
+	LineNo int
 }
 
 func (PredicateExpr) statementMarker()  {}
