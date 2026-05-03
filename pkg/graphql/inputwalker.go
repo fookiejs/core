@@ -125,7 +125,7 @@ func inferTypes(schema *ast.Schema, op *ast.Operation, uses []string) map[string
 
 	extInputMap := map[string]map[string]string{}
 	for _, ext := range schema.Externals {
-		extInputMap[ext.Name] = ext.Body
+		extInputMap[ext.Name] = ext.Input
 	}
 
 	var blocks []*ast.Block

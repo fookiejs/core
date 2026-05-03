@@ -1020,7 +1020,7 @@ func isWordToken(t Token) bool {
 		TOKEN_CREATE, TOKEN_READ, TOKEN_UPDATE, TOKEN_DELETE,
 		TOKEN_BEFORE, TOKEN_AFTER, TOKEN_COMPENSATE,
 		TOKEN_FILTER, TOKEN_ORDERBY, TOKEN_CURSOR, TOKEN_RETURN,
-		TOKEN_USE, TOKEN_FIELDS, TOKEN_BODY, TOKEN_OUTPUT,
+		TOKEN_USE, TOKEN_FIELDS, TOKEN_BODY, TOKEN_INPUT, TOKEN_OUTPUT,
 		TOKEN_SETUP, TOKEN_NOTIFY, TOKEN_CONFIG,
 		TOKEN_FOR:
 		return true
@@ -1720,7 +1720,7 @@ func (p *Parser) parseExternal() (*ast.External, error) {
 	}
 	ext := &ast.External{
 		Name:   name.Value,
-		Body:   make(map[string]string),
+		Input:  make(map[string]string),
 		Output: make(map[string]string),
 	}
 
@@ -1730,14 +1730,14 @@ func (p *Parser) parseExternal() (*ast.External, error) {
 
 	for p.cur().Type != TOKEN_RBRACE && p.cur().Type != TOKEN_EOF {
 		switch p.cur().Type {
-		case TOKEN_BODY:
+		case TOKEN_INPUT:
 			p.eat()
 			fields, err := p.parseFields()
 			if err != nil {
 				return nil, err
 			}
 			for _, f := range fields {
-				ext.Body[f.Name] = string(f.Type)
+				ext.Input[f.Name] = string(f.Type)
 			}
 		case TOKEN_OUTPUT:
 			p.eat()

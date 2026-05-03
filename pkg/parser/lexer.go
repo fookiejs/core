@@ -33,6 +33,7 @@ const (
 	TOKEN_CURSOR
 	TOKEN_RETURN
 	TOKEN_BODY
+	TOKEN_INPUT
 	TOKEN_OUTPUT
 	TOKEN_FIELDS
 	TOKEN_FOR
@@ -141,6 +142,7 @@ var keywords = map[string]TokenType{
 	"cursor":  TOKEN_CURSOR,
 	"return":  TOKEN_RETURN,
 	"body":    TOKEN_BODY,
+	"input":   TOKEN_INPUT,
 	"output":  TOKEN_OUTPUT,
 	"fields":  TOKEN_FIELDS,
 	"for": TOKEN_FOR,

@@ -52,7 +52,7 @@ func main() {
 
 	fmt.Printf("  Externals: %d\n", len(schema.Externals))
 	for _, e := range schema.Externals {
-		fmt.Printf("    - %s (body: %d, output: %d)\n", e.Name, len(e.Body), len(e.Output))
+		fmt.Printf("    - %s (input: %d, output: %d)\n", e.Name, len(e.Input), len(e.Output))
 	}
 
 	fmt.Printf("  Modules: %d\n", len(schema.Modules))

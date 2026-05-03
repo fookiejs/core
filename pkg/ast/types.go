@@ -362,7 +362,7 @@ type Cursor struct {
 
 type External struct {
 	Name   string
-	Body   map[string]string
+	Input  map[string]string
 	Output map[string]string
 
 	// Retry policy — configurable from FQL.

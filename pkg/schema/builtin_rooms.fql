@@ -1,5 +1,5 @@
 external RoomGraphQLNotify {
-  body {}
+  input {}
   output {
     delivered: boolean
   }
