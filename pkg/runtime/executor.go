@@ -57,17 +57,18 @@ func NewExecutor(db *sql.DB, schema *ast.Schema, logger Logger) *Executor {
 	}
 	extMgr.store = &StoreAdapter{e: e}
 
-	for _, ext := range schema.Externals {
-		if ext.URL != "" {
-			extMgr.RegisterURL(ext.Name, ext.URL)
-		}
-	}
 
 	return e
 }
 
 func (e *Executor) SetLogSink(s LogSink)               { e.logSink = s }
 func (e *Executor) SetOutboxNotify(fn func(id string)) { e.outboxNotify = fn }
+func (e *Executor) RegisterExternal(name string, handler ExternalHandler) {
+	e.extMgr.Register(name, handler)
+}
+func (e *Executor) RegisterExternalURL(name, baseURL string) {
+	e.extMgr.RegisterURL(name, baseURL)
+}
 func (e *Executor) notifyOutbox(id string) {
 	if e.outboxNotify != nil {
 		e.outboxNotify(id)

@@ -297,6 +297,17 @@ func prepareRuntime(schemaPath, dbURL string, logger *logrus.Logger) (*ast.Schem
 		return nil, nil, nil, nil, fmt.Errorf("open db: %w", err)
 	}
 	executor := runtime.NewExecutor(db, schema, runtime.NewLoggerWrapper(logger))
+
+	// Auto-register external URLs from env vars:
+	// FOOKIE_EXTERNAL_<UPPERCASE_NAME>_URL=http://host:port
+	for _, ext := range schema.Externals {
+		envKey := "FOOKIE_EXTERNAL_" + strings.ToUpper(ext.Name) + "_URL"
+		if url := os.Getenv(envKey); url != "" {
+			executor.RegisterExternalURL(ext.Name, url)
+			logger.Infof("External %q registered via env: %s", ext.Name, url)
+		}
+	}
+
 	return schema, sqls, db, executor, nil
 }
 
