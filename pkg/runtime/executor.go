@@ -394,7 +394,7 @@ func (e *Executor) Create(ctx context.Context, modelName string, req map[string]
 			return nil, fmt.Errorf("sync after: %w", err)
 		}
 
-		queued, err := e.queueEffects(ctx, op.After, op.Compensate, modelName, id, rc)
+		queued, err := e.queueEffects(ctx, op.After, modelName, id, rc)
 		if err != nil {
 			return nil, fmt.Errorf("queue after: %w", err)
 		}
@@ -1033,7 +1033,7 @@ func (e *Executor) updateByID(ctx context.Context, modelName string, id string, 
 		if err := e.runSyncEffectStatements(ctx, op.After, rc, id); err != nil {
 			return nil, fmt.Errorf("sync after: %w", err)
 		}
-		if _, err := e.queueEffects(ctx, op.After, op.Compensate, modelName, id, rc); err != nil {
+		if _, err := e.queueEffects(ctx, op.After, modelName, id, rc); err != nil {
 			return nil, fmt.Errorf("queue after: %w", err)
 		}
 	}
@@ -1158,7 +1158,7 @@ func (e *Executor) deleteByID(ctx context.Context, modelName string, id string, 
 	dbSpan.End()
 
 	if op.After != nil {
-		if _, err := e.queueEffects(ctx, op.After, op.Compensate, modelName, id, rc); err != nil {
+		if _, err := e.queueEffects(ctx, op.After, modelName, id, rc); err != nil {
 			return fmt.Errorf("queue after: %w", err)
 		}
 	}
@@ -2075,7 +2075,7 @@ func extractCall(stmt ast.Statement, ctx context.Context, e *Executor, rc *runCt
 	return "", "", nil
 }
 
-func (e *Executor) queueEffects(ctx context.Context, effect *ast.Block, compensate *ast.Block, entityType, entityID string, rc *runCtx) (queuedAsync bool, err error) {
+func (e *Executor) queueEffects(ctx context.Context, effect *ast.Block, entityType, entityID string, rc *runCtx) (queuedAsync bool, err error) {
 	sagaID := uuid.New().String()
 
 	for step, stmt := range effect.Statements {
@@ -2122,31 +2122,6 @@ func (e *Executor) queueEffects(ctx context.Context, effect *ast.Block, compensa
 		}
 		e.notifyOutbox(insertedID)
 		queuedAsync = true
-	}
-
-	if compensate != nil {
-		for step, stmt := range compensate.Statements {
-			extName, _, params := extractCall(stmt, ctx, e, rc)
-			if extName == "" {
-				continue
-			}
-			payload, _ := json.Marshal(params)
-			compCarrier := propagation.MapCarrier{}
-			propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}).Inject(ctx, compCarrier)
-			var compTraceCtx interface{} = nil
-			if tp := compCarrier["traceparent"]; tp != "" {
-				compTraceCtx = tp
-			}
-			_, err := e.execer(ctx).ExecContext(ctx, `
-				INSERT INTO outbox (entity_type, entity_id, external_name, payload, saga_id, saga_step, is_compensation, status, root_request_id, trace_context)
-				VALUES ($1, $2, $3, $4, $5, $6, TRUE, 'held', $7, $8)`,
-				entityType, entityID, extName, payload, sagaID, step, rc.rootRequestID, compTraceCtx,
-			)
-			if err != nil {
-				return queuedAsync, fmt.Errorf("queue compensation %s: %w", extName, err)
-			}
-			queuedAsync = true
-		}
 	}
 
 	return queuedAsync, nil
@@ -2429,19 +2404,15 @@ func (e *Executor) injectOperationUses(model *ast.Model, op *ast.Operation) (*as
 	}
 	beforeBlocks := make([]*ast.Block, 0, len(modules)+1)
 	afterBlocks := make([]*ast.Block, 0, len(modules)+1)
-	compensateBlocks := make([]*ast.Block, 0, len(modules)+1)
 	for _, mod := range modules {
 		beforeBlocks = append(beforeBlocks, mod.Before)
 		afterBlocks = append(afterBlocks, mod.After)
-		compensateBlocks = append(compensateBlocks, mod.Compensate)
 	}
 	beforeBlocks = append(beforeBlocks, op.Before)
 	afterBlocks = append(afterBlocks, op.After)
-	compensateBlocks = append(compensateBlocks, op.Compensate)
 	injected := *op
 	injected.Before = mergeBlockChain(beforeBlocks...)
 	injected.After = mergeBlockChain(afterBlocks...)
-	injected.Compensate = mergeBlockChain(compensateBlocks...)
 	return &injected, nil
 }
 

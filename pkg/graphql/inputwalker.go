@@ -51,9 +51,6 @@ func walkOpBlocks(op *ast.Operation, collector map[string]bool) {
 	if op.After != nil {
 		walkBlock(op.After, collector)
 	}
-	if op.Compensate != nil {
-		walkBlock(op.Compensate, collector)
-	}
 }
 
 func walkModuleBlocks(mod *ast.Module, collector map[string]bool) {
@@ -62,9 +59,6 @@ func walkModuleBlocks(mod *ast.Module, collector map[string]bool) {
 	}
 	if mod.After != nil {
 		walkBlock(mod.After, collector)
-	}
-	if mod.Compensate != nil {
-		walkBlock(mod.Compensate, collector)
 	}
 }
 
@@ -135,9 +129,6 @@ func inferTypes(schema *ast.Schema, op *ast.Operation, uses []string) map[string
 	if op.After != nil {
 		blocks = append(blocks, op.After)
 	}
-	if op.Compensate != nil {
-		blocks = append(blocks, op.Compensate)
-	}
 	for _, useName := range uses {
 		for _, mod := range schema.Modules {
 			if mod.Name == useName {
@@ -146,9 +137,6 @@ func inferTypes(schema *ast.Schema, op *ast.Operation, uses []string) map[string
 				}
 				if mod.After != nil {
 					blocks = append(blocks, mod.After)
-				}
-				if mod.Compensate != nil {
-					blocks = append(blocks, mod.Compensate)
 				}
 			}
 		}

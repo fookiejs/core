@@ -114,10 +114,9 @@ type Operation struct {
 	Type         string
 	Field        string
 	Before       *Block
-	BeforeParams []string // declared scope vars e.g. ["headers","body"]
+	BeforeParams []string
 	After        *Block
-	AfterParams  []string // declared scope vars e.g. ["record","headers"]
-	Compensate   *Block
+	AfterParams  []string
 	Filter       *FilterClause
 	OrderBy      []*OrderBy
 	Cursor       *Cursor
@@ -376,10 +375,9 @@ type External struct {
 }
 
 type Module struct {
-	Name       string
-	Before     *Block
-	After      *Block
-	Compensate *Block
+	Name   string
+	Before *Block
+	After  *Block
 }
 
 type Context struct {

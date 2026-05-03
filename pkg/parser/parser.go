@@ -639,13 +639,7 @@ func (p *Parser) parseOperation(opType string) (*ast.Operation, error) {
 			op.After = b
 			op.AfterParams = params
 
-		case TOKEN_COMPENSATE:
-			p.eat()
-			b, err := p.parseBlock()
-			if err != nil {
-				return nil, err
-			}
-			op.Compensate = b
+
 
 		case TOKEN_FILTER:
 			p.eat()
@@ -1018,7 +1012,7 @@ func isWordToken(t Token) bool {
 		TOKEN_SUM, TOKEN_COUNT, TOKEN_AVG, TOKEN_MIN, TOKEN_MAX,
 		TOKEN_SIZE, TOKEN_ASC, TOKEN_DESC, TOKEN_IN, TOKEN_NOT,
 		TOKEN_CREATE, TOKEN_READ, TOKEN_UPDATE, TOKEN_DELETE,
-		TOKEN_BEFORE, TOKEN_AFTER, TOKEN_COMPENSATE,
+		TOKEN_BEFORE, TOKEN_AFTER,
 		TOKEN_FILTER, TOKEN_ORDERBY, TOKEN_CURSOR, TOKEN_RETURN,
 		TOKEN_USE, TOKEN_FIELDS, TOKEN_BODY, TOKEN_INPUT, TOKEN_OUTPUT,
 		TOKEN_SETUP, TOKEN_NOTIFY, TOKEN_CONFIG,
@@ -1818,13 +1812,6 @@ func (p *Parser) parseModule() (*ast.Module, error) {
 				return nil, err
 			}
 			mod.After = b
-		case TOKEN_COMPENSATE:
-			p.eat()
-			b, err := p.parseBlock()
-			if err != nil {
-				return nil, err
-			}
-			mod.Compensate = b
 		default:
 			return nil, p.errorf("unexpected token in module %q: %q", mod.Name, p.cur().Value)
 		}

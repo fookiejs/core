@@ -26,7 +26,6 @@ const (
 
 	TOKEN_BEFORE
 	TOKEN_AFTER
-	TOKEN_COMPENSATE
 
 	TOKEN_FILTER
 	TOKEN_ORDERBY
@@ -134,7 +133,6 @@ var keywords = map[string]TokenType{
 
 	"before":     TOKEN_BEFORE,
 	"after":      TOKEN_AFTER,
-	"compensate": TOKEN_COMPENSATE,
 
 	"filter":  TOKEN_FILTER,
 	"where":   TOKEN_FILTER,
