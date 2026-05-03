@@ -191,14 +191,6 @@ func (p *Parser) Parse() (*ast.Schema, error) {
 			}
 			schema.Configs = append(schema.Configs, cfgs...)
 
-		case TOKEN_SETUP:
-			p.eat()
-			sb, err := p.parseSeedBlock()
-			if err != nil {
-				return nil, err
-			}
-			schema.Setups = append(schema.Setups, sb)
-
 		default:
 			return nil, p.errorf("unexpected top-level token: %q", p.cur().Value)
 		}
@@ -694,6 +686,25 @@ func (p *Parser) parseBlock() (*ast.Block, error) {
 			continue
 		}
 
+		if p.cur().Type == TOKEN_IF {
+			stmt, err := p.parseIfStmt()
+			if err != nil {
+				return nil, err
+			}
+			block.Statements = append(block.Statements, stmt)
+			continue
+		}
+
+		// filter.<field> = <expr>
+		if p.cur().Type == TOKEN_FILTER && p.peek(1).Type == TOKEN_DOT {
+			stmt, err := p.parseFilterInject()
+			if err != nil {
+				return nil, err
+			}
+			block.Statements = append(block.Statements, stmt)
+			continue
+		}
+
 		if p.cur().Type == TOKEN_NOTIFY {
 			stmt, err := p.parseEffectNotify()
 			if err != nil {
@@ -927,6 +938,40 @@ func (p *Parser) parseForIn() (*ast.ForIn, error) {
 }
 
 
+func (p *Parser) parseIfStmt() (*ast.IfStmt, error) {
+	line := p.cur().LineNo
+	if _, err := p.expect(TOKEN_IF); err != nil {
+		return nil, err
+	}
+	cond, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+	body, err := p.parseBlock()
+	if err != nil {
+		return nil, err
+	}
+	return &ast.IfStmt{Condition: cond, Then: body, LineNo: line}, nil
+}
+
+func (p *Parser) parseFilterInject() (*ast.FilterInjectStmt, error) {
+	line := p.cur().LineNo
+	p.eat() // consume 'filter'
+	p.eat() // consume '.'
+	if !isWordToken(p.cur()) {
+		return nil, p.errorf("expected field name after 'filter.', got %q", p.cur().Value)
+	}
+	field := p.eat().Value
+	if _, err := p.expect(TOKEN_ASSIGN); err != nil {
+		return nil, err
+	}
+	val, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+	return &ast.FilterInjectStmt{Field: field, Value: val, LineNo: line}, nil
+}
+
 // parseHookParams parses an optional (param, param, ...) list after before/after keywords.
 // Returns the param names (may be empty if no parens present).
 func (p *Parser) parseHookParams() ([]string, error) {
@@ -1014,8 +1059,8 @@ func isWordToken(t Token) bool {
 		TOKEN_CREATE, TOKEN_READ, TOKEN_UPDATE, TOKEN_DELETE,
 		TOKEN_BEFORE, TOKEN_AFTER,
 		TOKEN_FILTER, TOKEN_ORDERBY, TOKEN_CURSOR, TOKEN_RETURN,
-		TOKEN_USE, TOKEN_FIELDS, TOKEN_BODY, TOKEN_INPUT, TOKEN_OUTPUT,
-		TOKEN_SETUP, TOKEN_NOTIFY, TOKEN_CONFIG,
+		TOKEN_USE, TOKEN_FIELDS, TOKEN_INPUT, TOKEN_OUTPUT,
+		TOKEN_NOTIFY, TOKEN_CONFIG,
 		TOKEN_FOR:
 		return true
 	}
@@ -1431,9 +1476,16 @@ func (p *Parser) parsePrimary() (ast.Expression, error) {
 
 // parseStructuredFilter parses: { field: op val op val, field: op val, ... }
 // Returns nil if no { is present, or if { is not followed by "word:" (likely a block body).
+// Empty {} is treated as an empty filter (match all records).
 func (p *Parser) parseStructuredFilter() (*ast.QueryFilter, error) {
 	if p.cur().Type != TOKEN_LBRACE {
 		return nil, nil
+	}
+	// Empty {} → empty filter, match all
+	if p.peek(1).Type == TOKEN_RBRACE {
+		p.eat() // {
+		p.eat() // }
+		return &ast.QueryFilter{}, nil
 	}
 	// Disambiguate: { field: ... } vs { body statements }
 	// A filter block always starts with an identifier followed by colon.
@@ -1911,7 +1963,7 @@ func (p *Parser) parseSeedBlock() (*ast.SeedBlock, error) {
 		if _, err := p.expect(TOKEN_RBRACE); err != nil {
 			return nil, err
 		}
-		sb.Parts = append(sb.Parts, &ast.SeedPart{Legacy: entry})
+		sb.Parts = append(sb.Parts, &ast.SeedPart{Entry: entry})
 		if p.cur().Type == TOKEN_COMMA {
 			p.eat()
 		}

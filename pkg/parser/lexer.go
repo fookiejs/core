@@ -16,7 +16,6 @@ const (
 	TOKEN_CRON
 	TOKEN_CONFIG
 	TOKEN_USE
-	TOKEN_SETUP
 	TOKEN_NOTIFY
 
 	TOKEN_CREATE
@@ -31,11 +30,11 @@ const (
 	TOKEN_ORDERBY
 	TOKEN_CURSOR
 	TOKEN_RETURN
-	TOKEN_BODY
 	TOKEN_INPUT
 	TOKEN_OUTPUT
 	TOKEN_FIELDS
 	TOKEN_FOR
+	TOKEN_IF
 
 	TOKEN_SUM
 	TOKEN_COUNT
@@ -122,9 +121,8 @@ var keywords = map[string]TokenType{
 	"seed":     TOKEN_SEED,
 	"cron":     TOKEN_CRON,
 	"config":   TOKEN_CONFIG,
-	"use":      TOKEN_USE,
-	"setup":    TOKEN_SETUP,
-	"notify":   TOKEN_NOTIFY,
+	"use":    TOKEN_USE,
+	"notify": TOKEN_NOTIFY,
 
 	"create": TOKEN_CREATE,
 	"read":   TOKEN_READ,
@@ -135,15 +133,14 @@ var keywords = map[string]TokenType{
 	"after":      TOKEN_AFTER,
 
 	"filter":  TOKEN_FILTER,
-	"where":   TOKEN_FILTER,
 	"orderBy": TOKEN_ORDERBY,
 	"cursor":  TOKEN_CURSOR,
-	"return":  TOKEN_RETURN,
-	"body":    TOKEN_BODY,
-	"input":   TOKEN_INPUT,
+	"return": TOKEN_RETURN,
+	"input":  TOKEN_INPUT,
 	"output":  TOKEN_OUTPUT,
 	"fields":  TOKEN_FIELDS,
 	"for": TOKEN_FOR,
+	"if":  TOKEN_IF,
 
 	"sum":      TOKEN_SUM,
 	"count":    TOKEN_COUNT,

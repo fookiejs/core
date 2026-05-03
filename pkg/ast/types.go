@@ -1,6 +1,5 @@
 package ast
 
-import "time"
 
 type Schema struct {
 	Models    []*Model
@@ -9,7 +8,6 @@ type Schema struct {
 	Enums     []*Enum
 	Seeds     []*SeedBlock
 	Crons     []*CronBlock
-	Setups    []*SeedBlock
 	Configs   []*ConfigEntry
 }
 
@@ -31,8 +29,8 @@ type SeedBlock struct {
 }
 
 type SeedPart struct {
-	Legacy *SeedEntry
-	Stmts  []Statement
+	Entry *SeedEntry
+	Stmts []Statement
 }
 
 type SeedEntry struct {
@@ -345,6 +343,22 @@ type ForIn struct {
 
 func (ForIn) statementMarker() {}
 
+type IfStmt struct {
+	Condition Expression
+	Then      *Block
+	LineNo    int
+}
+
+func (*IfStmt) statementMarker() {}
+
+type FilterInjectStmt struct {
+	Field  string
+	Value  Expression
+	LineNo int
+}
+
+func (*FilterInjectStmt) statementMarker() {}
+
 type FilterClause struct {
 	Conditions []Expression
 }
@@ -380,20 +394,3 @@ type Module struct {
 	After  *Block
 }
 
-type Context struct {
-	Principal     map[string]interface{}
-	Input         map[string]interface{}
-	Output        map[string]interface{}
-	Variables     map[string]interface{}
-	Timestamp     time.Time
-	TransactionID string
-}
-
-type OperationResult struct {
-	RowID      string
-	Status     string
-	Output     map[string]interface{}
-	Errors     []string
-	ExecutedAt time.Time
-	Duration   time.Duration
-}

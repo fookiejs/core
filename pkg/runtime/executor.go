@@ -504,11 +504,23 @@ func (e *Executor) Read(ctx context.Context, modelName string, req map[string]in
 
 	rc.injectHookVars(op.BeforeParams, map[string]interface{}{
 		"headers": rc.req["headers"],
-		"query":   rc.req["filter"],
+		"filter":  rc.req["filter"],
 	})
 
 	if err := e.execBlock(ctx, "before", op.Before, rc); err != nil {
 		return nil, fmt.Errorf("before: %w", err)
+	}
+
+	// merge filter injections from before block (filter.<field> = val)
+	if len(rc.extraFilter) > 0 {
+		existing, _ := req["filter"].(map[string]interface{})
+		if existing == nil {
+			existing = map[string]interface{}{}
+		}
+		for k, v := range rc.extraFilter {
+			existing[k] = map[string]interface{}{"eq": v}
+		}
+		req["filter"] = existing
 	}
 
 	frag := ""
@@ -564,7 +576,7 @@ func (e *Executor) Read(ctx context.Context, modelName string, req map[string]in
 		rc.injectHookVars(op.AfterParams, map[string]interface{}{
 			"rows":    rows,
 			"headers": rc.req["headers"],
-			"query":   rc.req["filter"],
+			"filter":  rc.req["filter"],
 		})
 		if err := e.execBlock(ctx, "after", op.After, rc); err != nil {
 			return nil, fmt.Errorf("read after: %w", err)
@@ -798,7 +810,7 @@ func (e *Executor) UpdateMany(ctx context.Context, modelName string, req map[str
 		rc.injectHookVars(op.AfterParams, map[string]interface{}{
 			"affected_ids": affectedIDs,
 			"body":         rc.payload(),
-			"query":        filter,
+			"filter":       filter,
 			"headers":      rc.req["headers"],
 		})
 		if err := e.execBlock(ctx, "after", op.After, rc); err != nil {
@@ -872,7 +884,7 @@ func (e *Executor) DeleteMany(ctx context.Context, modelName string, req map[str
 		rc.vars = make(map[string]interface{})
 		rc.injectHookVars(op.AfterParams, map[string]interface{}{
 			"deleted_ids": deletedIDs,
-			"query":       filter,
+			"filter":      filter,
 			"headers":     rc.req["headers"],
 		})
 		if err := e.execBlock(ctx, "after", op.After, rc); err != nil {
@@ -941,7 +953,7 @@ func (e *Executor) updateByID(ctx context.Context, modelName string, id string, 
 	rc.injectHookVars(op.BeforeParams, map[string]interface{}{
 		"body":    rc.payload(),
 		"headers": rc.req["headers"],
-		"query":   rc.req["filter"],
+		"filter":  rc.req["filter"],
 	})
 
 	patch := map[string]interface{}{}
@@ -1033,7 +1045,7 @@ func (e *Executor) updateByID(ctx context.Context, modelName string, id string, 
 			"id":           id,
 			"affected_ids": []interface{}{id},
 			"body":         rc.payload(),
-			"query":        rc.req["filter"],
+			"filter":       rc.req["filter"],
 			"headers":      rc.req["headers"],
 		})
 
@@ -1120,7 +1132,7 @@ func (e *Executor) deleteByID(ctx context.Context, modelName string, id string, 
 
 	// inject hook vars for delete.before
 	rc.injectHookVars(op.BeforeParams, map[string]interface{}{
-		"query":   rc.req["filter"],
+		"filter":  rc.req["filter"],
 		"headers": rc.req["headers"],
 	})
 
@@ -1313,6 +1325,33 @@ func (e *Executor) execBlock(ctx context.Context, blockName string, block *ast.B
 				span.RecordError(err)
 				span.SetStatus(codes.Error, err.Error())
 				return err
+			}
+
+		case *ast.IfStmt:
+			condVal, err := e.evalExpr(ctx, s.Condition, rc)
+			if err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
+				return fmt.Errorf("if condition: %w", err)
+			}
+			if isTruthy(condVal) {
+				if err := e.execBlock(ctx, blockName, s.Then, rc); err != nil {
+					return err
+				}
+			}
+
+		case *ast.FilterInjectStmt:
+			val, err := e.evalExpr(ctx, s.Value, rc)
+			if err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
+				return fmt.Errorf("filter.%s: %w", s.Field, err)
+			}
+			if val != nil {
+				if rc.extraFilter == nil {
+					rc.extraFilter = map[string]interface{}{}
+				}
+				rc.extraFilter[s.Field] = val
 			}
 
 		case *ast.ForIn:
@@ -1959,6 +1998,21 @@ func (e *Executor) systemSum(ctx context.Context, modelName, field string, filte
 	return sum, nil
 }
 
+func isTruthy(v interface{}) bool {
+	if v == nil {
+		return false
+	}
+	switch val := v.(type) {
+	case bool:
+		return val
+	case float64:
+		return val != 0
+	case string:
+		return val != ""
+	}
+	return true
+}
+
 func iterableToSlice(v interface{}) ([]interface{}, error) {
 	if v == nil {
 		return nil, nil
@@ -2484,12 +2538,13 @@ func normalizeScanValue(v interface{}) interface{} {
 }
 
 type runCtx struct {
-	req       map[string]interface{}
-	body      map[string]interface{}
-	principal map[string]interface{}
-	output    map[string]interface{}
-	vars      map[string]interface{}
-	isSystem  bool
+	req          map[string]interface{}
+	body         map[string]interface{}
+	principal    map[string]interface{}
+	output       map[string]interface{}
+	vars         map[string]interface{}
+	extraFilter  map[string]interface{}
+	isSystem     bool
 
 	rootRequestID string
 	operation     string
@@ -2575,7 +2630,29 @@ func (e *Executor) execBeforeStmts(ctx context.Context, stmts []ast.Statement, r
 				return fmt.Errorf("validation error")
 			}
 
-}
+		case *ast.IfStmt:
+			condVal, err := e.evalExpr(ctx, s.Condition, rc)
+			if err != nil {
+				return fmt.Errorf("if condition: %w", err)
+			}
+			if isTruthy(condVal) {
+				if err := e.execBeforeStmts(ctx, s.Then.Statements, rc, setField); err != nil {
+					return err
+				}
+			}
+
+		case *ast.FilterInjectStmt:
+			val, err := e.evalExpr(ctx, s.Value, rc)
+			if err != nil {
+				return fmt.Errorf("filter.%s: %w", s.Field, err)
+			}
+			if val != nil {
+				if rc.extraFilter == nil {
+					rc.extraFilter = map[string]interface{}{}
+				}
+				rc.extraFilter[s.Field] = val
+			}
+		}
 	}
 	return nil
 }

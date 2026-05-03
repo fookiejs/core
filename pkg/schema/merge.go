@@ -233,7 +233,6 @@ func mergeSchemasStrict(parts []parsedSchemaSource) (*ast.Schema, error) {
 			merged.Configs = append(merged.Configs, cfg)
 		}
 
-		merged.Setups = append(merged.Setups, part.schema.Setups...)
 		merged.Seeds = append(merged.Seeds, part.schema.Seeds...)
 
 		for _, cronBlock := range part.schema.Crons {

@@ -15,8 +15,8 @@ import (
 func executeSeedBlock(ctx context.Context, sb *ast.SeedBlock, exec *Executor) error {
 	rc := newRunCtx(WithSystemBody(map[string]interface{}{}))
 	for _, part := range sb.Parts {
-		if part.Legacy != nil {
-			entry := part.Legacy
+		if part.Entry != nil {
+			entry := part.Entry
 			for _, record := range entry.Records {
 				keyVal, ok := record[entry.KeyField]
 				if !ok {

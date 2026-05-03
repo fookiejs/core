@@ -28,7 +28,7 @@ func TestLexerBasic(t *testing.T) {
 func TestParserModel(t *testing.T) {
 	input := `
 external ValidateToken {
-  body {
+  input {
     token: string
   }
   output {
@@ -73,7 +73,7 @@ model Transaction {
 func TestParserExternal(t *testing.T) {
 	input := `
 external FraudCheck {
-  body {
+  input {
     userId: id
     amount: number
   }
@@ -93,7 +93,7 @@ external FraudCheck {
 	assert.Equal(t, 1, len(schema.Externals))
 	ext := schema.Externals[0]
 	assert.Equal(t, "FraudCheck", ext.Name)
-	assert.Contains(t, ext.Body, "userId")
+	assert.Contains(t, ext.Input, "userId")
 	assert.Contains(t, ext.Output, "allowed")
 }
 
@@ -106,9 +106,6 @@ module AuthenticateUser {
   }
 
   after {
-  }
-
-  compensate {
   }
 }
 `
@@ -150,12 +147,12 @@ model User {
 func TestParserCronBlock(t *testing.T) {
 	input := `
 external CleanExpiredListings {
-  body  {}
+  input {}
   output { expired_count: number }
 }
 
 external RespawnMonsters {
-  body  {}
+  input {}
   output { spawned_count: number }
 }
 
@@ -185,7 +182,7 @@ cron {
 func TestParserCronBlock_WithEmptyBody(t *testing.T) {
 	input := `
 external NotifyAdmin {
-  body  { zone: string }
+  input { zone: string }
   output { ok: boolean  }
 }
 
@@ -234,7 +231,7 @@ config {
 func TestParserSchema_CronAndSeed(t *testing.T) {
 	input := `
 external TickWorld {
-  body {}
+  input {}
   output { ok: boolean }
 }
 
@@ -317,9 +314,9 @@ seed {
 
 	sb := schema.Seeds[0]
 	require.Len(t, sb.Parts, 1)
-	require.NotNil(t, sb.Parts[0].Legacy)
+	require.NotNil(t, sb.Parts[0].Entry)
 
-	entry := sb.Parts[0].Legacy
+	entry := sb.Parts[0].Entry
 	assert.Equal(t, "ItemCategory", entry.Model)
 	assert.Equal(t, "name", entry.KeyField)
 	require.Len(t, entry.Records, 3)
@@ -370,10 +367,10 @@ seed {
 
 	sb := schema.Seeds[0]
 	require.Len(t, sb.Parts, 2)
-	assert.Equal(t, "Category", sb.Parts[0].Legacy.Model)
-	assert.Len(t, sb.Parts[0].Legacy.Records, 2)
-	assert.Equal(t, "Player", sb.Parts[1].Legacy.Model)
-	assert.Len(t, sb.Parts[1].Legacy.Records, 1)
+	assert.Equal(t, "Category", sb.Parts[0].Entry.Model)
+	assert.Len(t, sb.Parts[0].Entry.Records, 2)
+	assert.Equal(t, "Player", sb.Parts[1].Entry.Model)
+	assert.Len(t, sb.Parts[1].Entry.Records, 1)
 }
 
 func TestParserSeedBlock_ScalarTypes(t *testing.T) {
@@ -405,7 +402,7 @@ seed {
 
 	require.NoError(t, err)
 	require.Len(t, schema.Seeds, 1)
-	records := schema.Seeds[0].Parts[0].Legacy.Records
+	records := schema.Seeds[0].Parts[0].Entry.Records
 	require.Len(t, records, 2)
 
 	assert.Equal(t, "A", records[0]["name"])
@@ -444,8 +441,8 @@ seed {
 	schema, err := p.Parse()
 	require.NoError(t, err)
 	require.Len(t, schema.Seeds[0].Parts, 3)
-	require.NotNil(t, schema.Seeds[0].Parts[0].Legacy)
-	assert.Equal(t, "static", schema.Seeds[0].Parts[0].Legacy.Records[0]["name"])
+	require.NotNil(t, schema.Seeds[0].Parts[0].Entry)
+	assert.Equal(t, "static", schema.Seeds[0].Parts[0].Entry.Records[0]["name"])
 	require.Len(t, schema.Seeds[0].Parts[1].Stmts, 1)
 	forIn, ok := schema.Seeds[0].Parts[1].Stmts[0].(*ast.ForIn)
 	require.True(t, ok)
@@ -455,6 +452,6 @@ seed {
 	require.Len(t, forIn.Body.Statements, 1)
 	_, ok = forIn.Body.Statements[0].(*ast.EffectCreateStmt)
 	require.True(t, ok)
-	require.NotNil(t, schema.Seeds[0].Parts[2].Legacy)
-	assert.Equal(t, "static2", schema.Seeds[0].Parts[2].Legacy.Records[0]["name"])
+	require.NotNil(t, schema.Seeds[0].Parts[2].Entry)
+	assert.Equal(t, "static2", schema.Seeds[0].Parts[2].Entry.Records[0]["name"])
 }

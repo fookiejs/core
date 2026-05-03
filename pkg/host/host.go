@@ -117,7 +117,7 @@ func RunServer(opts ServerOptions) error {
 	if err := runtime.ExecuteSetups(initCtx, schema, executor); err != nil {
 		return fmt.Errorf("setups: %w", err)
 	}
-	logger.Infof("Setups done (%d blocks)", len(schema.Setups))
+	logger.Infof("Setups done")
 	if err := runtime.ExecuteCrons(initCtx, schema, db); err != nil {
 		return fmt.Errorf("crons: %w", err)
 	}

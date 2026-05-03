@@ -8,12 +8,6 @@ import (
 )
 
 func ExecuteSetups(ctx context.Context, schema *ast.Schema, exec *Executor) error {
-	for _, sb := range schema.Setups {
-		if err := executeSeedBlock(ctx, sb, exec); err != nil {
-			return fmt.Errorf("setup: %w", err)
-		}
-	}
-
 	rooms, err := exec.Read(ctx, "Room", map[string]interface{}{})
 	if err != nil {
 		return fmt.Errorf("setup: load rooms: %w", err)
