@@ -2136,12 +2136,19 @@ func evalParams(ctx context.Context, rawParams map[string]ast.Expression, e *Exe
 	return out
 }
 
+// syncEffectStatements collects Effect* statements from the start of the block
+// up to (but not including) the first external call.  Statements that come
+// after an external call depend on the call's result and are handled later by
+// the outbox worker via executeEffectActions.
 func syncEffectStatements(effect *ast.Block) []ast.Statement {
 	if effect == nil {
 		return nil
 	}
 	var out []ast.Statement
 	for _, s := range effect.Statements {
+		if extractStaticCallName(s) != "" {
+			break // everything from here on depends on external call result
+		}
 		switch s.(type) {
 		case *ast.EffectUpdateStmt, *ast.EffectDeleteStmt, *ast.EffectCreateStmt, *ast.EffectNotifyStmt:
 			out = append(out, s)
