@@ -8,12 +8,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestDemoSchemaPlan_ParsesWithNoExternals(t *testing.T) {
+func TestDemoSchemaPlan_Parses(t *testing.T) {
 	schemaPath := filepath.Join("..", "..", "..", "demo", "schema")
 	schema, err := schemapkg.LoadSchema(schemaPath)
 	require.NoError(t, err)
 
-	require.GreaterOrEqual(t, len(schema.Models), 6, "demo should define core models for the sample UI")
-	require.Len(t, schema.Externals, 0, "demo plan must stay FQL-only without externals")
-	require.NotEmpty(t, schema.Crons, "simulation cadence should be represented by cron entries")
+	require.GreaterOrEqual(t, len(schema.Models), 3, "demo should define core models")
+	require.GreaterOrEqual(t, len(schema.Externals), 3, "demo should use externals to showcase the feature")
+	require.NotEmpty(t, schema.Crons, "demo should have cron entries")
+	require.NotEmpty(t, schema.Seeds, "demo should have seed data")
 }

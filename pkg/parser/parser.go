@@ -244,16 +244,17 @@ func (p *Parser) parseModel() (*ast.Model, error) {
 
 		case TOKEN_SUM, TOKEN_COUNT, TOKEN_AVG, TOKEN_MIN, TOKEN_MAX, TOKEN_STDDEV, TOKEN_VARIANCE:
 			opType := p.eat().Value
-			if p.cur().Type != TOKEN_LPAREN {
+			var field string
+			if p.cur().Type == TOKEN_LPAREN {
+				p.eat()
+				if isWordToken(p.cur()) {
+					field = p.eat().Value
+				}
+				if _, err := p.expect(TOKEN_RPAREN); err != nil {
+					return nil, err
+				}
+			} else if opType != "count" {
 				return nil, p.errorf("expected ( after %s", opType)
-			}
-			p.eat()
-			if !isWordToken(p.cur()) {
-				return nil, p.errorf("expected field name in %s(...)", opType)
-			}
-			field := p.eat().Value
-			if _, err := p.expect(TOKEN_RPAREN); err != nil {
-				return nil, err
 			}
 			op, err := p.parseOperation(opType)
 			if err != nil {
@@ -2090,7 +2091,7 @@ func (p *Parser) parseEffectNotify() (*ast.EffectNotifyStmt, error) {
 	}
 	p.eat()
 	for p.cur().Type != TOKEN_RBRACE && p.cur().Type != TOKEN_EOF {
-		if !isWordToken(p.cur()) {
+		if p.cur().Value == "" {
 			return nil, p.errorf("notify payload: expected key, got %q", p.cur().Value)
 		}
 		key := p.eat().Value
