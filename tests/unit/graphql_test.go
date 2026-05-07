@@ -23,10 +23,10 @@ model User {
     name: string
   }
   create {
-    before { notEmptyString(body.email) notEmptyString(body.name) }
+    before() { notEmptyString(body.email) notEmptyString(body.name) }
   }
   read {}
-  update { before {} }
+  update { before() {} }
   delete {}
 }
 
@@ -37,14 +37,14 @@ model Village {
     food: number
   }
   create {
-    before {
+    before() {
       body.owner_id != null
       notEmptyString(body.name)
       body.food >= 0
     }
   }
   read {}
-  update { before {} }
+  update { before() {} }
   delete {}
 }
 `

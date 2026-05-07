@@ -44,14 +44,14 @@ model Transaction {
   }
 
   create {
-    before {
+    before() {
       principal = ValidateToken(token: body.token)
       body.amount > 0
       fromWallet.balance >= body.amount
       amount = body.amount
     }
 
-    after {
+    after() {
     }
   }
 }
@@ -237,7 +237,7 @@ external TickWorld {
 
 model WorldEvent {
   fields { name: string }
-  create { before {} }
+  create { before() {} }
   read {}
 }
 
@@ -289,10 +289,10 @@ model ItemCategory {
     max_stack: number
   }
   create {
-    before { body.name != "" }
+    before() { body.name != "" }
   }
   read {}
-  update { before {} }
+  update { before() {} }
   delete {}
 }
 
@@ -333,17 +333,17 @@ func TestParserSeedBlock_MultipleModels(t *testing.T) {
 	input := `
 model Category {
   fields { name: string }
-  create { before {} }
+  create { before() {} }
   read {}
-  update { before {} }
+  update { before() {} }
   delete {}
 }
 
 model Player {
   fields { username: string }
-  create { before {} }
+  create { before() {} }
   read {}
-  update { before {} }
+  update { before() {} }
   delete {}
 }
 
@@ -382,9 +382,9 @@ model Thing {
     active:   boolean
     score:    number
   }
-  create { before {} }
+  create { before() {} }
   read {}
-  update { before {} }
+  update { before() {} }
   delete {}
 }
 
@@ -417,9 +417,9 @@ func TestParserSeedBlock_ProceduralOrdered(t *testing.T) {
 	input := `
 model SeedThing {
   fields { name: string required notEmpty code: number required positive }
-  create { before {} }
+  create { before() {} }
   read {}
-  update { before {} }
+  update { before() {} }
   delete {}
 }
 

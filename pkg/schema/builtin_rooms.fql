@@ -12,7 +12,7 @@ model Room {
   }
 
   create {
-    before {
+    before() {
       true
       notEmptyString(body.name)
     }
@@ -21,11 +21,11 @@ model Room {
   read {}
 
   update {
-    before { true }
+    before() { true }
   }
 
   delete {
-    before { true }
+    before() { true }
   }
 }
 
@@ -37,7 +37,7 @@ model RoomMember {
   }
 
   create {
-    before {
+    before() {
       true
       body.room_id != null
       notEmptyString(body.principal_id)
@@ -47,10 +47,10 @@ model RoomMember {
   read {}
 
   update {
-    before { true }
+    before() { true }
   }
 
   delete {
-    before { true }
+    before() { true }
   }
 }

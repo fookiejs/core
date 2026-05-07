@@ -16,7 +16,7 @@ model BankWallet {
 
   create {
 
-    before {
+    before() {
 
       requireAdminKey(request.admin_key)
 
@@ -40,7 +40,7 @@ model BankWallet {
 
   update {
 
-    before { requireAdminKey(request.admin_key) }
+    before() { requireAdminKey(request.admin_key) }
 
   }
 
@@ -48,7 +48,7 @@ model BankWallet {
 
   delete {
 
-    before { requireAdminKey(request.admin_key) }
+    before() { requireAdminKey(request.admin_key) }
 
   }
 
@@ -74,7 +74,7 @@ model BankUser {
 
   create {
 
-    before {
+    before() {
 
       requireAdminKey(request.admin_key)
 
@@ -98,7 +98,7 @@ model BankUser {
 
   update {
 
-    before { requireAdminKey(request.admin_key) }
+    before() { requireAdminKey(request.admin_key) }
 
   }
 
@@ -106,7 +106,7 @@ model BankUser {
 
   delete {
 
-    before { requireAdminKey(request.admin_key) }
+    before() { requireAdminKey(request.admin_key) }
 
   }
 
@@ -132,7 +132,7 @@ model WalletTransfer {
 
   create {
 
-    before {
+    before() {
 
       requireAdminKey(request.admin_key)
 
@@ -156,7 +156,7 @@ model WalletTransfer {
 
   update {
 
-    before { requireAdminKey(request.admin_key) }
+    before() { requireAdminKey(request.admin_key) }
 
   }
 
@@ -164,7 +164,7 @@ model WalletTransfer {
 
   delete {
 
-    before { requireAdminKey(request.admin_key) }
+    before() { requireAdminKey(request.admin_key) }
 
   }
 
@@ -190,7 +190,7 @@ model AtmTransaction {
 
   create {
 
-    before {
+    before() {
 
       requireAdminKey(request.admin_key)
 
@@ -214,7 +214,7 @@ model AtmTransaction {
 
   update {
 
-    before { requireAdminKey(request.admin_key) }
+    before() { requireAdminKey(request.admin_key) }
 
   }
 
@@ -222,7 +222,7 @@ model AtmTransaction {
 
   delete {
 
-    before { requireAdminKey(request.admin_key) }
+    before() { requireAdminKey(request.admin_key) }
 
   }
 

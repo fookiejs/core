@@ -23,14 +23,14 @@ model Counter {
     n: number
   }
   create {
-    before {
+    before() {
       body.n >= 0
       n = body.n
     }
   }
   read {}
   update {
-    before {
+    before() {
       body.delta != null
       n = output.n + body.delta
     }
@@ -45,18 +45,18 @@ model Counter {
     n: number
   }
   create {
-    before {
+    before() {
       body.n >= 0
       n = body.n
     }
   }
   read {}
   update {
-    before {
+    before() {
       body.delta != null body.peer_id != null
       n = output.n + body.delta
     }
-    after {
+    after() {
       update Counter(body.peer_id) { n = n + body.delta }
     }
   }

@@ -973,11 +973,11 @@ func (p *Parser) parseFilterInject() (*ast.FilterInjectStmt, error) {
 	return &ast.FilterInjectStmt{Field: field, Value: val, LineNo: line}, nil
 }
 
-// parseHookParams parses an optional (param, param, ...) list after before/after keywords.
-// Returns the param names (may be empty if no parens present).
+// parseHookParams parses a required (param, param, ...) list after before/after keywords.
+// Parentheses are mandatory; params list may be empty: before() {}.
 func (p *Parser) parseHookParams() ([]string, error) {
 	if p.cur().Type != TOKEN_LPAREN {
-		return nil, nil
+		return nil, p.errorf("expected '(' after before/after — parentheses are required even with no params")
 	}
 	p.eat() // consume (
 	var params []string
