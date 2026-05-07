@@ -6,10 +6,31 @@ import (
 	"github.com/fookiejs/fookie/pkg/compiler"
 	"github.com/fookiejs/fookie/pkg/runtime"
 	"github.com/graphql-go/graphql"
+	gqlast "github.com/graphql-go/graphql/language/ast"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
+
+// extractSelectedFields returns the GQL field names the client actually requested.
+// These are the direct sub-fields of the resolver's return type (e.g. for all_X: id, name, email…).
+// Returns nil when the info is unavailable, which causes the executor to fall back to SELECT *.
+func extractSelectedFields(p graphql.ResolveParams) []string {
+	if len(p.Info.FieldASTs) == 0 {
+		return nil
+	}
+	ss := p.Info.FieldASTs[0].SelectionSet
+	if ss == nil {
+		return nil
+	}
+	names := make([]string, 0, len(ss.Selections))
+	for _, sel := range ss.Selections {
+		if f, ok := sel.(*gqlast.Field); ok {
+			names = append(names, f.Name.Value)
+		}
+	}
+	return names
+}
 
 type contextKey string
 
@@ -136,6 +157,9 @@ func resolveRead(modelName string) graphql.FieldResolveFn {
 		}
 		if c, ok := p.Args["cursor"]; ok && c != nil {
 			req["cursor"] = c.(map[string]interface{})
+		}
+		if fields := extractSelectedFields(p); len(fields) > 0 {
+			req["select"] = fields
 		}
 		injectTokenCtx(p.Context, req)
 		injectAdminKey(p.Context, req)

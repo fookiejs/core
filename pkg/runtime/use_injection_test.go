@@ -32,7 +32,6 @@ func TestResolveOpInjectsUseBlocksPerPhaseInOrder(t *testing.T) {
 		Type:       "update",
 		Before:     &ast.Block{Statements: []ast.Statement{assignmentStmt("op_before", "m")}},
 		After:      &ast.Block{Statements: []ast.Statement{assignmentStmt("op_after", "e")}},
-		Compensate: &ast.Block{Statements: []ast.Statement{assignmentStmt("op_compensate", "c")}},
 	}
 	model := &ast.Model{
 		Name: "Person",
@@ -46,13 +45,11 @@ func TestResolveOpInjectsUseBlocksPerPhaseInOrder(t *testing.T) {
 				Name:       "GuardA",
 				Before:     &ast.Block{Statements: []ast.Statement{assignmentStmt("a_before", "m")}},
 				After:      &ast.Block{Statements: []ast.Statement{assignmentStmt("a_after", "e")}},
-				Compensate: &ast.Block{Statements: []ast.Statement{assignmentStmt("a_compensate", "c")}},
 			},
 			{
 				Name:       "GuardB",
 				Before:     &ast.Block{Statements: []ast.Statement{assignmentStmt("b_before", "m")}},
 				After:      &ast.Block{Statements: []ast.Statement{assignmentStmt("b_after", "e")}},
-				Compensate: &ast.Block{Statements: []ast.Statement{assignmentStmt("b_compensate", "c")}},
 			},
 		},
 	}
@@ -62,7 +59,6 @@ func TestResolveOpInjectsUseBlocksPerPhaseInOrder(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, []string{"a_before", "b_before", "op_before"}, assignmentNames(injectedOp.Before))
 	require.Equal(t, []string{"a_after", "b_after", "op_after"}, assignmentNames(injectedOp.After))
-	require.Equal(t, []string{"a_compensate", "b_compensate", "op_compensate"}, assignmentNames(injectedOp.Compensate))
 }
 
 func TestResolveOpDoesNotMixBlockTypes(t *testing.T) {

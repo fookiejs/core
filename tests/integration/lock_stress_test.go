@@ -130,12 +130,12 @@ func isPgDeadlock(err error) bool {
 }
 
 func updateCounterRetry(ctx context.Context, exec interface {
-	Update(context.Context, string, string, map[string]interface{}) (map[string]interface{}, error)
+	UpdateByID(context.Context, string, string, map[string]interface{}) (map[string]interface{}, error)
 }, id string, body map[string]interface{}, deadlockRetries *int64) error {
 	const maxAttempts = 160
 	var prevErr error
 	for attempt := 0; attempt < maxAttempts; attempt++ {
-		_, err := exec.updateByID(ctx, "Counter", id, sys(body))
+		_, err := exec.UpdateByID(ctx, "Counter", id, sys(body))
 		if err == nil {
 			return nil
 		}
@@ -167,7 +167,7 @@ func TestCounterUpdateDeltaIncrementsN(t *testing.T) {
 	row, err := exec.Create(ctx, "Counter", sys(map[string]interface{}{"n": 0.0}))
 	require.NoError(t, err)
 	id := row["id"].(string)
-	_, err = exec.updateByID(ctx, "Counter", id, sys(map[string]interface{}{"delta": 1.0}))
+	_, err = exec.UpdateByID(ctx, "Counter", id, sys(map[string]interface{}{"delta": 1.0}))
 	require.NoError(t, err)
 	got := scanCounterN(t, db, ctx, id)
 	require.InDelta(t, 1.0, got, 0.001)

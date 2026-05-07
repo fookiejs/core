@@ -511,17 +511,8 @@ func (e *Executor) Read(ctx context.Context, modelName string, req map[string]in
 		return nil, fmt.Errorf("before: %w", err)
 	}
 
-	// merge filter injections from before block (filter.<field> = val)
-	if len(rc.extraFilter) > 0 {
-		existing, _ := req["filter"].(map[string]interface{})
-		if existing == nil {
-			existing = map[string]interface{}{}
-		}
-		for k, v := range rc.extraFilter {
-			existing[k] = map[string]interface{}{"eq": v}
-		}
-		req["filter"] = existing
-	}
+	// merge filter.field = val injections from before() block
+	rc.applyExtraFilter(req)
 
 	frag := ""
 	args := []interface{}{}
@@ -541,7 +532,12 @@ func (e *Executor) Read(ctx context.Context, modelName string, req map[string]in
 		offset = toInt(c["after"])
 	}
 
-	sqlStr := e.sqlGen.CompileReadWithFilter(model, op, frag, limit, offset)
+	var selectCols string
+	if gqlFields, ok := req["select"].([]string); ok && len(gqlFields) > 0 {
+		selectCols = e.buildSelectCols(model, gqlFields)
+	}
+
+	sqlStr := e.sqlGen.CompileReadWithFilter(model, op, frag, limit, offset, selectCols)
 
 	dbCtx, dbSpan := telemetry.Tracer().Start(ctx, "fookie.db.select")
 	dbSpan.SetAttributes(
@@ -619,6 +615,7 @@ func (e *Executor) ReadConnection(ctx context.Context, modelName string, req map
 	if err := e.execBlock(ctx, "before", op.Before, rc); err != nil {
 		return nil, fmt.Errorf("before: %w", err)
 	}
+	rc.applyExtraFilter(req)
 
 	first := 20
 	var afterCursor *cursorKey
@@ -770,6 +767,9 @@ func (e *Executor) UpdateMany(ctx context.Context, modelName string, req map[str
 			return 0, err
 		}
 	}
+	rc.applyExtraFilter(req)
+	filter, _ = req["filter"].(map[string]interface{})
+
 	if len(patch) == 0 {
 		return 0, fmt.Errorf("nothing to update")
 	}
@@ -843,11 +843,12 @@ func (e *Executor) DeleteMany(ctx context.Context, modelName string, req map[str
 		span.SetStatus(codes.Error, err.Error())
 		return 0, err
 	}
-	filter, _ := req["filter"].(map[string]interface{})
 	rc, ctx := e.rootRC(ctx, req, "delete", modelName)
 	if err := e.execBlock(ctx, "before", op.Before, rc); err != nil {
 		return 0, fmt.Errorf("before: %w", err)
 	}
+	rc.applyExtraFilter(req)
+	filter, _ := req["filter"].(map[string]interface{})
 
 	sqlStr, args, err := e.sqlGen.CompileBulkSoftDelete(model, filter)
 	if err != nil {
@@ -1085,6 +1086,16 @@ func (e *Executor) updateByID(ctx context.Context, modelName string, id string, 
 	return rc.output, nil
 }
 
+// UpdateByID is the public single-record update entry point.
+func (e *Executor) UpdateByID(ctx context.Context, modelName string, id string, req map[string]interface{}) (map[string]interface{}, error) {
+	return e.updateByID(ctx, modelName, id, req)
+}
+
+// DeleteByID is the public single-record delete entry point.
+func (e *Executor) DeleteByID(ctx context.Context, modelName string, id string, req map[string]interface{}) error {
+	return e.deleteByID(ctx, modelName, id, req)
+}
+
 func (e *Executor) deleteByID(ctx context.Context, modelName string, id string, req map[string]interface{}) (err error) {
 	ctx, span := telemetry.Tracer().Start(ctx, "fookie.delete "+modelName)
 	defer span.End()
@@ -1156,7 +1167,7 @@ func (e *Executor) deleteByID(ctx context.Context, modelName string, id string, 
 		rc.injectHookVars(op.AfterParams, map[string]interface{}{
 			"id":          id,
 			"deleted_ids": []interface{}{id},
-			"query":       rc.req["filter"],
+			"filter":      rc.req["filter"],
 			"headers":     rc.req["headers"],
 		})
 		if err := e.runSyncEffectStatements(ctx, op.After, rc, id); err != nil {
@@ -2553,6 +2564,24 @@ type runCtx struct {
 	depth         int
 }
 
+// applyExtraFilter merges filter.field = val injections from a before() block
+// into req["filter"], wrapping each value as {"eq": val}.
+// Safe to call even when extraFilter is empty.
+func (rc *runCtx) applyExtraFilter(req map[string]interface{}) {
+	if len(rc.extraFilter) == 0 {
+		return
+	}
+	existing, _ := req["filter"].(map[string]interface{})
+	if existing == nil {
+		existing = map[string]interface{}{}
+	}
+	for k, v := range rc.extraFilter {
+		existing[k] = map[string]interface{}{"eq": v}
+	}
+	req["filter"] = existing
+	rc.extraFilter = nil // consumed
+}
+
 func newRunCtx(req map[string]interface{}) *runCtx {
 	if req == nil {
 		req = map[string]interface{}{}
@@ -2750,6 +2779,39 @@ func checkType(val interface{}, typeName string) error {
 		}
 	}
 	return nil
+}
+
+// buildSelectCols maps GraphQL-requested field names to a quoted SQL column list for a model.
+// Always includes system columns (id, created_at, deleted_at).
+// Returns "" when requested is empty, which the SQL generator interprets as SELECT *.
+func (e *Executor) buildSelectCols(model *ast.Model, requested []string) string {
+	if len(requested) == 0 {
+		return ""
+	}
+	want := make(map[string]bool, len(requested))
+	for _, f := range requested {
+		want[f] = true
+	}
+	cols := []string{`"id"`, `"created_at"`, `"deleted_at"`}
+	seen := map[string]bool{"id": true, "created_at": true, "deleted_at": true}
+	for _, field := range model.Fields {
+		_, dbCol := fieldKeys(field)
+		if seen[dbCol] {
+			continue
+		}
+		if field.Type == ast.TypeRelation {
+			if want[field.Name] || want[field.Name+"_id"] {
+				cols = append(cols, fmt.Sprintf("%q", dbCol))
+				seen[dbCol] = true
+			}
+		} else {
+			if want[field.Name] {
+				cols = append(cols, fmt.Sprintf("%q", dbCol))
+				seen[dbCol] = true
+			}
+		}
+	}
+	return strings.Join(cols, ", ")
 }
 
 func fieldKeys(f *ast.Field) (string, string) {

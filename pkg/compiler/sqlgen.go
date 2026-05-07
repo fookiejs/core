@@ -229,14 +229,18 @@ CREATE INDEX IF NOT EXISTS idx_outbox_entity ON "outbox"("entity_type", "entity_
 CREATE INDEX IF NOT EXISTS idx_outbox_saga ON "outbox"("saga_id");`
 }
 
-func (sg *SQLGenerator) readQueryPrefix(model *ast.Model, op *ast.Operation) string {
+// readQueryPrefix builds the SELECT…FROM…WHERE base for a read query.
+// cols overrides the FQL-level projection when provided (used for GraphQL field selection);
+// pass "" to fall back to op.Select (or SELECT * when op.Select is empty).
+func (sg *SQLGenerator) readQueryPrefix(model *ast.Model, op *ast.Operation, cols string) string {
 	table := snake(model.Name)
-	projection := sg.buildProjection(op.Select)
+	if cols == "" {
+		cols = sg.buildProjection(op.Select)
+	}
 
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("SELECT %s\nFROM \"%s\"", projection, table))
-
-	b.WriteString("\nWHERE \"deleted_at\" IS NULL AND \"status\" = 'done'")
+	b.WriteString(fmt.Sprintf("SELECT %s\nFROM %q", cols, table))
+	b.WriteString("\nWHERE \"deleted_at\" IS NULL")
 
 	if op.Filter != nil {
 		for _, cond := range op.Filter.Conditions {
@@ -248,11 +252,13 @@ func (sg *SQLGenerator) readQueryPrefix(model *ast.Model, op *ast.Operation) str
 }
 
 func (sg *SQLGenerator) CompileRead(model *ast.Model, op *ast.Operation) string {
-	return sg.CompileReadWithFilter(model, op, "", 0, 0)
+	return sg.CompileReadWithFilter(model, op, "", 0, 0, "")
 }
 
-func (sg *SQLGenerator) CompileReadWithFilter(model *ast.Model, op *ast.Operation, filterClause string, limit, offset int) string {
-	q := sg.readQueryPrefix(model, op)
+// CompileReadWithFilter builds a full read query.
+// cols is an optional column list override (e.g. from GraphQL field selection); "" means SELECT *.
+func (sg *SQLGenerator) CompileReadWithFilter(model *ast.Model, op *ast.Operation, filterClause string, limit, offset int, cols string) string {
+	q := sg.readQueryPrefix(model, op, cols)
 	if filterClause != "" {
 		q += "\n  AND (" + filterClause + ")"
 	}
@@ -263,7 +269,7 @@ func (sg *SQLGenerator) CompileReadWithFilter(model *ast.Model, op *ast.Operatio
 		} else {
 			q += ", "
 		}
-		q += fmt.Sprintf(`"%s"`, snake(ob.Field))
+		q += fmt.Sprintf(`%q`, snake(ob.Field))
 		if ob.Desc {
 			q += " DESC"
 		}
@@ -281,6 +287,7 @@ func (sg *SQLGenerator) CompileReadWithFilter(model *ast.Model, op *ast.Operatio
 	}
 	return q + "\nFOR SHARE;"
 }
+
 
 func (sg *SQLGenerator) buildProjection(fields []*ast.SelectField) string {
 	if len(fields) == 0 {
