@@ -10,7 +10,7 @@ import (
 )
 
 func TestBundleRoundTrip_Demo(t *testing.T) {
-	orig, err := LoadBundle(filepath.Join("..", "..", "..", "demo", "schema", "schema.bundle.json"))
+	orig, err := LoadBundle(filepath.Join("..", "..", "charts", "fookie", "files", "schema.bundle.json"))
 	require.NoError(t, err)
 
 	data, err := MarshalBundle(orig)
@@ -37,7 +37,7 @@ func TestBundleRoundTrip_Demo(t *testing.T) {
 func TestLoadSchema_BundleDirectory(t *testing.T) {
 	dir := t.TempDir()
 	bundlePath := filepath.Join(dir, "schema.bundle.json")
-	orig, err := LoadBundle(filepath.Join("..", "..", "..", "demo", "schema", "schema.bundle.json"))
+	orig, err := LoadBundle(filepath.Join("..", "..", "charts", "fookie", "files", "schema.bundle.json"))
 	require.NoError(t, err)
 	data, err := MarshalBundle(orig)
 	require.NoError(t, err)
