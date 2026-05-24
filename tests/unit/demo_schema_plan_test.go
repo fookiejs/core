@@ -9,7 +9,7 @@ import (
 )
 
 func TestDemoSchemaPlan_Parses(t *testing.T) {
-	schemaPath := filepath.Join("..", "..", "charts", "fookie", "files", "schema.bundle.json")
+	schemaPath := filepath.Join("..", "..", "testdata", "schema.bundle.json")
 	schema, err := schemapkg.LoadBundle(schemaPath)
 	require.NoError(t, err)
 

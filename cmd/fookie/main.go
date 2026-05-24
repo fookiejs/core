@@ -37,7 +37,6 @@ Usage:
   fookie dlq retry <id>  [--db]                   re-queue one job
   fookie dlq retry-all   [--db]                   re-queue all failed jobs
   fookie dlq purge       [--db] [--before date]   delete old failures
-  fookie helm <args>                   passthrough to helm
 
 Common flags:
   --schema <path>   path to schema.bundle.json or directory (env: SCHEMA_PATH)
@@ -71,14 +70,6 @@ func main() {
 		fmt.Printf("fookie v%s\n", cliVersion)
 	case "help", "--help", "-h":
 		fmt.Print(usage)
-	// Legacy docker/helm wrappers kept for backward compat
-	case "helm":
-		root, _ := findRepoRoot()
-		hargs := os.Args[2:]
-		if len(hargs) == 0 {
-			hargs = []string{"template", "fookie", filepath.Join("charts", "fookie")}
-		}
-		run(root, "helm", hargs...)
 	default:
 		fmt.Fprintf(os.Stderr, "unknown command: %s\n\n%s", os.Args[1], usage)
 		os.Exit(2)
@@ -431,13 +422,6 @@ func cmdDoctor() {
 			out, err := exec.Command("go", "version").Output()
 			if err != nil {
 				return "not found in PATH", false
-			}
-			return strings.TrimSpace(string(out)), true
-		}},
-		{"helm (optional)", func() (string, bool) {
-			out, err := exec.Command("helm", "version", "--short").Output()
-			if err != nil {
-				return "not found (optional)", true // not a hard requirement
 			}
 			return strings.TrimSpace(string(out)), true
 		}},

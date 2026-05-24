@@ -21,7 +21,7 @@ func projectRoot() string {
 
 func loadDemoBundle(t *testing.T) *ast.Schema {
 	t.Helper()
-	path := filepath.Join(projectRoot(), "charts", "fookie", "files", "schema.bundle.json")
+	path := filepath.Join(projectRoot(), "testdata", "schema.bundle.json")
 	schema, err := schemapkg.LoadBundle(path)
 	require.NoError(t, err)
 	return schema

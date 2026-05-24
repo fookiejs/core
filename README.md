@@ -1,13 +1,27 @@
 # Fookie core
 
-Go runtime: loads **schema.bundle.json**, applies migrations, exposes **GraphQL**, runs **cron**, **outbox** workers for externals, and optional saga-style compensation.
+Go library: schema bundle loading, SQL compiler, GraphQL layer, runtime executor, migrations, and CLI (`cmd/fookie`).
 
-Schema is authored in Go (see repo `demo/bank` and `core/core` DSL) and emitted as a bundle.
+Apps define models in Go (`core/core` DSL) or emit `schema.bundle.json`, then embed or run against Postgres.
 
-## Run locally
+## Layout
 
-From this directory, use your schema path and database URL (see `cmd/server` and `pkg/host`). The `demo` compose stack is a full example with Postgres and Redis.
+| Path | Role |
+|------|------|
+| `pkg/` | Library code (ast, compiler, runtime, graphql, schema, migrate, …) |
+| `core/` | Go authoring DSL (`github.com/fookiejs/fookie/core`) |
+| `cmd/fookie` | CLI: compile, migrate, serve helper |
+| `cmd/server`, `cmd/worker` | Optional binaries for running a full stack |
+| `testdata/` | Fixture `schema.bundle.json` for tests |
+
+Deployment (Helm, compose fleets, Grafana stacks) lives in **app repos** (e.g. `demo/docker-compose.yml`), not in this module.
+
+## Tests
+
+```bash
+go test ./...
+```
 
 ## License
 
-See [`LICENSE`](LICENSE) in this directory.
+See `LICENSE` if present in this directory.
