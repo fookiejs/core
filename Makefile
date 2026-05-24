@@ -25,7 +25,7 @@ KUBE_NAMESPACE  ?= default
         docker-up docker-down docker-clean \
         scale-up scale-down \
         helm-deps helm-lint helm-template helm-install helm-upgrade helm-uninstall helm-status \
-        clean parser
+        clean
 
 help:
 	@echo "Fookie Framework - Build Commands"
@@ -35,7 +35,6 @@ help:
 	@echo "  make test              - Run all Go tests (pkg + tests/*)"
 	@echo "  make test-unit         - Fast tests only (no Docker)"
 	@echo "  make test-integration  - Integration tests (requires Docker for Testcontainers)"
-	@echo "  make parser            - Build parser CLI tool"
 	@echo ""
 	@echo "Local infra (Docker):"
 	@echo "  make postgres-up       - Start PostgreSQL (then: make run-server)"
@@ -73,7 +72,7 @@ help:
 	@echo "  make fmt               - Format code"
 	@echo "  make clean             - Clean build artifacts"
 
-build: build-server build-parser build-worker build-fookie
+build: build-server build-worker build-fookie
 
 build-fookie:
 	@echo "Building fookie CLI..."
@@ -82,10 +81,6 @@ build-fookie:
 build-server:
 	@echo "Building server..."
 	go build -o bin/server ./cmd/server
-
-build-parser:
-	@echo "Building parser..."
-	go build -o bin/parser ./cmd/parser
 
 build-worker:
 	@echo "Building worker..."
@@ -102,10 +97,6 @@ test-unit:
 test-integration:
 	@echo "Running integration tests (Docker required)..."
 	go test -count=1 -v -timeout 30m ./tests/integration/...
-
-test-parser:
-	@echo "Testing parser..."
-	go test -v -run TestParser ./tests/unit/...
 
 test-compiler:
 	@echo "Testing compiler..."
@@ -132,10 +123,6 @@ redis-up:
 
 redis-down:
 	docker compose -f deploy/compose/postgres.yml stop redis
-
-run-parser: build-parser
-	@echo "Running parser on schema.fql..."
-	./bin/parser -schema schema.fql -sql
 
 docker-build:
 	@echo "Building Docker images..."
@@ -238,10 +225,6 @@ lint:
 	@echo "Running linter..."
 	golangci-lint run ./...
 
-generate-migrations:
-	@echo "Generating migrations from schema..."
-	./bin/parser -schema schema.fql -sql > migrations/001_initial.sql
-
 deps:
 	go mod download
 	go mod tidy
@@ -250,5 +233,3 @@ clean:
 	@echo "Cleaning build artifacts..."
 	rm -rf bin/
 	go clean
-
-.PHONY: generate-migrations

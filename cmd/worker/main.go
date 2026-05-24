@@ -10,7 +10,7 @@ import (
 
 func main() {
 	dbURL := flag.String("db", host.DefaultDBURL(), "Database connection string (default from DB_URL if set)")
-	schemaPath := flag.String("schema", host.DefaultSchemaPath(), "Path to FQL schema (override with SCHEMA_PATH)")
+	schemaPath := flag.String("schema", host.DefaultSchemaPath(), "Path to schema bundle (override with SCHEMA_PATH)")
 	pollInterval := flag.Duration("poll-interval", 25*time.Millisecond, "Poll interval for outbox")
 	flag.Parse()
 

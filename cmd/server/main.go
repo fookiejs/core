@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	schemaPath := flag.String("schema", host.DefaultSchemaPath(), "Path to .fql file or directory of .fql files (override with SCHEMA_PATH env)")
+	schemaPath := flag.String("schema", host.DefaultSchemaPath(), "Path to schema.bundle.json or directory (override with SCHEMA_PATH env)")
 	dbURL := flag.String("db", host.DefaultDBURL(), "Database connection string")
 	port := flag.String("port", ":8080", "Server listen port")
 	flag.Parse()

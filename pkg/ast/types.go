@@ -214,6 +214,8 @@ type ReadQuery struct {
 	Model  string
 	Filter *QueryFilter
 	Lock   bool
+	One    bool
+	Select []string
 	LineNo int
 }
 
@@ -235,6 +237,15 @@ type SumQuery struct {
 }
 
 func (SumQuery) expressionMarker() {}
+
+type FieldProjectionExpr struct {
+	Model  string
+	Field  string
+	Source Expression
+	LineNo int
+}
+
+func (FieldProjectionExpr) expressionMarker() {}
 
 type BulkUpdateStmt struct {
 	Model  string
@@ -354,6 +365,7 @@ func (*IfStmt) statementMarker() {}
 type FilterInjectStmt struct {
 	Field  string
 	Value  Expression
+	Op     string
 	LineNo int
 }
 
@@ -388,9 +400,15 @@ type External struct {
 
 }
 
+type ModuleOpHooks struct {
+	Before *Block
+	After  *Block
+}
+
 type Module struct {
 	Name   string
 	Before *Block
 	After  *Block
+	CRUD   map[string]*ModuleOpHooks
 }
 

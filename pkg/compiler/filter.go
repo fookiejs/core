@@ -248,6 +248,16 @@ func (sg *SQLGenerator) buildFieldOps(col string, ft ast.FieldType, ops map[stri
 			appendPred(col+fmt.Sprintf(` ILIKE $%d ESCAPE '\'`, idx), suffixPattern(fmt.Sprint(raw)))
 
 		case "in":
+			if fp, ok := raw.(*FieldProjectionFilter); ok {
+				subq, subArgs, next, err := sg.buildProjectionSubquery(fp, idx)
+				if err != nil {
+					return "", nil, paramStart, err
+				}
+				parts = append(parts, col+` IN `+subq)
+				args = append(args, subArgs...)
+				idx = next
+				continue
+			}
 			sl, err := sliceAny(raw)
 			if err != nil {
 				return "", nil, paramStart, err

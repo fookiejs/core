@@ -6,4 +6,4 @@ metadata:
     {{- include "fookie.labels" . | nindent 4 }}
 data:
   {{ .Values.schema.fileName }}: |
-{{ (.Files.Get "files/schema.fql") | nindent 4 }}
+{{ (.Files.Get "files/schema.bundle.json") | nindent 4 }}

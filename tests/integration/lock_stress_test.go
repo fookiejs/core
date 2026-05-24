@@ -17,53 +17,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const lockStressCounterFQL = `
-model Counter {
-  fields {
-    n: number
-  }
-  create {
-    before() {
-      body.n >= 0
-      n = body.n
-    }
-  }
-  read {}
-  update {
-    before() {
-      body.delta != null
-      n = output.n + body.delta
-    }
-  }
-  delete {}
-}
-`
-
-const lockStressPairFQL = `
-model Counter {
-  fields {
-    n: number
-  }
-  create {
-    before() {
-      body.n >= 0
-      n = body.n
-    }
-  }
-  read {}
-  update {
-    before() {
-      body.delta != null body.peer_id != null
-      n = output.n + body.delta
-    }
-    after() {
-      update Counter(body.peer_id) { n = n + body.delta }
-    }
-  }
-  delete {}
-}
-`
-
 func lockStressHeavyMode() bool {
 	return strings.TrimSpace(os.Getenv("FOOKEE_LOCK_STRESS")) == "heavy"
 }
@@ -160,7 +113,7 @@ func scanCounterN(t *testing.T, db *sql.DB, ctx context.Context, id string) floa
 }
 
 func TestCounterUpdateDeltaIncrementsN(t *testing.T) {
-	schema := parseSchemaString(t, lockStressCounterFQL)
+	schema := counterSimpleSchema()
 	exec, db, cleanup := setupDBWithSchema(t, schema)
 	defer cleanup()
 	ctx := context.Background()
@@ -174,7 +127,7 @@ func TestCounterUpdateDeltaIncrementsN(t *testing.T) {
 }
 
 func TestLockStress_SingleHotRowSerializedIncrements(t *testing.T) {
-	schema := parseSchemaString(t, lockStressCounterFQL)
+	schema := counterSimpleSchema()
 	exec, db, cleanup := setupDBWithSchema(t, schema)
 	defer cleanup()
 
@@ -219,7 +172,7 @@ func TestLockStress_SingleHotRowSerializedIncrements(t *testing.T) {
 }
 
 func TestLockStress_CrossRowPairConsistentTotalsUnderContention(t *testing.T) {
-	schema := parseSchemaString(t, lockStressPairFQL)
+	schema := counterPairSchema()
 	exec, db, cleanup := setupDBWithSchema(t, schema)
 	defer cleanup()
 

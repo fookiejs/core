@@ -10,7 +10,7 @@ if [ -z "$DB_URL" ]; then
 fi
 
 if [ ! -f "$SCHEMA_PATH" ] && [ ! -d "$SCHEMA_PATH" ]; then
-  echo "[fookie] ERROR: SCHEMA_PATH='$SCHEMA_PATH' not found. Mount your .fql file." >&2
+  echo "[fookie] ERROR: SCHEMA_PATH='$SCHEMA_PATH' not found. Mount schema.bundle.json or a schema directory." >&2
   exit 1
 fi
 

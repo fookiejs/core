@@ -14,52 +14,8 @@ import (
 
 	"github.com/fookiejs/fookie/pkg/ast"
 	"github.com/fookiejs/fookie/pkg/compiler"
-	"github.com/fookiejs/fookie/pkg/parser"
 	fookieruntime "github.com/fookiejs/fookie/pkg/runtime"
 )
-
-const integrationSchemaFQL = `
-model AccountUser {
-  fields {
-    email: email
-    name: string
-  }
-  create {
-    before() { notEmptyString(body.email) notEmptyString(body.name) }
-  }
-  read {}
-  update { before() {} }
-  delete {}
-}
-
-model Village {
-  fields {
-    owner: relation(AccountUser)
-    name: string
-    food: number
-  }
-  create {
-    before() {
-      body.owner_id != null
-      notEmptyString(body.name)
-      body.food >= 0
-    }
-  }
-  read {}
-  update { before() {} }
-  delete {}
-}
-`
-
-func parseSchemaString(t *testing.T, fql string) *ast.Schema {
-	t.Helper()
-	lexer := parser.NewLexer(fql)
-	tokens := lexer.Tokenize()
-	p := parser.NewParser(tokens)
-	schema, err := p.Parse()
-	require.NoError(t, err)
-	return schema
-}
 
 func setupDBWithSchema(t *testing.T, schema *ast.Schema) (*fookieruntime.Executor, *sql.DB, func()) {
 	t.Helper()
@@ -102,12 +58,6 @@ func setupDBWithSchema(t *testing.T, schema *ast.Schema) (*fookieruntime.Executo
 		pgContainer.Terminate(ctx)
 	}
 	return exec, db, cleanup
-}
-
-func setupDB(t *testing.T) (*fookieruntime.Executor, *sql.DB, func()) {
-	t.Helper()
-	schema := parseSchemaString(t, integrationSchemaFQL)
-	return setupDBWithSchema(t, schema)
 }
 
 type testLogger struct{ t *testing.T }

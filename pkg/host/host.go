@@ -49,7 +49,7 @@ func DefaultSchemaPath() string {
 	if v := os.Getenv("SCHEMA_PATH"); v != "" {
 		return v
 	}
-	return "schema.fql"
+	return "schema.bundle.json"
 }
 
 func DefaultDBURL() string {
@@ -279,11 +279,6 @@ func prepareRuntime(schemaPath, dbURL string, logger *logrus.Logger) (*ast.Schem
 	schema, err := schemapkg.LoadSchema(schemaPath)
 	if err != nil {
 		return nil, nil, nil, nil, fmt.Errorf("load schema: %w", err)
-	}
-	if os.Getenv("FOOKEE_DISABLE_ROOM_BUILTINS") != "true" {
-		if err := schemapkg.MergeBuiltinRooms(schema); err != nil {
-			return nil, nil, nil, nil, fmt.Errorf("merge builtin rooms: %w", err)
-		}
 	}
 	logger.Infof("Schema loaded: %d models, %d externals, %d modules", len(schema.Models), len(schema.Externals), len(schema.Modules))
 

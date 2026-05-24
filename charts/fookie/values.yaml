@@ -147,4 +147,4 @@ observability:
 
 schema:
   mountPath: /app/schema
-  fileName: schema.fql
+  fileName: schema.bundle.json

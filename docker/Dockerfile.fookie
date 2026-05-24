@@ -54,15 +54,13 @@ ENV OTLP_ENDPOINT=""
 ENV LOKI_PUSH_URL=""
 
 # App config
-ENV SCHEMA_PATH="/schema.fql"
+ENV SCHEMA_PATH="/schema"
 ENV PORT=":8080"
 ENV FOOKEE_SERVICE_NAME="fookie"
 
-# Mode: server | worker | both
 ENV FOOKIE_MODE="server"
 
-# Schema is expected at /schema.fql — mount your .fql file here.
-VOLUME ["/schema.fql"]
+VOLUME ["/schema"]
 
 EXPOSE 8080
 

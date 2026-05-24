@@ -9,8 +9,8 @@ import (
 )
 
 func TestDemoSchemaPlan_Parses(t *testing.T) {
-	schemaPath := filepath.Join("..", "..", "..", "demo", "schema")
-	schema, err := schemapkg.LoadSchema(schemaPath)
+	schemaPath := filepath.Join("..", "..", "..", "demo", "schema", "schema.bundle.json")
+	schema, err := schemapkg.LoadBundle(schemaPath)
 	require.NoError(t, err)
 
 	require.GreaterOrEqual(t, len(schema.Models), 3, "demo should define core models")

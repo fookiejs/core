@@ -57,7 +57,6 @@ func NewExecutor(db *sql.DB, schema *ast.Schema, logger Logger) *Executor {
 	}
 	extMgr.store = &StoreAdapter{e: e}
 
-
 	return e
 }
 
@@ -1819,9 +1818,24 @@ func (e *Executor) evalExpr(ctx context.Context, expr ast.Expression, rc *runCtx
 		if err != nil {
 			return nil, err
 		}
-		rows, err := e.systemRead(ctx, ex.Model, filter)
+		if len(rc.extraFilter) > 0 {
+			if filter == nil {
+				filter = make(map[string]interface{})
+			}
+			for k, v := range rc.extraFilter {
+				filter[k] = map[string]interface{}{"eq": v}
+			}
+			rc.extraFilter = nil
+		}
+		rows, err := e.systemRead(ctx, ex.Model, filter, ex.Select)
 		if err != nil {
 			return nil, err
+		}
+		if ex.One {
+			if len(rows) == 0 {
+				return nil, nil
+			}
+			return rows[0], nil
 		}
 		out := make([]interface{}, len(rows))
 		for i, r := range rows {
@@ -1842,6 +1856,23 @@ func (e *Executor) evalExpr(ctx context.Context, expr ast.Expression, rc *runCtx
 			return nil, err
 		}
 		return e.systemSum(ctx, ex.Model, ex.Field, filter)
+
+	case *ast.FieldProjectionExpr:
+		var sourceFilter map[string]interface{}
+		if ex.Source != nil {
+			if rq, ok := ex.Source.(*ast.ReadQuery); ok {
+				f, err := e.evalQueryFilter(ctx, rq.Filter, rc)
+				if err != nil {
+					return nil, err
+				}
+				sourceFilter = f
+			}
+		}
+		return &compiler.FieldProjectionFilter{
+			Model:  ex.Model,
+			Field:  ex.Field,
+			Filter: sourceFilter,
+		}, nil
 	}
 	return nil, fmt.Errorf("unsupported expression: %T", expr)
 }
@@ -1882,7 +1913,7 @@ func (e *Executor) evalQueryFilter(ctx context.Context, qf *ast.QueryFilter, rc 
 	return filter, nil
 }
 
-func (e *Executor) systemRead(ctx context.Context, modelName string, filter map[string]interface{}) ([]map[string]interface{}, error) {
+func (e *Executor) systemRead(ctx context.Context, modelName string, filter map[string]interface{}, selectFields []string) ([]map[string]interface{}, error) {
 	ctx, span := telemetry.Tracer().Start(ctx, "fookie.read.expr "+modelName,
 		trace.WithAttributes(
 			attribute.String("fookie.model", modelName),
@@ -1908,7 +1939,20 @@ func (e *Executor) systemRead(ctx context.Context, modelName string, filter map[
 		}
 	}
 	table := compiler.SnakeCase(modelName)
-	q := fmt.Sprintf(`SELECT * FROM %q WHERE "deleted_at" IS NULL`, table)
+	projection := "*"
+	if len(selectFields) > 0 {
+		cols := map[string]bool{"id": true}
+		for _, f := range selectFields {
+			cols[compiler.SnakeCase(f)] = true
+		}
+		parts := make([]string, 0, len(cols))
+		for c := range cols {
+			parts = append(parts, fmt.Sprintf("%q", c))
+		}
+		sort.Strings(parts)
+		projection = strings.Join(parts, ", ")
+	}
+	q := fmt.Sprintf(`SELECT %s FROM %q WHERE "deleted_at" IS NULL`, projection, table)
 	if frag != "" {
 		q += " AND (" + frag + ")"
 	}
@@ -2486,6 +2530,15 @@ func (e *Executor) injectOperationUses(model *ast.Model, op *ast.Operation) (*as
 	beforeBlocks := make([]*ast.Block, 0, len(modules)+1)
 	afterBlocks := make([]*ast.Block, 0, len(modules)+1)
 	for _, mod := range modules {
+		if len(mod.CRUD) > 0 {
+			hooks, ok := mod.CRUD[op.Type]
+			if !ok {
+				continue
+			}
+			beforeBlocks = append(beforeBlocks, hooks.Before)
+			afterBlocks = append(afterBlocks, hooks.After)
+			continue
+		}
 		beforeBlocks = append(beforeBlocks, mod.Before)
 		afterBlocks = append(afterBlocks, mod.After)
 	}
@@ -2549,13 +2602,13 @@ func normalizeScanValue(v interface{}) interface{} {
 }
 
 type runCtx struct {
-	req          map[string]interface{}
-	body         map[string]interface{}
-	principal    map[string]interface{}
-	output       map[string]interface{}
-	vars         map[string]interface{}
-	extraFilter  map[string]interface{}
-	isSystem     bool
+	req         map[string]interface{}
+	body        map[string]interface{}
+	principal   map[string]interface{}
+	output      map[string]interface{}
+	vars        map[string]interface{}
+	extraFilter map[string]interface{}
+	isSystem    bool
 
 	rootRequestID string
 	operation     string
@@ -2576,7 +2629,11 @@ func (rc *runCtx) applyExtraFilter(req map[string]interface{}) {
 		existing = map[string]interface{}{}
 	}
 	for k, v := range rc.extraFilter {
-		existing[k] = map[string]interface{}{"eq": v}
+		if fp, ok := v.(*compiler.FieldProjectionFilter); ok {
+			existing[k] = map[string]interface{}{"in": fp}
+		} else {
+			existing[k] = map[string]interface{}{"eq": v}
+		}
 	}
 	req["filter"] = existing
 	rc.extraFilter = nil // consumed
@@ -2749,13 +2806,36 @@ func (e *Executor) validateExternalOutput(name string, result map[string]interfa
 			if !exists {
 				continue
 			}
-			if err := checkType(val, fieldType); err != nil {
+			if err := e.checkExternalFieldType(val, fieldType); err != nil {
 				return fmt.Errorf("external %s.%s: %w", name, fieldName, err)
 			}
 		}
 		return nil
 	}
 	return nil
+}
+
+func (e *Executor) checkExternalFieldType(val interface{}, typeName string) error {
+	if strings.HasPrefix(typeName, "enum:") {
+		enumName := strings.TrimPrefix(typeName, "enum:")
+		s, ok := val.(string)
+		if !ok {
+			return fmt.Errorf("expected enum %s (string), got %T", enumName, val)
+		}
+		for _, en := range e.schema.Enums {
+			if en.Name != enumName {
+				continue
+			}
+			for _, allowed := range en.Values {
+				if allowed == s {
+					return nil
+				}
+			}
+			return fmt.Errorf("invalid value %q for enum %s", s, enumName)
+		}
+		return fmt.Errorf("unknown enum %s", enumName)
+	}
+	return checkType(val, typeName)
 }
 
 func checkType(val interface{}, typeName string) error {

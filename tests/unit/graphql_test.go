@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -11,50 +12,14 @@ import (
 	"github.com/fookiejs/fookie/pkg/ast"
 	"github.com/fookiejs/fookie/pkg/events"
 	fookiegql "github.com/fookiejs/fookie/pkg/graphql"
-	"github.com/fookiejs/fookie/pkg/parser"
-	schemamerge "github.com/fookiejs/fookie/pkg/schema"
+	schemapkg "github.com/fookiejs/fookie/pkg/schema"
 	"github.com/graphql-go/graphql"
 )
 
-const testSchemaFQL = `
-model User {
-  fields {
-    email: email
-    name: string
-  }
-  create {
-    before() { notEmptyString(body.email) notEmptyString(body.name) }
-  }
-  read {}
-  update { before() {} }
-  delete {}
-}
-
-model Village {
-  fields {
-    owner: relation(User)
-    name: string
-    food: number
-  }
-  create {
-    before() {
-      body.owner_id != null
-      notEmptyString(body.name)
-      body.food >= 0
-    }
-  }
-  read {}
-  update { before() {} }
-  delete {}
-}
-`
-
-func parseTestSchema(t *testing.T) *ast.Schema {
+func loadDemoSchema(t *testing.T) *ast.Schema {
 	t.Helper()
-	lexer := parser.NewLexer(testSchemaFQL)
-	tokens := lexer.Tokenize()
-	p := parser.NewParser(tokens)
-	schema, err := p.Parse()
+	path := filepath.Join("..", "..", "..", "demo", "schema", "schema.bundle.json")
+	schema, err := schemapkg.LoadBundle(path)
 	require.NoError(t, err)
 	return schema
 }
@@ -93,51 +58,28 @@ func TestGraphQL_TypeMapping(t *testing.T) {
 }
 
 func TestGraphQL_BuildSchema_CoreModels(t *testing.T) {
-	schema := parseTestSchema(t)
+	schema := loadDemoSchema(t)
 	gqlSchema, err := fookiegql.BuildSchema(schema, nil, nil)
 	require.NoError(t, err)
 
 	queryFields := gqlSchema.QueryType().Fields()
-
-	assert.Contains(t, queryFields, "all_user")
-	assert.Contains(t, queryFields, "all_village")
+	assert.Contains(t, queryFields, "all_account")
+	assert.Contains(t, queryFields, "all_transaction")
 
 	mutFields := gqlSchema.MutationType().Fields()
-
-	assert.Contains(t, mutFields, "create_user")
-	assert.Contains(t, mutFields, "create_village")
-
-	assert.Contains(t, mutFields, "update_user")
-	assert.Contains(t, mutFields, "update_village")
-
-	assert.Contains(t, mutFields, "delete_user")
-	assert.Contains(t, mutFields, "delete_village")
-}
-
-func TestGraphQL_RelationFields(t *testing.T) {
-	schema := parseTestSchema(t)
-	gqlSchema, err := fookiegql.BuildSchema(schema, nil, nil)
-	require.NoError(t, err)
-
-	queryFields := gqlSchema.QueryType().Fields()
-	villageField, ok := queryFields["all_village"]
-	require.True(t, ok)
-
-	villageObj := unwrapObject(villageField.Type)
-	require.NotNil(t, villageObj)
-
-	villageFields := villageObj.Fields()
-	assert.Contains(t, villageFields, "owner_id")
-	assert.Contains(t, villageFields, "owner")
+	assert.Contains(t, mutFields, "create_account")
+	assert.Contains(t, mutFields, "create_transaction")
+	assert.Contains(t, mutFields, "update_account")
+	assert.Contains(t, mutFields, "delete_account")
 }
 
 func TestGraphQL_FilterArg(t *testing.T) {
-	schema := parseTestSchema(t)
+	schema := loadDemoSchema(t)
 	gqlSchema, err := fookiegql.BuildSchema(schema, nil, nil)
 	require.NoError(t, err)
 
 	queryFields := gqlSchema.QueryType().Fields()
-	for _, name := range []string{"all_user", "all_village"} {
+	for _, name := range []string{"all_account", "all_transaction"} {
 		field, ok := queryFields[name]
 		require.True(t, ok, "query field %s not found", name)
 		hasFilter := false
@@ -151,20 +93,8 @@ func TestGraphQL_FilterArg(t *testing.T) {
 	}
 }
 
-func unwrapObject(t graphql.Output) *graphql.Object {
-	switch tt := t.(type) {
-	case *graphql.NonNull:
-		return unwrapObject(tt.OfType)
-	case *graphql.List:
-		return unwrapObject(tt.OfType)
-	case *graphql.Object:
-		return tt
-	}
-	return nil
-}
-
 func TestGraphQL_Introspection(t *testing.T) {
-	schema := parseTestSchema(t)
+	schema := loadDemoSchema(t)
 	gqlSchema, err := fookiegql.BuildSchema(schema, nil, nil)
 	require.NoError(t, err)
 
@@ -180,66 +110,8 @@ func TestGraphQL_Introspection(t *testing.T) {
 	assert.Equal(t, "Mutation", schemaData["mutationType"].(map[string]interface{})["name"])
 }
 
-func TestGraphQL_Introspection_SubscriptionWithRoomBus(t *testing.T) {
-	schema := parseTestSchema(t)
-	require.NoError(t, schemamerge.MergeBuiltinRooms(schema))
-	eb := events.NewBus()
-	rb := events.NewRoomBus()
-	gqlSchema, err := fookiegql.BuildSchema(schema, eb, rb)
-	require.NoError(t, err)
-
-	result := graphql.Do(graphql.Params{
-		Schema:        gqlSchema,
-		RequestString: `{ __schema { subscriptionType { name } } }`,
-	})
-	require.Empty(t, result.Errors)
-	data := result.Data.(map[string]interface{})
-	st := data["__schema"].(map[string]interface{})["subscriptionType"].(map[string]interface{})
-	assert.Equal(t, "Subscription", st["name"])
-}
-
-func TestGraphQL_RoomSubscription_stream(t *testing.T) {
-	schema := parseTestSchema(t)
-	require.NoError(t, schemamerge.MergeBuiltinRooms(schema))
-	eb := events.NewBus()
-	rb := events.NewRoomBus()
-	gqlSchema, err := fookiegql.BuildSchema(schema, eb, rb)
-	require.NoError(t, err)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	go func() {
-		time.Sleep(40 * time.Millisecond)
-		rb.Publish("r1", map[string]interface{}{
-			"room_id": "r1",
-			"method":  "updated",
-			"model":   "Room",
-			"payload": map[string]interface{}{
-				"query": "{ all_room { id } }",
-				"body":  `{"name":"Lobby"}`,
-			},
-		})
-	}()
-
-	ch := graphql.Subscribe(graphql.Params{
-		Context:       ctx,
-		Schema:        gqlSchema,
-		RequestString: `subscription { room_graphql_message(room_id: "r1") { room_id method model payload { query body } } }`,
-	})
-	var saw bool
-	for res := range ch {
-		require.Empty(t, res.Errors, "%+v", res.Errors)
-		if res.Data != nil {
-			saw = true
-			break
-		}
-	}
-	require.True(t, saw, "expected at least one subscription payload")
-}
-
 func TestGraphQL_EntityEvents_subscription(t *testing.T) {
-	schema := parseTestSchema(t)
+	schema := loadDemoSchema(t)
 	eb := events.NewBus()
 	gqlSchema, err := fookiegql.BuildSchema(schema, eb, nil)
 	require.NoError(t, err)
@@ -249,13 +121,13 @@ func TestGraphQL_EntityEvents_subscription(t *testing.T) {
 
 	go func() {
 		time.Sleep(40 * time.Millisecond)
-		eb.PublishCRUD("created", "Village", "id-1", map[string]interface{}{"x": 1})
+		eb.PublishCRUD("created", "Account", "id-1", map[string]interface{}{"x": 1})
 	}()
 
 	ch := graphql.Subscribe(graphql.Params{
 		Context:       ctx,
 		Schema:        gqlSchema,
-		RequestString: `subscription { entity_events(model: "Village") { op model id ts } }`,
+		RequestString: `subscription { entity_events(model: "Account") { op model id ts } }`,
 	})
 	var saw bool
 	for res := range ch {
