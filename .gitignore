@@ -1,26 +1,6 @@
 *.exe
-*.exe~
-*.dll
-*.so
-*.dylib
 *.test
 *.out
-coverage.*
-*.coverprofile
-profile.cov
-go.work
-go.work.sum
 .env
-tmp/**
-!tmp/.gitkeep
-bin/
 .idea/
 .vscode/
-.claude/
-
-# JavaScript/Node
-node_modules/
-packages/*/dist/
-packages/*/.eslintcache
-.npm
-.cursor/

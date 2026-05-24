@@ -1,27 +1,7 @@
-# Fookie core
+# Fookie
 
-Go library: schema bundle loading, SQL compiler, GraphQL layer, runtime executor, migrations, and CLI (`cmd/fookie`).
+Go library for schema-first apps: models, hooks, internals, externals, Postgres migrations, and HTTP API.
 
-Apps define models in Go (`core/core` DSL) or emit `schema.bundle.json`, then embed or run against Postgres.
+Import as `github.com/fookiejs/fookie` and `github.com/fookiejs/fookie/semantic`.
 
-## Layout
-
-| Path | Role |
-|------|------|
-| `pkg/` | Library code (ast, compiler, runtime, graphql, schema, migrate, …) |
-| `core/` | Go authoring DSL (`github.com/fookiejs/fookie/core`) |
-| `cmd/fookie` | CLI: compile, migrate, serve helper |
-| `cmd/server`, `cmd/worker` | Optional binaries for running a full stack |
-| `testdata/` | Fixture `schema.bundle.json` for tests |
-
-Deployment (Helm, compose fleets, Grafana stacks) lives in **app repos** (e.g. `demo/docker-compose.yml`), not in this module.
-
-## Tests
-
-```bash
-go test ./...
-```
-
-## License
-
-See `LICENSE` if present in this directory.
+See `../demo/bank` for an example app.
