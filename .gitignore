@@ -1,6 +1,12 @@
 *.exe
 *.test
 *.out
+cov
+coverage
+cov.out
+coverage.out
+coverage.html
+*.coverprofile
 .env
 .idea/
 .vscode/

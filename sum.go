@@ -1,9 +1,5 @@
 package fookie
 
-import (
-	"log/slog"
-)
-
 func Sum[F any](ctx execCtx, model *Model[F], field orderable, filter func(F)) int64 {
 	if model == nil || model.stored == nil {
 		return 0
@@ -16,7 +12,7 @@ func Sum[F any](ctx execCtx, model *Model[F], field orderable, filter func(F)) i
 
 	lockKey := "sum:" + model.stored.name
 	if err := dbAdvisoryLock(tx, lockKey); err != nil {
-		slog.Warn("fookie: sum advisory lock failed", "model", model.stored.name, "err", err)
+		flog.Warn("sum.lock_error", flogModel, model.stored.name, flogErr, err.Error())
 	}
 
 	var schema F
@@ -36,7 +32,7 @@ func Sum[F any](ctx execCtx, model *Model[F], field orderable, filter func(F)) i
 
 	total, err := sumTx(tx, model.stored, column, excludeID, qb.filters)
 	if err != nil {
-		slog.Warn("fookie: sum query failed", "model", model.stored.name, "err", err)
+		flog.Warn("sum.query_error", flogModel, model.stored.name, flogErr, err.Error())
 		return 0
 	}
 	return total

@@ -3,11 +3,9 @@ package fookie
 import (
 	"context"
 	"fmt"
-	"log/slog"
-	"reflect"
 
-	"github.com/graphql-go/graphql"
 	"github.com/fookiejs/fookie/semantic"
+	"github.com/graphql-go/graphql"
 )
 
 type EnumDef struct {
@@ -40,11 +38,11 @@ type Model[S any] struct {
 }
 
 type Operations[S any] struct {
-	Create func(*Ctx[S]) error
-	Read   func(*Ctx[S]) error
-	Update func(*Ctx[S]) error
-	Delete func(*Ctx[S]) error
-	List   func(*Ctx[S]) error
+	Create func(*Flow[S])
+	Read   func(*Flow[S])
+	Update func(*Flow[S])
+	Delete func(*Flow[S])
+	List   func(*Flow[S])
 }
 
 type External[I any, O any] struct {
@@ -102,15 +100,15 @@ type storedModel struct {
 type externalHandlerFunc func(ctx context.Context, inputJSON []byte) ([]byte, error)
 
 type App struct {
-	cfg              Config
-	models           []*storedModel
-	enums            []*EnumDef
-	externalHandlers map[string]externalHandlerFunc
-	internals        []string
-	byName           map[string]*storedModel
-	db               *db
-	tel              *telemetry
-	graphqlSchema    *graphql.Schema
+	cfg               Config
+	models            []*storedModel
+	enums             []*EnumDef
+	externalHandlers  map[string]externalHandlerFunc
+	compensationLinks map[string]string
+	internals         []string
+	byName            map[string]*storedModel
+	db            *db
+	graphqlSchema *graphql.Schema
 }
 
 func New(build func(*Config)) *App {
@@ -122,9 +120,10 @@ func New(build func(*Config)) *App {
 	}
 	logLoadedEnvs()
 	return &App{
-		cfg:              cfg,
-		byName:           make(map[string]*storedModel),
-		externalHandlers: make(map[string]externalHandlerFunc),
+		cfg:               cfg,
+		byName:            make(map[string]*storedModel),
+		externalHandlers:  make(map[string]externalHandlerFunc),
+		compensationLinks: make(map[string]string),
 	}
 }
 
@@ -156,50 +155,28 @@ func (a *App) Run() error {
 		return fmt.Errorf("fookie: db open: %w", err)
 	}
 	a.db = database
-	slog.Info("fookie: database connected", "dsn", a.cfg.DB)
+	flog.Info("app.db_connected", "dsn", a.cfg.DB)
 
 	if err := a.db.migrate(a.models); err != nil {
 		return fmt.Errorf("fookie: migrate: %w", err)
 	}
-	slog.Info("fookie: schema migrated", "models", len(a.models))
+	flog.Info("app.schema_migrated", "models", len(a.models))
 
 	if err := a.db.migrateOutbox(); err != nil {
 		return fmt.Errorf("fookie: outbox migrate: %w", err)
 	}
 
-	a.tel = newTelemetry(a.db.pool)
-	if err := a.tel.ensureTables(); err != nil {
-		return fmt.Errorf("fookie: telemetry tables: %w", err)
-	}
-	slog.Info("fookie: telemetry ready")
-
 	startOutboxWorker(a)
-	slog.Info("fookie: outbox worker started")
+	flog.Info("app.outbox_worker_started")
 
 	schema, err := a.buildGraphQLSchema()
 	if err != nil {
 		return fmt.Errorf("fookie: graphql schema: %w", err)
 	}
 	a.graphqlSchema = &schema
-	slog.Info("fookie: graphql ready")
+	flog.Info("app.graphql_ready")
 
 	return a.serveHTTP()
-}
-
-func storedFromModel(model any) *storedModel {
-	if model == nil {
-		return nil
-	}
-	v := reflectValue(model)
-	if v.Kind() != reflect.Ptr || v.IsNil() {
-		return nil
-	}
-	stored := v.Elem().FieldByName("stored")
-	if !stored.IsValid() || stored.IsNil() {
-		return nil
-	}
-	ref, _ := stored.Interface().(*storedModel)
-	return ref
 }
 
 func ensureDefaultID(fields []FieldDef) []FieldDef {
@@ -217,11 +194,31 @@ func (a *App) RegisterEnum(enums ...*EnumDef) {
 
 func (a *App) RegisterExternal(exts ...any) {}
 
-func RegisterExternalHandler[I, O any](a *App, ext External[I, O], h func(context.Context, I) (O, error)) {
+// RegisterHandler wires up a forward handler and its optional compensation
+// handler for an External service in a single call.
+//
+// The compensation handler (if non-nil) receives both the original forward
+// input and the output the service produced, giving it full context to undo
+// the operation. Pass nil when the service does not need compensation.
+func RegisterHandler[I, O, R any](a *App, ext External[I, O],
+	handler func(I) (O, error),
+	compensate func(I, O) (R, error),
+) {
 	if a.externalHandlers == nil {
 		a.externalHandlers = make(map[string]externalHandlerFunc)
 	}
-	a.externalHandlers[ext.Name] = wrapExternalHandler(h)
+	a.externalHandlers[ext.Name] = wrapExternalHandler(handler)
+
+	if compensate == nil {
+		return
+	}
+
+	compensateName := ext.Name + ".compensate"
+	a.externalHandlers[compensateName] = wrapCompensationHandler(compensate)
+	if a.compensationLinks == nil {
+		a.compensationLinks = make(map[string]string)
+	}
+	a.compensationLinks[ext.Name] = compensateName
 }
 
 type internalDef interface {
@@ -249,7 +246,13 @@ func (a *App) resumeEntity(modelName, entityID string) {
 	if !ok || stored.runner == nil || stored.runner.resume == nil {
 		return
 	}
+	flog.Debug("entity.resume", flogModel, modelName, flogEntityID, entityID)
 	if err := stored.runner.resume(entityID); err != nil {
-		slog.Warn("fookie: resume failed", "model", modelName, "id", entityID, "err", err)
+		flog.Warn("entity.resume_error",
+			flogModel, modelName,
+			flogEntityID, entityID,
+			flogErr, err.Error())
+		return
 	}
+	flog.Info("entity.resumed", flogModel, modelName, flogEntityID, entityID)
 }

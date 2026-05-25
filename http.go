@@ -3,12 +3,13 @@ package fookie
 import (
 	"encoding/json"
 	"errors"
-	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 )
+
+const jsonKeyData = "data"
 
 func (a *App) serveHTTP() error {
 	mux := http.NewServeMux()
@@ -19,14 +20,14 @@ func (a *App) serveHTTP() error {
 	mux.HandleFunc("DELETE /api/{model}/{id}", a.handleDelete)
 	mux.HandleFunc("POST /graphql", a.handleGraphQL)
 	mux.HandleFunc("GET /graphql", a.handleGraphQL)
-	mux.HandleFunc("GET /metrics", a.handleMetrics)
+	mux.HandleFunc("GET /health", a.handleHealth)
 
 	addr := a.cfg.Listen
 	if addr == "" {
 		addr = ":3000"
 	}
-	slog.Info("fookie listening", "addr", addr)
-	return http.ListenAndServe(addr, mux) //nolint:gosec
+	flog.Info("app.listening", "addr", addr)
+	return http.ListenAndServe(addr, mux) //nolint:gosec,wrapcheck
 }
 
 func (a *App) handleCreate(w http.ResponseWriter, r *http.Request) {
@@ -34,23 +35,25 @@ func (a *App) handleCreate(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	start := time.Now()
+	emitHTTPReceived(r.Method, r.URL.Path, stored.name)
 	var body map[string]any
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		emitHTTPDuration(r.Method, r.URL.Path, stored.name, msElapsed(start), 400)
 		writeErr(w, 400, "invalid_body", err.Error())
 		return
 	}
 	headers := headersMap(r)
-	start := time.Now()
 	result, err := stored.runner.create(headers, body)
-	dur := time.Since(start)
+	dur := msElapsed(start)
 	if err != nil {
 		status := errStatus(err)
-		a.tel.record(stored.name, "create", r.Method, r.URL.Path, status, dur, err)
+		emitHTTPDuration(r.Method, r.URL.Path, stored.name, dur, status)
 		writeErr(w, status, errCode(err), err.Error())
 		return
 	}
-	a.tel.record(stored.name, "create", r.Method, r.URL.Path, 201, dur, nil)
-	writeJSON(w, 201, map[string]any{"data": result})
+	emitHTTPDuration(r.Method, r.URL.Path, stored.name, dur, 201)
+	writeJSON(w, 201, map[string]any{jsonKeyData: result})
 }
 
 func (a *App) handleList(w http.ResponseWriter, r *http.Request) {
@@ -58,19 +61,20 @@ func (a *App) handleList(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	emitHTTPReceived(r.Method, r.URL.Path, stored.name)
 	cursor := r.URL.Query().Get("cursor")
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	headers := headersMap(r)
 	start := time.Now()
 	items, nextCursor, err := stored.runner.list(headers, cursor, limit)
-	dur := time.Since(start)
+	dur := msElapsed(start)
 	if err != nil {
 		status := errStatus(err)
-		a.tel.record(stored.name, "list", r.Method, r.URL.Path, status, dur, err)
+		emitHTTPDuration(r.Method, r.URL.Path, stored.name, dur, status)
 		writeErr(w, status, errCode(err), err.Error())
 		return
 	}
-	a.tel.record(stored.name, "list", r.Method, r.URL.Path, 200, dur, nil)
+	emitHTTPDuration(r.Method, r.URL.Path, stored.name, dur, 200)
 	if items == nil {
 		items = []map[string]any{}
 	}
@@ -88,22 +92,23 @@ func (a *App) handleRead(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	emitHTTPReceived(r.Method, r.URL.Path, stored.name)
 	id := r.PathValue("id")
 	headers := headersMap(r)
 	start := time.Now()
 	result, err := stored.runner.read(headers, id)
-	dur := time.Since(start)
+	dur := msElapsed(start)
 	if err != nil {
 		status := errStatus(err)
 		if err.Error() == "not_found" {
 			status = 404
 		}
-		a.tel.record(stored.name, "read", r.Method, r.URL.Path, status, dur, err)
+		emitHTTPDuration(r.Method, r.URL.Path, stored.name, dur, status)
 		writeErr(w, status, errCode(err), err.Error())
 		return
 	}
-	a.tel.record(stored.name, "read", r.Method, r.URL.Path, 200, dur, nil)
-	writeJSON(w, 200, map[string]any{"data": result})
+	emitHTTPDuration(r.Method, r.URL.Path, stored.name, dur, 200)
+	writeJSON(w, 200, map[string]any{jsonKeyData: result})
 }
 
 func (a *App) handleUpdate(w http.ResponseWriter, r *http.Request) {
@@ -111,24 +116,26 @@ func (a *App) handleUpdate(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	start := time.Now()
+	emitHTTPReceived(r.Method, r.URL.Path, stored.name)
 	id := r.PathValue("id")
 	var body map[string]any
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		emitHTTPDuration(r.Method, r.URL.Path, stored.name, msElapsed(start), 400)
 		writeErr(w, 400, "invalid_body", err.Error())
 		return
 	}
 	headers := headersMap(r)
-	start := time.Now()
 	result, err := stored.runner.update(headers, id, body)
-	dur := time.Since(start)
+	dur := msElapsed(start)
 	if err != nil {
 		status := errStatus(err)
-		a.tel.record(stored.name, "update", r.Method, r.URL.Path, status, dur, err)
+		emitHTTPDuration(r.Method, r.URL.Path, stored.name, dur, status)
 		writeErr(w, status, errCode(err), err.Error())
 		return
 	}
-	a.tel.record(stored.name, "update", r.Method, r.URL.Path, 200, dur, nil)
-	writeJSON(w, 200, map[string]any{"data": result})
+	emitHTTPDuration(r.Method, r.URL.Path, stored.name, dur, 200)
+	writeJSON(w, 200, map[string]any{jsonKeyData: result})
 }
 
 func (a *App) handleDelete(w http.ResponseWriter, r *http.Request) {
@@ -136,23 +143,25 @@ func (a *App) handleDelete(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	emitHTTPReceived(r.Method, r.URL.Path, stored.name)
 	id := r.PathValue("id")
 	headers := headersMap(r)
 	start := time.Now()
 	err := stored.runner.delete(headers, id)
-	dur := time.Since(start)
+	dur := msElapsed(start)
 	if err != nil {
 		status := errStatus(err)
-		a.tel.record(stored.name, "delete", r.Method, r.URL.Path, status, dur, err)
+		emitHTTPDuration(r.Method, r.URL.Path, stored.name, dur, status)
 		writeErr(w, status, errCode(err), err.Error())
 		return
 	}
-	a.tel.record(stored.name, "delete", r.Method, r.URL.Path, 204, dur, nil)
+	emitHTTPDuration(r.Method, r.URL.Path, stored.name, dur, 204)
 	w.WriteHeader(204)
 }
 
-func (a *App) handleMetrics(w http.ResponseWriter, _ *http.Request) {
+func (a *App) handleHealth(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, 200, map[string]any{
+		"status":   "ok",
 		"models":   len(a.models),
 		"handlers": len(a.externalHandlers),
 	})

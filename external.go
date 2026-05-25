@@ -3,47 +3,24 @@ package fookie
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"reflect"
-	"strings"
-	"unicode"
+	"time"
 
+	"github.com/fookiejs/fookie/internal/telemetry"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type externalStatus int
+// suspendPanic is thrown by Require when an external call is still in
+// progress and the operation must be suspended (entity persists in
+// pending state until the outbox completes and resumes it).
+type suspendPanic struct{}
 
-const (
-	statusCompleted externalStatus = iota
-	statusRunning
-	statusFailed
-)
-
-type ExternalState struct {
-	status externalStatus
-	reason string
-}
-
-func (s ExternalState) Running() bool   { return s.status == statusRunning }
-func (s ExternalState) Failed() bool    { return s.status == statusFailed }
-func (s ExternalState) Completed() bool { return s.status == statusCompleted }
-func (s ExternalState) Reason() string  { return s.reason }
-
-func (s ExternalState) Error() string {
-	switch s.status {
-	case statusRunning:
-		return "suspended: waiting for external"
-	case statusFailed:
-		return "external_failed: " + s.reason
-	default:
-		return ""
-	}
-}
-
-type ExternalStep[O any] struct {
-	result O
-}
-
-func (s ExternalStep[O]) Result() O { return s.result }
+// failPanic is thrown by Require when an external call has failed
+// permanently or any infrastructure error occurs. Carries the error
+// that should be surfaced to the caller.
+type failPanic struct{ err error }
 
 type execCtx interface {
 	header(key string) string
@@ -51,54 +28,221 @@ type execCtx interface {
 	modelName() string
 	currentEntityID() string
 	appRef() *App
-	isResume() bool
+	traceID() string
 }
 
-func (e External[I, O]) Run(ctx execCtx, input I) (ExternalStep[O], ExternalState) {
+// Require dispatches an external call and returns its output directly.
+// In an entity context (Create/Update/Delete) it panics with suspendPanic
+// when the call is still in progress so the runner can persist the entity
+// in pending state. In a list context it blocks-polls the outbox until
+// the external completes (or fails / times out).
+//
+// Require never returns an error — failures propagate via panic(failPanic).
+func (e External[I, O]) Require(ctx execCtx, input I) O {
+	entityID := ctx.currentEntityID()
+	if entityID == "" {
+		return e.requireList(ctx, input)
+	}
+	return e.requireEntity(ctx, input)
+}
+
+func (e External[I, O]) requireEntity(ctx execCtx, input I) O {
 	tx := ctx.dbTx()
 	if tx == nil {
-		return ExternalStep[O]{}, ExternalState{status: statusFailed, reason: "no_transaction"}
+		panic(failPanic{err: fmt.Errorf("no_transaction")})
 	}
-
 	inputJSON, err := marshalInput(input)
 	if err != nil {
-		return ExternalStep[O]{}, ExternalState{status: statusFailed, reason: "marshal_input: " + err.Error()}
+		panic(failPanic{err: fmt.Errorf("marshal_input: %w", err)})
 	}
-
 	callKey := outboxCallKey(ctx.currentEntityID(), e.Name, inputJSON)
-
 	entry, err := outboxLookup(tx, callKey)
 	if err != nil {
-		return ExternalStep[O]{}, ExternalState{status: statusFailed, reason: "outbox_lookup: " + err.Error()}
+		panic(failPanic{err: fmt.Errorf("outbox_lookup: %w", err)})
 	}
-
 	switch {
 	case entry == nil:
 		if err := outboxInsert(tx, e.Name, callKey, inputJSON, e.Retry); err != nil {
-			return ExternalStep[O]{}, ExternalState{status: statusFailed, reason: "outbox_insert: " + err.Error()}
+			panic(failPanic{err: fmt.Errorf("outbox_insert: %w", err)})
 		}
 		if err := outboxAddWaiter(tx, callKey, ctx.modelName(), ctx.currentEntityID()); err != nil {
-			return ExternalStep[O]{}, ExternalState{status: statusFailed, reason: "outbox_waiter: " + err.Error()}
+			panic(failPanic{err: fmt.Errorf("outbox_waiter: %w", err)})
 		}
+		tr := ctx.traceID()
+		emitExternalTrace(tr, e.Name, ctx.modelName(), ctx.currentEntityID(), "external.started", map[string]string{flogCallKey: callKey})
+		telemetry.EmitCounter("external.call.started", map[string]string{"service": e.Name, "model": ctx.modelName()})
+		flog.Info("external.dispatch",
+			flogService, e.Name,
+			flogModel, ctx.modelName(),
+			flogEntityID, ctx.currentEntityID(),
+			flogCallKey, callKey)
 		dispatchInProcess(ctx.appRef(), e.Name, callKey, inputJSON)
-		return ExternalStep[O]{}, ExternalState{status: statusRunning}
-
+		emitFlowTrace(tr, ctx.modelName(), ctx.currentEntityID(), "flow.suspended", map[string]string{flogService: e.Name})
+		panic(suspendPanic{})
 	case entry.Status == outboxStatusCompleted:
 		var out O
 		if err := mapOutputJSON(entry.Output, &out); err != nil {
-			return ExternalStep[O]{}, ExternalState{status: statusFailed, reason: "unmarshal_output: " + err.Error()}
+			panic(failPanic{err: fmt.Errorf("unmarshal_output: %w", err)})
 		}
-		return ExternalStep[O]{result: out}, ExternalState{status: statusCompleted}
-
+		compensateName, found, _ := lookupCompensateName(tx, ctx.appRef(), e.Name)
+		if found {
+			_ = sagaRecordStep(tx, ctx.currentEntityID(), ctx.modelName(), e.Name, compensateName, inputJSON, entry.Output)
+			flog.Debug("saga.step_recorded",
+				flogService, e.Name,
+				flogCompensate, compensateName,
+				flogModel, ctx.modelName(),
+				flogEntityID, ctx.currentEntityID())
+		}
+		tr := ctx.traceID()
+		emitExternalTrace(tr, e.Name, ctx.modelName(), ctx.currentEntityID(), "external.completed", map[string]string{flogCallKey: callKey})
+		telemetry.EmitCounter("external.call.completed", map[string]string{"service": e.Name, "model": ctx.modelName()})
+		flog.Info("external.completed",
+			flogService, e.Name,
+			flogModel, ctx.modelName(),
+			flogEntityID, ctx.currentEntityID(),
+			flogCallKey, callKey)
+		return out
 	case entry.Status == outboxStatusFailed:
-		return ExternalStep[O]{}, ExternalState{status: statusFailed, reason: entry.ErrorMsg}
-
+		tr := ctx.traceID()
+		emitExternalTrace(tr, e.Name, ctx.modelName(), ctx.currentEntityID(), "external.failed", map[string]string{flogCallKey: callKey, flogReason: entry.ErrorMsg})
+		telemetry.EmitCounter("external.call.failed", map[string]string{"service": e.Name, "model": ctx.modelName()})
+		flog.Warn("external.failed",
+			flogService, e.Name,
+			flogModel, ctx.modelName(),
+			flogEntityID, ctx.currentEntityID(),
+			flogCallKey, callKey,
+			flogReason, entry.ErrorMsg)
+		panic(failPanic{err: fmt.Errorf("%s", entry.ErrorMsg)})
 	default:
 		if err := outboxAddWaiter(tx, callKey, ctx.modelName(), ctx.currentEntityID()); err != nil {
-			return ExternalStep[O]{}, ExternalState{status: statusFailed, reason: "outbox_waiter: " + err.Error()}
+			panic(failPanic{err: fmt.Errorf("outbox_waiter: %w", err)})
 		}
-		return ExternalStep[O]{}, ExternalState{status: statusRunning}
+		tr := ctx.traceID()
+		emitExternalTrace(tr, e.Name, ctx.modelName(), ctx.currentEntityID(), "external.pending", map[string]string{flogCallKey: callKey})
+		emitFlowTrace(tr, ctx.modelName(), ctx.currentEntityID(), "flow.suspended", map[string]string{flogService: e.Name})
+		panic(suspendPanic{})
 	}
+}
+
+func (e External[I, O]) requireList(ctx execCtx, input I) O {
+	app := ctx.appRef()
+	if app == nil {
+		var zero O
+		return zero
+	}
+	bgCtx := context.Background()
+	pool := app.db.pool
+
+	inputJSON, err := marshalInput(input)
+	if err != nil {
+		panic(failPanic{err: fmt.Errorf("marshal_input: %w", err)})
+	}
+	callKey := outboxCallKey("", e.Name, inputJSON)
+
+	var status, output, errMsg string
+	scanErr := pool.QueryRow(bgCtx,
+		`SELECT status, COALESCE(output::text,''), COALESCE(error_msg,'') FROM fookie_outbox WHERE call_key=$1`,
+		callKey).Scan(&status, &output, &errMsg)
+
+	if scanErr != nil {
+		if err := outboxInsertPool(bgCtx, pool, e.Name, callKey, inputJSON, e.Retry); err != nil {
+			panic(failPanic{err: fmt.Errorf("outbox_insert: %w", err)})
+		}
+		flog.Info("external.dispatch", flogService, e.Name, flogCallKey, callKey)
+		dispatchInProcess(app, e.Name, callKey, inputJSON)
+	} else {
+		switch status {
+		case outboxStatusCompleted:
+			var out O
+			if err := mapOutputJSON([]byte(output), &out); err != nil {
+				panic(failPanic{err: fmt.Errorf("unmarshal_output: %w", err)})
+			}
+			flog.Info("external.completed", flogService, e.Name, flogCallKey, callKey)
+			return out
+		case outboxStatusFailed:
+			panic(failPanic{err: fmt.Errorf("%s", errMsg)})
+		}
+	}
+
+	outputBytes, err := pollOutbox(bgCtx, pool, callKey, 30*time.Second)
+	if err != nil {
+		panic(failPanic{err: err})
+	}
+	var out O
+	if err := mapOutputJSON(outputBytes, &out); err != nil {
+		panic(failPanic{err: fmt.Errorf("unmarshal_output: %w", err)})
+	}
+	flog.Info("external.completed", flogService, e.Name, flogCallKey, callKey)
+	return out
+}
+
+func pollOutbox(ctx context.Context, pool *pgxpool.Pool, callKey string, timeout time.Duration) ([]byte, error) {
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		var status, output, errMsg string
+		err := pool.QueryRow(ctx,
+			`SELECT status, COALESCE(output::text,''), COALESCE(error_msg,'') FROM fookie_outbox WHERE call_key=$1`,
+			callKey).Scan(&status, &output, &errMsg)
+		if err == nil {
+			switch status {
+			case outboxStatusCompleted:
+				return []byte(output), nil
+			case outboxStatusFailed:
+				return nil, fmt.Errorf("%s", errMsg)
+			}
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	return nil, fmt.Errorf("external timeout after %s", timeout)
+}
+
+func autoCompensateAll(ctx execCtx) error {
+	tx := ctx.dbTx()
+	if tx == nil {
+		return nil
+	}
+	entityID := ctx.currentEntityID()
+	model := ctx.modelName()
+	if entityID == "" || model == "" {
+		return nil
+	}
+	steps, err := sagaLoadSteps(tx, entityID, model)
+	if err != nil {
+		return err
+	}
+	if len(steps) == 0 {
+		return nil
+	}
+	flog.Info("saga.compensate_all",
+		flogModel, model,
+		flogEntityID, entityID,
+		flogStepCount, len(steps))
+	start := time.Now()
+	for _, step := range steps {
+		compInput := step.compensateInput()
+		callKey := outboxCallKey(entityID, step.Compensate, compInput)
+		if err := outboxInsert(tx, step.Compensate, callKey, compInput, Retry{Attempts: 3}); err != nil {
+			return err
+		}
+		if err := outboxAddWaiter(tx, callKey, model, entityID); err != nil {
+			return err
+		}
+		flog.Debug("saga.compensation_dispatched",
+			flogService, step.StepName,
+			flogCompensate, step.Compensate,
+			flogModel, model,
+			flogEntityID, entityID)
+		dispatchInProcess(ctx.appRef(), step.Compensate, callKey, compInput)
+	}
+	if err := sagaClearSteps(tx, entityID, model); err != nil {
+		return err
+	}
+	flog.Info("saga.compensate_all_done",
+		flogModel, model,
+		flogEntityID, entityID,
+		flogStepCount, len(steps),
+		flogDurationMs, msElapsed(start))
+	return nil
 }
 
 func dispatchInProcess(app *App, serviceName, callKey string, inputJSON []byte) {
@@ -113,7 +257,7 @@ func dispatchInProcess(app *App, serviceName, callKey string, inputJSON []byte) 
 		ctx := context.Background()
 		output, err := h(ctx, inputJSON)
 		if err != nil {
-			_ = outboxFail(ctx, app.db.pool, callKey, err.Error(), 3)
+			_ = outboxFail(ctx, app.db.pool, callKey, err.Error())
 			return
 		}
 		if err := outboxComplete(ctx, app.db.pool, callKey, output); err != nil {
@@ -129,17 +273,38 @@ func dispatchInProcess(app *App, serviceName, callKey string, inputJSON []byte) 
 	}()
 }
 
-func wrapExternalHandler[I, O any](h func(context.Context, I) (O, error)) externalHandlerFunc {
-	return func(ctx context.Context, inputJSON []byte) ([]byte, error) {
+func wrapExternalHandler[I, O any](h func(I) (O, error)) externalHandlerFunc {
+	return func(_ context.Context, inputJSON []byte) ([]byte, error) {
 		var in I
 		if err := json.Unmarshal(inputJSON, &in); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("unmarshal input: %w", err)
 		}
-		out, err := h(ctx, in)
+		out, err := h(in)
 		if err != nil {
 			return nil, err
 		}
 		return json.Marshal(out)
+	}
+}
+
+// wrapCompensationHandler wraps a two-argument compensation handler into the
+// internal externalHandlerFunc signature. The payload is expected to be
+// {"input":<forward-input>,"output":<forward-output>} as produced by
+// sagaStep.compensateInput().
+func wrapCompensationHandler[FI, FO, R any](h func(FI, FO) (R, error)) externalHandlerFunc {
+	return func(_ context.Context, payloadJSON []byte) ([]byte, error) {
+		var wrapper struct {
+			Input  FI `json:"input"`
+			Output FO `json:"output"`
+		}
+		if err := json.Unmarshal(payloadJSON, &wrapper); err != nil {
+			return nil, fmt.Errorf("unmarshal compensation payload: %w", err)
+		}
+		result, err := h(wrapper.Input, wrapper.Output)
+		if err != nil {
+			return nil, err
+		}
+		return json.Marshal(result)
 	}
 }
 
@@ -149,7 +314,7 @@ func mapOutputJSON(data []byte, out any) error {
 	}
 	var raw map[string]any
 	if err := json.Unmarshal(data, &raw); err != nil {
-		return err
+		return fmt.Errorf("unmarshal output: %w", err)
 	}
 	mapOutput(raw, out)
 	return nil
@@ -160,7 +325,7 @@ func resolveInput(in any) map[string]any {
 		return nil
 	}
 	rv := reflect.ValueOf(in)
-	if rv.Kind() == reflect.Ptr {
+	if rv.Kind() == reflect.Pointer {
 		rv = rv.Elem()
 	}
 	if rv.Kind() != reflect.Struct {
@@ -193,7 +358,7 @@ func mapOutput(raw map[string]any, out any) {
 		return
 	}
 	rv := reflect.ValueOf(out)
-	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+	if rv.Kind() != reflect.Pointer || rv.IsNil() {
 		return
 	}
 	rv = rv.Elem()
@@ -229,16 +394,4 @@ func mapOutput(raw map[string]any, out any) {
 	}
 }
 
-func outputKey(fieldName string) string {
-	if fieldName == "OK" {
-		return "ok"
-	}
-	var b strings.Builder
-	for i, r := range fieldName {
-		if i > 0 && unicode.IsUpper(r) {
-			b.WriteByte('_')
-		}
-		b.WriteRune(unicode.ToLower(r))
-	}
-	return b.String()
-}
+func outputKey(fieldName string) string { return toSnake(fieldName) }

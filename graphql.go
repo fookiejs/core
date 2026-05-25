@@ -1,9 +1,11 @@
 package fookie
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/graphql-go/graphql"
 )
@@ -113,7 +115,7 @@ func (a *App) buildGraphQLSchema() (graphql.Schema, error) {
 		}
 	}
 
-	return graphql.NewSchema(graphql.SchemaConfig{
+	return graphql.NewSchema(graphql.SchemaConfig{ //nolint:wrapcheck
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name:   "Query",
 			Fields: queryFields,
@@ -126,7 +128,7 @@ func (a *App) buildGraphQLSchema() (graphql.Schema, error) {
 }
 
 func buildObjectType(m *storedModel) *graphql.Object {
-	fields := make(graphql.Fields, len(m.fields)+1)
+	fields := make(graphql.Fields, len(m.fields)+3)
 	fields["id"] = &graphql.Field{Type: graphql.String}
 	for _, f := range m.fields {
 		if f.Name == "id" {
@@ -138,6 +140,24 @@ func buildObjectType(m *storedModel) *graphql.Object {
 		}
 		fname := f.Name
 		fields[fname] = &graphql.Field{Type: gqlType}
+	}
+	fields["_fookieStatus"] = &graphql.Field{
+		Type: graphql.String,
+		Resolve: func(p graphql.ResolveParams) (any, error) {
+			if row, ok := p.Source.(map[string]any); ok {
+				return row["_fookie_status"], nil
+			}
+			return nil, nil
+		},
+	}
+	fields["_fookieError"] = &graphql.Field{
+		Type: graphql.String,
+		Resolve: func(p graphql.ResolveParams) (any, error) {
+			if row, ok := p.Source.(map[string]any); ok {
+				return row["_fookie_error"], nil
+			}
+			return nil, nil
+		},
 	}
 	return graphql.NewObject(graphql.ObjectConfig{
 		Name:   m.name,
@@ -179,14 +199,19 @@ func (a *App) handleGraphQL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	emitGraphQLReceived(params.OperationName)
+	start := time.Now()
+
+	gqlCtx := context.WithValue(r.Context(), graphqlRequestKey{}, r)
 	result := graphql.Do(graphql.Params{
 		Schema:         *a.graphqlSchema,
 		RequestString:  params.Query,
 		VariableValues: params.Variables,
 		OperationName:  params.OperationName,
-		Context:        r.Context(),
+		Context:        gqlCtx,
 	})
 
+	emitGraphQLDuration(params.OperationName, msElapsed(start))
 	writeJSON(w, 200, result)
 }
 

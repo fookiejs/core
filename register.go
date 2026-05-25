@@ -83,7 +83,7 @@ func fieldsFromSchema(schema any) []FieldDef {
 }
 
 func collectFields(v reflect.Value) []FieldDef {
-	if v.Kind() == reflect.Ptr {
+	if v.Kind() == reflect.Pointer {
 		v = v.Elem()
 	}
 	t := v.Type()
@@ -111,25 +111,25 @@ func collectFields(v reflect.Value) []FieldDef {
 	return out
 }
 
-func reflectValue(v any) reflect.Value {
-	rv := reflect.ValueOf(v)
-	if rv.Kind() != reflect.Ptr {
-		return rv
-	}
-	return rv.Elem()
-}
-
 func toSnake(name string) string {
+	runes := []rune(name)
 	var b strings.Builder
-	for i, r := range name {
+	for i, r := range runes {
 		if unicode.IsUpper(r) {
 			if i > 0 {
-				b.WriteByte('_')
+				prev := runes[i-1]
+				var next rune
+				if i+1 < len(runes) {
+					next = runes[i+1]
+				}
+				if unicode.IsLower(prev) || (unicode.IsUpper(prev) && next != 0 && unicode.IsLower(next)) {
+					b.WriteByte('_')
+				}
 			}
 			b.WriteRune(unicode.ToLower(r))
-			continue
+		} else {
+			b.WriteRune(r)
 		}
-		b.WriteRune(r)
 	}
 	return b.String()
 }

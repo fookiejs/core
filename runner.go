@@ -2,7 +2,14 @@ package fookie
 
 import (
 	"context"
-	"errors"
+	"fmt"
+	"reflect"
+)
+
+const (
+	entityStatusPending = "pending"
+	entityStatusActive  = "active"
+	entityStatusFailed  = "failed"
 )
 
 type modelRunner struct {
@@ -14,100 +21,176 @@ type modelRunner struct {
 	resume func(id string) error
 }
 
-func makeCreateRunner[S any](app *App, stored *storedModel, op func(*Ctx[S]) error) func(map[string]string, map[string]any) (map[string]any, error) {
-	return func(headers map[string]string, rawBody map[string]any) (map[string]any, error) {
-		return runCreate(app, stored, op, headers, rawBody, false)
+func validateRow(fields []FieldDef, row map[string]any) *FailError {
+	for _, f := range fields {
+		if f.Min == nil && f.Max == nil {
+			continue
+		}
+		n, ok := toInt64(row[f.Name])
+		if !ok {
+			continue
+		}
+		if f.Min != nil && n < *f.Min {
+			return NewError("validation_error", f.Name+" below minimum")
+		}
+		if f.Max != nil && n > *f.Max {
+			return NewError("validation_error", f.Name+" exceeds maximum")
+		}
+	}
+	return nil
+}
+
+func toInt64(v any) (int64, bool) {
+	if v == nil {
+		return 0, false
+	}
+	rv := reflect.ValueOf(v)
+	switch rv.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return rv.Int(), true
+	case reflect.Float32, reflect.Float64:
+		return int64(rv.Float()), true
+	default:
+		return 0, false
 	}
 }
 
-func makeResumeRunner[S any](app *App, stored *storedModel, op func(*Ctx[S]) error) func(string) error {
+// runOp executes an op function and converts the suspend/fail panics it
+// produces into normal return values. Any other panic is re-raised.
+func runOp[S any](op func(*Flow[S]), ctx *Flow[S]) (suspended bool, fp *failPanic) {
+	var caught any
+	func() {
+		defer func() { caught = recover() }()
+		if op != nil {
+			op(ctx)
+		}
+	}()
+	switch p := caught.(type) {
+	case nil:
+		return false, nil
+	case suspendPanic:
+		return true, nil
+	case failPanic:
+		return false, &p
+	default:
+		panic(caught)
+	}
+}
+
+func makeCreateRunner[S any](app *App, stored *storedModel, op func(*Flow[S])) func(map[string]string, map[string]any) (map[string]any, error) {
+	return func(headers map[string]string, rawBody map[string]any) (map[string]any, error) {
+		entityID := newUUIDv7()
+		tx, err := app.db.begin(context.Background())
+		if err != nil {
+			return nil, err
+		}
+		row := make(map[string]any, len(rawBody)+3)
+		for k, v := range rawBody {
+			row[k] = v
+		}
+		row["id"] = entityID
+		row["_fookie_status"] = entityStatusPending
+		if _, err := insertTx(tx, stored, row); err != nil {
+			_ = tx.Rollback(context.Background())
+			return nil, err
+		}
+		if err := tx.Commit(context.Background()); err != nil {
+			return nil, fmt.Errorf("tx commit: %w", err)
+		}
+		go runEntityOp(app, stored, op, entityID, headers, rawBody, false)
+		return map[string]any{"id": entityID}, nil
+	}
+}
+
+func runEntityOp[S any](app *App, stored *storedModel, op func(*Flow[S]), entityID string, headers map[string]string, rawBody map[string]any, resume bool) {
+	tx, err := app.db.begin(context.Background())
+	if err != nil {
+		markEntityFailed(app, stored, entityID, err.Error(), traceIDForEntity(entityID))
+		return
+	}
+	var body S
+	mapToSchema(rawBody, &body)
+	traceID := traceIDForEntity(entityID)
+	ctx := &Flow[S]{
+		Model:    stored,
+		Headers:  headers,
+		Body:     body,
+		Log:      newFlowLogger(stored.name, entityID),
+		Metric:   newFlowMetric(stored.name, entityID),
+		entityID: entityID,
+		execTraceID: traceID,
+		tx:       tx,
+		app:      app,
+	}
+	if resume {
+		emitFlowTrace(traceID, stored.name, entityID, "flow.resumed", nil)
+	} else {
+		emitFlowTrace(traceID, stored.name, entityID, "flow.started", nil)
+	}
+	suspended, fp := runOp(op, ctx)
+	if fp != nil {
+		_ = autoCompensateAll(ctx)
+		_ = tx.Rollback(context.Background())
+		markEntityFailed(app, stored, entityID, fp.err.Error(), traceID)
+		return
+	}
+	row := schemaToMap(ctx.Body)
+	row["id"] = entityID
+	if suspended {
+		row["_fookie_status"] = entityStatusPending
+		if _, err := updateTx(tx, stored, entityID, row); err != nil {
+			_ = tx.Rollback(context.Background())
+			markEntityFailed(app, stored, entityID, err.Error(), traceID)
+			return
+		}
+		_ = tx.Commit(context.Background())
+		emitFlowTrace(traceID, stored.name, entityID, "flow.suspended", nil)
+		return
+	}
+	row["_fookie_status"] = entityStatusActive
+	if verr := validateRow(stored.fields, row); verr != nil {
+		_ = tx.Rollback(context.Background())
+		markEntityFailed(app, stored, entityID, verr.Error(), traceID)
+		return
+	}
+	if _, err := updateTx(tx, stored, entityID, row); err != nil {
+		_ = tx.Rollback(context.Background())
+		markEntityFailed(app, stored, entityID, err.Error(), traceID)
+		return
+	}
+	_ = tx.Commit(context.Background())
+	emitFlowTrace(traceID, stored.name, entityID, "flow.completed", nil)
+	flog.Info("entity.created", flogModel, stored.name, flogEntityID, entityID)
+}
+
+func markEntityFailed(app *App, stored *storedModel, entityID, reason, traceID string) {
+	_, _ = app.db.pool.Exec(context.Background(),
+		fmt.Sprintf(`UPDATE "%s" SET "_fookie_status"='failed', "_fookie_error"=$1 WHERE "id"=$2`, stored.name),
+		reason, entityID)
+	emitFlowTrace(traceID, stored.name, entityID, "flow.failed", map[string]string{flogReason: reason})
+	flog.Warn("entity.failed", flogModel, stored.name, flogEntityID, entityID, flogErr, reason)
+}
+
+func makeResumeRunner[S any](app *App, stored *storedModel, op func(*Flow[S])) func(string) error {
 	return func(entityID string) error {
 		row, err := app.db.read(stored, entityID)
 		if err != nil {
 			return err
 		}
-		_, err = runCreate(app, stored, op, map[string]string{}, row, true)
-		return err
+		go runEntityOp(app, stored, op, entityID, map[string]string{}, row, true)
+		return nil
 	}
 }
 
-func runCreate[S any](app *App, stored *storedModel, op func(*Ctx[S]) error, headers map[string]string, rawBody map[string]any, resume bool) (map[string]any, error) {
-	entityID, _ := rawBody["id"].(string)
-	if entityID == "" {
-		entityID = newUUIDv7()
-	}
-
-	tx, err := app.db.begin(context.Background())
-	if err != nil {
-		return nil, err
-	}
-
-	var body S
-	mapToSchema(rawBody, &body)
-	ctx := &Ctx[S]{
-		Model:    stored,
-		Headers:  headers,
-		Body:     body,
-		entityID: entityID,
-		tx:       tx,
-		app:      app,
-		resume:   resume,
-	}
-
-	if op != nil {
-		if err := op(ctx); err != nil {
-			var es ExternalState
-			if errors.As(err, &es) && es.Running() {
-				row := schemaToMap(ctx.Body)
-				row["id"] = entityID
-				var dbErr error
-				if resume {
-					_, dbErr = updateTx(tx, stored, entityID, row)
-				} else {
-					_, dbErr = insertTx(tx, stored, row)
-				}
-				if dbErr != nil {
-					_ = tx.Rollback(context.Background())
-					return nil, dbErr
-				}
-				if commitErr := tx.Commit(context.Background()); commitErr != nil {
-					return nil, commitErr
-				}
-				row["id"] = entityID
-				return row, nil
-			}
-			_ = tx.Rollback(context.Background())
-			return nil, err
-		}
-	}
-
-	row := schemaToMap(ctx.Body)
-	row["id"] = entityID
-
-	var result map[string]any
-	if resume {
-		result, err = updateTx(tx, stored, entityID, row)
-	} else {
-		result, err = insertTx(tx, stored, row)
-	}
-	if err != nil {
-		_ = tx.Rollback(context.Background())
-		return nil, err
-	}
-	if err := tx.Commit(context.Background()); err != nil {
-		return nil, err
-	}
-	return result, nil
-}
-
-func makeListRunner[S any](app *App, stored *storedModel, op func(*Ctx[S]) error) func(map[string]string, string, int) ([]map[string]any, string, error) {
+func makeListRunner[S any](app *App, stored *storedModel, op func(*Flow[S])) func(map[string]string, string, int) ([]map[string]any, string, error) {
 	return func(headers map[string]string, cursor string, limit int) ([]map[string]any, string, error) {
-		ctx := NewListCtx[S](stored)
+		ctx := NewListFlow[S](stored)
 		ctx.Headers = headers
 		ctx.app = app
 		if op != nil {
-			if err := op(ctx); err != nil {
-				return nil, "", err
+			_, fp := runOp(op, ctx)
+			if fp != nil {
+				return nil, "", fp.err
 			}
 		}
 
@@ -138,7 +221,7 @@ func makeListRunner[S any](app *App, stored *storedModel, op func(*Ctx[S]) error
 	}
 }
 
-func makeReadRunner[S any](app *App, stored *storedModel, op func(*Ctx[S]) error) func(map[string]string, string) (map[string]any, error) {
+func makeReadRunner[S any](app *App, stored *storedModel, op func(*Flow[S])) func(map[string]string, string) (map[string]any, error) {
 	return func(headers map[string]string, id string) (map[string]any, error) {
 		row, err := app.db.read(stored, id)
 		if err != nil {
@@ -147,16 +230,17 @@ func makeReadRunner[S any](app *App, stored *storedModel, op func(*Ctx[S]) error
 		if op != nil {
 			var body S
 			mapToSchema(row, &body)
-			ctx := &Ctx[S]{Model: stored, Headers: headers, Body: body, app: app}
-			if err := op(ctx); err != nil {
-				return nil, err
+			ctx := &Flow[S]{Model: stored, Headers: headers, Body: body, Log: newFlowLogger(stored.name, id), Metric: newFlowMetric(stored.name, id), app: app}
+			_, fp := runOp(op, ctx)
+			if fp != nil {
+				return nil, fp.err
 			}
 		}
 		return row, nil
 	}
 }
 
-func makeUpdateRunner[S any](app *App, stored *storedModel, op func(*Ctx[S]) error) func(map[string]string, string, map[string]any) (map[string]any, error) {
+func makeUpdateRunner[S any](app *App, stored *storedModel, op func(*Flow[S])) func(map[string]string, string, map[string]any) (map[string]any, error) {
 	return func(headers map[string]string, id string, rawBody map[string]any) (map[string]any, error) {
 		tx, err := app.db.begin(context.Background())
 		if err != nil {
@@ -164,42 +248,60 @@ func makeUpdateRunner[S any](app *App, stored *storedModel, op func(*Ctx[S]) err
 		}
 		var body S
 		mapToSchema(rawBody, &body)
-		ctx := &Ctx[S]{
+		ctx := &Flow[S]{
 			Model:    stored,
 			Headers:  headers,
 			Body:     body,
+			Log:      newFlowLogger(stored.name, id),
+			Metric:   newFlowMetric(stored.name, id),
 			entityID: id,
 			tx:       tx,
 			app:      app,
 		}
-		if op != nil {
-			if err := op(ctx); err != nil {
-				_ = tx.Rollback(context.Background())
-				return nil, err
-			}
+		suspended, fp := runOp(op, ctx)
+		if fp != nil {
+			_ = autoCompensateAll(ctx)
+			_ = tx.Rollback(context.Background())
+			return nil, fp.err
 		}
 		row := schemaToMap(ctx.Body)
 		delete(row, "id")
+		if verr := validateRow(stored.fields, row); verr != nil {
+			_ = tx.Rollback(context.Background())
+			return nil, verr
+		}
 		result, err := updateTx(tx, stored, id, row)
 		if err != nil {
 			_ = tx.Rollback(context.Background())
 			return nil, err
 		}
 		if err := tx.Commit(context.Background()); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("tx commit: %w", err)
+		}
+		if suspended {
+			return map[string]any{"id": id}, nil
 		}
 		return result, nil
 	}
 }
 
-func makeDeleteRunner[S any](app *App, stored *storedModel, op func(*Ctx[S]) error) func(map[string]string, string) error {
+func makeDeleteRunner[S any](app *App, stored *storedModel, op func(*Flow[S])) func(map[string]string, string) error {
 	return func(headers map[string]string, id string) error {
-		ctx := &Ctx[S]{Model: stored, Headers: headers, app: app}
-		if op != nil {
-			if err := op(ctx); err != nil {
-				return err
-			}
+		tx, err := app.db.begin(context.Background())
+		if err != nil {
+			return err
 		}
-		return app.db.delete(stored, id)
+		ctx := &Flow[S]{Model: stored, Headers: headers, Log: newFlowLogger(stored.name, id), Metric: newFlowMetric(stored.name, id), app: app, entityID: id, tx: tx}
+		_, fp := runOp(op, ctx)
+		if fp != nil {
+			_ = tx.Rollback(context.Background())
+			return fp.err
+		}
+		if _, err := tx.Exec(context.Background(),
+			fmt.Sprintf(`DELETE FROM "%s" WHERE "id" = $1`, stored.name), id); err != nil {
+			_ = tx.Rollback(context.Background())
+			return fmt.Errorf("delete %s: %w", stored.name, err)
+		}
+		return tx.Commit(context.Background())
 	}
 }

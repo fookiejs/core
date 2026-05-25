@@ -5,30 +5,38 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
+	"math"
 	"strings"
 
+	"github.com/fookiejs/fookie/semantic"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+const (
+	sqlTypeText = "TEXT"
+	opNear      = "@NEAR"
+	opBox       = "@BOX"
+)
+
 var kindSQL = map[kind]string{
-	stringKind:     "TEXT",
+	stringKind:     sqlTypeText,
 	int64Kind:      "BIGINT",
 	float64Kind:    "DOUBLE PRECISION",
 	boolKind:       "BOOLEAN",
-	idKind:         "TEXT",
+	idKind:         sqlTypeText,
 	currencyKind:   "BIGINT",
-	emailKind:      "TEXT",
+	emailKind:      sqlTypeText,
 	jsonKind:       "JSONB",
-	enumKind:       "TEXT",
+	enumKind:       sqlTypeText,
 	timestampKind:  "TIMESTAMPTZ",
 	dateKind:       "DATE",
-	urlKind:        "TEXT",
-	phoneKind:      "TEXT",
+	urlKind:        sqlTypeText,
+	phoneKind:      sqlTypeText,
 	uuidKind:       "UUID",
-	colorKind:      "TEXT",
-	localeKind:     "TEXT",
-	ibanKind:       "TEXT",
+	colorKind:      sqlTypeText,
+	localeKind:     sqlTypeText,
+	ibanKind:       sqlTypeText,
 	ipKind:         "INET",
 	coordinateKind: "POINT",
 }
@@ -69,7 +77,7 @@ func (d *db) migrateModel(model *storedModel) error {
 		}
 		sqlType, ok := kindSQL[f.Kind]
 		if !ok {
-			sqlType = "TEXT"
+			sqlType = sqlTypeText
 		}
 		col := fmt.Sprintf(`"%s" %s`, f.Name, sqlType)
 		if f.Unique {
@@ -83,6 +91,30 @@ func (d *db) migrateModel(model *storedModel) error {
 		return err
 	}
 
+	// Add framework lifecycle columns (idempotent)
+	ctx := context.Background()
+	for _, q := range []string{
+		fmt.Sprintf(`ALTER TABLE "%s" ADD COLUMN IF NOT EXISTS "_fookie_status" TEXT NOT NULL DEFAULT 'active'`, model.name),
+		fmt.Sprintf(`ALTER TABLE "%s" ADD COLUMN IF NOT EXISTS "_fookie_error" TEXT`, model.name),
+	} {
+		if _, err := d.pool.Exec(ctx, q); err != nil {
+			return fmt.Errorf("alter table %s: %w", model.name, err)
+		}
+	}
+
+	for _, f := range model.fields {
+		if f.Name == "id" {
+			continue
+		}
+		sqlType, ok := kindSQL[f.Kind]
+		if !ok {
+			sqlType = sqlTypeText
+		}
+		_, _ = d.pool.Exec(context.Background(),
+			fmt.Sprintf(`ALTER TABLE "%s" ADD COLUMN IF NOT EXISTS "%s" %s`,
+				model.name, f.Name, sqlType))
+	}
+
 	for _, f := range model.fields {
 		if !f.Indexed {
 			continue
@@ -94,19 +126,6 @@ func (d *db) migrateModel(model *storedModel) error {
 		}
 	}
 	return nil
-}
-
-func (d *db) insert(model *storedModel, row map[string]any) (map[string]any, error) {
-	tx, err := d.pool.Begin(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	result, err := insertTx(tx, model, row)
-	if err != nil {
-		_ = tx.Rollback(context.Background())
-		return nil, err
-	}
-	return result, tx.Commit(context.Background())
 }
 
 func insertTx(tx pgx.Tx, model *storedModel, row map[string]any) (map[string]any, error) {
@@ -189,9 +208,13 @@ func sumTx(tx pgx.Tx, model *storedModel, column, excludeID string, filters []qu
 	n := 1
 
 	for _, f := range filters {
-		where = append(where, fmt.Sprintf(`"%s" %s $%d`, f.field, f.op, n))
-		args = append(args, f.value)
-		n++
+		clause, fa, err := buildFilterClause(f, n)
+		if err != nil {
+			return 0, err
+		}
+		where = append(where, clause)
+		args = append(args, fa...)
+		n += len(fa)
 	}
 	if excludeID != "" {
 		where = append(where, fmt.Sprintf(`"id" != $%d`, n))
@@ -208,6 +231,33 @@ func sumTx(tx pgx.Tx, model *storedModel, column, excludeID string, filters []qu
 	return total, err
 }
 
+func buildFilterClause(f queryFilter, n int) (string, []any, error) {
+	switch f.op {
+	case "IN":
+		return fmt.Sprintf(`"%s" = ANY($%d)`, f.field, n), []any{f.value}, nil
+	case opNear:
+		cf, ok := f.value.(semantic.CoordinateFilter)
+		if !ok {
+			return "", nil, fmt.Errorf("buildFilterClause: @NEAR filter on field %q expects CoordinateFilter, got %T", f.field, f.value)
+		}
+		dLat := cf.Radius / 111111.0
+		dLon := cf.Radius / (111111.0 * math.Cos(cf.Lat*math.Pi/180.0))
+		clause := fmt.Sprintf(`"%s" <@ box(point($%d,$%d),point($%d,$%d))`,
+			f.field, n, n+1, n+2, n+3)
+		return clause, []any{cf.Lat - dLat, cf.Lon - dLon, cf.Lat + dLat, cf.Lon + dLon}, nil
+	case opBox:
+		bf, ok := f.value.(semantic.BoxFilter)
+		if !ok {
+			return "", nil, fmt.Errorf("buildFilterClause: @BOX filter on field %q expects BoxFilter, got %T", f.field, f.value)
+		}
+		clause := fmt.Sprintf(`"%s" <@ box(point($%d,$%d),point($%d,$%d))`,
+			f.field, n, n+1, n+2, n+3)
+		return clause, []any{bf.MinLat, bf.MinLon, bf.MaxLat, bf.MaxLon}, nil
+	default:
+		return fmt.Sprintf(`"%s" %s $%d`, f.field, f.op, n), []any{f.value}, nil
+	}
+}
+
 func dbAdvisoryLock(tx pgx.Tx, key string) error {
 	h := fnv.New64a()
 	_, _ = h.Write([]byte(key))
@@ -222,19 +272,23 @@ func (d *db) list(model *storedModel, qb *queryBuilder) ([]map[string]any, error
 	n := 1
 
 	for _, f := range qb.filters {
-		where = append(where, fmt.Sprintf(`"%s" %s $%d`, f.field, f.op, n))
-		args = append(args, f.value)
-		n++
+		clause, fa, err := buildFilterClause(f, n)
+		if err != nil {
+			return nil, err
+		}
+		where = append(where, clause)
+		args = append(args, fa...)
+		n += len(fa)
 	}
 	switch qb.cursorDir {
 	case cursorAfter:
 		where = append(where, fmt.Sprintf(`"id" > $%d`, n))
 		args = append(args, qb.cursor)
-		n++
 	case cursorBefore:
 		where = append(where, fmt.Sprintf(`"id" < $%d`, n))
 		args = append(args, qb.cursor)
-		n++
+	default:
+		// cursorNone — no cursor filter
 	}
 
 	q := fmt.Sprintf(`SELECT * FROM "%s"`, model.name)
@@ -281,33 +335,10 @@ func (d *db) read(model *storedModel, id string) (map[string]any, error) {
 	return results[0], nil
 }
 
-func (d *db) update(model *storedModel, id string, row map[string]any) (map[string]any, error) {
-	tx, err := d.pool.Begin(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	result, err := updateTx(tx, model, id, row)
-	if err != nil {
-		_ = tx.Rollback(context.Background())
-		return nil, err
-	}
-	return result, tx.Commit(context.Background())
-}
-
-func (d *db) delete(model *storedModel, id string) error {
-	q := fmt.Sprintf(`DELETE FROM "%s" WHERE "id" = $1`, model.name)
-	_, err := d.pool.Exec(context.Background(), q, id)
-	if err != nil {
-		return fmt.Errorf("delete %s: %w", model.name, err)
-	}
-	return nil
-}
-
 func buildInsertParts(model *storedModel, row map[string]any) (cols []string, args []any, placeholders []string) {
-	allFields := append([]FieldDef{{Name: "id", Kind: idKind}}, model.fields...)
 	seen := map[string]bool{}
 	i := 1
-	for _, f := range allFields {
+	for _, f := range model.fields {
 		if seen[f.Name] {
 			continue
 		}
@@ -343,7 +374,7 @@ func collectRows(rows pgx.Rows) ([]map[string]any, error) {
 		}
 		row := make(map[string]any, len(descs))
 		for i, d := range descs {
-			row[string(d.Name)] = vals[i]
+			row[d.Name] = vals[i]
 		}
 		out = append(out, row)
 	}

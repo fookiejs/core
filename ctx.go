@@ -2,27 +2,70 @@ package fookie
 
 import "github.com/jackc/pgx/v5"
 
-type Ctx[F any] struct {
+// FlowLogger is the structured logger bound to a Flow.
+// Model name and entity ID are automatically included in every log line.
+type FlowLogger struct {
+	model    string
+	entityID string
+}
+
+func newFlowLogger(model, entityID string) FlowLogger {
+	return FlowLogger{model: model, entityID: entityID}
+}
+
+func (l FlowLogger) base() []any {
+	b := []any{flogModel, l.model}
+	if l.entityID != "" {
+		b = append(b, flogEntityID, l.entityID)
+	}
+	return b
+}
+
+func (l FlowLogger) Info(msg string, args ...any) {
+	flog.Info(msg, append(l.base(), args...)...)
+}
+
+func (l FlowLogger) Warn(msg string, args ...any) {
+	flog.Warn(msg, append(l.base(), args...)...)
+}
+
+func (l FlowLogger) Debug(msg string, args ...any) {
+	flog.Debug(msg, append(l.base(), args...)...)
+}
+
+func (l FlowLogger) Error(msg string, args ...any) {
+	flog.Error(msg, append(l.base(), args...)...)
+}
+
+type Flow[F any] struct {
 	Model    *storedModel
 	Headers  map[string]string
 	Body     F
 	Filter   F
+	Log      FlowLogger
+	Metric   FlowMetric
 	qb       *queryBuilder
 	tx       pgx.Tx
 	app      *App
-	entityID string
-	resume   bool
+	entityID     string
+	execTraceID  string
 }
 
-func NewCtx[F any](model *storedModel, body F) *Ctx[F] {
-	return &Ctx[F]{
+func NewFlow[F any](model *storedModel, body F) *Flow[F] {
+	name := ""
+	if model != nil {
+		name = model.name
+	}
+	return &Flow[F]{
 		Model:   model,
 		Headers: map[string]string{},
 		Body:    body,
+		Log:     newFlowLogger(name, ""),
+		Metric:  newFlowMetric(name, ""),
 	}
 }
 
-func NewListCtx[F any](model *storedModel) *Ctx[F] {
+func NewListFlow[F any](model *storedModel) *Flow[F] {
 	qb := &queryBuilder{model: model}
 	var schema F
 	if model.schema != nil {
@@ -30,51 +73,53 @@ func NewListCtx[F any](model *storedModel) *Ctx[F] {
 			schema = s
 		}
 	}
-	return &Ctx[F]{
+	return &Flow[F]{
 		Model:  model,
 		Filter: attachFilter(schema, qb),
+		Log:    newFlowLogger(model.name, ""),
+		Metric: newFlowMetric(model.name, ""),
 		qb:     qb,
 	}
 }
 
-func (c *Ctx[F]) header(key string) string {
+func (c *Flow[F]) header(key string) string {
 	if c.Headers == nil {
 		return ""
 	}
 	return c.Headers[key]
 }
 
-func (c *Ctx[F]) Header(key string) string { return c.header(key) }
+func (c *Flow[F]) Header(key string) string { return c.header(key) }
 
-func (c *Ctx[F]) dbTx() pgx.Tx { return c.tx }
+func (c *Flow[F]) dbTx() pgx.Tx { return c.tx }
 
-func (c *Ctx[F]) modelName() string {
+func (c *Flow[F]) modelName() string {
 	if c.Model == nil {
 		return ""
 	}
 	return c.Model.name
 }
 
-func (c *Ctx[F]) currentEntityID() string { return c.entityID }
+func (c *Flow[F]) currentEntityID() string { return c.entityID }
 
-func (c *Ctx[F]) appRef() *App { return c.app }
+func (c *Flow[F]) appRef() *App { return c.app }
 
-func (c *Ctx[F]) isResume() bool { return c.resume }
+func (c *Flow[F]) traceID() string { return c.execTraceID }
 
-func (c *Ctx[F]) OrderBy(field orderable) *OrderClause {
+func (c *Flow[F]) OrderBy(field orderable) *OrderClause {
 	if c.qb == nil {
 		return &OrderClause{}
 	}
 	return &OrderClause{qb: c.qb, key: field.OrderKey()}
 }
 
-func (c *Ctx[F]) Limit(n int) {
+func (c *Flow[F]) Limit(n int) {
 	if c.qb != nil {
 		c.qb.limit = n
 	}
 }
 
-func (c *Ctx[F]) After(cursor string) {
+func (c *Flow[F]) After(cursor string) {
 	if c.qb == nil || cursor == "" {
 		return
 	}
@@ -82,7 +127,7 @@ func (c *Ctx[F]) After(cursor string) {
 	c.qb.cursorDir = cursorAfter
 }
 
-func (c *Ctx[F]) Before(cursor string) {
+func (c *Flow[F]) Before(cursor string) {
 	if c.qb == nil || cursor == "" {
 		return
 	}
@@ -90,9 +135,11 @@ func (c *Ctx[F]) Before(cursor string) {
 	c.qb.cursorDir = cursorBefore
 }
 
-func (c *Ctx[F]) Fail(err *FailError) error { return err }
+func (c *Flow[F]) Fail(err *FailError) {
+	panic(failPanic{err: err})
+}
 
-func (c *Ctx[F]) Lock(key string) error {
+func (c *Flow[F]) Lock(key string) error {
 	if c.tx == nil {
 		return nil
 	}
@@ -113,22 +160,4 @@ func (e *FailError) Error() string {
 
 func NewError(code, description string) *FailError {
 	return &FailError{Code: code, Description: description}
-}
-
-func ReadModel[G any](model *Model[G], fn func(*Ctx[G])) map[string]any {
-	stored := model.stored
-	qb := &queryBuilder{model: stored}
-	var schema G
-	if stored.schema != nil {
-		if s, ok := stored.schema.(G); ok {
-			schema = s
-		}
-	}
-	child := &Ctx[G]{
-		Model:  stored,
-		Filter: attachFilter(schema, qb),
-		qb:     qb,
-	}
-	fn(child)
-	return map[string]any{}
 }
