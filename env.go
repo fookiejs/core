@@ -7,7 +7,7 @@ import (
 	"sync"
 )
 
-type stdString = string
+type envAllowed = string
 
 type envClass int
 
@@ -18,7 +18,7 @@ const (
 
 type EnvVar[T any] struct {
 	key    string
-	oneOf  []stdString
+	oneOf  []envAllowed
 	class  envClass
 	value  T
 	loaded bool
@@ -35,6 +35,12 @@ var (
 	listenEnv   = Env[string]("LISTEN")
 	dbEnv       = Env[string]("DB_URL").Secret()
 	logLevelEnv = Env[string]("LOG_LEVEL").OneOf("debug", "info", "warn", "error")
+
+	otelEnabledEnv  = Env[string]("OTEL_ENABLED").OneOf("true", "false", "1", "0")
+	otelMetricsEnv  = Env[string]("OTEL_METRICS").OneOf("true", "false", "1", "0")
+	otelTracesEnv   = Env[string]("OTEL_TRACES").OneOf("true", "false", "1", "0")
+	otelServiceEnv  = Env[string]("OTEL_SERVICE_NAME")
+	otelEndpointEnv = Env[string]("OTEL_EXPORTER_OTLP_ENDPOINT")
 )
 
 var envLoad sync.Once
@@ -64,7 +70,7 @@ func (e *EnvVar[T]) Secret() *EnvVar[T] {
 	return e
 }
 
-func (e *EnvVar[string]) OneOf(values ...stdString) *EnvVar[string] {
+func (e *EnvVar[string]) OneOf(values ...envAllowed) *EnvVar[string] {
 	e.oneOf = values
 	return e
 }
@@ -99,7 +105,7 @@ func (e *EnvVar[T]) logEnv() {
 	if !e.loaded {
 		return
 	}
-	s, ok := any(e.value).(stdString)
+	s, ok := any(e.value).(envAllowed)
 	if !ok {
 		return
 	}
@@ -144,6 +150,27 @@ func logLoadedEnvs() {
 
 func applyBuiltinConfig(cfg *Config) {
 	cfg.Listen = listenEnv.ValueOr(":3000")
-	cfg.DB = dbEnv.ValueOr("postgres://localhost:5432/fookie_dev?sslmode=disable")
+	cfg.DB = dbEnv.ValueOr("postgres://fookie:fookie_dev@localhost:5432/fookie?sslmode=disable")
 	cfg.LogLevel = logLevelEnv.ValueOr("info")
+	cfg.TelemetryEnabled = envTruthy(otelEnabledEnv.ValueOr("false"))
+	cfg.TelemetryMetrics = envTruthyOr(otelMetricsEnv, cfg.TelemetryEnabled)
+	cfg.TelemetryTraces = envTruthyOr(otelTracesEnv, cfg.TelemetryEnabled)
+	cfg.TelemetryServiceName = otelServiceEnv.ValueOr("fookie")
+	cfg.TelemetryOTLPEndpoint = otelEndpointEnv.ValueOr("")
+}
+
+func envTruthy(v string) bool {
+	switch v {
+	case "true", "1", "yes", "on":
+		return true
+	default:
+		return false
+	}
+}
+
+func envTruthyOr(e *EnvVar[string], fallback bool) bool {
+	if !e.loaded {
+		return fallback
+	}
+	return envTruthy(e.value)
 }

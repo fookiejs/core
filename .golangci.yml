@@ -1,0 +1,49 @@
+version: "2"
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - revive
+    - exhaustive
+    - gosec
+    - gocritic
+    - goconst
+    - noctx
+    - bodyclose
+    - nilerr
+    - unconvert
+    - unparam
+    - dogsled
+    - misspell
+    - whitespace
+    - wrapcheck
+
+  settings:
+    exhaustive:
+      default-signifies-exhaustive: true
+    goconst:
+      min-occurrences: 3
+    gocritic:
+      disabled-checks:
+        - commentedOutCode
+    revive:
+      rules:
+        - name: exported
+          disabled: true
+
+  exclusions:
+    rules:
+      - path: "_test\\.go"
+        linters:
+          - errcheck
+          - gosec
+          - goconst
+          - unparam
+      - path: "(outbox|db|telemetry)\\.go"
+        linters:
+          - wrapcheck
+      - path: "client\\.go"
+        linters:
+          - wrapcheck

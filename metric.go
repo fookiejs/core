@@ -1,16 +1,26 @@
 package fookie
 
 import (
+	"context"
+
 	"github.com/fookiejs/fookie/internal/telemetry"
 )
 
 type FlowMetric struct {
+	ctx      context.Context
 	model    string
 	entityID string
 }
 
-func newFlowMetric(model, entityID string) FlowMetric {
-	return FlowMetric{model: model, entityID: entityID}
+func NewFlowMetric(ctx context.Context, model, entityID string) FlowMetric {
+	return newFlowMetric(ctx, model, entityID)
+}
+
+func newFlowMetric(ctx context.Context, model, entityID string) FlowMetric {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return FlowMetric{ctx: ctx, model: model, entityID: entityID}
 }
 
 func (m FlowMetric) baseAttrs(extra map[string]string) map[string]string {
@@ -31,7 +41,7 @@ func (m FlowMetric) Increment(name string, tags map[string]string) {
 		flog.Warn("metric.rejected", "name", name, flogErr, err.Error())
 		return
 	}
-	telemetry.EmitCounter(full, m.baseAttrs(tags))
+	telemetry.EmitCounter(m.ctx, full, m.baseAttrs(tags))
 }
 
 func (m FlowMetric) Histogram(name string, value float64, tags map[string]string) {
@@ -40,7 +50,7 @@ func (m FlowMetric) Histogram(name string, value float64, tags map[string]string
 		flog.Warn("metric.rejected", "name", name, flogErr, err.Error())
 		return
 	}
-	telemetry.EmitHistogram(full, value, m.baseAttrs(tags))
+	telemetry.EmitHistogram(m.ctx, full, value, m.baseAttrs(tags))
 }
 
 func (m FlowMetric) Gauge(name string, value float64, tags map[string]string) {
@@ -49,7 +59,7 @@ func (m FlowMetric) Gauge(name string, value float64, tags map[string]string) {
 		flog.Warn("metric.rejected", "name", name, flogErr, err.Error())
 		return
 	}
-	telemetry.EmitGauge(full, value, m.baseAttrs(tags))
+	telemetry.EmitGauge(m.ctx, full, value, m.baseAttrs(tags))
 }
 
 func (m FlowMetric) emitName(name string) (string, error) {

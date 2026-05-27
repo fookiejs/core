@@ -79,7 +79,7 @@ func (d *db) migrateModel(model *storedModel) error {
 		if !ok {
 			sqlType = sqlTypeText
 		}
-		col := fmt.Sprintf(`"%s" %s`, f.Name, sqlType)
+		col := fmt.Sprintf(`"%s" %s`, f.ColumnName(), sqlType)
 		if f.Unique {
 			col += " UNIQUE"
 		}
@@ -112,7 +112,7 @@ func (d *db) migrateModel(model *storedModel) error {
 		}
 		_, _ = d.pool.Exec(context.Background(),
 			fmt.Sprintf(`ALTER TABLE "%s" ADD COLUMN IF NOT EXISTS "%s" %s`,
-				model.name, f.Name, sqlType))
+				model.name, f.ColumnName(), sqlType))
 	}
 
 	for _, f := range model.fields {
@@ -120,9 +120,19 @@ func (d *db) migrateModel(model *storedModel) error {
 			continue
 		}
 		idx := fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s_%s_idx" ON "%s" ("%s")`,
-			model.name, f.Name, model.name, f.Name)
+			model.name, f.ColumnName(), model.name, f.ColumnName())
 		if _, err := d.pool.Exec(context.Background(), idx); err != nil {
 			return fmt.Errorf("index %s.%s: %w", model.name, f.Name, err)
+		}
+	}
+	for _, f := range model.fields {
+		if !f.Unique || f.Name == "id" {
+			continue
+		}
+		idx := fmt.Sprintf(`CREATE UNIQUE INDEX IF NOT EXISTS "%s_%s_unique_idx" ON "%s" ("%s")`,
+			model.name, f.ColumnName(), model.name, f.ColumnName())
+		if _, err := d.pool.Exec(context.Background(), idx); err != nil {
+			return fmt.Errorf("unique index %s.%s: %w", model.name, f.Name, err)
 		}
 	}
 	return nil
@@ -146,7 +156,7 @@ func insertTx(tx pgx.Tx, model *storedModel, row map[string]any) (map[string]any
 	if err != nil || len(results) == 0 {
 		return nil, err
 	}
-	return results[0], nil
+	return normalizeRow(model, results[0]), nil
 }
 
 func updateTx(tx pgx.Tx, model *storedModel, id string, row map[string]any) (map[string]any, error) {
@@ -165,7 +175,7 @@ func updateTx(tx pgx.Tx, model *storedModel, id string, row map[string]any) (map
 		if !ok {
 			continue
 		}
-		sets = append(sets, fmt.Sprintf(`"%s" = $%d`, f.Name, n))
+		sets = append(sets, fmt.Sprintf(`"%s" = $%d`, f.ColumnName(), n))
 		args = append(args, encodeVal(f.Kind, v))
 		n++
 	}
@@ -183,7 +193,7 @@ func updateTx(tx pgx.Tx, model *storedModel, id string, row map[string]any) (map
 	if err != nil || len(results) == 0 {
 		return nil, err
 	}
-	return results[0], nil
+	return normalizeRow(model, results[0]), nil
 }
 
 func readTx(tx pgx.Tx, model *storedModel, id string) (map[string]any, error) {
@@ -199,7 +209,7 @@ func readTx(tx pgx.Tx, model *storedModel, id string) (map[string]any, error) {
 	if len(results) == 0 {
 		return nil, fmt.Errorf("not_found")
 	}
-	return results[0], nil
+	return normalizeRow(model, results[0]), nil
 }
 
 func sumTx(tx pgx.Tx, model *storedModel, column, excludeID string, filters []queryFilter) (int64, error) {
@@ -208,7 +218,12 @@ func sumTx(tx pgx.Tx, model *storedModel, column, excludeID string, filters []qu
 	n := 1
 
 	for _, f := range filters {
-		clause, fa, err := buildFilterClause(f, n)
+		ff := queryFilter{
+			field: model.columnForField(f.field),
+			op:    f.op,
+			value: f.value,
+		}
+		clause, fa, err := buildFilterClause(ff, n)
 		if err != nil {
 			return 0, err
 		}
@@ -219,7 +234,9 @@ func sumTx(tx pgx.Tx, model *storedModel, column, excludeID string, filters []qu
 	if excludeID != "" {
 		where = append(where, fmt.Sprintf(`"id" != $%d`, n))
 		args = append(args, excludeID)
+		n++
 	}
+	where = append(where, `"_fookie_status" = 'active'`)
 
 	q := fmt.Sprintf(`SELECT COALESCE(SUM("%s"), 0) FROM "%s"`, column, model.name)
 	if len(where) > 0 {
@@ -272,7 +289,12 @@ func (d *db) list(model *storedModel, qb *queryBuilder) ([]map[string]any, error
 	n := 1
 
 	for _, f := range qb.filters {
-		clause, fa, err := buildFilterClause(f, n)
+		ff := queryFilter{
+			field: model.columnForField(f.field),
+			op:    f.op,
+			value: f.value,
+		}
+		clause, fa, err := buildFilterClause(ff, n)
 		if err != nil {
 			return nil, err
 		}
@@ -316,7 +338,59 @@ func (d *db) list(model *storedModel, qb *queryBuilder) ([]map[string]any, error
 	if err != nil {
 		return nil, fmt.Errorf("list %s: %w", model.name, err)
 	}
-	return collectRows(rows)
+	out, err := collectRows(rows)
+	if err != nil {
+		return nil, err
+	}
+	return normalizeRows(model, out), nil
+}
+
+func findExistingByUniqueFields(ctx context.Context, q querier, model *storedModel, row map[string]any) (map[string]any, error) {
+	var where []string
+	var args []any
+	n := 1
+	for _, f := range model.fields {
+		if !f.Unique || f.Name == "id" {
+			continue
+		}
+		v, ok := row[f.Name]
+		if !ok || v == nil {
+			continue
+		}
+		if s, ok := v.(string); ok && s == "" {
+			continue
+		}
+		where = append(where, fmt.Sprintf(`"%s" = $%d`, f.ColumnName(), n))
+		args = append(args, encodeVal(f.Kind, v))
+		n++
+	}
+	if len(where) == 0 {
+		return nil, nil
+	}
+	qry := fmt.Sprintf(`SELECT * FROM "%s" WHERE %s LIMIT 1`, model.name, strings.Join(where, " AND "))
+	rows, err := q.Query(ctx, qry, args...)
+	if err != nil {
+		return nil, fmt.Errorf("find unique %s: %w", model.name, err)
+	}
+	results, err := collectRows(rows)
+	if err != nil {
+		return nil, err
+	}
+	if len(results) == 0 {
+		return nil, nil
+	}
+	return normalizeRow(model, results[0]), nil
+}
+
+type querier interface {
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+}
+
+func (d *db) resetEntityPending(ctx context.Context, model *storedModel, entityID string) error {
+	_, err := d.pool.Exec(ctx,
+		fmt.Sprintf(`UPDATE "%s" SET "_fookie_status"='pending', "_fookie_error"=NULL WHERE "id"=$1`, model.name),
+		entityID)
+	return err
 }
 
 func (d *db) read(model *storedModel, id string) (map[string]any, error) {
@@ -332,7 +406,7 @@ func (d *db) read(model *storedModel, id string) (map[string]any, error) {
 	if len(results) == 0 {
 		return nil, fmt.Errorf("not_found")
 	}
-	return results[0], nil
+	return normalizeRow(model, results[0]), nil
 }
 
 func buildInsertParts(model *storedModel, row map[string]any) (cols []string, args []any, placeholders []string) {
@@ -347,7 +421,7 @@ func buildInsertParts(model *storedModel, row map[string]any) (cols []string, ar
 			continue
 		}
 		seen[f.Name] = true
-		cols = append(cols, fmt.Sprintf(`"%s"`, f.Name))
+		cols = append(cols, fmt.Sprintf(`"%s"`, f.ColumnName()))
 		args = append(args, encodeVal(f.Kind, v))
 		placeholders = append(placeholders, fmt.Sprintf("$%d", i))
 		i++

@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -109,13 +110,53 @@ func (d *db) migrateOutbox() error {
 	return nil
 }
 
-func outboxCallKey(entityID, serviceName string, inputJSON []byte) string {
+func businessReferenceFromInput(inputJSON []byte) (string, bool, error) {
+	var raw map[string]any
+	if err := json.Unmarshal(inputJSON, &raw); err != nil {
+		return "", false, fmt.Errorf("businessReferenceFromInput: %w", err)
+	}
+	v, exists := raw["reference"]
+	if !exists {
+		return "", false, nil
+	}
+	ref, ok := v.(string)
+	if !ok {
+		return "", false, fmt.Errorf("businessReferenceFromInput: reference must be string, got %T", v)
+	}
+	ref = strings.TrimSpace(ref)
+	if ref == "" {
+		return "", false, nil
+	}
+	return ref, true, nil
+}
+
+func outboxCallKey(entityID, serviceName string, inputJSON []byte) (string, error) {
+	ref, hasRef, err := businessReferenceFromInput(inputJSON)
+	if err != nil {
+		return "", err
+	}
+	if hasRef {
+		h := sha256.New()
+		_, _ = h.Write([]byte(serviceName))
+		_, _ = h.Write([]byte(":"))
+		_, _ = h.Write([]byte(ref))
+		return hex.EncodeToString(h.Sum(nil)), nil
+	}
 	h := sha256.New()
 	_, _ = h.Write([]byte(entityID))
 	_, _ = h.Write([]byte(":"))
 	_, _ = h.Write([]byte(serviceName))
 	_, _ = h.Write([]byte(":"))
 	_, _ = h.Write(inputJSON)
+	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+func outboxBusinessCallKey(serviceName, businessKey string) string {
+	h := sha256.New()
+	_, _ = h.Write([]byte("biz:"))
+	_, _ = h.Write([]byte(serviceName))
+	_, _ = h.Write([]byte(":"))
+	_, _ = h.Write([]byte(businessKey))
 	return hex.EncodeToString(h.Sum(nil))
 }
 

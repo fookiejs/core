@@ -1,6 +1,12 @@
 package fookie
 
-import "github.com/jackc/pgx/v5"
+import (
+	"context"
+	"strings"
+
+	"github.com/fookiejs/fookie/internal/telemetry"
+	"github.com/jackc/pgx/v5"
+)
 
 // FlowLogger is the structured logger bound to a Flow.
 // Model name and entity ID are automatically included in every log line.
@@ -47,8 +53,9 @@ type Flow[F any] struct {
 	qb       *queryBuilder
 	tx       pgx.Tx
 	app      *App
-	entityID     string
-	execTraceID  string
+	entityID    string
+	execTraceID string
+	execCtx     context.Context
 }
 
 func NewFlow[F any](model *storedModel, body F) *Flow[F] {
@@ -61,7 +68,7 @@ func NewFlow[F any](model *storedModel, body F) *Flow[F] {
 		Headers: map[string]string{},
 		Body:    body,
 		Log:     newFlowLogger(name, ""),
-		Metric:  newFlowMetric(name, ""),
+		Metric:  newFlowMetric(context.Background(), name, ""),
 	}
 }
 
@@ -77,19 +84,27 @@ func NewListFlow[F any](model *storedModel) *Flow[F] {
 		Model:  model,
 		Filter: attachFilter(schema, qb),
 		Log:    newFlowLogger(model.name, ""),
-		Metric: newFlowMetric(model.name, ""),
+		Metric: newFlowMetric(context.Background(), model.name, ""),
 		qb:     qb,
 	}
 }
 
-func (c *Flow[F]) header(key string) string {
+func (c *Flow[F]) header(key string) (string, bool) {
 	if c.Headers == nil {
-		return ""
+		return "", false
 	}
-	return c.Headers[key]
+	if v, ok := c.Headers[key]; ok {
+		return v, true
+	}
+	for k, v := range c.Headers {
+		if strings.EqualFold(k, key) {
+			return v, true
+		}
+	}
+	return "", false
 }
 
-func (c *Flow[F]) Header(key string) string { return c.header(key) }
+func (c *Flow[F]) Header(key string) (string, bool) { return c.header(key) }
 
 func (c *Flow[F]) dbTx() pgx.Tx { return c.tx }
 
@@ -104,7 +119,21 @@ func (c *Flow[F]) currentEntityID() string { return c.entityID }
 
 func (c *Flow[F]) appRef() *App { return c.app }
 
-func (c *Flow[F]) traceID() string { return c.execTraceID }
+func (c *Flow[F]) traceID() string {
+	if c.execCtx != nil {
+		if id := telemetry.TraceID(c.execCtx); id != "" {
+			return id
+		}
+	}
+	return c.execTraceID
+}
+
+func (c *Flow[F]) execContext() context.Context {
+	if c.execCtx != nil {
+		return c.execCtx
+	}
+	return context.Background()
+}
 
 func (c *Flow[F]) OrderBy(field orderable) *OrderClause {
 	if c.qb == nil {

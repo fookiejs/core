@@ -54,6 +54,9 @@ func processOutboxEntry(ctx context.Context, app *App, entry outboxEntry) {
 	h, ok := app.externalHandlers[entry.Name]
 	if !ok {
 		flog.Warn("outbox.no_handler", flogService, entry.Name, flogCallKey, entry.CallKey)
+		if err := outboxFail(ctx, app.db.pool, entry.CallKey, "no handler registered"); err != nil {
+			flog.Warn("outbox.fail_update_error", flogCallKey, entry.CallKey, flogErr, err.Error())
+		}
 		return
 	}
 
@@ -64,12 +67,8 @@ func processOutboxEntry(ctx context.Context, app *App, entry outboxEntry) {
 	dur := msElapsed(start)
 
 	if err != nil {
-		telemetry.EmitHistogram("runtime.outbox.duration", dur, map[string]string{"service": entry.Name, "result": "error"})
-		telemetry.EmitTrace("trc_outbox", "runtime.outbox", "external.retrying", map[string]string{
-			"service":     entry.Name,
-			flogCallKey:   entry.CallKey,
-			"error_phase": "handler",
-		})
+		telemetry.ExternalRetry(ctx, entry.Name, map[string]string{flogCallKey: entry.CallKey, "error_phase": "handler"})
+		telemetry.SchedulerRetry(ctx, entry.Name, map[string]string{flogCallKey: entry.CallKey})
 		flog.Warn("outbox.handler_error",
 			flogService, entry.Name,
 			flogCallKey, entry.CallKey,
@@ -90,8 +89,6 @@ func processOutboxEntry(ctx context.Context, app *App, entry outboxEntry) {
 		return
 	}
 
-	telemetry.EmitHistogram("runtime.outbox.duration", dur, map[string]string{"service": entry.Name, "result": "ok"})
-	telemetry.EmitCounter("runtime.outbox.processed", map[string]string{"service": entry.Name})
 	flog.Info("outbox.completed",
 		flogService, entry.Name,
 		flogCallKey, entry.CallKey,

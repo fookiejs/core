@@ -4,6 +4,6 @@ Go library for schema-first apps: models, hooks, internals, externals, Postgres 
 
 Import as `github.com/fookiejs/fookie` and `github.com/fookiejs/fookie/semantic`.
 
-See `../demo/bank` for an example app.
+See `../demo/bank` for an example app. GraphQL (`/graphql`) is consumed from `@fookiejs/client` or any HTTP client; there is no Go CLI in this repo.
 
-Telemetry is append-only JSON on stdout (`type`: `metric` or `trace`). Core does not export to Prometheus or store aggregates. User metrics: `flow.Metric.Increment`, `Histogram`, `Gauge` with `custom.*` names only. See `../docs/telemetry-events.md`.
+Telemetry is optional and exports only through OTLP (gRPC or HTTP). Core does not know Prometheus, Grafana, or any other backend; an OpenTelemetry Collector routes metrics and traces. Set `OTEL_ENABLED=true` and `OTEL_EXPORTER_OTLP_ENDPOINT` before `App.Run()`. User metrics: `flow.Metric.Increment`, `Histogram`, `Gauge` with `custom.*` names only.

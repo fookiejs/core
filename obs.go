@@ -1,17 +1,16 @@
 package fookie
 
 import (
-	"io"
+	"context"
 	"log/slog"
 	"os"
 	"time"
 
 	"github.com/fookiejs/fookie/internal/telemetry"
+	"go.opentelemetry.io/otel/metric"
 )
 
-// flog is the package-level structured logger. Every fookie event is emitted as
-// a JSON line to stdout so that operators can parse, forward, or ignore them
-// without any exporter dependency.
+// flog is the package-level structured logger used by fookie subsystems.
 //
 // Callers that want a different writer or extra attributes can replace this
 // before calling App.Run():
@@ -25,7 +24,46 @@ var flog = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 // Must be called before App.Run().
 func SetLogger(l *slog.Logger) { flog = l }
 
-func SetTelemetryOutput(w io.Writer) { telemetry.SetOutput(w) }
+type TelemetryConfig struct {
+	Enabled      bool
+	Metrics      bool
+	Traces       bool
+	ServiceName  string
+	OTLPEndpoint string
+}
+
+func TelemetryConfigFromEnv() TelemetryConfig {
+	c := telemetry.ConfigFromEnv()
+	return TelemetryConfig{
+		Enabled:      c.Enabled,
+		Metrics:      c.Metrics,
+		Traces:       c.Traces,
+		ServiceName:  c.ServiceName,
+		OTLPEndpoint: c.OTLPEndpoint,
+	}
+}
+
+func InitTelemetry(cfg TelemetryConfig) error {
+	return telemetry.Init(telemetry.Config{
+		Enabled:      cfg.Enabled,
+		Metrics:      cfg.Metrics,
+		Traces:       cfg.Traces,
+		ServiceName:  cfg.ServiceName,
+		OTLPEndpoint: cfg.OTLPEndpoint,
+	})
+}
+
+func BindMeterProviderForTest(mp metric.MeterProvider) {
+	telemetry.BindMeterProviderForTest(mp)
+}
+
+func ResetTelemetryForTest() {
+	telemetry.SetNoopProvidersForTest()
+}
+
+func ShutdownTelemetry(ctx context.Context) error {
+	return telemetry.Shutdown(ctx)
+}
 
 // Stable field keys used across all log events. Consumers can rely on these
 // names being constant across releases.

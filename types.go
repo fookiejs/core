@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/fookiejs/fookie/internal/telemetry"
 	"github.com/fookiejs/fookie/semantic"
 	"github.com/graphql-go/graphql"
 )
@@ -46,8 +47,9 @@ type Operations[S any] struct {
 }
 
 type External[I any, O any] struct {
-	Name  string
-	Retry Retry
+	Name           string
+	Retry          Retry
+	IdempotencyKey func(I) string
 }
 
 type Retry struct {
@@ -88,6 +90,12 @@ type Config struct {
 	Listen   string
 	DB       string
 	LogLevel string
+
+	TelemetryEnabled      bool
+	TelemetryMetrics      bool
+	TelemetryTraces       bool
+	TelemetryServiceName  string
+	TelemetryOTLPEndpoint string
 }
 
 type storedModel struct {
@@ -107,8 +115,9 @@ type App struct {
 	compensationLinks map[string]string
 	internals         []string
 	byName            map[string]*storedModel
-	db            *db
-	graphqlSchema *graphql.Schema
+	childRelations    map[string][]childRelation
+	db                *db
+	graphqlSchema     *graphql.Schema
 }
 
 func New(build func(*Config)) *App {
@@ -150,12 +159,32 @@ func Register[S any](a *App, m *Model[S]) {
 }
 
 func (a *App) Run() error {
+	tcfg := telemetry.Config{
+		Enabled:      a.cfg.TelemetryEnabled,
+		Metrics:      a.cfg.TelemetryMetrics,
+		Traces:       a.cfg.TelemetryTraces,
+		ServiceName:  a.cfg.TelemetryServiceName,
+		OTLPEndpoint: a.cfg.TelemetryOTLPEndpoint,
+	}
+	if !tcfg.Enabled && tcfg.OTLPEndpoint == "" {
+		tcfg = telemetry.ConfigFromEnv()
+	}
+	if err := InitTelemetry(TelemetryConfig{
+		Enabled:      tcfg.Enabled,
+		Metrics:      tcfg.Metrics,
+		Traces:       tcfg.Traces,
+		ServiceName:  tcfg.ServiceName,
+		OTLPEndpoint: tcfg.OTLPEndpoint,
+	}); err != nil {
+		flog.Warn("telemetry.init_failed", flogErr, err.Error())
+	}
+
 	database, err := openDB(a.cfg.DB)
 	if err != nil {
 		return fmt.Errorf("fookie: db open: %w", err)
 	}
 	a.db = database
-	flog.Info("app.db_connected", "dsn", a.cfg.DB)
+	flog.Info("app.db_connected")
 
 	if err := a.db.migrate(a.models); err != nil {
 		return fmt.Errorf("fookie: migrate: %w", err)
@@ -164,6 +193,9 @@ func (a *App) Run() error {
 
 	if err := a.db.migrateOutbox(); err != nil {
 		return fmt.Errorf("fookie: outbox migrate: %w", err)
+	}
+	if err := a.db.migrateIdempotency(); err != nil {
+		return fmt.Errorf("fookie: idempotency migrate: %w", err)
 	}
 
 	startOutboxWorker(a)

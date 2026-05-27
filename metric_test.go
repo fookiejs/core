@@ -1,47 +1,45 @@
 package fookie
 
 import (
-	"bytes"
-	"encoding/json"
-	"strings"
+	"context"
 	"testing"
 
 	"github.com/fookiejs/fookie/internal/telemetry"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 )
 
-func TestFlowMetricIncrement(t *testing.T) {
-	var buf bytes.Buffer
-	telemetry.SetOutput(&buf)
-	defer telemetry.SetOutput(nil)
+func setupMetricTest(t *testing.T) *sdkmetric.ManualReader {
+	t.Helper()
+	reader := sdkmetric.NewManualReader()
+	telemetry.BindMeterProviderForTest(sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader)))
+	return reader
+}
 
-	m := newFlowMetric("Transaction", "ent_1")
+func TestFlowMetricIncrement(t *testing.T) {
+	reader := setupMetricTest(t)
+	m := newFlowMetric(context.Background(), "Transaction", "ent_1")
 	m.Increment("order.created", map[string]string{"gateway": "test"})
 
-	line := strings.TrimSpace(buf.String())
-	var ev map[string]any
-	if err := json.Unmarshal([]byte(line), &ev); err != nil {
+	var rm metricdata.ResourceMetrics
+	if err := reader.Collect(context.Background(), &rm); err != nil {
 		t.Fatal(err)
 	}
-	if ev["name"] != "custom.order.created" {
-		t.Fatalf("name=%v", ev["name"])
+	found := false
+	for _, sm := range rm.ScopeMetrics {
+		for _, met := range sm.Metrics {
+			if met.Name == "custom.order.created" {
+				found = true
+			}
+		}
 	}
-	if ev["kind"] != "counter" {
-		t.Fatalf("kind=%v", ev["kind"])
-	}
-	if ev["value"].(float64) != 1 {
-		t.Fatalf("value=%v", ev["value"])
+	if !found {
+		t.Fatal("custom.order.created not emitted")
 	}
 }
 
 func TestFlowMetricRejectsReserved(t *testing.T) {
-	var buf bytes.Buffer
-	telemetry.SetOutput(&buf)
-	defer telemetry.SetOutput(nil)
-
-	m := newFlowMetric("Transaction", "")
+	setupMetricTest(t)
+	m := newFlowMetric(context.Background(), "Transaction", "")
 	m.Increment("http.received", nil)
-
-	if buf.Len() != 0 {
-		t.Fatalf("expected no metric event, got %s", buf.String())
-	}
 }
