@@ -19,15 +19,72 @@ linters:
     - misspell
     - whitespace
     - wrapcheck
+    - forbidigo
+    - funlen
+    - gocognit
+    - nestif
+    - depguard
 
   settings:
+    depguard:
+      rules:
+        storage-boundary:
+          list-mode: lax
+          files:
+            - $all
+            - "!$test"
+            - "!**/internal/persistence/**"
+            - "!**/internal/model/**"
+            - "!**/internal/runtime/**"
+            - "!**/internal/api/graphql/**"
+            - "!**/internal/reliability/**"
+            - "!**/app/api.go"
+          deny:
+            - pkg: github.com/fookiejs/fookie/internal/persistence/row
+              desc: row.Map erases field guarantees into generic cells; keep it inside persistence/serde/runtime/graphql boundaries and use typed Entity/Record/OpResult elsewhere
+    forbidigo:
+      forbid:
+        - pattern: '^go\s'
+          msg: use enqueueEntityOp or start*Worker instead of bare go
+        - pattern: 'ctx\.Value\(\s*"'
+          msg: pass dependencies explicitly; do not use string-key ctx.Value
+        - pattern: 'EmptyString|emptyString|BlankString|blankString|NoString|noString|ZeroString|zeroString|MissingString|missingString|AbsentString|absentString'
+          msg: "do not use string sentinel constants; express absence in the type system or fail-fast"
+        - pattern: 'const\s+\w*(Empty|Blank|Missing|Absent|Sentinel|Placeholder|Default)[A-Za-z0-9_]*\s*='
+          msg: "do not define sentinel constants for absence; preserve guarantees in types, not generic zero values"
+        - pattern: 'return\s+"",\s*nil\b'
+          msg: "empty string with nil error erases a guarantee into a sentinel; return error, optional type, or fail-fast"
+        - pattern: 'return\s+"",\s*false\b'
+          msg: "do not signal absence with empty string; use explicit optional types or typed not-found results"
+        - pattern: 'return\s+0,\s*nil\b'
+          msg: "do not signal absence with zero and nil error; use pointers, optional types, or error"
+        - pattern: 'return\s+0,\s*false\b'
+          msg: "do not signal absence with zero; use explicit optional types"
+        - pattern: 'return\s+false,\s*nil\b'
+          msg: "do not signal failure or absence with false and nil error; return error or optional type"
+        - pattern: '\.Text\s*==\s*""'
+          msg: "row.Cell presence is Kind/KindEmpty, not empty Text; do not collapse typed emptiness into empty string"
+        - pattern: '\.Text\s*!=\s*""'
+          msg: "row.Cell presence is Kind/KindEmpty, not empty Text; do not collapse typed emptiness into empty string"
+        - pattern: 'CurrentEntityID\(\)\s*==\s*""'
+          msg: "entity ID guarantees must not be re-checked via empty string after type erasure"
+        - pattern: 'func\s+\([^)]*\)\s+CurrentEntityID\(\)\s+string\s*\{\s*return\s+""'
+          msg: "contexts without an entity must not fake absence with empty string; use a separate type or method set"
+      exclude-godoc-examples: true
+    funlen:
+      lines: 110
+      statements: 50
+    gocognit:
+      min-complexity: 40
+    nestif:
+      min-complexity: 7
+    wrapcheck:
+      ignore-package-globs:
+        - github.com/fookiejs/fookie/internal/*
     exhaustive:
       default-signifies-exhaustive: true
     goconst:
       min-occurrences: 3
-    gocritic:
-      disabled-checks:
-        - commentedOutCode
     revive:
       rules:
         - name: exported
@@ -41,9 +98,25 @@ linters:
           - gosec
           - goconst
           - unparam
-      - path: "(outbox|db|telemetry)\\.go"
+          - forbidigo
+      - path: "internal/api/http/"
+        linters:
+          - forbidigo
+      - path: "internal/api/graphql/"
+        linters:
+          - forbidigo
+      - path: "internal/persistence/"
+        linters:
+          - forbidigo
+      - path: "internal/platform/"
+        linters:
+          - forbidigo
+      - path: "(outbox|db|telemetry|store)\\.go"
         linters:
           - wrapcheck
       - path: "client\\.go"
         linters:
           - wrapcheck
+      - path: "(entity_worker|outbox_worker)\\.go"
+        linters:
+          - forbidigo
