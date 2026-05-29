@@ -13,15 +13,15 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func createTx[S any](stored *model.StoredModel, operation func(*model.Flow[S]) model.Signal, operationTransaction *model.OpTx, headers map[string]string, bodyRow row.Map) (model.OpResult, model.Signal, *model.FailError, error) {
+func createTx[Schema any](stored *model.StoredModel, operation func(*model.Flow[Schema]) model.Signal, operationTransaction *model.OpTx, headers map[string]string, bodyRow row.Map) (model.OpResult, model.Signal, *model.FailError, error) {
 	if existing, err := store.FindExistingByUnique(operationTransaction.Ctx, operationTransaction.Tx, model.TableFor(stored), bodyRow); err != nil {
 		return model.OpResult{}, model.Failed, nil, err
 	} else if existing != nil {
-		return resumeExisting[S](operationTransaction, stored, operation, headers, existing)
+		return resumeExisting[Schema](operationTransaction, stored, operation, headers, existing)
 	}
 
 	entityID := model.NewID()
-	var body S
+	var body Schema
 	serde.FromRow(bodyRow, &body)
 	execCtx := observability.FlowStarted(operationTransaction.Ctx, stored.Name, entityID.String())
 	flow := model.NewEntityOpFlow(execCtx, operationTransaction.App, stored, entityID.String(), headers, body, operationTransaction, "")
@@ -45,7 +45,7 @@ func createTx[S any](stored *model.StoredModel, operation func(*model.Flow[S]) m
 
 	if _, err := store.InsertTx(operationTransaction.Tx, model.TableFor(stored), data); err != nil {
 		if existing, lerr := store.FindExistingByUnique(operationTransaction.Ctx, operationTransaction.Tx, model.TableFor(stored), bodyRow); lerr == nil && existing != nil {
-			return resumeExisting[S](operationTransaction, stored, operation, headers, existing)
+			return resumeExisting[Schema](operationTransaction, stored, operation, headers, existing)
 		}
 		return model.OpResult{}, model.Failed, nil, err
 	}
@@ -65,14 +65,14 @@ func createTx[S any](stored *model.StoredModel, operation func(*model.Flow[S]) m
 	return model.OpResult{ID: entityID, Pending: status == model.EntityStatusPending}, signal, nil, nil
 }
 
-func resumeExisting[S any](operationTransaction *model.OpTx, stored *model.StoredModel, operation func(*model.Flow[S]) model.Signal, headers map[string]string, existing row.Map) (model.OpResult, model.Signal, *model.FailError, error) {
+func resumeExisting[Schema any](operationTransaction *model.OpTx, stored *model.StoredModel, operation func(*model.Flow[Schema]) model.Signal, headers map[string]string, existing row.Map) (model.OpResult, model.Signal, *model.FailError, error) {
 	entityID := model.ID(existing.RequireText("id"))
 	status := model.EntityStatus(existing.TextOr("_fookie_status", ""))
 	if status == model.EntityStatusActive {
 		return model.OpResult{ID: entityID}, model.Done, nil, nil
 	}
 	h := headersFromEntity(existing, headers)
-	signal, failError, err := resumeEntityInTx[S](operationTransaction, stored, operation, entityID, h, existing, status == model.EntityStatusFailed)
+	signal, failError, err := resumeEntityInTx[Schema](operationTransaction, stored, operation, entityID, h, existing, status == model.EntityStatusFailed)
 	if err != nil {
 		return model.OpResult{}, model.Failed, failError, err
 	}
@@ -82,7 +82,7 @@ func resumeExisting[S any](operationTransaction *model.OpTx, stored *model.Store
 	return model.OpResult{ID: entityID, Pending: signal == model.Running}, signal, nil, nil
 }
 
-func resumeEntityInTx[S any](operationTransaction *model.OpTx, stored *model.StoredModel, operation func(*model.Flow[S]) model.Signal, entityID model.ID, headers map[string]string, existing row.Map, resetFailed bool) (model.Signal, *model.FailError, error) {
+func resumeEntityInTx[Schema any](operationTransaction *model.OpTx, stored *model.StoredModel, operation func(*model.Flow[Schema]) model.Signal, entityID model.ID, headers map[string]string, existing row.Map, resetFailed bool) (model.Signal, *model.FailError, error) {
 	if resetFailed {
 		if err := store.SetEntityStatusTx(operationTransaction.Tx, model.TableFor(stored), entityID.String(), model.EntityStatusPending.String()); err != nil {
 			return model.Failed, nil, err
@@ -90,7 +90,7 @@ func resumeEntityInTx[S any](operationTransaction *model.OpTx, stored *model.Sto
 	}
 	data := cloneRowMap(existing)
 	stripInternal(data)
-	var body S
+	var body Schema
 	serde.FromRow(data, &body)
 	execCtx := observability.SchedulerResume(operationTransaction.Ctx, stored.Name, entityID.String())
 	execCtx = observability.FlowResumed(execCtx, stored.Name, entityID.String())
@@ -146,13 +146,13 @@ func readTx[S any](stored *model.StoredModel, operation func(*model.Flow[S]) mod
 	}, signal, nil, nil
 }
 
-func updateTx[S any](stored *model.StoredModel, operation func(*model.Flow[S]) model.Signal, operationTransaction *model.OpTx, headers map[string]string, identifier model.ID, bodyRow row.Map) (model.OpResult, model.Signal, *model.FailError, error) {
+func updateTx[Schema any](stored *model.StoredModel, operation func(*model.Flow[Schema]) model.Signal, operationTransaction *model.OpTx, headers map[string]string, identifier model.ID, bodyRow row.Map) (model.OpResult, model.Signal, *model.FailError, error) {
 	existing, err := store.ReadTx(operationTransaction.Tx, model.TableFor(stored), identifier.String())
 	if err != nil {
 		return model.OpResult{}, model.Failed, nil, err
 	}
 	merged := mergeRowPatch(existing, bodyRow)
-	var body S
+	var body Schema
 	serde.FromRow(merged, &body)
 	flow := model.NewBoundFlow(operationTransaction.Ctx, operationTransaction.App, stored, identifier.String(), headers, body, operationTransaction)
 	signal, failError := model.RunOp(operation, flow)
@@ -196,7 +196,7 @@ func deleteTx[S any](stored *model.StoredModel, operation func(*model.Flow[S]) m
 	return signal, nil, nil
 }
 
-func listTx[S any](stored *model.StoredModel, m *model.Model[S], operation func(*model.ListFlow[S]) model.Signal, operationTransaction *model.OpTx, headers map[string]string, cursor string, extra []model.ListFilter) ([]model.Record, string, model.Signal, *model.FailError, error) {
+func listTx[Schema any](stored *model.StoredModel, m *model.Model[Schema], operation func(*model.ListFlow[Schema]) model.Signal, operationTransaction *model.OpTx, headers map[string]string, cursor string, extra []model.ListFilter) ([]model.Record, string, model.Signal, *model.FailError, error) {
 	flow := model.NewListFlow(operationTransaction.Ctx, stored, m.Field)
 	flow.Headers = headers
 	flow.SetApp(operationTransaction.App)
@@ -211,22 +211,22 @@ func listTx[S any](stored *model.StoredModel, m *model.Model[S], operation func(
 	}
 	records := make([]model.Record, len(items))
 	for i := range items {
-		records[i] = decodeRecord[S](items[i])
+		records[i] = decodeRecord[Schema](items[i])
 	}
 	return records, next, model.Done, nil, nil
 }
 
-func resumeTx[S any](stored *model.StoredModel, operation func(*model.Flow[S]) model.Signal, operationTransaction *model.OpTx, headers map[string]string, entityID model.ID) (model.Signal, *model.FailError, error) {
+func resumeTx[Schema any](stored *model.StoredModel, operation func(*model.Flow[Schema]) model.Signal, operationTransaction *model.OpTx, headers map[string]string, entityID model.ID) (model.Signal, *model.FailError, error) {
 	data, err := store.ReadTx(operationTransaction.Tx, model.TableFor(stored), entityID.String())
 	if err != nil {
 		return model.Failed, nil, err
 	}
 	h := headersFromEntity(data, headers)
-	return resumeEntityInTx[S](operationTransaction, stored, operation, entityID, h, data, false)
+	return resumeEntityInTx[Schema](operationTransaction, stored, operation, entityID, h, data, false)
 }
 
-func runInTxOp[R any](a model.AppRef, reqCtx context.Context, headers map[string]string, callback func(*model.OpTx) (R, model.Signal, *model.FailError, error)) (R, error) {
-	var result R
+func runInTxOp[Result any](a model.AppRef, reqCtx context.Context, headers map[string]string, callback func(*model.OpTx) (Result, model.Signal, *model.FailError, error)) (Result, error) {
+	var result Result
 	_, failError, err := model.RunInTx(reqCtx, a.DB(), func(transaction pgx.Tx) (model.Signal, *model.FailError, error) {
 		operationTransaction := model.NewOpTx(reqCtx, transaction, a, headers)
 		out, signal, opFerr, opErr := callback(operationTransaction)
@@ -240,11 +240,11 @@ func runInTxOp[R any](a model.AppRef, reqCtx context.Context, headers map[string
 		return signal, nil, nil
 	})
 	if err != nil {
-		var zero R
+		var zero Result
 		return zero, err
 	}
 	if failError != nil {
-		var zero R
+		var zero Result
 		return zero, failError
 	}
 	return result, nil
@@ -317,13 +317,13 @@ func runResume[S any](application model.AppRef, stored *model.StoredModel, opera
 }
 
 func decodeRecord[S any](modelDefinition row.Map) model.Record {
-	var s S
-	serde.FromRow(modelDefinition, &s)
+	var schemaValue S
+	serde.FromRow(modelDefinition, &schemaValue)
 	return model.Record{
 		ID:     model.ID(modelDefinition.RequireText("id")),
 		Status: model.EntityStatus(modelDefinition.TextOr("_fookie_status", "")),
 		Error:  modelDefinition.TextOr("_fookie_error", ""),
-		Data:   &s,
+		Data:   &schemaValue,
 	}
 }
 

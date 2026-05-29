@@ -36,9 +36,9 @@ func sqlTypeFor(k Kind) string {
 	return sqlTypeText
 }
 
-func TableFor(m *StoredModel) store.Table {
-	cols := make([]store.Column, 0, len(m.Fields()))
-	for _, field := range m.Fields() {
+func TableFor(modelDefinition *StoredModel) store.Table {
+	cols := make([]store.Column, 0, len(modelDefinition.Fields()))
+	for _, field := range modelDefinition.Fields() {
 		cols = append(cols, store.Column{
 			Field:   field.Name,
 			Name:    field.ColumnName(),
@@ -49,7 +49,7 @@ func TableFor(m *StoredModel) store.Table {
 			IsID:    field.Name == "id",
 		})
 	}
-	return store.Table{Name: m.Name, Columns: cols}
+	return store.Table{Name: modelDefinition.Name, Columns: cols}
 }
 
 func StoreTables(models []*StoredModel) []store.Table {

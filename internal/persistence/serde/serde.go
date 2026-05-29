@@ -158,15 +158,15 @@ func FieldValue(s any, snakeName string) (any, bool) {
 func fieldValueWalk(rv reflect.Value, snakeName string) (any, bool) {
 	rt := rv.Type()
 	for i := range rt.NumField() {
-		sf := rt.Field(i)
+		structField := rt.Field(i)
 		fieldValue := rv.Field(i)
-		if sf.Anonymous && fieldValue.Kind() == reflect.Struct {
+		if structField.Anonymous && fieldValue.Kind() == reflect.Struct {
 			if v, ok := fieldValueWalk(fieldValue, snakeName); ok {
 				return v, true
 			}
 			continue
 		}
-		if ToSnake(sf.Name) != snakeName {
+		if ToSnake(structField.Name) != snakeName {
 			continue
 		}
 		return rowValueFromField(fieldValue)

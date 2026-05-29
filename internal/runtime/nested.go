@@ -6,84 +6,84 @@ import (
 	"github.com/fookiejs/fookie/internal/persistence/serde"
 )
 
-func NestedCreate[T any](c model.Composer, target *model.Model[T], input any) (model.ID, model.Signal) {
+func NestedCreate[Schema any](composer model.Composer, target *model.Model[Schema], input any) (model.ID, model.Signal) {
 	bodyRow := inputToRowMap(input)
-	operationTransaction, headers := c.OpTx(), c.OpHeaders()
+	operationTransaction, headers := composer.OpTx(), composer.OpHeaders()
 	var identifier model.ID
-	signal := c.Savepoint(func() (model.Signal, *model.FailError) {
-		signal, s, failError, opErr := createTx[T](target.StoredModel(), target.Operations.Create, operationTransaction, headers, bodyRow)
+	signal := composer.Savepoint(func() (model.Signal, *model.FailError) {
+		result, operationSignal, failError, opErr := createTx[Schema](target.StoredModel(), target.Operations.Create, operationTransaction, headers, bodyRow)
 		if opErr != nil {
 			panic(model.FailPanic{Err: opErr})
 		}
-		if s == model.Failed {
+		if operationSignal == model.Failed {
 			return model.Failed, failError
 		}
-		identifier = signal.ID
-		return s, nil
+		identifier = result.ID
+		return operationSignal, nil
 	})
 	return identifier, signal
 }
 
-func NestedRead[T any](c model.Composer, target *model.Model[T], id model.ID) (model.Entity[T], model.Signal) {
-	operationTransaction, headers := c.OpTx(), c.OpHeaders()
-	var ent model.Entity[T]
-	signal := c.Savepoint(func() (model.Signal, *model.FailError) {
-		signal, s, failError, opErr := readTx[T](target.StoredModel(), target.Operations.Read, operationTransaction, headers, id)
+func NestedRead[Schema any](composer model.Composer, target *model.Model[Schema], id model.ID) (model.Entity[Schema], model.Signal) {
+	operationTransaction, headers := composer.OpTx(), composer.OpHeaders()
+	var entity model.Entity[Schema]
+	signal := composer.Savepoint(func() (model.Signal, *model.FailError) {
+		record, operationSignal, failError, opErr := readTx[Schema](target.StoredModel(), target.Operations.Read, operationTransaction, headers, id)
 		if opErr != nil {
 			panic(model.FailPanic{Err: opErr})
 		}
-		if s == model.Failed {
+		if operationSignal == model.Failed {
 			return model.Failed, failError
 		}
-		ent = entityFromRecord[T](signal)
-		return s, nil
+		entity = entityFromRecord[Schema](record)
+		return operationSignal, nil
 	})
-	return ent, signal
+	return entity, signal
 }
 
-func NestedUpdate[T any](c model.Composer, target *model.Model[T], id model.ID, patch any) model.Signal {
+func NestedUpdate[Schema any](composer model.Composer, target *model.Model[Schema], id model.ID, patch any) model.Signal {
 	patchRow := patchToRowMap(patch)
-	operationTransaction, headers := c.OpTx(), c.OpHeaders()
-	return c.Savepoint(func() (model.Signal, *model.FailError) {
-		_, s, failError, opErr := updateTx[T](target.StoredModel(), target.Operations.Update, operationTransaction, headers, id, patchRow)
+	operationTransaction, headers := composer.OpTx(), composer.OpHeaders()
+	return composer.Savepoint(func() (model.Signal, *model.FailError) {
+		_, operationSignal, failError, opErr := updateTx[Schema](target.StoredModel(), target.Operations.Update, operationTransaction, headers, id, patchRow)
 		if opErr != nil {
 			panic(model.FailPanic{Err: opErr})
 		}
-		return s, failError
+		return operationSignal, failError
 	})
 }
 
-func NestedDelete[T any](c model.Composer, target *model.Model[T], id model.ID) model.Signal {
-	operationTransaction, headers := c.OpTx(), c.OpHeaders()
-	return c.Savepoint(func() (model.Signal, *model.FailError) {
-		s, failError, opErr := deleteTx[T](target.StoredModel(), target.Operations.Delete, operationTransaction, headers, id)
+func NestedDelete[Schema any](composer model.Composer, target *model.Model[Schema], id model.ID) model.Signal {
+	operationTransaction, headers := composer.OpTx(), composer.OpHeaders()
+	return composer.Savepoint(func() (model.Signal, *model.FailError) {
+		operationSignal, failError, opErr := deleteTx[Schema](target.StoredModel(), target.Operations.Delete, operationTransaction, headers, id)
 		if opErr != nil {
 			panic(model.FailPanic{Err: opErr})
 		}
-		return s, failError
+		return operationSignal, failError
 	})
 }
 
-func NestedListFor[T any](c model.Composer, target *model.Model[T], cursor string, extra []model.ListFilter) ([]model.Entity[T], string, model.Signal) {
-	operationTransaction, headers := c.OpTx(), c.OpHeaders()
-	var ents []model.Entity[T]
+func NestedListFor[Schema any](composer model.Composer, target *model.Model[Schema], cursor string, extra []model.ListFilter) ([]model.Entity[Schema], string, model.Signal) {
+	operationTransaction, headers := composer.OpTx(), composer.OpHeaders()
+	var entities []model.Entity[Schema]
 	var next string
-	signal := c.Savepoint(func() (model.Signal, *model.FailError) {
-		signal, n, s, failError, opErr := listTx[T](target.StoredModel(), target, target.Operations.List, operationTransaction, headers, cursor, extra)
+	signal := composer.Savepoint(func() (model.Signal, *model.FailError) {
+		records, nextCursor, operationSignal, failError, opErr := listTx[Schema](target.StoredModel(), target, target.Operations.List, operationTransaction, headers, cursor, extra)
 		if opErr != nil {
 			panic(model.FailPanic{Err: opErr})
 		}
-		if s == model.Failed {
+		if operationSignal == model.Failed {
 			return model.Failed, failError
 		}
-		ents = make([]model.Entity[T], len(signal))
-		for i, r := range signal {
-			ents[i] = entityFromRecord[T](r)
+		entities = make([]model.Entity[Schema], len(records))
+		for index, record := range records {
+			entities[index] = entityFromRecord[Schema](record)
 		}
-		next = n
-		return s, nil
+		next = nextCursor
+		return operationSignal, nil
 	})
-	return ents, next, signal
+	return entities, next, signal
 }
 
 func inputToRowMap(input any) row.Map {
@@ -112,10 +112,10 @@ func patchToRowMap(patch any) row.Map {
 	}
 }
 
-func entityFromRecord[T any](r model.Record) model.Entity[T] {
-	ent := model.Entity[T]{ID: r.ID, Status: r.Status}
-	if d, ok := r.Data.(*T); ok && d != nil {
-		ent.Data = *d
+func entityFromRecord[Schema any](record model.Record) model.Entity[Schema] {
+	entity := model.Entity[Schema]{ID: record.ID, Status: record.Status}
+	if typedData, ok := record.Data.(*Schema); ok && typedData != nil {
+		entity.Data = *typedData
 	}
-	return ent
+	return entity
 }

@@ -26,17 +26,17 @@ func validateStruct(reflectValue reflect.Value) *FailError {
 	}
 	rt := reflectValue.Type()
 	for i := range rt.NumField() {
-		sf := rt.Field(i)
-		fv := reflectValue.Field(i)
-		if sf.Anonymous && fv.Kind() == reflect.Struct {
-			if err := validateStruct(fv); err != nil {
+		structField := rt.Field(i)
+		fieldValue := reflectValue.Field(i)
+		if structField.Anonymous && fieldValue.Kind() == reflect.Struct {
+			if err := validateStruct(fieldValue); err != nil {
 				return err
 			}
 			continue
 		}
-		if fv.CanInterface() {
-			if v, ok := fv.Interface().(fieldValidator); ok {
-				if err := v.ValidateField(serde.ToSnake(sf.Name)); err != nil {
+		if fieldValue.CanInterface() {
+			if v, ok := fieldValue.Interface().(fieldValidator); ok {
+				if err := v.ValidateField(serde.ToSnake(structField.Name)); err != nil {
 					return failFromValidation(err)
 				}
 			}

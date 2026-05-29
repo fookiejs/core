@@ -41,23 +41,23 @@ func wireFieldsCollect(reflectValue reflect.Value) []FieldSnapshot {
 	rt := reflectValue.Type()
 	out := make([]FieldSnapshot, 0, rt.NumField())
 	for i := range rt.NumField() {
-		sf := rt.Field(i)
-		fv := reflectValue.Field(i)
-		if sf.Anonymous && fv.Kind() == reflect.Struct {
-			out = append(out, wireFieldsCollect(fv)...)
+		structField := rt.Field(i)
+		fieldValue := reflectValue.Field(i)
+		if structField.Anonymous && fieldValue.Kind() == reflect.Struct {
+			out = append(out, wireFieldsCollect(fieldValue)...)
 			continue
 		}
-		typed, ok := fv.Interface().(semantic.TypedField)
+		typed, ok := fieldValue.Interface().(semantic.TypedField)
 		if !ok {
 			continue
 		}
-		name := serde.ToSnake(sf.Name)
+		name := serde.ToSnake(structField.Name)
 		var bind func(semantic.FilterFn)
-		if fv.CanAddr() {
-			if ks, ok := fv.Addr().Interface().(keySetter); ok {
+		if fieldValue.CanAddr() {
+			if ks, ok := fieldValue.Addr().Interface().(keySetter); ok {
 				ks.SetKey(name)
 			}
-			if fs, ok := fv.Addr().Interface().(filterSetter); ok {
+			if fs, ok := fieldValue.Addr().Interface().(filterSetter); ok {
 				setter := fs
 				bind = func(callback semantic.FilterFn) {
 					setter.SetFilter(callback)
@@ -68,8 +68,8 @@ func wireFieldsCollect(reflectValue reflect.Value) []FieldSnapshot {
 			FieldDef:   FieldDef{Name: name, Kind: typed.Kind()},
 			bindFilter: bind,
 		}
-		if tag := sf.Tag.Get("fookie"); tag != "" && fv.CanAddr() {
-			applyFieldTags(fv.Addr().Interface(), tag, &snap.FieldDef)
+		if tag := structField.Tag.Get("fookie"); tag != "" && fieldValue.CanAddr() {
+			applyFieldTags(fieldValue.Addr().Interface(), tag, &snap.FieldDef)
 		}
 		out = append(out, snap)
 	}

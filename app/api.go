@@ -12,13 +12,13 @@ import (
 )
 
 func inputRow(input any) row.Map {
-	switch v := input.(type) {
+	switch typedInput := input.(type) {
 	case nil:
 		return row.Map{}
 	case row.Map:
-		return serde.FilterInputRow(v)
+		return serde.FilterInputRow(typedInput)
 	case map[string]any:
-		return serde.FilterInputRow(row.FromAnyMap(v))
+		return serde.FilterInputRow(row.FromAnyMap(typedInput))
 	default:
 		return serde.ToPatchRow(input)
 	}

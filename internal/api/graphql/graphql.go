@@ -318,15 +318,15 @@ func recordFromOpResult(res model.OpResult) model.Record {
 
 func buildInputType(stored *model.StoredModel) *graphql.InputObject {
 	fields := make(graphql.InputObjectConfigFieldMap, len(stored.Fields()))
-	for _, f := range stored.Fields() {
-		if f.Name == "id" || isProtectedInputField(f.Name) {
+	for _, field := range stored.Fields() {
+		if field.Name == "id" || isProtectedInputField(field.Name) {
 			continue
 		}
-		name := f.Name
-		if f.RelationName != "" {
-			name = f.GraphQLName()
+		name := field.Name
+		if field.RelationName != "" {
+			name = field.GraphQLName()
 		}
-		fields[name] = &graphql.InputObjectFieldConfig{Type: GraphQLScalarFor(f)}
+		fields[name] = &graphql.InputObjectFieldConfig{Type: GraphQLScalarFor(field)}
 	}
 	return graphql.NewInputObject(graphql.InputObjectConfig{
 		Name:   stored.Name + "Input",

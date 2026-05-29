@@ -6,13 +6,13 @@ import (
 )
 
 func HeadersMap(r *http.Request) map[string]string {
-	m := make(map[string]string, len(r.Header))
+	headerMap := make(map[string]string, len(r.Header))
 	for k, v := range r.Header {
 		if len(v) > 0 {
-			m[k] = v[0]
+			headerMap[k] = v[0]
 		}
 	}
-	return m
+	return headerMap
 }
 
 func WriteJSON(w http.ResponseWriter, status int, v any) {

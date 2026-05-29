@@ -34,15 +34,15 @@ func (c *intCore) SetFilter(fn FilterFn) { c.fn = fn }
 func (c intCore) OrderKey() string       { return c.key }
 func (c intCore) RowValue() any          { return c.val }
 func (c *intCore) RowSet(v any) bool {
-	switch x := v.(type) {
+	switch typedValue := v.(type) {
 	case int64:
-		c.val = x
+		c.val = typedValue
 		return true
 	case int32:
-		c.val = int64(x)
+		c.val = int64(typedValue)
 		return true
 	case int:
-		c.val = int64(x)
+		c.val = int64(typedValue)
 		return true
 	default:
 		return false
@@ -60,18 +60,18 @@ func (c *floatCore) SetFilter(fn FilterFn) { c.fn = fn }
 func (c floatCore) OrderKey() string       { return c.key }
 func (c floatCore) RowValue() any          { return c.val }
 func (c *floatCore) RowSet(v any) bool {
-	switch x := v.(type) {
+	switch typedValue := v.(type) {
 	case float64:
-		c.val = x
+		c.val = typedValue
 		return true
 	case float32:
-		c.val = float64(x)
+		c.val = float64(typedValue)
 		return true
 	case int64:
-		c.val = float64(x)
+		c.val = float64(typedValue)
 		return true
 	case int:
-		c.val = float64(x)
+		c.val = float64(typedValue)
 		return true
 	default:
 		return false

@@ -152,13 +152,13 @@ func (d *DB) migrateTable(table Table) error {
 		}
 	}
 
-	for _, c := range table.Columns {
-		if c.IsID {
+	for _, column := range table.Columns {
+		if column.IsID {
 			continue
 		}
 		if _, err := d.Pool.Exec(context.Background(),
-			fmt.Sprintf(`ALTER TABLE "%s" ADD COLUMN IF NOT EXISTS "%s" %s`, table.Name, c.Name, c.SQLType)); err != nil {
-			return fmt.Errorf("add column %s.%s: %w", table.Name, c.Name, err)
+			fmt.Sprintf(`ALTER TABLE "%s" ADD COLUMN IF NOT EXISTS "%s" %s`, table.Name, column.Name, column.SQLType)); err != nil {
+			return fmt.Errorf("add column %s.%s: %w", table.Name, column.Name, err)
 		}
 	}
 
@@ -204,14 +204,14 @@ func InsertTx(transaction pgx.Tx, table Table, data row.Map) (row.Map, error) {
 	return normalizeRow(table, results[0]), nil
 }
 
-func UpdateTx(transaction pgx.Tx, t Table, identifier string, data row.Map) (row.Map, error) {
+func UpdateTx(transaction pgx.Tx, table Table, identifier string, data row.Map) (row.Map, error) {
 	if len(data) == 0 {
-		return ReadTx(transaction, t, identifier)
+		return ReadTx(transaction, table, identifier)
 	}
 	var sets []string
 	var args []any
 	n := 1
-	for _, column := range t.Columns {
+	for _, column := range table.Columns {
 		if column.IsID {
 			continue
 		}
@@ -224,14 +224,14 @@ func UpdateTx(transaction pgx.Tx, t Table, identifier string, data row.Map) (row
 		n++
 	}
 	if len(sets) == 0 {
-		return ReadTx(transaction, t, identifier)
+		return ReadTx(transaction, table, identifier)
 	}
 	args = append(args, identifier)
 	q := fmt.Sprintf(`UPDATE "%s" SET %s WHERE "id" = $%d RETURNING *`,
-		t.Name, strings.Join(sets, ", "), n)
+		table.Name, strings.Join(sets, ", "), n)
 	rows, err := transaction.Query(context.Background(), q, args...)
 	if err != nil {
-		return nil, fmt.Errorf("update %s: %w", t.Name, err)
+		return nil, fmt.Errorf("update %s: %w", table.Name, err)
 	}
 	results, err := collectRows(rows)
 	if err != nil {
@@ -240,7 +240,7 @@ func UpdateTx(transaction pgx.Tx, t Table, identifier string, data row.Map) (row
 	if len(results) == 0 {
 		return nil, fmt.Errorf("not_found")
 	}
-	return normalizeRow(t, results[0]), nil
+	return normalizeRow(table, results[0]), nil
 }
 
 func DeleteTx(transaction pgx.Tx, t Table, id, updatedAt string) error {
@@ -256,11 +256,11 @@ func DeleteTx(transaction pgx.Tx, t Table, id, updatedAt string) error {
 	return nil
 }
 
-func ReadTx(transaction pgx.Tx, t Table, id string) (row.Map, error) {
-	q := fmt.Sprintf(`SELECT * FROM "%s" WHERE "id" = $1 AND %s LIMIT 1`, t.Name, activeOnly)
+func ReadTx(transaction pgx.Tx, table Table, id string) (row.Map, error) {
+	q := fmt.Sprintf(`SELECT * FROM "%s" WHERE "id" = $1 AND %s LIMIT 1`, table.Name, activeOnly)
 	rows, err := transaction.Query(context.Background(), q, id)
 	if err != nil {
-		return nil, fmt.Errorf("read %s: %w", t.Name, err)
+		return nil, fmt.Errorf("read %s: %w", table.Name, err)
 	}
 	results, err := collectRows(rows)
 	if err != nil {
@@ -269,10 +269,10 @@ func ReadTx(transaction pgx.Tx, t Table, id string) (row.Map, error) {
 	if len(results) == 0 {
 		return nil, fmt.Errorf("not_found")
 	}
-	return normalizeRow(t, results[0]), nil
+	return normalizeRow(table, results[0]), nil
 }
 
-func SumTx(transaction pgx.Tx, t Table, column, excludeID string, filters []Filter) (int64, error) {
+func SumTx(transaction pgx.Tx, table Table, column, excludeID string, filters []Filter) (int64, error) {
 	var where []string
 	var args []any
 	n := 1
@@ -292,7 +292,7 @@ func SumTx(transaction pgx.Tx, t Table, column, excludeID string, filters []Filt
 	where = append(where, activeOnly)
 	where = append(where, `"_fookie_status" = 'active'`)
 
-	query := fmt.Sprintf(`SELECT COALESCE(SUM("%s"), 0) FROM "%s"`, column, t.Name)
+	query := fmt.Sprintf(`SELECT COALESCE(SUM("%s"), 0) FROM "%s"`, column, table.Name)
 	if len(where) > 0 {
 		query += " WHERE " + strings.Join(where, " AND ")
 	}
@@ -326,12 +326,12 @@ func ListQuerier(ctx context.Context, q Querier, table Table, query Query) ([]ro
 	return normalizeRows(table, out), nil
 }
 
-func buildListSQL(t Table, q Query) (string, []any, error) {
+func buildListSQL(table Table, querier Query) (string, []any, error) {
 	var where []string
 	var args []any
 	n := 1
 	where = append(where, activeOnly)
-	for _, f := range q.Filters {
+	for _, f := range querier.Filters {
 		filterArguments, clauseArguments, err := buildFilterClause(f, n)
 		if err != nil {
 			return "", nil, err
@@ -340,21 +340,21 @@ func buildListSQL(t Table, q Query) (string, []any, error) {
 		args = append(args, clauseArguments...)
 		n += len(clauseArguments)
 	}
-	switch q.CursorDir {
+	switch querier.CursorDir {
 	case CursorAfter:
 		where = append(where, fmt.Sprintf(`"id" > $%d`, n))
-		args = append(args, q.Cursor)
+		args = append(args, querier.Cursor)
 	case CursorBefore:
 		where = append(where, fmt.Sprintf(`"id" < $%d`, n))
-		args = append(args, q.Cursor)
+		args = append(args, querier.Cursor)
 	}
-	qry := fmt.Sprintf(`SELECT * FROM "%s"`, t.Name)
+	qry := fmt.Sprintf(`SELECT * FROM "%s"`, table.Name)
 	if len(where) > 0 {
 		qry += " WHERE " + strings.Join(where, " AND ")
 	}
-	if len(q.Orders) > 0 {
-		parts := make([]string, 0, len(q.Orders))
-		for _, o := range q.Orders {
+	if len(querier.Orders) > 0 {
+		parts := make([]string, 0, len(querier.Orders))
+		for _, o := range querier.Orders {
 			dir := "ASC"
 			if o.Desc {
 				dir = "DESC"
@@ -363,7 +363,7 @@ func buildListSQL(t Table, q Query) (string, []any, error) {
 		}
 		qry += " ORDER BY " + strings.Join(parts, ", ")
 	}
-	limit := q.Limit
+	limit := querier.Limit
 	if limit <= 0 {
 		limit = 50
 	}

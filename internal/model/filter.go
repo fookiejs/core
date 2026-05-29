@@ -19,20 +19,20 @@ func attachFilters(reflectValue reflect.Value, queryBuilder *Builder) {
 	}
 	rt := reflectValue.Type()
 	for i := range rt.NumField() {
-		sf := rt.Field(i)
-		fv := reflectValue.Field(i)
-		if sf.Anonymous && fv.Kind() == reflect.Struct {
-			attachFilters(fv, queryBuilder)
+		structField := rt.Field(i)
+		fieldValue := reflectValue.Field(i)
+		if structField.Anonymous && fieldValue.Kind() == reflect.Struct {
+			attachFilters(fieldValue, queryBuilder)
 			continue
 		}
-		if !fv.CanAddr() {
+		if !fieldValue.CanAddr() {
 			continue
 		}
-		if _, ok := fv.Interface().(semantic.TypedField); !ok {
+		if _, ok := fieldValue.Interface().(semantic.TypedField); !ok {
 			continue
 		}
-		key := serde.ToSnake(sf.Name)
-		addr := fv.Addr().Interface()
+		key := serde.ToSnake(structField.Name)
+		addr := fieldValue.Addr().Interface()
 		if ks, ok := addr.(keySetter); ok {
 			ks.SetKey(key)
 		}
