@@ -34,15 +34,15 @@ func WireFields(schema any) []FieldSnapshot {
 	return wireFieldsCollect(rv)
 }
 
-func wireFieldsCollect(rv reflect.Value) []FieldSnapshot {
-	if rv.Kind() != reflect.Struct {
+func wireFieldsCollect(reflectValue reflect.Value) []FieldSnapshot {
+	if reflectValue.Kind() != reflect.Struct {
 		return nil
 	}
-	rt := rv.Type()
+	rt := reflectValue.Type()
 	out := make([]FieldSnapshot, 0, rt.NumField())
 	for i := range rt.NumField() {
 		sf := rt.Field(i)
-		fv := rv.Field(i)
+		fv := reflectValue.Field(i)
 		if sf.Anonymous && fv.Kind() == reflect.Struct {
 			out = append(out, wireFieldsCollect(fv)...)
 			continue
@@ -59,8 +59,8 @@ func wireFieldsCollect(rv reflect.Value) []FieldSnapshot {
 			}
 			if fs, ok := fv.Addr().Interface().(filterSetter); ok {
 				setter := fs
-				bind = func(fn semantic.FilterFn) {
-					setter.SetFilter(fn)
+				bind = func(callback semantic.FilterFn) {
+					setter.SetFilter(callback)
 				}
 			}
 		}
@@ -104,23 +104,38 @@ func mergeSchemaFlags(def *FieldDef, flags *semantic.SchemaFlags) {
 	}
 }
 
-func NewStored[S any](m *Model[S]) *StoredModel {
+func NewStored[S any](modelDefinition *Model[S]) *StoredModel {
 	stored := &StoredModel{
-		Name:      m.Name,
-		snapshots: EnsureDefaultID(WireFields(&m.Field)),
-		def:       m,
+		Name:      modelDefinition.Name,
+		snapshots: EnsureBaseFields(WireFields(&modelDefinition.Field)),
+		def:       modelDefinition,
 	}
-	m.stored = stored
+	modelDefinition.stored = stored
 	return stored
 }
 
-const idColumn = "id"
+const (
+	idColumn        = "id"
+	createdAtColumn = "created_at"
+	updatedAtColumn = "updated_at"
+	isDeletedColumn = "is_deleted"
+)
 
-func EnsureDefaultID(snapshots []FieldSnapshot) []FieldSnapshot {
+func EnsureBaseFields(snapshots []FieldSnapshot) []FieldSnapshot {
+	has := map[string]bool{}
 	for _, s := range snapshots {
-		if s.Name == idColumn {
-			return snapshots
+		has[s.Name] = true
+	}
+	defaults := []FieldSnapshot{
+		{FieldDef: FieldDef{Name: idColumn, Kind: semantic.IDKind}},
+		{FieldDef: FieldDef{Name: createdAtColumn, Kind: semantic.TimestampKind}},
+		{FieldDef: FieldDef{Name: updatedAtColumn, Kind: semantic.TimestampKind}},
+		{FieldDef: FieldDef{Name: isDeletedColumn, Kind: semantic.BoolKind}},
+	}
+	for _, d := range defaults {
+		if !has[d.Name] {
+			snapshots = append(snapshots, d)
 		}
 	}
-	return append([]FieldSnapshot{{FieldDef: FieldDef{Name: idColumn, Kind: semantic.IDKind}}}, snapshots...)
+	return snapshots
 }

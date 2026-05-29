@@ -19,27 +19,27 @@ func (c *Flow[F]) OpHeaders() map[string]string { return c.Headers }
 func (c *Flow[F]) Savepoint(run func() (Signal, *FailError)) Signal { return c.withSavepoint(run) }
 
 func (c *Flow[F]) requireOpTx() *OpTx {
-	if c.otx == nil {
+	if c.operationTransaction == nil {
 		fail(fmt.Errorf("flow not bound to transaction"))
 	}
-	return c.otx
+	return c.operationTransaction
 }
 
 func (c *Flow[F]) withSavepoint(run func() (Signal, *FailError)) Signal {
-	otx := c.requireOpTx()
-	sp := otx.NextSavepoint()
+	operationTransaction := c.requireOpTx()
+	savepoint := operationTransaction.NextSavepoint()
 	ctx := c.execContext()
-	if err := store.SavepointTx(ctx, c.tx, sp); err != nil {
+	if err := store.SavepointTx(ctx, c.transaction, savepoint); err != nil {
 		fail(fmt.Errorf("savepoint: %w", err))
 	}
-	sig, ferr := run()
-	if sig == Failed {
-		_ = store.RollbackToSavepointTx(ctx, c.tx, sp)
-		if ferr != nil {
-			c.failErr = ferr
+	signal, failError := run()
+	if signal == Failed {
+		_ = store.RollbackToSavepointTx(ctx, c.transaction, savepoint)
+		if failError != nil {
+			c.failErr = failError
 		}
 		return Failed
 	}
-	_ = store.ReleaseSavepointTx(ctx, c.tx, sp)
-	return sig
+	_ = store.ReleaseSavepointTx(ctx, c.transaction, savepoint)
+	return signal
 }

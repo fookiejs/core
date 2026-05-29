@@ -25,9 +25,9 @@ var (
 	shutdownFn func(context.Context) error
 )
 
-func Init(cfg Config) error {
+func Init(config Config) error {
 	initOnce.Do(func() {
-		bootstrap(cfg)
+		bootstrap(config)
 	})
 	return nil
 }
@@ -39,22 +39,22 @@ func Shutdown(ctx context.Context) error {
 	return shutdownFn(ctx)
 }
 
-func bootstrap(cfg Config) {
+func bootstrap(config Config) {
 	setNoopProviders()
 
-	if !cfg.Enabled {
+	if !config.Enabled {
 		initRuntimeMetrics()
 		shutdownFn = func(context.Context) error { return nil }
 		return
 	}
 
-	if cfg.OTLPEndpoint == "" {
+	if config.OTLPEndpoint == "" {
 		initRuntimeMetrics()
 		shutdownFn = func(context.Context) error { return nil }
 		return
 	}
 
-	serviceName := cfg.ServiceName
+	serviceName := config.ServiceName
 	if serviceName == "" {
 		serviceName = defaultServiceName
 	}
@@ -74,9 +74,9 @@ func bootstrap(cfg Config) {
 	}
 
 	var shutdowns []func(context.Context) error
-	host := otlpHost(cfg.OTLPEndpoint)
+	host := otlpHost(config.OTLPEndpoint)
 
-	if cfg.Metrics {
+	if config.Metrics {
 		exp, err := newMetricExporter(host)
 		if err != nil {
 			debugLog("metric exporter", err)
@@ -90,7 +90,7 @@ func bootstrap(cfg Config) {
 		}
 	}
 
-	if cfg.Traces {
+	if config.Traces {
 		exp, err := newTraceExporter(host)
 		if err != nil {
 			debugLog("trace exporter", err)
@@ -116,8 +116,8 @@ func bootstrap(cfg Config) {
 
 	shutdownFn = func(ctx context.Context) error {
 		var last error
-		for _, fn := range shutdowns {
-			if err := fn(ctx); err != nil {
+		for _, callback := range shutdowns {
+			if err := callback(ctx); err != nil {
 				last = err
 			}
 		}
@@ -156,20 +156,20 @@ func newTraceExporter(host string) (sdktrace.SpanExporter, error) {
 }
 
 func otlpHost(endpoint string) string {
-	s := strings.TrimSpace(endpoint)
-	s = strings.TrimPrefix(s, "https://")
-	s = strings.TrimPrefix(s, "http://")
-	if i := strings.IndexByte(s, '/'); i >= 0 {
-		s = s[:i]
+	trimmedEndpoint := strings.TrimSpace(endpoint)
+	trimmedEndpoint = strings.TrimPrefix(trimmedEndpoint, "https://")
+	trimmedEndpoint = strings.TrimPrefix(trimmedEndpoint, "http://")
+	if i := strings.IndexByte(trimmedEndpoint, '/'); i >= 0 {
+		trimmedEndpoint = trimmedEndpoint[:i]
 	}
-	return s
+	return trimmedEndpoint
 }
 
 func debugLog(phase string, err error) {
 	slog.Debug("telemetry", "phase", phase, "err", err.Error())
 }
 
-func bestEffort(fn func()) {
+func bestEffort(callback func()) {
 	defer func() { _ = recover() }()
-	fn()
+	callback()
 }

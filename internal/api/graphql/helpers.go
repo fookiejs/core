@@ -3,11 +3,12 @@ package graphqlapi
 import (
 	"github.com/fookiejs/fookie/internal/model"
 	"github.com/fookiejs/fookie/internal/persistence/row"
+	"github.com/fookiejs/fookie/internal/persistence/serde"
 	"github.com/fookiejs/fookie/semantic"
 	"github.com/graphql-go/graphql"
 )
 
-func GraphQLScalarFor(f model.FieldDef) *graphql.Scalar {
+func GraphQLScalarFor(field model.FieldDef) *graphql.Scalar {
 	kindToGraphQL := map[semantic.Kind]*graphql.Scalar{
 		semantic.StringKind:     graphql.String,
 		semantic.EmailKind:      graphql.String,
@@ -29,30 +30,30 @@ func GraphQLScalarFor(f model.FieldDef) *graphql.Scalar {
 		semantic.BoolKind:       graphql.Boolean,
 		semantic.Float64Kind:    graphql.Float,
 	}
-	if gqlType, ok := kindToGraphQL[f.Kind]; ok {
+	if gqlType, ok := kindToGraphQL[field.Kind]; ok {
 		return gqlType
 	}
 	return graphql.String
 }
 
 func FiltersFromGraphQL(stored *model.StoredModel, raw any) []model.ListFilter {
-	m, ok := raw.(map[string]any)
-	if !ok || len(m) == 0 {
+	dataMap, ok := raw.(map[string]any)
+	if !ok || len(dataMap) == 0 {
 		return nil
 	}
 	var out []model.ListFilter
-	for _, f := range stored.Fields() {
-		if f.Name == "id" || f.RelationName != "" {
+	for _, field := range stored.Fields() {
+		if field.Name == "id" || field.RelationName != "" {
 			continue
 		}
-		v, ok := m[f.Name]
-		if !ok || v == nil {
+		value, ok := dataMap[field.Name]
+		if !ok || value == nil {
 			continue
 		}
 		out = append(out, model.ListFilter{
-			Field: stored.ColumnForField(f.Name),
+			Field: stored.ColumnForField(field.Name),
 			Op:    "=",
-			Value: row.FilterValueFromGraphQL(v),
+			Value: row.FilterValueFromGraphQL(value),
 		})
 	}
 	return out
@@ -73,16 +74,20 @@ func NormalizeGraphQLInput(stored *model.StoredModel, input map[string]any) row.
 		return row.Map{}
 	}
 	out := row.FromAnyMap(input)
-	for _, f := range stored.Fields() {
-		if f.RelationName == "" {
+	for _, field := range stored.Fields() {
+		if field.RelationName == "" {
 			continue
 		}
-		if c, ok := out[f.GraphQLName()]; ok && c.Kind != row.KindEmpty {
-			out[f.Name] = c
-			delete(out, f.GraphQLName())
+		if c, ok := out[field.GraphQLName()]; ok && c.Kind != row.KindEmpty {
+			out[field.Name] = c
+			delete(out, field.GraphQLName())
 		}
 	}
-	return out
+	return serde.FilterInputRow(out)
+}
+
+func isProtectedInputField(name string) bool {
+	return serde.IsProtectedBaseColumn(name)
 }
 
 func applyTopLevelFilters(stored *model.StoredModel, filterArg any) []model.ListFilter {

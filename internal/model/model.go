@@ -67,5 +67,3 @@ type Internal[Input any, Output any] struct {
 	Name    string
 	Execute func(Input) (Output, error)
 }
-
-func (d Internal[Input, Output]) InternalName() string { return d.Name }

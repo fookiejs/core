@@ -70,10 +70,10 @@ func TraceIDForEntity(entityID string, newUUID func() string) string {
 	return "trc_" + entityID
 }
 
-func EmitGraphQLDuration(ctx context.Context, op string, ms float64, failed bool) {
-	GraphQLDuration(ctx, op, ms)
+func EmitGraphQLDuration(ctx context.Context, operation string, ms float64, failed bool) {
+	GraphQLDuration(ctx, operation, ms)
 	if failed {
-		GraphQLFailed(ctx, op)
+		GraphQLFailed(ctx, operation)
 	}
 }
 

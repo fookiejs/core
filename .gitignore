@@ -9,4 +9,5 @@ coverage.html
 *.coverprofile
 .env
 .idea/
+.scannerwork/
 .vscode/

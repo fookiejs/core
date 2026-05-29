@@ -24,7 +24,7 @@ const (
 type Entry struct {
 	ID          string
 	Name        string
-	ExternalID     string
+	ExternalID  string
 	Input       []byte
 	Output      []byte
 	Status      string
@@ -41,9 +41,9 @@ type Waiter struct {
 }
 
 type CompletedWaiter struct {
-	ExternalID  string
-	Model    string
-	EntityID string
+	ExternalID string
+	Model      string
+	EntityID   string
 }
 
 func Migrate(pool *pgxpool.Pool) error {
@@ -155,13 +155,13 @@ func ExternalID(entityID, serviceName string, inputJSON []byte) (string, error) 
 		_, _ = h.Write([]byte(ref))
 		return hex.EncodeToString(h.Sum(nil)), nil
 	}
-	h := sha256.New()
-	_, _ = h.Write([]byte(entityID))
-	_, _ = h.Write([]byte(":"))
-	_, _ = h.Write([]byte(serviceName))
-	_, _ = h.Write([]byte(":"))
-	_, _ = h.Write(inputJSON)
-	return hex.EncodeToString(h.Sum(nil)), nil
+	hasher := sha256.New()
+	_, _ = hasher.Write([]byte(entityID))
+	_, _ = hasher.Write([]byte(":"))
+	_, _ = hasher.Write([]byte(serviceName))
+	_, _ = hasher.Write([]byte(":"))
+	_, _ = hasher.Write(inputJSON)
+	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
 func BusinessExternalID(serviceName, businessKey string) string {
@@ -173,20 +173,20 @@ func BusinessExternalID(serviceName, businessKey string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func Lookup(tx pgx.Tx, externalID string) (*Entry, error) {
-	row := tx.QueryRow(context.Background(),
+func Lookup(transaction pgx.Tx, externalID string) (*Entry, error) {
+	row := transaction.QueryRow(context.Background(),
 		`SELECT id, name, external_id, input, output, status, attempts, max_attempts, next_retry, COALESCE(error_msg,'')
 		 FROM fookie_outbox WHERE external_id = $1`, externalID)
-	var e Entry
-	err := row.Scan(&e.ID, &e.Name, &e.ExternalID, &e.Input, &e.Output,
-		&e.Status, &e.Attempts, &e.MaxAttempts, &e.NextRetry, &e.ErrorMsg)
+	var entry Entry
+	err := row.Scan(&entry.ID, &entry.Name, &entry.ExternalID, &entry.Input, &entry.Output,
+		&entry.Status, &entry.Attempts, &entry.MaxAttempts, &entry.NextRetry, &entry.ErrorMsg)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 		return nil, err
 	}
-	return &e, nil
+	return &entry, nil
 }
 
 type RetryPolicy struct {
@@ -211,9 +211,9 @@ func (p RetryPolicy) normalize() (attempts int, backoff string, maxDelaySec int)
 	return attempts, backoff, maxDelaySec
 }
 
-func Insert(tx pgx.Tx, name, externalID string, inputJSON []byte, retry RetryPolicy) error {
+func Insert(transaction pgx.Tx, name, externalID string, inputJSON []byte, retry RetryPolicy) error {
 	attempts, backoff, maxDelaySec := retry.normalize()
-	_, err := tx.Exec(context.Background(),
+	_, err := transaction.Exec(context.Background(),
 		`INSERT INTO fookie_outbox (id, name, external_id, input, max_attempts, backoff, max_delay_sec, next_retry)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
 		 ON CONFLICT (external_id) DO NOTHING`,
@@ -231,8 +231,8 @@ func InsertPool(ctx context.Context, pool *pgxpool.Pool, name, externalID string
 	return err
 }
 
-func AddWaiter(tx pgx.Tx, externalID, model, entityID string) error {
-	_, err := tx.Exec(context.Background(),
+func AddWaiter(transaction pgx.Tx, externalID, model, entityID string) error {
+	_, err := transaction.Exec(context.Background(),
 		`INSERT INTO fookie_outbox_waiter (outbox_id, model, entity_id)
 		 SELECT id, $2, $3 FROM fookie_outbox WHERE external_id = $1
 		 ON CONFLICT DO NOTHING`,
@@ -281,15 +281,15 @@ func Fail(ctx context.Context, pool *pgxpool.Pool, externalID, reason string) er
 }
 
 func ClaimBatch(ctx context.Context, pool *pgxpool.Pool, batchSize int, names []string) ([]Entry, error) {
-	tx, err := pool.Begin(ctx)
+	transaction, err := pool.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback(ctx)
+	defer transaction.Rollback(ctx)
 
 	var rows pgx.Rows
 	if len(names) == 0 {
-		rows, err = tx.Query(ctx, `
+		rows, err = transaction.Query(ctx, `
 			SELECT id, name, external_id, input, max_attempts
 			FROM fookie_outbox
 			WHERE (status = 'pending' AND next_retry <= NOW())
@@ -299,7 +299,7 @@ func ClaimBatch(ctx context.Context, pool *pgxpool.Pool, batchSize int, names []
 			FOR UPDATE SKIP LOCKED`,
 			batchSize)
 	} else {
-		rows, err = tx.Query(ctx, `
+		rows, err = transaction.Query(ctx, `
 			SELECT id, name, external_id, input, max_attempts
 			FROM fookie_outbox
 			WHERE name = ANY($2)
@@ -329,13 +329,13 @@ func ClaimBatch(ctx context.Context, pool *pgxpool.Pool, batchSize int, names []
 	}
 
 	for _, e := range entries {
-		if _, err := tx.Exec(ctx,
+		if _, err := transaction.Exec(ctx,
 			`UPDATE fookie_outbox SET status='processing', updated_at=NOW() WHERE external_id=$1`,
 			e.ExternalID); err != nil {
 			return nil, err
 		}
 	}
-	return entries, tx.Commit(ctx)
+	return entries, transaction.Commit(ctx)
 }
 
 func Waiters(ctx context.Context, pool *pgxpool.Pool, externalID string) ([]Waiter, error) {
@@ -369,25 +369,25 @@ type SagaStep struct {
 }
 
 func (s SagaStep) CompensateInput() []byte {
-	in := s.InputJSON
-	if len(in) == 0 {
-		in = []byte("null")
+	input := s.InputJSON
+	if len(input) == 0 {
+		input = []byte("null")
 	}
 	out := s.OutputJSON
 	if len(out) == 0 {
 		out = []byte("null")
 	}
-	buf := make([]byte, 0, len(in)+len(out)+20)
+	buf := make([]byte, 0, len(input)+len(out)+20)
 	buf = append(buf, `{"input":`...)
-	buf = append(buf, in...)
+	buf = append(buf, input...)
 	buf = append(buf, `,"output":`...)
 	buf = append(buf, out...)
 	buf = append(buf, '}')
 	return buf
 }
 
-func RecordSagaStep(tx pgx.Tx, entityID, model, stepName, compensate string, inputJSON, outputJSON []byte) error {
-	_, err := tx.Exec(context.Background(),
+func RecordSagaStep(transaction pgx.Tx, entityID, model, stepName, compensate string, inputJSON, outputJSON []byte) error {
+	_, err := transaction.Exec(context.Background(),
 		`INSERT INTO fookie_saga_step (id, entity_id, model, step_name, compensate, input_json, output_json)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7)
 		 ON CONFLICT (entity_id, model, step_name) DO NOTHING`,
@@ -395,8 +395,8 @@ func RecordSagaStep(tx pgx.Tx, entityID, model, stepName, compensate string, inp
 	return err
 }
 
-func LoadSagaSteps(tx pgx.Tx, entityID, model string) ([]SagaStep, error) {
-	rows, err := tx.Query(context.Background(),
+func LoadSagaSteps(transaction pgx.Tx, entityID, model string) ([]SagaStep, error) {
+	rows, err := transaction.Query(context.Background(),
 		`SELECT step_name, compensate, input_json, COALESCE(output_json, 'null'::jsonb)
 		 FROM fookie_saga_step
 		 WHERE entity_id = $1 AND model = $2
@@ -408,21 +408,21 @@ func LoadSagaSteps(tx pgx.Tx, entityID, model string) ([]SagaStep, error) {
 	defer rows.Close()
 	var steps []SagaStep
 	for rows.Next() {
-		var s SagaStep
+		var sagaStep SagaStep
 		var rawOut []byte
-		if err := rows.Scan(&s.StepName, &s.Compensate, &s.InputJSON, &rawOut); err != nil {
+		if err := rows.Scan(&sagaStep.StepName, &sagaStep.Compensate, &sagaStep.InputJSON, &rawOut); err != nil {
 			return nil, err
 		}
 		if string(rawOut) != "null" {
-			s.OutputJSON = rawOut
+			sagaStep.OutputJSON = rawOut
 		}
-		steps = append(steps, s)
+		steps = append(steps, sagaStep)
 	}
 	return steps, rows.Err()
 }
 
-func ClearSagaSteps(tx pgx.Tx, entityID, model string) error {
-	_, err := tx.Exec(context.Background(),
+func ClearSagaSteps(transaction pgx.Tx, entityID, model string) error {
+	_, err := transaction.Exec(context.Background(),
 		`DELETE FROM fookie_saga_step WHERE entity_id = $1 AND model = $2`,
 		entityID, model)
 	return err
@@ -457,12 +457,12 @@ func CompletedWaiterRows(ctx context.Context, pool *pgxpool.Pool) ([]CompletedWa
 	return result, rows.Err()
 }
 
-func LookupCompensateName(tx pgx.Tx, links map[string]string, serviceName string) (string, bool, error) {
+func LookupCompensateName(transaction pgx.Tx, links map[string]string, serviceName string) (string, bool, error) {
 	if name, ok := links[serviceName]; ok {
 		return name, true, nil
 	}
 	var name string
-	err := tx.QueryRow(context.Background(),
+	err := transaction.QueryRow(context.Background(),
 		`SELECT compensate_name FROM fookie_compensation WHERE service_name = $1`,
 		serviceName).Scan(&name)
 	if err == pgx.ErrNoRows {

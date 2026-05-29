@@ -7,22 +7,22 @@ import (
 	"github.com/fookiejs/fookie/semantic"
 )
 
-func AttachFilter[F any](stored *StoredModel, schema F, qb *Builder) F {
+func AttachFilter[F any](stored *StoredModel, schema F, queryBuilder *Builder) F {
 	rv := reflect.ValueOf(&schema).Elem()
-	attachFilters(rv, qb)
+	attachFilters(rv, queryBuilder)
 	return schema
 }
 
-func attachFilters(rv reflect.Value, qb *Builder) {
-	if rv.Kind() != reflect.Struct {
+func attachFilters(reflectValue reflect.Value, queryBuilder *Builder) {
+	if reflectValue.Kind() != reflect.Struct {
 		return
 	}
-	rt := rv.Type()
+	rt := reflectValue.Type()
 	for i := range rt.NumField() {
 		sf := rt.Field(i)
-		fv := rv.Field(i)
+		fv := reflectValue.Field(i)
 		if sf.Anonymous && fv.Kind() == reflect.Struct {
-			attachFilters(fv, qb)
+			attachFilters(fv, queryBuilder)
 			continue
 		}
 		if !fv.CanAddr() {
@@ -38,8 +38,8 @@ func attachFilters(rv reflect.Value, qb *Builder) {
 		}
 		if fs, ok := addr.(filterSetter); ok {
 			boundKey := key
-			fs.SetFilter(func(op string, val semantic.FilterValue) {
-				qb.Add(boundKey, op, val)
+			fs.SetFilter(func(operation string, val semantic.FilterValue) {
+				queryBuilder.Add(boundKey, operation, val)
 			})
 		}
 	}

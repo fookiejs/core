@@ -24,13 +24,13 @@ func TestHeadersMap(t *testing.T) {
 }
 
 func TestWriteErr(t *testing.T) {
-	rec := httptest.NewRecorder()
-	WriteErr(rec, http.StatusBadRequest, "bad", "desc")
-	if rec.Code != http.StatusBadRequest {
-		t.Fatalf("status=%d", rec.Code)
+	record := httptest.NewRecorder()
+	WriteErr(record, http.StatusBadRequest, "bad", "desc")
+	if record.Code != http.StatusBadRequest {
+		t.Fatalf("status=%d", record.Code)
 	}
 	var body map[string]any
-	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
+	if err := json.NewDecoder(record.Body).Decode(&body); err != nil {
 		t.Fatal(err)
 	}
 	errObj := body["error"].(map[string]any)

@@ -7,23 +7,23 @@ import (
 func TestConfigFromEnvDefaults(t *testing.T) {
 	t.Setenv("OTEL_ENABLED", "")
 	t.Setenv("TELEMETRY_ENABLED", "")
-	cfg := ConfigFromEnv()
-	if cfg.Enabled {
+	config := ConfigFromEnv()
+	if config.Enabled {
 		t.Fatal("expected disabled")
 	}
-	if cfg.ServiceName != "fookie" {
-		t.Fatalf("service=%q", cfg.ServiceName)
+	if config.ServiceName != "fookie" {
+		t.Fatalf("service=%q", config.ServiceName)
 	}
 }
 
 func TestConfigFromEnvTruthy(t *testing.T) {
 	t.Setenv("OTEL_ENABLED", "true")
 	t.Setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "localhost:4317")
-	cfg := ConfigFromEnv()
-	if !cfg.Enabled {
+	config := ConfigFromEnv()
+	if !config.Enabled {
 		t.Fatal("expected enabled")
 	}
-	if !cfg.Metrics || !cfg.Traces {
+	if !config.Metrics || !config.Traces {
 		t.Fatal("expected metrics and traces enabled")
 	}
 }
@@ -32,7 +32,7 @@ func TestBootstrapNoEndpoint(t *testing.T) {
 	setNoopProviders()
 	bootstrap(Config{Enabled: true, Metrics: true, Traces: true})
 	if shutdownFn == nil {
-		t.Fatal("expected shutdown fn")
+		t.Fatal("expected shutdown callback")
 	}
 }
 

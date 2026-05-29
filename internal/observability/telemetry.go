@@ -17,13 +17,13 @@ type Config struct {
 }
 
 func ConfigFromEnv() Config {
-	c := telemetry.ConfigFromEnv()
+	config := telemetry.ConfigFromEnv()
 	return Config{
-		Enabled:      c.Enabled,
-		Metrics:      c.Metrics,
-		Traces:       c.Traces,
-		ServiceName:  c.ServiceName,
-		OTLPEndpoint: c.OTLPEndpoint,
+		Enabled:      config.Enabled,
+		Metrics:      config.Metrics,
+		Traces:       config.Traces,
+		ServiceName:  config.ServiceName,
+		OTLPEndpoint: config.OTLPEndpoint,
 	}
 }
 
@@ -37,13 +37,13 @@ func TelemetryConfigFromInternal(enabled, metrics, traces bool, serviceName, end
 	}
 }
 
-func InitTelemetry(cfg Config) error {
+func InitTelemetry(config Config) error {
 	if err := telemetry.Init(telemetry.Config{
-		Enabled:      cfg.Enabled,
-		Metrics:      cfg.Metrics,
-		Traces:       cfg.Traces,
-		ServiceName:  cfg.ServiceName,
-		OTLPEndpoint: cfg.OTLPEndpoint,
+		Enabled:      config.Enabled,
+		Metrics:      config.Metrics,
+		Traces:       config.Traces,
+		ServiceName:  config.ServiceName,
+		OTLPEndpoint: config.OTLPEndpoint,
 	}); err != nil {
 		return fmt.Errorf("telemetry init: %w", err)
 	}
@@ -111,16 +111,16 @@ func SchedulerResume(ctx context.Context, model, entityID string) context.Contex
 	return telemetry.SchedulerResume(ctx, model, entityID)
 }
 
-func GraphQLReceived(ctx context.Context, op string) {
-	telemetry.GraphQLReceived(ctx, op)
+func GraphQLReceived(ctx context.Context, operation string) {
+	telemetry.GraphQLReceived(ctx, operation)
 }
 
-func GraphQLDuration(ctx context.Context, op string, ms float64) {
-	telemetry.GraphQLDuration(ctx, op, ms)
+func GraphQLDuration(ctx context.Context, operation string, ms float64) {
+	telemetry.GraphQLDuration(ctx, operation, ms)
 }
 
-func GraphQLFailed(ctx context.Context, op string) {
-	telemetry.GraphQLFailed(ctx, op)
+func GraphQLFailed(ctx context.Context, operation string) {
+	telemetry.GraphQLFailed(ctx, operation)
 }
 
 func EmitCounter(ctx context.Context, name string, tags map[string]string) {

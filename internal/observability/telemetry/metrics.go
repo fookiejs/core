@@ -40,21 +40,21 @@ func initRuntimeMetrics() {
 	if metricsReady {
 		return
 	}
-	m := otel.Meter(meterName)
-	flowStarted, _ = m.Int64Counter("flow.execution.started")
-	flowCompleted, _ = m.Int64Counter("flow.execution.completed")
-	flowFailed, _ = m.Int64Counter("flow.execution.failed")
-	externalStarted, _ = m.Int64Counter("external.call.started")
-	externalCompleted, _ = m.Int64Counter("external.call.completed")
-	externalFailed, _ = m.Int64Counter("external.call.failed")
-	externalRetry, _ = m.Int64Counter("external.call.retry")
-	schedulerRetry, _ = m.Int64Counter("scheduler.retry")
-	schedulerDepth, _ = m.Float64Gauge("scheduler.queue.depth")
-	graphqlDuration, _ = m.Float64Histogram("graphql.request.duration")
-	graphqlFailed, _ = m.Int64Counter("graphql.request.failed")
-	graphqlReceived, _ = m.Int64Counter("graphql.request.received")
-	outboxDuration, _ = m.Float64Histogram("runtime.outbox.duration")
-	outboxProcessed, _ = m.Int64Counter("runtime.outbox.processed")
+	meter := otel.Meter(meterName)
+	flowStarted, _ = meter.Int64Counter("flow.execution.started")
+	flowCompleted, _ = meter.Int64Counter("flow.execution.completed")
+	flowFailed, _ = meter.Int64Counter("flow.execution.failed")
+	externalStarted, _ = meter.Int64Counter("external.call.started")
+	externalCompleted, _ = meter.Int64Counter("external.call.completed")
+	externalFailed, _ = meter.Int64Counter("external.call.failed")
+	externalRetry, _ = meter.Int64Counter("external.call.retry")
+	schedulerRetry, _ = meter.Int64Counter("scheduler.retry")
+	schedulerDepth, _ = meter.Float64Gauge("scheduler.queue.depth")
+	graphqlDuration, _ = meter.Float64Histogram("graphql.request.duration")
+	graphqlFailed, _ = meter.Int64Counter("graphql.request.failed")
+	graphqlReceived, _ = meter.Int64Counter("graphql.request.received")
+	outboxDuration, _ = meter.Float64Histogram("runtime.outbox.duration")
+	outboxProcessed, _ = meter.Int64Counter("runtime.outbox.processed")
 	metricsReady = true
 }
 
@@ -88,39 +88,39 @@ func EmitGauge(ctx context.Context, name string, value float64, attrs map[string
 	emitUserGauge(ctx, name, value, attrs)
 }
 
-func addCounter(ctx context.Context, c metric.Int64Counter, attrs map[string]string) {
-	if c == nil {
+func addCounter(ctx context.Context, counter metric.Int64Counter, attrs map[string]string) {
+	if counter == nil {
 		return
 	}
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	bestEffort(func() {
-		c.Add(ctx, 1, metric.WithAttributes(attrsToOTel(sanitizeAttrs(attrs))...))
+		counter.Add(ctx, 1, metric.WithAttributes(attrsToOTel(sanitizeAttrs(attrs))...))
 	})
 }
 
-func recordHistogram(ctx context.Context, h metric.Float64Histogram, value float64, attrs map[string]string) {
-	if h == nil {
+func recordHistogram(ctx context.Context, histogram metric.Float64Histogram, value float64, attrs map[string]string) {
+	if histogram == nil {
 		return
 	}
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	bestEffort(func() {
-		h.Record(ctx, value, metric.WithAttributes(attrsToOTel(sanitizeAttrs(attrs))...))
+		histogram.Record(ctx, value, metric.WithAttributes(attrsToOTel(sanitizeAttrs(attrs))...))
 	})
 }
 
-func recordGauge(ctx context.Context, g metric.Float64Gauge, value float64, attrs map[string]string) {
-	if g == nil {
+func recordGauge(ctx context.Context, gauge metric.Float64Gauge, value float64, attrs map[string]string) {
+	if gauge == nil {
 		return
 	}
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	bestEffort(func() {
-		g.Record(ctx, value, metric.WithAttributes(attrsToOTel(sanitizeAttrs(attrs))...))
+		gauge.Record(ctx, value, metric.WithAttributes(attrsToOTel(sanitizeAttrs(attrs))...))
 	})
 }
 

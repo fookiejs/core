@@ -32,9 +32,9 @@ type externalErrorSetter interface {
 	setExternalError(string)
 }
 
-func stashExternalError(flow ExternalContext, msg string) {
+func stashExternalError(flow ExternalContext, message string) {
 	if s, ok := flow.(externalErrorSetter); ok {
-		s.setExternalError(msg)
+		s.setExternalError(message)
 	}
 }
 
@@ -76,20 +76,20 @@ func (e External[Input, Output]) Run(flow ExternalContext, input Input) (Output,
 }
 
 func (e External[Input, Output]) externalID(entityID string, input Input, inputJSON []byte) (string, error) {
-	bk := strings.TrimSpace(e.IdempotencyKey(input))
-	if entityID != "" && bk == "" {
+	businessKey := strings.TrimSpace(e.IdempotencyKey(input))
+	if entityID != "" && businessKey == "" {
 		return outbox.ExternalID(entityID, e.Name, inputJSON)
 	}
-	if bk == "" {
+	if businessKey == "" {
 		return "", ErrIdempotencyKeyEmpty
 	}
-	return outbox.BusinessExternalID(e.Name, bk), nil
+	return outbox.BusinessExternalID(e.Name, businessKey), nil
 }
 
 func NoIdempotencyKey[Input any](Input) string { return "" }
 
 func (e External[Input, Output]) requireEntity(flow ExternalContext, input Input) (Output, Signal) {
-	tx := flow.DBTx()
+	transaction := flow.DBTx()
 	inputJSON, err := marshalInput(input)
 	if err != nil {
 		fail(fmt.Errorf("marshal_input: %w", err))
@@ -99,28 +99,28 @@ func (e External[Input, Output]) requireEntity(flow ExternalContext, input Input
 		fail(fmt.Errorf("external_id: %w", err))
 	}
 
-	entry, err := outbox.Lookup(tx, externalID)
+	entry, err := outbox.Lookup(transaction, externalID)
 	if err != nil {
 		fail(fmt.Errorf("outbox_lookup: %w", err))
 	}
 
 	if entry == nil {
-		return e.dispatchEntity(flow, tx, externalID, inputJSON)
+		return e.dispatchEntity(flow, transaction, externalID, inputJSON)
 	}
 	if entry.Status == outbox.StatusCompleted {
-		return e.returnEntity(flow, tx, entry, externalID, inputJSON), Done
+		return e.returnEntity(flow, transaction, entry, externalID, inputJSON), Done
 	}
 	if entry.Status == outbox.StatusFailed {
 		return e.failEntity(flow, entry, externalID)
 	}
-	return e.waitEntity(flow, tx, externalID)
+	return e.waitEntity(flow, transaction, externalID)
 }
 
-func (e External[Input, Output]) dispatchEntity(flow ExternalContext, tx pgx.Tx, externalID string, inputJSON []byte) (Output, Signal) {
-	if err := outbox.Insert(tx, e.Name, externalID, inputJSON, e.retryPolicy()); err != nil {
+func (e External[Input, Output]) dispatchEntity(flow ExternalContext, transaction pgx.Tx, externalID string, inputJSON []byte) (Output, Signal) {
+	if err := outbox.Insert(transaction, e.Name, externalID, inputJSON, e.retryPolicy()); err != nil {
 		fail(fmt.Errorf("outbox_insert: %w", err))
 	}
-	if err := outbox.AddWaiter(tx, externalID, flow.ModelName(), flow.CurrentEntityID()); err != nil {
+	if err := outbox.AddWaiter(transaction, externalID, flow.ModelName(), flow.CurrentEntityID()); err != nil {
 		fail(fmt.Errorf("outbox_waiter: %w", err))
 	}
 	execCtx := observability.ExternalStarted(flow.ExecContext(), e.Name, flow.ModelName(), flow.CurrentEntityID(), map[string]string{observability.ExternalID: externalID})
@@ -130,11 +130,11 @@ func (e External[Input, Output]) dispatchEntity(flow ExternalContext, tx pgx.Tx,
 	return zero, Running
 }
 
-func (e External[Input, Output]) returnEntity(flow ExternalContext, tx pgx.Tx, entry *outbox.Entry, externalID string, inputJSON []byte) Output {
+func (e External[Input, Output]) returnEntity(flow ExternalContext, transaction pgx.Tx, entry *outbox.Entry, externalID string, inputJSON []byte) Output {
 	out := parseOutput[Output](entry.Output)
-	compensateName, found, _ := outbox.LookupCompensateName(tx, flow.AppRef().CompensationLinks(), e.Name)
+	compensateName, found, _ := outbox.LookupCompensateName(transaction, flow.AppRef().CompensationLinks(), e.Name)
 	if found {
-		_ = outbox.RecordSagaStep(tx, flow.CurrentEntityID(), flow.ModelName(), e.Name, compensateName, inputJSON, entry.Output)
+		_ = outbox.RecordSagaStep(transaction, flow.CurrentEntityID(), flow.ModelName(), e.Name, compensateName, inputJSON, entry.Output)
 		observability.Debug("saga.step_recorded",
 			observability.ServiceKey, e.Name,
 			observability.CompensateKey, compensateName,
@@ -159,8 +159,8 @@ func (e External[Input, Output]) failEntity(flow ExternalContext, entry *outbox.
 	return zero, Failed
 }
 
-func (e External[Input, Output]) waitEntity(flow ExternalContext, tx pgx.Tx, externalID string) (Output, Signal) {
-	if err := outbox.AddWaiter(tx, externalID, flow.ModelName(), flow.CurrentEntityID()); err != nil {
+func (e External[Input, Output]) waitEntity(flow ExternalContext, transaction pgx.Tx, externalID string) (Output, Signal) {
+	if err := outbox.AddWaiter(transaction, externalID, flow.ModelName(), flow.CurrentEntityID()); err != nil {
 		fail(fmt.Errorf("outbox_waiter: %w", err))
 	}
 	observability.ExternalPending(flow.ExecContext(), e.Name, flow.ModelName(), flow.CurrentEntityID(), map[string]string{observability.ExternalID: externalID})
@@ -169,8 +169,8 @@ func (e External[Input, Output]) waitEntity(flow ExternalContext, tx pgx.Tx, ext
 	return zero, Running
 }
 
-func (e External[Input, Output]) logExternal(msg string, flow ExternalContext, externalID string) {
-	observability.Info(msg,
+func (e External[Input, Output]) logExternal(message string, flow ExternalContext, externalID string) {
+	observability.Info(message,
 		observability.ServiceKey, e.Name,
 		observability.ModelKey, flow.ModelName(),
 		observability.EntityIDKey, flow.CurrentEntityID(),
@@ -256,8 +256,8 @@ func pollOutbox(ctx context.Context, pool *pgxpool.Pool, externalID string, time
 	return nil, fmt.Errorf("external timeout after %s", timeout)
 }
 
-func compensateAll(tx pgx.Tx, modelName, entityID string) error {
-	steps, err := outbox.LoadSagaSteps(tx, entityID, modelName)
+func compensateAll(transaction pgx.Tx, modelName, entityID string) error {
+	steps, err := outbox.LoadSagaSteps(transaction, entityID, modelName)
 	if err != nil {
 		return err
 	}
@@ -268,10 +268,10 @@ func compensateAll(tx pgx.Tx, modelName, entityID string) error {
 		if err != nil {
 			return err
 		}
-		if err := outbox.Insert(tx, step.Compensate, externalID, compInput, outbox.RetryPolicy{Attempts: 3}); err != nil {
+		if err := outbox.Insert(transaction, step.Compensate, externalID, compInput, outbox.RetryPolicy{Attempts: 3}); err != nil {
 			return err
 		}
-		if err := outbox.AddWaiter(tx, externalID, modelName, entityID); err != nil {
+		if err := outbox.AddWaiter(transaction, externalID, modelName, entityID); err != nil {
 			return err
 		}
 		observability.Debug("saga.compensation_dispatched",
@@ -280,7 +280,7 @@ func compensateAll(tx pgx.Tx, modelName, entityID string) error {
 			observability.ModelKey, modelName,
 			observability.EntityIDKey, entityID)
 	}
-	if err := outbox.ClearSagaSteps(tx, entityID, modelName); err != nil {
+	if err := outbox.ClearSagaSteps(transaction, entityID, modelName); err != nil {
 		return err
 	}
 	observability.Info("saga.compensate_all_done",
@@ -293,13 +293,13 @@ func compensateAll(tx pgx.Tx, modelName, entityID string) error {
 
 type ExternalHandlerFunc func(ctx context.Context, inputJSON []byte) ([]byte, error)
 
-func WrapExternalHandler[Input, Output any](h func(Input) (Output, error)) ExternalHandlerFunc {
+func WrapExternalHandler[Input, Output any](headers func(Input) (Output, error)) ExternalHandlerFunc {
 	return func(_ context.Context, inputJSON []byte) ([]byte, error) {
 		var in Input
 		if err := json.Unmarshal(inputJSON, &in); err != nil {
 			return nil, fmt.Errorf("unmarshal input: %w", err)
 		}
-		out, err := h(in)
+		out, err := headers(in)
 		if err != nil {
 			return nil, err
 		}
@@ -307,7 +307,7 @@ func WrapExternalHandler[Input, Output any](h func(Input) (Output, error)) Exter
 	}
 }
 
-func WrapCompensationHandler[FI, FO any](h func(FI, FO) error) ExternalHandlerFunc {
+func WrapCompensationHandler[FI, FO any](headers func(FI, FO) error) ExternalHandlerFunc {
 	return func(_ context.Context, payloadJSON []byte) ([]byte, error) {
 		var wrapper struct {
 			Input  FI `json:"input"`
@@ -316,7 +316,7 @@ func WrapCompensationHandler[FI, FO any](h func(FI, FO) error) ExternalHandlerFu
 		if err := json.Unmarshal(payloadJSON, &wrapper); err != nil {
 			return nil, fmt.Errorf("unmarshal compensation payload: %w", err)
 		}
-		if err := h(wrapper.Input, wrapper.Output); err != nil {
+		if err := headers(wrapper.Input, wrapper.Output); err != nil {
 			return nil, err
 		}
 		return nil, nil

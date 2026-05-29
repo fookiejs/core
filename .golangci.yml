@@ -24,6 +24,8 @@ linters:
     - gocognit
     - nestif
     - depguard
+    - varnamelen
+    - godox
 
   settings:
     depguard:
@@ -42,6 +44,34 @@ linters:
           deny:
             - pkg: github.com/fookiejs/fookie/internal/persistence/row
               desc: row.Map erases field guarantees into generic cells; keep it inside persistence/serde/runtime/graphql boundaries and use typed Entity/Record/OpResult elsewhere
+        # Domain DAG: schema/persistence are below runtime/api. Edges may only point down.
+        model-layer:
+          list-mode: lax
+          files:
+            - "**/internal/model/**"
+          deny:
+            - pkg: github.com/fookiejs/fookie/internal/runtime
+              desc: "model is below runtime; runtime depends on model, not the reverse"
+            - pkg: github.com/fookiejs/fookie/internal/api
+              desc: "model must not depend on the api layer"
+        persistence-layer:
+          list-mode: lax
+          files:
+            - "**/internal/persistence/**"
+          deny:
+            - pkg: github.com/fookiejs/fookie/internal/model
+              desc: "persistence is below model"
+            - pkg: github.com/fookiejs/fookie/internal/runtime
+              desc: "persistence is below runtime"
+            - pkg: github.com/fookiejs/fookie/internal/api
+              desc: "persistence must not depend on the api layer"
+        runtime-layer:
+          list-mode: lax
+          files:
+            - "**/internal/runtime/**"
+          deny:
+            - pkg: github.com/fookiejs/fookie/internal/api
+              desc: "runtime is below api; api depends on runtime, not the reverse"
     forbidigo:
       forbid:
         - pattern: '^go\s'
@@ -89,6 +119,33 @@ linters:
       rules:
         - name: exported
           disabled: true
+    varnamelen:
+      min-name-length: 3
+      max-distance: 0
+      check-type-param: true
+      check-receiver: false
+      check-return: false
+      ignore-type-assert-ok: true
+      ignore-map-index-ok: true
+      ignore-chan-recv-ok: true
+      ignore-names:
+        - err
+      ignore-decls:
+        - i int
+        - j int
+        - k int
+        - n int
+        - t testing.T
+        - b testing.B
+        - w http.ResponseWriter
+        - r *http.Request
+        - ctx context.Context
+    godox:
+      keywords:
+        - TODO
+        - FIXME
+        - HACK
+        - BUG
 
   exclusions:
     rules:
@@ -99,6 +156,7 @@ linters:
           - goconst
           - unparam
           - forbidigo
+          - varnamelen
       - path: "internal/api/http/"
         linters:
           - forbidigo

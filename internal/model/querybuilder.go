@@ -44,15 +44,15 @@ func NewBuilder(stored *StoredModel) *Builder {
 	return &Builder{Model: stored}
 }
 
-func (qb *Builder) Add(field, op string, value semantic.FilterValue) {
-	qb.Filters = append(qb.Filters, ListFilter{Field: field, Op: op, Value: value})
+func (queryBuilder *Builder) Add(field, operation string, value semantic.FilterValue) {
+	queryBuilder.Filters = append(queryBuilder.Filters, ListFilter{Field: field, Op: operation, Value: value})
 }
 
 func (o OrderExpr) Field() string { return o.field }
 
 func (o OrderExpr) Desc() bool { return o.desc }
 
-func (qb *Builder) Orders() []OrderExpr { return qb.orders }
+func (queryBuilder *Builder) Orders() []OrderExpr { return queryBuilder.orders }
 
 type Orderable interface {
 	OrderKey() string

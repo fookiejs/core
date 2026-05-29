@@ -34,12 +34,12 @@ func ValidateUserMetric(name string) error {
 }
 
 func NormalizeCustom(name string) string {
-	n := strings.TrimSpace(name)
-	if n == "" {
-		return n
+	metricName := strings.TrimSpace(name)
+	if metricName == "" {
+		return metricName
 	}
-	if strings.HasPrefix(n, "custom.") {
-		return n
+	if strings.HasPrefix(metricName, "custom.") {
+		return metricName
 	}
-	return "custom." + n
+	return "custom." + metricName
 }

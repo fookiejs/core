@@ -25,10 +25,10 @@ const (
 	ErrKey        = "err"
 )
 
-func Info(msg string, args ...any)  { flog.Info(msg, args...) }
-func Warn(msg string, args ...any)  { flog.Warn(msg, args...) }
-func Debug(msg string, args ...any) { flog.Debug(msg, args...) }
-func Error(msg string, args ...any) { flog.Error(msg, args...) }
+func Info(message string, args ...any)  { flog.Info(message, args...) }
+func Warn(message string, args ...any)  { flog.Warn(message, args...) }
+func Debug(message string, args ...any) { flog.Debug(message, args...) }
+func Error(message string, args ...any) { flog.Error(message, args...) }
 
 func MsElapsed(start time.Time) float64 {
 	return float64(time.Since(start).Microseconds()) / 1_000.0

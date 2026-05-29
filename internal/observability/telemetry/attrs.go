@@ -25,14 +25,14 @@ func mergeAttrs(base map[string]string, extra map[string]string) map[string]stri
 	if len(base) == 0 && len(extra) == 0 {
 		return nil
 	}
-	m := make(map[string]string, len(base)+len(extra))
+	attributeMap := make(map[string]string, len(base)+len(extra))
 	for k, v := range base {
-		m[k] = v
+		attributeMap[k] = v
 	}
 	for k, v := range extra {
-		m[k] = v
+		attributeMap[k] = v
 	}
-	return m
+	return attributeMap
 }
 
 func SanitizeAttrs(attrs map[string]string) map[string]string {

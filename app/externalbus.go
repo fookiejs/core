@@ -100,19 +100,19 @@ func (a *App) startResultLoop() {
 	}()
 }
 
-func (a *App) applyResult(r ExternalResult) {
-	switch r.Status {
+func (a *App) applyResult(result ExternalResult) {
+	switch result.Status {
 	case ExternalPending:
 		return
 	case ExternalFail:
-		_ = reliability.ReportFailure(a, r.ID, r.Error)
+		_ = reliability.ReportFailure(a, result.ID, result.Error)
 		return
 	}
-	if ti, ok := a.externals[r.Service]; ok && ti.validate != nil {
-		if err := ti.validate(r.Output); err != nil {
-			_ = reliability.ReportFailure(a, r.ID, "invalid output: "+err.Error())
+	if ti, ok := a.externals[result.Service]; ok && ti.validate != nil {
+		if err := ti.validate(result.Output); err != nil {
+			_ = reliability.ReportFailure(a, result.ID, "invalid output: "+err.Error())
 			return
 		}
 	}
-	_ = reliability.ReportSuccess(a, r.ID, r.Output)
+	_ = reliability.ReportSuccess(a, result.ID, result.Output)
 }

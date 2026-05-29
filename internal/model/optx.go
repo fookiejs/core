@@ -16,12 +16,12 @@ type OpTx struct {
 	sp      uint64
 }
 
-func NewOpTx(ctx context.Context, tx pgx.Tx, app AppRef, headers map[string]string) *OpTx {
+func NewOpTx(ctx context.Context, transaction pgx.Tx, app AppRef, headers map[string]string) *OpTx {
 	h := map[string]string{}
 	for k, v := range headers {
 		h[k] = v
 	}
-	return &OpTx{Ctx: ctx, Tx: tx, App: app, Headers: h}
+	return &OpTx{Ctx: ctx, Tx: transaction, App: app, Headers: h}
 }
 
 func (o *OpTx) NextSavepoint() string {

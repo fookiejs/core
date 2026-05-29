@@ -170,20 +170,20 @@ type BuiltinConfig struct {
 	TelemetryOTLPEndpoint string
 }
 
-func ApplyBuiltinConfig(cfg *BuiltinConfig) {
-	cfg.Listen = listenEnv.ValueOr(":3000")
-	cfg.DB = dbEnv.ValueOr("postgres://fookie:fookie_dev@localhost:5432/fookie?sslmode=disable")
-	cfg.LogLevel = logLevelEnv.ValueOr("info")
-	cfg.ListLimit = listLimitEnv.IntValue()
+func ApplyBuiltinConfig(config *BuiltinConfig) {
+	config.Listen = listenEnv.ValueOr(":3000")
+	config.DB = dbEnv.ValueOr("postgres://fookie:fookie_dev@localhost:5432/fookie?sslmode=disable")
+	config.LogLevel = logLevelEnv.ValueOr("info")
+	config.ListLimit = listLimitEnv.IntValue()
 	enabled := otelEnabledEnv.ValueOr("false")
-	cfg.TelemetryEnabled = enabled == "true" || enabled == "1"
-	cfg.TelemetryMetrics = cfg.TelemetryEnabled
+	config.TelemetryEnabled = enabled == "true" || enabled == "1"
+	config.TelemetryMetrics = config.TelemetryEnabled
 	if otelMetricsEnv.loaded {
-		cfg.TelemetryMetrics = otelMetricsEnv.value == "true" || otelMetricsEnv.value == "1"
+		config.TelemetryMetrics = otelMetricsEnv.value == "true" || otelMetricsEnv.value == "1"
 	}
-	cfg.TelemetryTraces = cfg.TelemetryEnabled
+	config.TelemetryTraces = config.TelemetryEnabled
 	if otelTracesEnv.loaded {
-		cfg.TelemetryTraces = otelTracesEnv.value == "true" || otelTracesEnv.value == "1"
+		config.TelemetryTraces = otelTracesEnv.value == "true" || otelTracesEnv.value == "1"
 	}
-	cfg.TelemetryOTLPEndpoint = otelEndpointEnv.ValueOr("")
+	config.TelemetryOTLPEndpoint = otelEndpointEnv.ValueOr("")
 }

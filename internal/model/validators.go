@@ -20,14 +20,14 @@ func ValidateBody(body any) *FailError {
 	return validateStruct(rv)
 }
 
-func validateStruct(rv reflect.Value) *FailError {
-	if rv.Kind() != reflect.Struct {
+func validateStruct(reflectValue reflect.Value) *FailError {
+	if reflectValue.Kind() != reflect.Struct {
 		return nil
 	}
-	rt := rv.Type()
+	rt := reflectValue.Type()
 	for i := range rt.NumField() {
 		sf := rt.Field(i)
-		fv := rv.Field(i)
+		fv := reflectValue.Field(i)
 		if sf.Anonymous && fv.Kind() == reflect.Struct {
 			if err := validateStruct(fv); err != nil {
 				return err

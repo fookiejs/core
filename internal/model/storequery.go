@@ -12,16 +12,16 @@ func StoreFilters(m *StoredModel, fs []ListFilter) []store.Filter {
 	return out
 }
 
-func BuildStoreQuery(m *StoredModel, qb *Builder) store.Query {
-	orders := make([]store.Order, 0, len(qb.Orders()))
-	for _, o := range qb.Orders() {
+func BuildStoreQuery(modelDefinition *StoredModel, queryBuilder *Builder) store.Query {
+	orders := make([]store.Order, 0, len(queryBuilder.Orders()))
+	for _, o := range queryBuilder.Orders() {
 		orders = append(orders, store.Order{Field: o.Field(), Desc: o.Desc()})
 	}
 	return store.Query{
-		Filters:   StoreFilters(m, qb.Filters),
+		Filters:   StoreFilters(modelDefinition, queryBuilder.Filters),
 		Orders:    orders,
-		Limit:     qb.Limit,
-		Cursor:    qb.Cursor,
-		CursorDir: int(qb.CursorDir),
+		Limit:     queryBuilder.Limit,
+		Cursor:    queryBuilder.Cursor,
+		CursorDir: int(queryBuilder.CursorDir),
 	}
 }

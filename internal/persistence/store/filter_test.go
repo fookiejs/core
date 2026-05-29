@@ -225,9 +225,9 @@ func TestBuildFilterClause_INET_ContainedBy(t *testing.T) {
 
 func TestBuildFilterClause_ArgsCountConsistency(t *testing.T) {
 	cases := []struct {
-		op       string
-		value    semantic.FilterValue
-		wantArgs int
+		operation string
+		value     semantic.FilterValue
+		wantArgs  int
 	}{
 		{"=", semantic.FilterText("x"), 1},
 		{"!=", semantic.FilterText("x"), 1},
@@ -241,8 +241,8 @@ func TestBuildFilterClause_ArgsCountConsistency(t *testing.T) {
 		{"@BOX", semantic.BoxFilter{MinLat: 0, MinLon: 0, MaxLat: 1, MaxLon: 1}, 4},
 	}
 	for _, c := range cases {
-		t.Run(fmt.Sprintf("op=%s", c.op), func(t *testing.T) {
-			f := Filter{Field: "f", Op: c.op, Value: c.value}
+		t.Run(fmt.Sprintf("operation=%s", c.operation), func(t *testing.T) {
+			f := Filter{Field: "f", Op: c.operation, Value: c.value}
 			clause, args, err := buildFilterClause(f, 1)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)

@@ -7,18 +7,18 @@ type ChildRelation struct {
 
 func WireRelations(models []*StoredModel, byName map[string]*StoredModel) map[string][]ChildRelation {
 	childRelations := make(map[string][]ChildRelation)
-	for _, m := range models {
-		for i := range m.snapshots {
-			f := &m.snapshots[i].FieldDef
-			if f.RelationName == "" {
+	for _, modelDefinition := range models {
+		for i := range modelDefinition.snapshots {
+			field := &modelDefinition.snapshots[i].FieldDef
+			if field.RelationName == "" {
 				continue
 			}
-			if rel, ok := byName[f.RelationName]; ok {
-				f.Relation = rel
+			if rel, ok := byName[field.RelationName]; ok {
+				field.Relation = rel
 			}
-			childRelations[f.RelationName] = append(childRelations[f.RelationName], ChildRelation{
-				ChildModel: m,
-				FKField:    *f,
+			childRelations[field.RelationName] = append(childRelations[field.RelationName], ChildRelation{
+				ChildModel: modelDefinition,
+				FKField:    *field,
 			})
 		}
 	}

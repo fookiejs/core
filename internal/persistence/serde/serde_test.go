@@ -22,6 +22,11 @@ type serdeEmbedSchema struct {
 	Amount semantic.Currency
 }
 
+type serdeFullBase struct {
+	semantic.Base
+	Name semantic.String
+}
+
 func TestToSnake(t *testing.T) {
 	cases := []struct {
 		in  string
@@ -78,6 +83,41 @@ func TestToRow_EmbeddedBase(t *testing.T) {
 	m := ToRow(s)
 	assertRowString(t, m, "id", "test-id-1")
 	assertRowInt64(t, m, "amount", 5000)
+}
+
+func TestToRow_OmitsProtectedBaseFields(t *testing.T) {
+	s := serdeFullBase{}
+	s.ID.Set("id-1")
+	s.CreatedAt.Set("2024-01-01T00:00:00Z")
+	s.UpdatedAt.Set("2024-01-02T00:00:00Z")
+	s.IsDeleted.Set(true)
+	s.Name.Set("alice")
+	m := ToRow(s)
+	assertRowString(t, m, "id", "id-1")
+	assertRowString(t, m, "name", "alice")
+	if _, ok := m["created_at"]; ok {
+		t.Fatal("created_at should be omitted")
+	}
+	if _, ok := m["updated_at"]; ok {
+		t.Fatal("updated_at should be omitted")
+	}
+	if _, ok := m["is_deleted"]; ok {
+		t.Fatal("is_deleted should be omitted")
+	}
+}
+
+func TestFilterInputRow(t *testing.T) {
+	m := row.Map{
+		"name":       row.FromText("bob"),
+		"created_at": row.FromText("2024-01-01T00:00:00Z"),
+		"updated_at": row.FromText("2024-01-02T00:00:00Z"),
+		"is_deleted": row.FromTruth(true),
+	}
+	out := FilterInputRow(m)
+	assertRowString(t, out, "name", "bob")
+	if len(out) != 1 {
+		t.Fatalf("expected 1 key, got %d", len(out))
+	}
 }
 
 func TestFromRow_SimpleValues(t *testing.T) {

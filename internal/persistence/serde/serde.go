@@ -9,11 +9,13 @@ import (
 	"github.com/fookiejs/fookie/semantic"
 )
 
+var baseType = reflect.TypeOf(semantic.Base{})
+
 func ToSnake(name string) string {
 	runes := []rune(name)
-	var b strings.Builder
-	for i, r := range runes {
-		if unicode.IsUpper(r) {
+	var builder strings.Builder
+	for i, character := range runes {
+		if unicode.IsUpper(character) {
 			if i > 0 {
 				prev := runes[i-1]
 				var next rune
@@ -21,15 +23,15 @@ func ToSnake(name string) string {
 					next = runes[i+1]
 				}
 				if unicode.IsLower(prev) || (unicode.IsUpper(prev) && next != 0 && unicode.IsLower(next)) {
-					b.WriteByte('_')
+					builder.WriteByte('_')
 				}
 			}
-			b.WriteRune(unicode.ToLower(r))
+			builder.WriteRune(unicode.ToLower(character))
 		} else {
-			b.WriteRune(r)
+			builder.WriteRune(character)
 		}
 	}
-	return b.String()
+	return builder.String()
 }
 
 func ToRow[S any](s S) row.Map {
@@ -45,53 +47,91 @@ func ToPatchRow[S any](s S) row.Map {
 }
 
 func collectPatchValues(rv reflect.Value, out row.Map) {
-	rt := rv.Type()
-	for i := range rt.NumField() {
-		sf := rt.Field(i)
-		fv := rv.Field(i)
-
-		if sf.Anonymous && fv.Kind() == reflect.Struct {
-			collectPatchValues(fv, out)
-			continue
-		}
-
-		if fv.IsZero() {
-			continue
-		}
-
-		key := ToSnake(sf.Name)
-		if rv, ok := rowValueFromField(fv); ok {
-			out[key] = row.FromValue(rv)
-		}
-	}
+	collectRowValues(rv, out, true)
 }
 
 func collectSchemaValues(rv reflect.Value, out row.Map) {
+	collectRowValues(rv, out, false)
+}
+
+func collectRowValues(rv reflect.Value, out row.Map, patchOnly bool) {
 	rt := rv.Type()
 	for i := range rt.NumField() {
-		sf := rt.Field(i)
-		fv := rv.Field(i)
+		structField := rt.Field(i)
+		fieldValue := rv.Field(i)
 
-		if sf.Anonymous && fv.Kind() == reflect.Struct {
-			collectSchemaValues(fv, out)
+		if structField.Anonymous && fieldValue.Kind() == reflect.Struct {
+			if fieldValue.Type() == baseType {
+				collectBaseValues(fieldValue, out, patchOnly)
+			} else {
+				collectRowValues(fieldValue, out, patchOnly)
+			}
 			continue
 		}
 
-		key := ToSnake(sf.Name)
-		if rv, ok := rowValueFromField(fv); ok {
+		if patchOnly && fieldValue.IsZero() {
+			continue
+		}
+
+		key := ToSnake(structField.Name)
+		if rv, ok := rowValueFromField(fieldValue); ok {
 			out[key] = row.FromValue(rv)
 		}
 	}
 }
 
-func rowValueFromField(fv reflect.Value) (any, bool) {
-	if fv.CanAddr() {
-		if rf, ok := fv.Addr().Interface().(semantic.RowField); ok {
+func collectBaseValues(fieldValue reflect.Value, out row.Map, patchOnly bool) {
+	for i := range baseType.NumField() {
+		structField := baseType.Field(i)
+		if semantic.IsProtectedBaseField(structField.Name) {
+			continue
+		}
+		bfv := fieldValue.Field(i)
+		if patchOnly && bfv.IsZero() {
+			continue
+		}
+		key := ToSnake(structField.Name)
+		if rv, ok := rowValueFromField(bfv); ok {
+			out[key] = row.FromValue(rv)
+		}
+	}
+}
+
+func FilterInputRow(m row.Map) row.Map {
+	if len(m) == 0 {
+		return m
+	}
+	out := make(row.Map, len(m))
+	for k, v := range m {
+		if IsProtectedBaseColumn(k) {
+			continue
+		}
+		out[k] = v
+	}
+	return out
+}
+
+func IsProtectedBaseColumn(name string) bool {
+	for i := range baseType.NumField() {
+		sf := baseType.Field(i)
+		if !semantic.IsProtectedBaseField(sf.Name) {
+			continue
+		}
+		if ToSnake(sf.Name) == name {
+			return true
+		}
+	}
+	return false
+}
+
+func rowValueFromField(fieldValue reflect.Value) (any, bool) {
+	if fieldValue.CanAddr() {
+		if rf, ok := fieldValue.Addr().Interface().(semantic.RowField); ok {
 			return rf.RowValue(), true
 		}
 	}
-	tmp := reflect.New(fv.Type()).Elem()
-	tmp.Set(fv)
+	tmp := reflect.New(fieldValue.Type()).Elem()
+	tmp.Set(fieldValue)
 	if rf, ok := tmp.Addr().Interface().(semantic.RowField); ok {
 		return rf.RowValue(), true
 	}
@@ -102,26 +142,26 @@ func FieldValue(s any, snakeName string) (any, bool) {
 	if s == nil {
 		return nil, false
 	}
-	rv := reflect.ValueOf(s)
-	if rv.Kind() == reflect.Pointer {
-		if rv.IsNil() {
+	reflectValue := reflect.ValueOf(s)
+	if reflectValue.Kind() == reflect.Pointer {
+		if reflectValue.IsNil() {
 			return nil, false
 		}
-		rv = rv.Elem()
+		reflectValue = reflectValue.Elem()
 	}
-	if rv.Kind() != reflect.Struct {
+	if reflectValue.Kind() != reflect.Struct {
 		return nil, false
 	}
-	return fieldValueWalk(rv, snakeName)
+	return fieldValueWalk(reflectValue, snakeName)
 }
 
 func fieldValueWalk(rv reflect.Value, snakeName string) (any, bool) {
 	rt := rv.Type()
 	for i := range rt.NumField() {
 		sf := rt.Field(i)
-		fv := rv.Field(i)
-		if sf.Anonymous && fv.Kind() == reflect.Struct {
-			if v, ok := fieldValueWalk(fv, snakeName); ok {
+		fieldValue := rv.Field(i)
+		if sf.Anonymous && fieldValue.Kind() == reflect.Struct {
+			if v, ok := fieldValueWalk(fieldValue, snakeName); ok {
 				return v, true
 			}
 			continue
@@ -129,7 +169,7 @@ func fieldValueWalk(rv reflect.Value, snakeName string) (any, bool) {
 		if ToSnake(sf.Name) != snakeName {
 			continue
 		}
-		return rowValueFromField(fv)
+		return rowValueFromField(fieldValue)
 	}
 	return nil, false
 }
@@ -142,23 +182,23 @@ func FromRow[S any](m row.Map, s *S) {
 	applyRowToValue(m, rv)
 }
 
-func applyRowToValue(m row.Map, rv reflect.Value) {
+func applyRowToValue(dataMap row.Map, rv reflect.Value) {
 	rt := rv.Type()
 	for i := range rt.NumField() {
-		sf := rt.Field(i)
-		fv := rv.Field(i)
+		structField := rt.Field(i)
+		fieldValue := rv.Field(i)
 
-		if sf.Anonymous && fv.Kind() == reflect.Struct && fv.CanAddr() {
-			applyRowToValue(m, fv)
+		if structField.Anonymous && fieldValue.Kind() == reflect.Struct && fieldValue.CanAddr() {
+			applyRowToValue(dataMap, fieldValue)
 			continue
 		}
 
-		key := ToSnake(sf.Name)
-		cell, ok := m[key]
-		if !ok || cell.Kind == row.KindEmpty || !fv.CanAddr() {
+		key := ToSnake(structField.Name)
+		cell, ok := dataMap[key]
+		if !ok || cell.Kind == row.KindEmpty || !fieldValue.CanAddr() {
 			continue
 		}
-		rf, ok := fv.Addr().Interface().(semantic.RowField)
+		rf, ok := fieldValue.Addr().Interface().(semantic.RowField)
 		if !ok {
 			continue
 		}

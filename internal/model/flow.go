@@ -27,20 +27,20 @@ func (l FlowLogger) base() []any {
 	return b
 }
 
-func (l FlowLogger) Info(msg string, args ...any) {
-	observability.Info(msg, append(l.base(), args...)...)
+func (l FlowLogger) Info(message string, args ...any) {
+	observability.Info(message, append(l.base(), args...)...)
 }
 
-func (l FlowLogger) Warn(msg string, args ...any) {
-	observability.Warn(msg, append(l.base(), args...)...)
+func (l FlowLogger) Warn(message string, args ...any) {
+	observability.Warn(message, append(l.base(), args...)...)
 }
 
-func (l FlowLogger) Debug(msg string, args ...any) {
-	observability.Debug(msg, append(l.base(), args...)...)
+func (l FlowLogger) Debug(message string, args ...any) {
+	observability.Debug(message, append(l.base(), args...)...)
 }
 
-func (l FlowLogger) Error(msg string, args ...any) {
-	observability.Error(msg, append(l.base(), args...)...)
+func (l FlowLogger) Error(message string, args ...any) {
+	observability.Error(message, append(l.base(), args...)...)
 }
 
 var (
@@ -54,14 +54,14 @@ type Flow[F any] struct {
 	Log     FlowLogger
 	Metric  observability.FlowMetric
 
-	tx          pgx.Tx
-	otx         *OpTx
-	ownsTx      bool
-	app         AppRef
-	entityID    string
-	execTraceID string
-	execCtx     context.Context
-	failErr     *FailError
+	transaction          pgx.Tx
+	operationTransaction *OpTx
+	ownsTx               bool
+	app                  AppRef
+	entityID             string
+	execTraceID          string
+	execCtx              context.Context
+	failErr              *FailError
 }
 
 type ListFlow[F any] struct {
@@ -71,10 +71,10 @@ type ListFlow[F any] struct {
 	Log     FlowLogger
 	Metric  observability.FlowMetric
 
-	qb      *Builder
-	app     AppRef
-	execCtx context.Context
-	failErr *FailError
+	queryBuilder *Builder
+	app          AppRef
+	execCtx      context.Context
+	failErr      *FailError
 }
 
 func storedName(m *StoredModel) string {
@@ -82,42 +82,36 @@ func storedName(m *StoredModel) string {
 }
 
 func NewListFlow[F any](ctx context.Context, model *StoredModel, fields F) *ListFlow[F] {
-	qb := NewBuilder(model)
+	queryBuilder := NewBuilder(model)
 	return &ListFlow[F]{
-		Model:   model,
-		Headers: map[string]string{},
-		Filter:  AttachFilter(model, fields, qb),
-		Log:     newFlowLogger(model.Name, ""),
-		Metric:  observability.NewFlowMetric(ctx, model.Name, ""),
-		qb:      qb,
-		execCtx: ctx,
+		Model:        model,
+		Headers:      map[string]string{},
+		Filter:       AttachFilter(model, fields, queryBuilder),
+		Log:          newFlowLogger(model.Name, ""),
+		Metric:       observability.NewFlowMetric(ctx, model.Name, ""),
+		queryBuilder: queryBuilder,
+		execCtx:      ctx,
 	}
 }
 
-func newBoundFlow[F any](execCtx context.Context, app AppRef, model *StoredModel, entityID string, headers map[string]string, body F, otx *OpTx) *Flow[F] {
+func NewBoundFlow[F any](execCtx context.Context, app AppRef, model *StoredModel, entityID string, headers map[string]string, body F, operationTransaction *OpTx) *Flow[F] {
 	return &Flow[F]{
-		Model:    model,
-		Headers:  headers,
-		Body:     body,
-		Log:      newFlowLogger(model.Name, entityID),
-		Metric:   observability.NewFlowMetric(execCtx, model.Name, entityID),
-		entityID: entityID,
-		execCtx:  execCtx,
-		tx:       otx.Tx,
-		otx:      otx,
-		app:      app,
+		Model:                model,
+		Headers:              headers,
+		Body:                 body,
+		Log:                  newFlowLogger(model.Name, entityID),
+		Metric:               observability.NewFlowMetric(execCtx, model.Name, entityID),
+		entityID:             entityID,
+		execCtx:              execCtx,
+		transaction:          operationTransaction.Tx,
+		operationTransaction: operationTransaction,
+		app:                  app,
 	}
 }
 
-func NewRootFlow[F any](otx *OpTx, model *StoredModel, entityID string, headers map[string]string, body F) *Flow[F] {
-	f := newBoundFlow(otx.Ctx, otx.App, model, entityID, headers, body, otx)
+func NewRootFlow[F any](operationTransaction *OpTx, model *StoredModel, entityID string, headers map[string]string, body F) *Flow[F] {
+	f := NewBoundFlow(operationTransaction.Ctx, operationTransaction.App, model, entityID, headers, body, operationTransaction)
 	f.ownsTx = true
-	return f
-}
-
-func newEntityOpFlow[F any](execCtx context.Context, app AppRef, model *StoredModel, entityID string, headers map[string]string, body F, otx *OpTx, traceID string) *Flow[F] {
-	f := newBoundFlow(execCtx, app, model, entityID, headers, body, otx)
-	f.execTraceID = traceID
 	return f
 }
 
@@ -145,7 +139,7 @@ func (c *Flow[F]) header(key string) (string, bool) { return lookupHeader(c.Head
 
 func (c *Flow[F]) Header(key string) (string, bool) { return c.header(key) }
 
-func (c *Flow[F]) DBTx() pgx.Tx { return c.tx }
+func (c *Flow[F]) DBTx() pgx.Tx { return c.transaction }
 
 func (c *Flow[F]) modelName() string { return storedName(c.Model) }
 
@@ -175,10 +169,10 @@ func (c *Flow[F]) Fail(err *FailError) Signal {
 	return Failed
 }
 
-func (c *Flow[F]) setExternalError(msg string) { c.failErr = NewError("external_failed", msg) }
+func (c *Flow[F]) setExternalError(message string) { c.failErr = NewError("external_failed", message) }
 
 func (c *Flow[F]) Lock(key string) error {
-	return store.AdvisoryLock(c.tx, key)
+	return store.AdvisoryLock(c.transaction, key)
 }
 
 func (c *ListFlow[F]) header(key string) (string, bool) { return lookupHeader(c.Headers, key) }
@@ -206,23 +200,23 @@ func (c *ListFlow[F]) ExecContext() context.Context { return c.execContext() }
 func (c *ListFlow[F]) TraceID() string { return c.traceID() }
 
 func (c *ListFlow[F]) OrderBy(field Orderable) *OrderClause {
-	return &OrderClause{QB: c.qb, Key: field.OrderKey()}
+	return &OrderClause{QB: c.queryBuilder, Key: field.OrderKey()}
 }
 
 func (c *ListFlow[F]) After(cursor string) {
 	if cursor == "" {
 		return
 	}
-	c.qb.Cursor = cursor
-	c.qb.CursorDir = CursorAfter
+	c.queryBuilder.Cursor = cursor
+	c.queryBuilder.CursorDir = CursorAfter
 }
 
 func (c *ListFlow[F]) Before(cursor string) {
 	if cursor == "" {
 		return
 	}
-	c.qb.Cursor = cursor
-	c.qb.CursorDir = CursorBefore
+	c.queryBuilder.Cursor = cursor
+	c.queryBuilder.CursorDir = CursorBefore
 }
 
 func (c *ListFlow[F]) Fail(err *FailError) Signal {
@@ -230,46 +224,46 @@ func (c *ListFlow[F]) Fail(err *FailError) Signal {
 	return Failed
 }
 
-func (c *ListFlow[F]) setExternalError(msg string) { c.failErr = NewError("external_failed", msg) }
-
-func NewBoundFlow[F any](execCtx context.Context, app AppRef, model *StoredModel, entityID string, headers map[string]string, body F, otx *OpTx) *Flow[F] {
-	return newBoundFlow(execCtx, app, model, entityID, headers, body, otx)
+func (c *ListFlow[F]) setExternalError(message string) {
+	c.failErr = NewError("external_failed", message)
 }
 
-func NewEntityOpFlow[F any](execCtx context.Context, app AppRef, model *StoredModel, entityID string, headers map[string]string, body F, otx *OpTx, traceID string) *Flow[F] {
-	return newEntityOpFlow(execCtx, app, model, entityID, headers, body, otx, traceID)
+func NewEntityOpFlow[F any](execCtx context.Context, app AppRef, model *StoredModel, entityID string, headers map[string]string, body F, operationTransaction *OpTx, traceID string) *Flow[F] {
+	f := NewBoundFlow(execCtx, app, model, entityID, headers, body, operationTransaction)
+	f.execTraceID = traceID
+	return f
 }
 
 func (c *ListFlow[F]) SetApp(app AppRef) { c.app = app }
 
 func (c *ListFlow[F]) ApplyExtraFilters(extra []ListFilter) {
 	for _, f := range extra {
-		c.qb.Add(f.Field, f.Op, f.Value)
+		c.queryBuilder.Add(f.Field, f.Op, f.Value)
 	}
 }
 
 func (c *ListFlow[F]) ApplyPagination(cursor string, limit int) {
-	if c.qb.Cursor == "" && cursor != "" {
+	if c.queryBuilder.Cursor == "" && cursor != "" {
 		c.After(cursor)
 	}
-	c.qb.Limit = limit
+	c.queryBuilder.Limit = limit
 }
 
 func (c *ListFlow[F]) ListItems(app AppRef) ([]row.Map, string, error) {
-	items, err := app.DB().List(TableFor(c.Model), BuildStoreQuery(c.Model, c.qb))
+	items, err := app.DB().List(TableFor(c.Model), BuildStoreQuery(c.Model, c.queryBuilder))
 	if err != nil {
 		return nil, "", err
 	}
-	items, next := paginateList(items, c.qb.Limit)
+	items, next := paginateList(items, c.queryBuilder.Limit)
 	return items, next, nil
 }
 
-func (c *ListFlow[F]) ListItemsTx(otx *OpTx) ([]row.Map, string, error) {
-	items, err := store.ListTx(otx.Ctx, otx.Tx, TableFor(c.Model), BuildStoreQuery(c.Model, c.qb))
+func (c *ListFlow[F]) ListItemsTx(operationTransaction *OpTx) ([]row.Map, string, error) {
+	items, err := store.ListTx(operationTransaction.Ctx, operationTransaction.Tx, TableFor(c.Model), BuildStoreQuery(c.Model, c.queryBuilder))
 	if err != nil {
 		return nil, "", err
 	}
-	items, next := paginateList(items, c.qb.Limit)
+	items, next := paginateList(items, c.queryBuilder.Limit)
 	return items, next, nil
 }
 
@@ -283,14 +277,14 @@ func paginateList(items []row.Map, limit int) ([]row.Map, string) {
 	return items, next
 }
 
-func recoverSignal(run func() Signal, fallbackErr **FailError) (sig Signal) {
+func recoverSignal(run func() Signal, fallbackErr **FailError) (signal Signal) {
 	var caught any
 	func() {
 		defer func() { caught = recover() }()
-		sig = run()
+		signal = run()
 	}()
 	if caught == nil {
-		return sig
+		return signal
 	}
 	if p, ok := caught.(FailPanic); ok {
 		if fe, ok := p.Err.(*FailError); ok {
@@ -313,26 +307,26 @@ func failureError(panicked, stashed *FailError) *FailError {
 	return NewError("failed", "operation failed")
 }
 
-func RunOp[S any](op func(*Flow[S]) Signal, ctx *Flow[S]) (Signal, *FailError) {
+func RunOp[S any](operation func(*Flow[S]) Signal, ctx *Flow[S]) (Signal, *FailError) {
 	var panicked *FailError
-	sig := recoverSignal(func() Signal { return op(ctx) }, &panicked)
-	if sig != Failed {
-		return sig, nil
+	signal := recoverSignal(func() Signal { return operation(ctx) }, &panicked)
+	if signal != Failed {
+		return signal, nil
 	}
 	return Failed, failureError(panicked, ctx.failErr)
 }
 
-func RunListOp[S any](op func(*ListFlow[S]) Signal, ctx *ListFlow[S]) (Signal, *FailError) {
+func RunListOp[S any](operation func(*ListFlow[S]) Signal, ctx *ListFlow[S]) (Signal, *FailError) {
 	var panicked *FailError
-	sig := recoverSignal(func() Signal { return op(ctx) }, &panicked)
-	if sig != Failed {
-		return sig, nil
+	signal := recoverSignal(func() Signal { return operation(ctx) }, &panicked)
+	if signal != Failed {
+		return signal, nil
 	}
 	return Failed, failureError(panicked, ctx.failErr)
 }
 
 func (c *Flow[F]) CompensateAll() error {
-	return compensateAll(c.tx, storedName(c.Model), c.entityID)
+	return compensateAll(c.transaction, storedName(c.Model), c.entityID)
 }
 
 type FailError struct {

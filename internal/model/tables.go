@@ -38,15 +38,15 @@ func sqlTypeFor(k Kind) string {
 
 func TableFor(m *StoredModel) store.Table {
 	cols := make([]store.Column, 0, len(m.Fields()))
-	for _, f := range m.Fields() {
+	for _, field := range m.Fields() {
 		cols = append(cols, store.Column{
-			Field:   f.Name,
-			Name:    f.ColumnName(),
-			SQLType: sqlTypeFor(f.Kind),
-			Unique:  f.Unique,
-			Indexed: f.Indexed,
-			IsJSON:  f.Kind == semantic.JSONKind,
-			IsID:    f.Name == "id",
+			Field:   field.Name,
+			Name:    field.ColumnName(),
+			SQLType: sqlTypeFor(field.Kind),
+			Unique:  field.Unique,
+			Indexed: field.Indexed,
+			IsJSON:  field.Kind == semantic.JSONKind,
+			IsID:    field.Name == "id",
 		})
 	}
 	return store.Table{Name: m.Name, Columns: cols}

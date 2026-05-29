@@ -18,14 +18,14 @@ import (
 )
 
 type App struct {
-	cfg               Config
+	config            Config
 	externalHandlers  map[string]coremodel.ExternalHandlerFunc
 	compensationLinks map[string]string
 	byName            map[string]*coremodel.StoredModel
 	engines           map[string]*runtime.Engine
 	attachers         []func()
 	childRelations    map[string][]coremodel.ChildRelation
-	db                *persistence.DB
+	database          *persistence.DB
 	graphqlSchema     *graphql.Schema
 	externals         map[string]externalTypeInfo
 	eventCh           chan ExternalEvent
@@ -35,23 +35,23 @@ type App struct {
 
 func New(build func(*Config)) *App {
 	platform.MustLoadEnvs()
-	var cfg Config
-	var bc platform.BuiltinConfig
-	platform.ApplyBuiltinConfig(&bc)
-	cfg.Listen = bc.Listen
-	cfg.DB = bc.DB
-	cfg.LogLevel = bc.LogLevel
-	cfg.ListLimit = bc.ListLimit
-	cfg.TelemetryEnabled = bc.TelemetryEnabled
-	cfg.TelemetryMetrics = bc.TelemetryMetrics
-	cfg.TelemetryTraces = bc.TelemetryTraces
-	cfg.TelemetryOTLPEndpoint = bc.TelemetryOTLPEndpoint
+	var config Config
+	var builtinConfig platform.BuiltinConfig
+	platform.ApplyBuiltinConfig(&builtinConfig)
+	config.Listen = builtinConfig.Listen
+	config.DB = builtinConfig.DB
+	config.LogLevel = builtinConfig.LogLevel
+	config.ListLimit = builtinConfig.ListLimit
+	config.TelemetryEnabled = builtinConfig.TelemetryEnabled
+	config.TelemetryMetrics = builtinConfig.TelemetryMetrics
+	config.TelemetryTraces = builtinConfig.TelemetryTraces
+	config.TelemetryOTLPEndpoint = builtinConfig.TelemetryOTLPEndpoint
 	if build != nil {
-		build(&cfg)
+		build(&config)
 	}
 	platform.LogLoadedEnvs()
 	return &App{
-		cfg:               cfg,
+		config:            config,
 		byName:            make(map[string]*coremodel.StoredModel),
 		engines:           make(map[string]*runtime.Engine),
 		externalHandlers:  make(map[string]coremodel.ExternalHandlerFunc),
@@ -83,7 +83,7 @@ func (app *App) storedModels() []*coremodel.StoredModel {
 }
 
 func (app *App) Run() error {
-	tcfg := observability.TelemetryConfigFromInternal(app.cfg.TelemetryEnabled, app.cfg.TelemetryMetrics, app.cfg.TelemetryTraces, app.cfg.TelemetryServiceName, app.cfg.TelemetryOTLPEndpoint)
+	tcfg := observability.TelemetryConfigFromInternal(app.config.TelemetryEnabled, app.config.TelemetryMetrics, app.config.TelemetryTraces, app.config.TelemetryServiceName, app.config.TelemetryOTLPEndpoint)
 	if !tcfg.Enabled && tcfg.OTLPEndpoint == "" {
 		tcfg = observability.ConfigFromEnv()
 	}
@@ -91,19 +91,19 @@ func (app *App) Run() error {
 		observability.Warn("telemetry.init_failed", observability.ErrKey, err.Error())
 	}
 
-	database, err := persistence.OpenDB(app.cfg.DB)
+	database, err := persistence.OpenDB(app.config.DB)
 	if err != nil {
-		return fmt.Errorf("fookie: db open: %w", err)
+		return fmt.Errorf("fookie: database open: %w", err)
 	}
-	app.db = database
+	app.database = database
 	observability.Info("app.db_connected")
 
-	if err := app.db.Migrate(coremodel.StoreTables(app.storedModels())); err != nil {
+	if err := app.database.Migrate(coremodel.StoreTables(app.storedModels())); err != nil {
 		return fmt.Errorf("fookie: migrate: %w", err)
 	}
 	observability.Info("app.schema_migrated", "models", len(app.byName))
 
-	if err := outbox.Migrate(app.db.Pool); err != nil {
+	if err := outbox.Migrate(app.database.Pool); err != nil {
 		return fmt.Errorf("fookie: outbox migrate: %w", err)
 	}
 
@@ -142,7 +142,7 @@ func (app *App) serveHTTP() error {
 		})
 	})
 
-	addr := app.cfg.Listen
+	addr := app.config.Listen
 	if addr == "" {
 		addr = ":3000"
 	}
@@ -151,10 +151,10 @@ func (app *App) serveHTTP() error {
 }
 
 func (app *App) ListenAddr() string {
-	if app.cfg.Listen == "" {
+	if app.config.Listen == "" {
 		return ":3000"
 	}
-	return app.cfg.Listen
+	return app.config.Listen
 }
 
 func (app *App) ResumeEntity(modelName, entityID string) {
@@ -183,29 +183,31 @@ func (app *App) ByName() map[string]*coremodel.StoredModel { return app.byName }
 
 func (app *App) ChildRelations() map[string][]coremodel.ChildRelation { return app.childRelations }
 
-func (app *App) DB() *persistence.DB { return app.db }
+func (app *App) DB() *persistence.DB { return app.database }
 
 func (app *App) GraphQLSchema() *graphql.Schema { return app.graphqlSchema }
 
 func (app *App) SetGraphQLSchema(s *graphql.Schema) { app.graphqlSchema = s }
 
-func (app *App) Config() Config { return app.cfg }
+func (app *App) Config() Config { return app.config }
 
-func (app *App) ListLimit() int { return app.cfg.ListLimit }
+func (app *App) ListLimit() int { return app.config.ListLimit }
 
-func (app *App) ExternalHandlers() map[string]coremodel.ExternalHandlerFunc { return app.externalHandlers }
+func (app *App) ExternalHandlers() map[string]coremodel.ExternalHandlerFunc {
+	return app.externalHandlers
+}
 
 func (app *App) CompensationLinks() map[string]string { return app.compensationLinks }
 
 func (app *App) Engine(name string) *runtime.Engine { return app.engines[name] }
 
 func (app *App) QueryListNested(stored *coremodel.StoredModel, filters []coremodel.ListFilter) ([]coremodel.Record, error) {
-	qb := coremodel.NewBuilder(stored)
-	qb.Limit = app.cfg.ListLimit
+	queryBuilder := coremodel.NewBuilder(stored)
+	queryBuilder.Limit = app.config.ListLimit
 	for _, f := range filters {
-		qb.Add(f.Field, f.Op, f.Value)
+		queryBuilder.Add(f.Field, f.Op, f.Value)
 	}
-	rows, err := app.db.List(coremodel.TableFor(stored), coremodel.BuildStoreQuery(stored, qb))
+	rows, err := app.database.List(coremodel.TableFor(stored), coremodel.BuildStoreQuery(stored, queryBuilder))
 	if err != nil {
 		return nil, err
 	}

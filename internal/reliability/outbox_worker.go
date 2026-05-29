@@ -69,7 +69,7 @@ func processOutboxEntry(ctx context.Context, app App, entry outbox.Entry) {
 		return
 	}
 
-	h, ok := app.ExternalHandlers()[entry.Name]
+	handler, ok := app.ExternalHandlers()[entry.Name]
 	if !ok {
 		observability.Warn("outbox.no_handler", observability.ServiceKey, entry.Name, observability.ExternalID, entry.ExternalID)
 		if err := outbox.Fail(ctx, app.DB().Pool, entry.ExternalID, "no handler registered"); err != nil {
@@ -81,7 +81,7 @@ func processOutboxEntry(ctx context.Context, app App, entry outbox.Entry) {
 	observability.Debug("outbox.start", observability.ServiceKey, entry.Name, observability.ExternalID, entry.ExternalID)
 
 	start := time.Now()
-	output, err := h(ctx, entry.Input)
+	output, err := handler(ctx, entry.Input)
 	dur := observability.MsElapsed(start)
 
 	if err != nil {

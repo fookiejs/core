@@ -47,9 +47,9 @@ func TestGraphQLSchema_NamingAndRelations(t *testing.T) {
 func TestHandleGraphQL_SchemaNotReady(t *testing.T) {
 	a := New(nil)
 	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/graphql", strings.NewReader(`{"query":"{}"}`))
-	rec := httptest.NewRecorder()
-	graphqlapi.HandleGraphQL(a, rec, req)
-	if rec.Code != http.StatusInternalServerError {
-		t.Fatalf("status=%d", rec.Code)
+	record := httptest.NewRecorder()
+	graphqlapi.HandleGraphQL(a, record, req)
+	if record.Code != http.StatusInternalServerError {
+		t.Fatalf("status=%d", record.Code)
 	}
 }

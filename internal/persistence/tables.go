@@ -5,10 +5,10 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func AdvisoryLockTx(tx pgx.Tx, key string) error {
-	return store.AdvisoryLock(tx, key)
+func AdvisoryLockTx(transaction pgx.Tx, key string) error {
+	return store.AdvisoryLock(transaction, key)
 }
 
-func SumTx(tx pgx.Tx, table store.Table, column, excludeID string, filters []store.Filter) (int64, error) {
-	return store.SumTx(tx, table, column, excludeID, filters)
+func SumTx(transaction pgx.Tx, table store.Table, column, excludeID string, filters []store.Filter) (int64, error) {
+	return store.SumTx(transaction, table, column, excludeID, filters)
 }

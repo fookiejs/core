@@ -35,27 +35,27 @@ func testOutboxDB(t *testing.T) (*store.DB, pgx.Tx) {
 	if err != nil {
 		t.Fatalf("cleanup outbox: %v", err)
 	}
-	tx, err := d.Begin(ctx)
+	transaction, err := d.Begin(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		_ = tx.Rollback(ctx)
+		_ = transaction.Rollback(ctx)
 	})
-	return d, tx
+	return d, transaction
 }
 
 func TestOutboxInsert_DedupesByExternalID(t *testing.T) {
-	_, tx := testOutboxDB(t)
+	_, transaction := testOutboxDB(t)
 	externalID := BusinessExternalID("test_PayGateway", "ref-dedupe")
 	input := []byte(`{"reference":"ref-dedupe","amount":100}`)
-	if err := Insert(tx, "test_PayGateway", externalID, input, RetryPolicy{Attempts: 3}); err != nil {
+	if err := Insert(transaction, "test_PayGateway", externalID, input, RetryPolicy{Attempts: 3}); err != nil {
 		t.Fatal(err)
 	}
-	if err := Insert(tx, "test_PayGateway", externalID, input, RetryPolicy{Attempts: 3}); err != nil {
+	if err := Insert(transaction, "test_PayGateway", externalID, input, RetryPolicy{Attempts: 3}); err != nil {
 		t.Fatal(err)
 	}
-	entry, err := Lookup(tx, externalID)
+	entry, err := Lookup(transaction, externalID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +68,7 @@ func TestOutboxInsert_DedupesByExternalID(t *testing.T) {
 }
 
 func TestOutboxInsert_ReferenceExternalIDSharedAcrossRetries(t *testing.T) {
-	_, tx := testOutboxDB(t)
+	_, transaction := testOutboxDB(t)
 	input1 := []byte(`{"reference":"retry-ref","amount":1}`)
 	input2 := []byte(`{"reference":"retry-ref","amount":999}`)
 	key1, err := ExternalID("entity-first", "test_PayGateway", input1)
@@ -82,13 +82,13 @@ func TestOutboxInsert_ReferenceExternalIDSharedAcrossRetries(t *testing.T) {
 	if key1 != key2 {
 		t.Fatalf("reference keys should match: %q vs %q", key1, key2)
 	}
-	if err := Insert(tx, "test_PayGateway", key1, input1, RetryPolicy{Attempts: 3}); err != nil {
+	if err := Insert(transaction, "test_PayGateway", key1, input1, RetryPolicy{Attempts: 3}); err != nil {
 		t.Fatal(err)
 	}
-	if err := Insert(tx, "test_PayGateway", key2, input2, RetryPolicy{Attempts: 3}); err != nil {
+	if err := Insert(transaction, "test_PayGateway", key2, input2, RetryPolicy{Attempts: 3}); err != nil {
 		t.Fatal(err)
 	}
-	entry, err := Lookup(tx, key1)
+	entry, err := Lookup(transaction, key1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,33 +98,33 @@ func TestOutboxInsert_ReferenceExternalIDSharedAcrossRetries(t *testing.T) {
 }
 
 func TestOutboxAddWaiter_Idempotent(t *testing.T) {
-	_, tx := testOutboxDB(t)
+	_, transaction := testOutboxDB(t)
 	externalID, err := ExternalID("entity-w", "test_Notify", []byte(`{"to":"u1"}`))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := Insert(tx, "test_Notify", externalID, []byte(`{"to":"u1"}`), RetryPolicy{Attempts: 3}); err != nil {
+	if err := Insert(transaction, "test_Notify", externalID, []byte(`{"to":"u1"}`), RetryPolicy{Attempts: 3}); err != nil {
 		t.Fatal(err)
 	}
-	if err := AddWaiter(tx, externalID, "test_Transfer", "entity-w"); err != nil {
+	if err := AddWaiter(transaction, externalID, "test_Transfer", "entity-w"); err != nil {
 		t.Fatal(err)
 	}
-	if err := AddWaiter(tx, externalID, "test_Transfer", "entity-w"); err != nil {
+	if err := AddWaiter(transaction, externalID, "test_Transfer", "entity-w"); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestOutboxCompleteAndFail(t *testing.T) {
-	d, tx := testOutboxDB(t)
+	d, transaction := testOutboxDB(t)
 	ctx := context.Background()
 	externalID, err := ExternalID("entity-c", "test_Svc", []byte(`{"n":1}`))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := Insert(tx, "test_Svc", externalID, []byte(`{"n":1}`), RetryPolicy{Attempts: 3}); err != nil {
+	if err := Insert(transaction, "test_Svc", externalID, []byte(`{"n":1}`), RetryPolicy{Attempts: 3}); err != nil {
 		t.Fatal(err)
 	}
-	if err := tx.Commit(ctx); err != nil {
+	if err := transaction.Commit(ctx); err != nil {
 		t.Fatal(err)
 	}
 	output := []byte(`{"ok":true}`)

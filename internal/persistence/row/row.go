@@ -41,55 +41,55 @@ func FromBytes(b []byte) Cell { return Cell{Kind: KindBytes, Bytes: b} }
 
 func EmptyCell() Cell { return Cell{Kind: KindEmpty} }
 
-func FromValue(v any) Cell {
-	if v == nil {
+func FromValue(value any) Cell {
+	if value == nil {
 		return EmptyCell()
 	}
-	switch x := v.(type) {
+	switch typedValue := value.(type) {
 	case string:
-		return FromText(x)
+		return FromText(typedValue)
 	case int64:
-		return FromInteger(x)
+		return FromInteger(typedValue)
 	case int32:
-		return FromInteger(int64(x))
+		return FromInteger(int64(typedValue))
 	case int:
-		return FromInteger(int64(x))
+		return FromInteger(int64(typedValue))
 	case float64:
-		return FromNumber(x)
+		return FromNumber(typedValue)
 	case float32:
-		return FromNumber(float64(x))
+		return FromNumber(float64(typedValue))
 	case bool:
-		return FromTruth(x)
+		return FromTruth(typedValue)
 	case []byte:
-		return FromBytes(x)
+		return FromBytes(typedValue)
 	default:
-		return FromDriver(v)
+		return FromDriver(value)
 	}
 }
 
-func FromDriver(v any) Cell {
-	if v == nil {
+func FromDriver(value any) Cell {
+	if value == nil {
 		return EmptyCell()
 	}
-	switch x := v.(type) {
+	switch typedValue := value.(type) {
 	case string:
-		return FromText(x)
+		return FromText(typedValue)
 	case []byte:
-		return FromBytes(x)
+		return FromBytes(typedValue)
 	case int64:
-		return FromInteger(x)
+		return FromInteger(typedValue)
 	case int32:
-		return FromInteger(int64(x))
+		return FromInteger(int64(typedValue))
 	case int:
-		return FromInteger(int64(x))
+		return FromInteger(int64(typedValue))
 	case float64:
-		return FromNumber(x)
+		return FromNumber(typedValue)
 	case float32:
-		return FromNumber(float64(x))
+		return FromNumber(float64(typedValue))
 	case bool:
-		return FromTruth(x)
+		return FromTruth(typedValue)
 	default:
-		return FromText(jsonString(v))
+		return FromText(jsonString(value))
 	}
 }
 
@@ -173,26 +173,26 @@ func FromAnyMap(m map[string]any) Map {
 	return out
 }
 
-func FilterDriver(v semantic.FilterValue) any {
-	switch x := v.(type) {
+func FilterDriver(value semantic.FilterValue) any {
+	switch typedValue := value.(type) {
 	case semantic.FilterText:
-		return string(x)
+		return string(typedValue)
 	case semantic.FilterTexts:
-		return []string(x)
+		return []string(typedValue)
 	case semantic.FilterInteger:
-		return int64(x)
+		return int64(typedValue)
 	case semantic.FilterIntegers:
-		return []int64(x)
+		return []int64(typedValue)
 	case semantic.FilterNumber:
-		return float64(x)
+		return float64(typedValue)
 	case semantic.FilterTruth:
-		return bool(x)
+		return bool(typedValue)
 	case semantic.CoordinateFilter:
-		return x
+		return typedValue
 	case semantic.BoxFilter:
-		return x
+		return typedValue
 	default:
-		return v
+		return value
 	}
 }
 

@@ -150,8 +150,8 @@ func BuildSchema(a App) (graphql.Schema, error) {
 	return gqlSchema, nil
 }
 
-func HandleGraphQL(a App, w http.ResponseWriter, r *http.Request) {
-	if a.GraphQLSchema() == nil {
+func HandleGraphQL(application App, w http.ResponseWriter, r *http.Request) {
+	if application.GraphQLSchema() == nil {
 		httpapi.WriteErr(w, 500, "graphql_not_ready", "schema not initialized")
 		return
 	}
@@ -170,7 +170,7 @@ func HandleGraphQL(a App, w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	gqlCtx := context.WithValue(r.Context(), graphqlRequestKey{}, r)
 	result := graphql.Do(graphql.Params{
-		Schema:         *a.GraphQLSchema(),
+		Schema:         *application.GraphQLSchema(),
 		RequestString:  params.Query,
 		VariableValues: params.Variables,
 		OperationName:  params.OperationName,
@@ -181,25 +181,25 @@ func HandleGraphQL(a App, w http.ResponseWriter, r *http.Request) {
 	httpapi.WriteJSON(w, 200, result)
 }
 
-func buildObjectFields(a App, stored *model.StoredModel, objectTypes map[string]*graphql.Object, filterTypes map[string]*graphql.InputObject) graphql.Fields {
+func buildObjectFields(application App, stored *model.StoredModel, objectTypes map[string]*graphql.Object, filterTypes map[string]*graphql.InputObject) graphql.Fields {
 	fields := make(graphql.Fields, len(stored.Fields())+8)
 	fields["id"] = idField()
 
-	for _, f := range stored.Fields() {
-		if f.Name == "id" {
+	for _, field := range stored.Fields() {
+		if field.Name == "id" {
 			continue
 		}
-		if f.RelationName != "" {
-			ff := f
-			relType := objectTypes[f.RelationName]
-			fields[f.GraphQLName()] = &graphql.Field{
+		if field.RelationName != "" {
+			fieldCopy := field
+			relType := objectTypes[field.RelationName]
+			fields[field.GraphQLName()] = &graphql.Field{
 				Type: relType,
-				Resolve: func(p graphql.ResolveParams) (any, error) {
-					rec, ok := p.Source.(model.Record)
-					if !ok || ff.Relation == nil {
+				Resolve: func(params graphql.ResolveParams) (any, error) {
+					record, ok := params.Source.(model.Record)
+					if !ok || fieldCopy.Relation == nil {
 						return nil, nil
 					}
-					fk, ok := serde.FieldValue(rec.Data, ff.Name)
+					fk, ok := serde.FieldValue(record.Data, fieldCopy.Name)
 					if !ok {
 						return nil, nil
 					}
@@ -207,15 +207,15 @@ func buildObjectFields(a App, stored *model.StoredModel, objectTypes map[string]
 					if !ok || len(fkText) == 0 {
 						return nil, nil
 					}
-					return a.Engine(ff.Relation.Name).Read(p.Context, graphqlHeaders(p), model.ID(fkText))
+					return application.Engine(fieldCopy.Relation.Name).Read(params.Context, graphqlHeaders(params), model.ID(fkText))
 				},
 			}
 			continue
 		}
-		fields[f.Name] = scalarField(f.Name, GraphQLScalarFor(f))
+		fields[field.Name] = scalarField(field.Name, GraphQLScalarFor(field))
 	}
 
-	childRels := model.ChildRelationsForParent(a.ChildRelations(), stored.Name)
+	childRels := model.ChildRelationsForParent(application.ChildRelations(), stored.Name)
 	for _, childRel := range childRels {
 		childRel := childRel
 		childObj := objectTypes[childRel.ChildModel.Name]
@@ -240,7 +240,7 @@ func buildObjectFields(a App, stored *model.StoredModel, objectTypes map[string]
 					Op:    "=",
 					Value: semantic.FilterText(parent.ID.String()),
 				})
-				return a.QueryListNested(childRel.ChildModel, filters)
+				return application.QueryListNested(childRel.ChildModel, filters)
 			},
 		}
 	}
@@ -256,11 +256,11 @@ func scalarField(name string, gqlType *graphql.Scalar) *graphql.Field {
 	return &graphql.Field{
 		Type: gqlType,
 		Resolve: func(p graphql.ResolveParams) (any, error) {
-			rec, ok := p.Source.(model.Record)
-			if !ok || rec.Data == nil {
+			record, ok := p.Source.(model.Record)
+			if !ok || record.Data == nil {
 				return nil, nil
 			}
-			v, ok := serde.FieldValue(rec.Data, fieldName)
+			v, ok := serde.FieldValue(record.Data, fieldName)
 			if !ok {
 				return nil, nil
 			}
@@ -273,11 +273,11 @@ func idField() *graphql.Field {
 	return &graphql.Field{
 		Type: graphql.String,
 		Resolve: func(p graphql.ResolveParams) (any, error) {
-			rec, ok := p.Source.(model.Record)
-			if !ok || len(rec.ID) == 0 {
+			record, ok := p.Source.(model.Record)
+			if !ok || len(record.ID) == 0 {
 				return nil, nil
 			}
-			return rec.ID.String(), nil
+			return record.ID.String(), nil
 		},
 	}
 }
@@ -286,11 +286,11 @@ func statusField() *graphql.Field {
 	return &graphql.Field{
 		Type: graphql.String,
 		Resolve: func(p graphql.ResolveParams) (any, error) {
-			rec, ok := p.Source.(model.Record)
-			if !ok || len(rec.Status) == 0 {
+			record, ok := p.Source.(model.Record)
+			if !ok || len(record.Status) == 0 {
 				return nil, nil
 			}
-			return rec.Status.String(), nil
+			return record.Status.String(), nil
 		},
 	}
 }
@@ -299,11 +299,11 @@ func errorField() *graphql.Field {
 	return &graphql.Field{
 		Type: graphql.String,
 		Resolve: func(p graphql.ResolveParams) (any, error) {
-			rec, ok := p.Source.(model.Record)
-			if !ok || len(rec.Error) == 0 {
+			record, ok := p.Source.(model.Record)
+			if !ok || len(record.Error) == 0 {
 				return nil, nil
 			}
-			return rec.Error, nil
+			return record.Error, nil
 		},
 	}
 }
@@ -319,7 +319,7 @@ func recordFromOpResult(res model.OpResult) model.Record {
 func buildInputType(stored *model.StoredModel) *graphql.InputObject {
 	fields := make(graphql.InputObjectConfigFieldMap, len(stored.Fields()))
 	for _, f := range stored.Fields() {
-		if f.Name == "id" {
+		if f.Name == "id" || isProtectedInputField(f.Name) {
 			continue
 		}
 		name := f.Name

@@ -15,38 +15,38 @@ type txBeginner interface {
 	Begin(ctx context.Context) (pgx.Tx, error)
 }
 
-func RunInTx(ctx context.Context, db txBeginner, fn func(tx pgx.Tx) (Signal, *FailError, error)) (Signal, *FailError, error) {
+func RunInTx(ctx context.Context, database txBeginner, callback func(transaction pgx.Tx) (Signal, *FailError, error)) (Signal, *FailError, error) {
 	var lastInfra error
 	for attempt := 0; attempt < txMaxAttempts; attempt++ {
 		if attempt > 0 {
 			time.Sleep(time.Duration(attempt) * 20 * time.Millisecond)
 		}
-		tx, err := db.Begin(ctx)
+		transaction, err := database.Begin(ctx)
 		if err != nil {
 			return Failed, nil, err
 		}
-		sig, ferr, opErr := fn(tx)
+		signal, failError, opErr := callback(transaction)
 		if opErr != nil {
-			_ = tx.Rollback(ctx)
+			_ = transaction.Rollback(ctx)
 			if isRetryablePg(opErr) && attempt+1 < txMaxAttempts {
 				lastInfra = opErr
 				continue
 			}
-			return Failed, ferr, opErr
+			return Failed, failError, opErr
 		}
-		if sig == Failed {
-			_ = tx.Rollback(ctx)
-			return Failed, ferr, nil
+		if signal == Failed {
+			_ = transaction.Rollback(ctx)
+			return Failed, failError, nil
 		}
-		if err := tx.Commit(ctx); err != nil {
-			_ = tx.Rollback(ctx)
+		if err := transaction.Commit(ctx); err != nil {
+			_ = transaction.Rollback(ctx)
 			if isRetryablePg(err) && attempt+1 < txMaxAttempts {
 				lastInfra = err
 				continue
 			}
 			return Failed, nil, err
 		}
-		return sig, nil, nil
+		return signal, nil, nil
 	}
 	if lastInfra != nil {
 		return Failed, nil, lastInfra

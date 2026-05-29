@@ -31,16 +31,16 @@ func RelationListGraphQLName(childModel string, fkField FieldDef, siblings int) 
 func structFieldGraphQLSuffix(fieldName string) string {
 	base := strings.TrimSuffix(fieldName, "_id")
 	parts := strings.Split(base, "_")
-	var b strings.Builder
+	var builder strings.Builder
 	for _, p := range parts {
 		if p == "" {
 			continue
 		}
 		runes := []rune(p)
 		runes[0] = unicode.ToUpper(runes[0])
-		b.WriteString(string(runes))
+		builder.WriteString(string(runes))
 	}
-	return b.String()
+	return builder.String()
 }
 
 func (m *StoredModel) ColumnForField(name string) string {
