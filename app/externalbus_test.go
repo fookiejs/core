@@ -3,7 +3,7 @@ package app
 import (
 	"testing"
 
-	"github.com/fookiejs/fookie/internal/model"
+	"github.com/fookiejs/fookie/internal/model/flowext"
 	pubmodel "github.com/fookiejs/fookie/model"
 	"github.com/fookiejs/fookie/semantic"
 )
@@ -23,7 +23,7 @@ type abUserFields struct {
 
 func buildBusApp(extraExternal bool) *App {
 	a := New(nil)
-	RegisterModel(a, &model.Model[abUserFields]{Name: "User"})
+	RegisterModel(a, &flowext.Model[abUserFields]{Name: "User"})
 	RegisterExternal(a, pubmodel.External[abFraudInput, abFraudOutput]{Name: "fraud.score"})
 	if extraExternal {
 		RegisterExternal(a, pubmodel.External[abFraudInput, abFraudOutput]{Name: "iban.verify"})
@@ -49,7 +49,7 @@ func TestAppID_DeterministicAndChanges(t *testing.T) {
 
 func TestAppID_ConfigOverride(t *testing.T) {
 	a := New(func(c *Config) { c.AppID = "app-custom" })
-	RegisterModel(a, &model.Model[abUserFields]{Name: "User"})
+	RegisterModel(a, &flowext.Model[abUserFields]{Name: "User"})
 	if got := a.computeAppID(); got != "app-custom" {
 		t.Fatalf("override ignored: %q", got)
 	}

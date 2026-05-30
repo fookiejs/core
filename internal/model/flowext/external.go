@@ -1,20 +1,19 @@
-package model
+package flowext
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
+	"github.com/fookiejs/fookie/internal/model/schemawire"
 	"github.com/fookiejs/fookie/internal/observability"
+	"github.com/fookiejs/fookie/internal/observability/telemetry"
 	"github.com/fookiejs/fookie/internal/reliability/outbox"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
-
-var ErrIdempotencyKeyEmpty = errors.New("idempotency key empty")
 
 const outboxSelectSQL = `SELECT status, COALESCE(output::text,''), COALESCE(error_msg,'') FROM fookie_outbox WHERE external_id=$1`
 
@@ -45,10 +44,6 @@ type outboxRow struct {
 	errMsg string
 }
 
-func fail(err error) {
-	panic(FailPanic{Err: err})
-}
-
 func parseOutput[O any](data []byte) O {
 	var out O
 	if len(data) == 0 {
@@ -61,40 +56,38 @@ func parseOutput[O any](data []byte) O {
 }
 
 func marshalInput[Input any](input Input) ([]byte, error) {
-	return json.Marshal(input)
+	data, err := json.Marshal(input)
+	if err != nil {
+		return nil, fmt.Errorf("marshal input: %w", err)
+	}
+	return data, nil
 }
 
 func (e External[Input, Output]) retryPolicy() outbox.RetryPolicy {
 	return outbox.RetryPolicy{Attempts: e.Retry.Attempts, Backoff: e.Retry.Backoff, MaxDelaySec: e.Retry.MaxDelaySec}
 }
 
-func (e External[Input, Output]) Run(flow ExternalContext, input Input) (Output, Signal) {
+func (e External[Input, Output]) Run(flow ExternalContext, input Input) (Output, schemawire.Signal) {
 	if flow.CurrentEntityID() == "" {
 		return e.requireList(flow, input)
 	}
 	return e.requireEntity(flow, input)
 }
 
-func (e External[Input, Output]) externalID(entityID string, input Input, inputJSON []byte) (string, error) {
-	businessKey := strings.TrimSpace(e.IdempotencyKey(input))
-	if entityID != "" && businessKey == "" {
+func (e External[Input, Output]) externalID(entityID string, inputJSON []byte) (string, error) {
+	if entityID != "" {
 		return outbox.ExternalID(entityID, e.Name, inputJSON)
 	}
-	if businessKey == "" {
-		return "", ErrIdempotencyKeyEmpty
-	}
-	return outbox.BusinessExternalID(e.Name, businessKey), nil
+	return outbox.InputExternalID(e.Name, inputJSON)
 }
 
-func NoIdempotencyKey[Input any](Input) string { return "" }
-
-func (e External[Input, Output]) requireEntity(flow ExternalContext, input Input) (Output, Signal) {
+func (e External[Input, Output]) requireEntity(flow ExternalContext, input Input) (Output, schemawire.Signal) {
 	transaction := flow.DBTx()
 	inputJSON, err := marshalInput(input)
 	if err != nil {
 		fail(fmt.Errorf("marshal_input: %w", err))
 	}
-	externalID, err := e.externalID(flow.CurrentEntityID(), input, inputJSON)
+	externalID, err := e.externalID(flow.CurrentEntityID(), inputJSON)
 	if err != nil {
 		fail(fmt.Errorf("external_id: %w", err))
 	}
@@ -108,7 +101,7 @@ func (e External[Input, Output]) requireEntity(flow ExternalContext, input Input
 		return e.dispatchEntity(flow, transaction, externalID, inputJSON)
 	}
 	if entry.Status == outbox.StatusCompleted {
-		return e.returnEntity(flow, transaction, entry, externalID, inputJSON), Done
+		return e.returnEntity(flow, transaction, entry, externalID, inputJSON), schemawire.Done
 	}
 	if entry.Status == outbox.StatusFailed {
 		return e.failEntity(flow, entry, externalID)
@@ -116,38 +109,40 @@ func (e External[Input, Output]) requireEntity(flow ExternalContext, input Input
 	return e.waitEntity(flow, transaction, externalID)
 }
 
-func (e External[Input, Output]) dispatchEntity(flow ExternalContext, transaction pgx.Tx, externalID string, inputJSON []byte) (Output, Signal) {
+func (e External[Input, Output]) dispatchEntity(flow ExternalContext, transaction pgx.Tx, externalID string, inputJSON []byte) (Output, schemawire.Signal) {
 	if err := outbox.Insert(transaction, e.Name, externalID, inputJSON, e.retryPolicy()); err != nil {
 		fail(fmt.Errorf("outbox_insert: %w", err))
 	}
 	if err := outbox.AddWaiter(transaction, externalID, flow.ModelName(), flow.CurrentEntityID()); err != nil {
 		fail(fmt.Errorf("outbox_waiter: %w", err))
 	}
-	execCtx := observability.ExternalStarted(flow.ExecContext(), e.Name, flow.ModelName(), flow.CurrentEntityID(), map[string]string{observability.ExternalID: externalID})
-	observability.FlowSuspended(execCtx, flow.ModelName(), flow.CurrentEntityID(), map[string]string{observability.ServiceKey: e.Name})
+	execCtx := telemetry.ExternalStarted(flow.ExecContext(), e.Name, flow.ModelName(), flow.CurrentEntityID(), map[string]string{observability.ExternalID: externalID})
+	telemetry.FlowSuspended(execCtx, flow.ModelName(), flow.CurrentEntityID(), map[string]string{observability.ServiceKey: e.Name})
 	e.logExternal("external.dispatch", flow, externalID)
 	var zero Output
-	return zero, Running
+	return zero, schemawire.Running
 }
 
 func (e External[Input, Output]) returnEntity(flow ExternalContext, transaction pgx.Tx, entry *outbox.Entry, externalID string, inputJSON []byte) Output {
 	out := parseOutput[Output](entry.Output)
 	compensateName, found, _ := outbox.LookupCompensateName(transaction, flow.AppRef().CompensationLinks(), e.Name)
 	if found {
-		_ = outbox.RecordSagaStep(transaction, flow.CurrentEntityID(), flow.ModelName(), e.Name, compensateName, inputJSON, entry.Output)
+		if err := outbox.RecordSagaStep(transaction, flow.CurrentEntityID(), flow.ModelName(), e.Name, compensateName, inputJSON, entry.Output); err != nil {
+			fail(fmt.Errorf("saga_step_record: %w", err))
+		}
 		observability.Debug("saga.step_recorded",
 			observability.ServiceKey, e.Name,
 			observability.CompensateKey, compensateName,
 			observability.ModelKey, flow.ModelName(),
 			observability.EntityIDKey, flow.CurrentEntityID())
 	}
-	observability.ExternalCompleted(flow.ExecContext(), e.Name, flow.ModelName(), flow.CurrentEntityID(), map[string]string{observability.ExternalID: externalID})
+	telemetry.ExternalCompleted(flow.ExecContext(), e.Name, flow.ModelName(), flow.CurrentEntityID(), map[string]string{observability.ExternalID: externalID})
 	e.logExternal("external.completed", flow, externalID)
 	return out
 }
 
-func (e External[Input, Output]) failEntity(flow ExternalContext, entry *outbox.Entry, externalID string) (Output, Signal) {
-	observability.ExternalFailed(flow.ExecContext(), e.Name, flow.ModelName(), flow.CurrentEntityID(), map[string]string{observability.ExternalID: externalID, observability.ReasonKey: entry.ErrorMsg})
+func (e External[Input, Output]) failEntity(flow ExternalContext, entry *outbox.Entry, externalID string) (Output, schemawire.Signal) {
+	telemetry.ExternalFailed(flow.ExecContext(), e.Name, flow.ModelName(), flow.CurrentEntityID(), map[string]string{observability.ExternalID: externalID, observability.ReasonKey: entry.ErrorMsg})
 	observability.Warn("external.failed",
 		observability.ServiceKey, e.Name,
 		observability.ModelKey, flow.ModelName(),
@@ -156,17 +151,17 @@ func (e External[Input, Output]) failEntity(flow ExternalContext, entry *outbox.
 		observability.ReasonKey, entry.ErrorMsg)
 	stashExternalError(flow, entry.ErrorMsg)
 	var zero Output
-	return zero, Failed
+	return zero, schemawire.Failed
 }
 
-func (e External[Input, Output]) waitEntity(flow ExternalContext, transaction pgx.Tx, externalID string) (Output, Signal) {
+func (e External[Input, Output]) waitEntity(flow ExternalContext, transaction pgx.Tx, externalID string) (Output, schemawire.Signal) {
 	if err := outbox.AddWaiter(transaction, externalID, flow.ModelName(), flow.CurrentEntityID()); err != nil {
 		fail(fmt.Errorf("outbox_waiter: %w", err))
 	}
-	observability.ExternalPending(flow.ExecContext(), e.Name, flow.ModelName(), flow.CurrentEntityID(), map[string]string{observability.ExternalID: externalID})
-	observability.FlowSuspended(flow.ExecContext(), flow.ModelName(), flow.CurrentEntityID(), map[string]string{observability.ServiceKey: e.Name})
+	telemetry.ExternalPending(flow.ExecContext(), e.Name, flow.ModelName(), flow.CurrentEntityID(), map[string]string{observability.ExternalID: externalID})
+	telemetry.FlowSuspended(flow.ExecContext(), flow.ModelName(), flow.CurrentEntityID(), map[string]string{observability.ServiceKey: e.Name})
 	var zero Output
-	return zero, Running
+	return zero, schemawire.Running
 }
 
 func (e External[Input, Output]) logExternal(message string, flow ExternalContext, externalID string) {
@@ -177,13 +172,13 @@ func (e External[Input, Output]) logExternal(message string, flow ExternalContex
 		observability.ExternalID, externalID)
 }
 
-func (e External[Input, Output]) requireList(flow ExternalContext, input Input) (Output, Signal) {
+func (e External[Input, Output]) requireList(flow ExternalContext, input Input) (Output, schemawire.Signal) {
 	app := flow.AppRef()
 	inputJSON, err := marshalInput(input)
 	if err != nil {
 		fail(fmt.Errorf("marshal_input: %w", err))
 	}
-	externalID, err := e.externalID("", input, inputJSON)
+	externalID, err := e.externalID("", inputJSON)
 	if err != nil {
 		fail(fmt.Errorf("external_id: %w", err))
 	}
@@ -204,11 +199,12 @@ func (e External[Input, Output]) requireList(flow ExternalContext, input Input) 
 		switch row.status {
 		case outbox.StatusCompleted:
 			observability.Info("external.completed", observability.ServiceKey, e.Name, observability.ExternalID, externalID)
-			return parseOutput[Output](row.output), Done
+			return parseOutput[Output](row.output), schemawire.Done
 		case outbox.StatusFailed:
 			stashExternalError(flow, row.errMsg)
 			var zero Output
-			return zero, Failed
+			return zero, schemawire.Failed
+		case outbox.StatusPending, outbox.StatusProcessing:
 		}
 	}
 
@@ -216,10 +212,10 @@ func (e External[Input, Output]) requireList(flow ExternalContext, input Input) 
 	if err != nil {
 		stashExternalError(flow, err.Error())
 		var zero Output
-		return zero, Failed
+		return zero, schemawire.Failed
 	}
 	observability.Info("external.completed", observability.ServiceKey, e.Name, observability.ExternalID, externalID)
-	return parseOutput[Output](output), Done
+	return parseOutput[Output](output), schemawire.Done
 }
 
 func readOutboxRow(ctx context.Context, pool *pgxpool.Pool, externalID string) (outboxRow, error) {
@@ -229,7 +225,7 @@ func readOutboxRow(ctx context.Context, pool *pgxpool.Pool, externalID string) (
 		if errors.Is(err, pgx.ErrNoRows) {
 			return outboxRow{}, nil
 		}
-		return outboxRow{}, err
+		return outboxRow{}, fmt.Errorf("outbox row scan: %w", err)
 	}
 	return outboxRow{found: true, status: status, output: []byte(output), errMsg: errMsg}, nil
 }
@@ -250,6 +246,7 @@ func pollOutbox(ctx context.Context, pool *pgxpool.Pool, externalID string, time
 			return row.output, nil
 		case outbox.StatusFailed:
 			return nil, fmt.Errorf("%s", row.errMsg)
+		case outbox.StatusPending, outbox.StatusProcessing:
 		}
 		time.Sleep(50 * time.Millisecond)
 	}

@@ -1,14 +1,18 @@
 package app
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"sort"
+	"time"
 
+	httpapi "github.com/fookiejs/fookie/internal/api/http"
 	graphqlapi "github.com/fookiejs/fookie/internal/api/graphql"
-	coremodel "github.com/fookiejs/fookie/internal/model"
+	"github.com/fookiejs/fookie/internal/model/flowext"
+	"github.com/fookiejs/fookie/internal/model/query"
+	"github.com/fookiejs/fookie/internal/model/schemawire"
 	"github.com/fookiejs/fookie/internal/observability"
+	"github.com/fookiejs/fookie/internal/observability/telemetry"
 	"github.com/fookiejs/fookie/internal/persistence"
 	"github.com/fookiejs/fookie/internal/platform"
 	"github.com/fookiejs/fookie/internal/reliability"
@@ -19,12 +23,12 @@ import (
 
 type App struct {
 	config            Config
-	externalHandlers  map[string]coremodel.ExternalHandlerFunc
+	externalHandlers  map[string]flowext.ExternalHandlerFunc
 	compensationLinks map[string]string
-	byName            map[string]*coremodel.StoredModel
+	byName            map[string]*schemawire.StoredModel
 	engines           map[string]*runtime.Engine
 	attachers         []func()
-	childRelations    map[string][]coremodel.ChildRelation
+	childRelations    map[string][]schemawire.ChildRelation
 	database          *persistence.DB
 	graphqlSchema     *graphql.Schema
 	externals         map[string]externalTypeInfo
@@ -52,16 +56,16 @@ func New(build func(*Config)) *App {
 	platform.LogLoadedEnvs()
 	return &App{
 		config:            config,
-		byName:            make(map[string]*coremodel.StoredModel),
+		byName:            make(map[string]*schemawire.StoredModel),
 		engines:           make(map[string]*runtime.Engine),
-		externalHandlers:  make(map[string]coremodel.ExternalHandlerFunc),
+		externalHandlers:  make(map[string]flowext.ExternalHandlerFunc),
 		compensationLinks: make(map[string]string),
 		externals:         make(map[string]externalTypeInfo),
 	}
 }
 
-func RegisterModel[S any](app *App, model *coremodel.Model[S]) {
-	app.byName[model.Name] = coremodel.NewStored(model)
+func RegisterModel[S any](app *App, model *flowext.Model[S]) {
+	app.byName[model.Name] = flowext.NewStored(model)
 	app.attachers = append(app.attachers, func() {
 		app.engines[model.Name] = runtime.BuildEngine(app, model)
 	})
@@ -73,8 +77,8 @@ func (app *App) buildEngines() {
 	}
 }
 
-func (app *App) storedModels() []*coremodel.StoredModel {
-	out := make([]*coremodel.StoredModel, 0, len(app.byName))
+func (app *App) storedModels() []*schemawire.StoredModel {
+	out := make([]*schemawire.StoredModel, 0, len(app.byName))
 	for _, stored := range app.byName {
 		out = append(out, stored)
 	}
@@ -83,11 +87,11 @@ func (app *App) storedModels() []*coremodel.StoredModel {
 }
 
 func (app *App) Run() error {
-	tcfg := observability.TelemetryConfigFromInternal(app.config.TelemetryEnabled, app.config.TelemetryMetrics, app.config.TelemetryTraces, app.config.TelemetryServiceName, app.config.TelemetryOTLPEndpoint)
+	tcfg := telemetry.ConfigFromInternal(app.config.TelemetryEnabled, app.config.TelemetryMetrics, app.config.TelemetryTraces, app.config.TelemetryServiceName, app.config.TelemetryOTLPEndpoint)
 	if !tcfg.Enabled && tcfg.OTLPEndpoint == "" {
-		tcfg = observability.ConfigFromEnv()
+		tcfg = telemetry.ConfigFromEnv()
 	}
-	if err := observability.InitTelemetry(tcfg); err != nil {
+	if err := telemetry.Init(tcfg); err != nil {
 		observability.Warn("telemetry.init_failed", observability.ErrKey, err.Error())
 	}
 
@@ -98,7 +102,7 @@ func (app *App) Run() error {
 	app.database = database
 	observability.Info("app.db_connected")
 
-	if err := app.database.Migrate(coremodel.StoreTables(app.storedModels())); err != nil {
+	if err := app.database.Migrate(schemawire.StoreTables(app.storedModels())); err != nil {
 		return fmt.Errorf("fookie: migrate: %w", err)
 	}
 	observability.Info("app.schema_migrated", "models", len(app.byName))
@@ -133,13 +137,11 @@ func (app *App) serveHTTP() error {
 	mux.HandleFunc("POST /graphql", func(w http.ResponseWriter, r *http.Request) { graphqlapi.HandleGraphQL(app, w, r) })
 	mux.HandleFunc("GET /graphql", func(w http.ResponseWriter, r *http.Request) { graphqlapi.HandleGraphQL(app, w, r) })
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(200)
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"status":   "ok",
-			"models":   len(app.byName),
-			"handlers": len(app.externalHandlers),
-		})
+		httpapi.WriteJSON(w, 200, struct {
+			Status   string `json:"status"`
+			Models   int    `json:"models"`
+			Handlers int    `json:"handlers"`
+		}{"ok", len(app.byName), len(app.externalHandlers)})
 	})
 
 	addr := app.config.Listen
@@ -147,7 +149,18 @@ func (app *App) serveHTTP() error {
 		addr = ":3000"
 	}
 	observability.Info("app.listening", "addr", addr)
-	return http.ListenAndServe(addr, mux)
+	server := &http.Server{
+		Addr:              addr,
+		Handler:           mux,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+	if err := server.ListenAndServe(); err != nil {
+		return fmt.Errorf("http listen: %w", err)
+	}
+	return nil
 }
 
 func (app *App) ListenAddr() string {
@@ -163,7 +176,7 @@ func (app *App) ResumeEntity(modelName, entityID string) {
 		return
 	}
 	observability.Debug("entity.resume", observability.ModelKey, modelName, observability.EntityIDKey, entityID)
-	if err := engine.Resume(coremodel.ID(entityID)); err != nil {
+	if err := engine.Resume(schemawire.ID(entityID)); err != nil {
 		observability.Warn("entity.resume_error",
 			observability.ModelKey, modelName,
 			observability.EntityIDKey, entityID,
@@ -174,14 +187,14 @@ func (app *App) ResumeEntity(modelName, entityID string) {
 }
 
 func (app *App) WireRelations() {
-	app.childRelations = coremodel.WireRelations(app.storedModels(), app.byName)
+	app.childRelations = schemawire.WireRelations(app.storedModels(), app.byName)
 }
 
-func (app *App) Models() []*coremodel.StoredModel { return app.storedModels() }
+func (app *App) Models() []*schemawire.StoredModel { return app.storedModels() }
 
-func (app *App) ByName() map[string]*coremodel.StoredModel { return app.byName }
+func (app *App) ByName() map[string]*schemawire.StoredModel { return app.byName }
 
-func (app *App) ChildRelations() map[string][]coremodel.ChildRelation { return app.childRelations }
+func (app *App) ChildRelations() map[string][]schemawire.ChildRelation { return app.childRelations }
 
 func (app *App) DB() *persistence.DB { return app.database }
 
@@ -193,7 +206,7 @@ func (app *App) Config() Config { return app.config }
 
 func (app *App) ListLimit() int { return app.config.ListLimit }
 
-func (app *App) ExternalHandlers() map[string]coremodel.ExternalHandlerFunc {
+func (app *App) ExternalHandlers() map[string]flowext.ExternalHandlerFunc {
 	return app.externalHandlers
 }
 
@@ -201,18 +214,18 @@ func (app *App) CompensationLinks() map[string]string { return app.compensationL
 
 func (app *App) Engine(name string) *runtime.Engine { return app.engines[name] }
 
-func (app *App) QueryListNested(stored *coremodel.StoredModel, filters []coremodel.ListFilter) ([]coremodel.Record, error) {
-	queryBuilder := coremodel.NewBuilder(stored)
+func (app *App) QueryListNested(stored *schemawire.StoredModel, filters []schemawire.ListFilter) ([]schemawire.Record, error) {
+	queryBuilder := query.NewBuilder(stored)
 	queryBuilder.Limit = app.config.ListLimit
 	for _, f := range filters {
 		queryBuilder.Add(f.Field, f.Op, f.Value)
 	}
-	rows, err := app.database.List(coremodel.TableFor(stored), coremodel.BuildStoreQuery(stored, queryBuilder))
+	rows, err := app.database.List(schemawire.TableFor(stored), query.BuildStoreQuery(stored, queryBuilder))
 	if err != nil {
 		return nil, err
 	}
 	decode := app.engines[stored.Name].Decode
-	out := make([]coremodel.Record, len(rows))
+	out := make([]schemawire.Record, len(rows))
 	for i := range rows {
 		out[i] = decode(rows[i])
 	}

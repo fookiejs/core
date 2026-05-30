@@ -4,24 +4,21 @@ import (
 	"context"
 	"log/slog"
 
-	coremodel "github.com/fookiejs/fookie/internal/model"
+	coremodel "github.com/fookiejs/fookie/internal/model/schemawire"
 	"github.com/fookiejs/fookie/internal/observability"
 	"github.com/fookiejs/fookie/internal/persistence/row"
 	"github.com/fookiejs/fookie/internal/persistence/serde"
 	pubmodel "github.com/fookiejs/fookie/model"
 )
 
-func inputRow(input any) row.Values {
-	switch typedInput := input.(type) {
-	case nil:
+func patchValues(patch any) row.Values {
+	if patch == nil {
 		return row.Values{}
-	case row.Values:
-		return serde.FilterInputRow(typedInput)
-	case map[string]any:
-		return serde.FilterInputRow(row.FromAnyMap(typedInput))
-	default:
-		return serde.PatchValues(input)
 	}
+	if v, ok := patch.(row.Values); ok {
+		return serde.FilterInputRow(v)
+	}
+	return serde.PatchValues(patch)
 }
 
 func Create[S any](app *App, model *pubmodel.Model[S], headers map[string]string, input S) (string, error) {
@@ -33,7 +30,7 @@ func Create[S any](app *App, model *pubmodel.Model[S], headers map[string]string
 }
 
 func Update[S any](app *App, model *pubmodel.Model[S], headers map[string]string, id string, patch any) (string, error) {
-	res, err := app.engines[model.Name].Update(context.Background(), headers, coremodel.ID(id), inputRow(patch))
+	res, err := app.engines[model.Name].Update(context.Background(), headers, coremodel.ID(id), patchValues(patch))
 	if err != nil {
 		return "", err
 	}

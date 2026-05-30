@@ -175,15 +175,18 @@ func ApplyBuiltinConfig(config *BuiltinConfig) {
 	config.DB = dbEnv.ValueOr("postgres://fookie:fookie_dev@localhost:5432/fookie?sslmode=disable")
 	config.LogLevel = logLevelEnv.ValueOr("info")
 	config.ListLimit = listLimitEnv.IntValue()
-	enabled := otelEnabledEnv.ValueOr("false")
-	config.TelemetryEnabled = enabled == "true" || enabled == "1"
+	config.TelemetryEnabled = envBoolEnabled(otelEnabledEnv.ValueOr("false"))
 	config.TelemetryMetrics = config.TelemetryEnabled
 	if otelMetricsEnv.loaded {
-		config.TelemetryMetrics = otelMetricsEnv.value == "true" || otelMetricsEnv.value == "1"
+		config.TelemetryMetrics = envBoolEnabled(otelMetricsEnv.value)
 	}
 	config.TelemetryTraces = config.TelemetryEnabled
 	if otelTracesEnv.loaded {
-		config.TelemetryTraces = otelTracesEnv.value == "true" || otelTracesEnv.value == "1"
+		config.TelemetryTraces = envBoolEnabled(otelTracesEnv.value)
 	}
 	config.TelemetryOTLPEndpoint = otelEndpointEnv.ValueOr("")
+}
+
+func envBoolEnabled(value string) bool {
+	return value == "true" || value == "1"
 }

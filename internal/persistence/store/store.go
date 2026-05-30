@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"fmt"
-	"hash/fnv"
 	"math"
 	"regexp"
 	"strings"
@@ -189,18 +188,7 @@ func InsertTx(transaction pgx.Tx, table Table, data row.Values) (row.Values, err
 	}
 	query := fmt.Sprintf(`INSERT INTO "%s" (%s) VALUES (%s) RETURNING *`,
 		table.Name, strings.Join(cols, ", "), strings.Join(placeholders, ", "))
-	rows, err := transaction.Query(context.Background(), query, args...)
-	if err != nil {
-		return nil, fmt.Errorf("insert %s: %w", table.Name, err)
-	}
-	results, err := collectRows(rows)
-	if err != nil {
-		return nil, err
-	}
-	if len(results) == 0 {
-		return nil, fmt.Errorf("insert %s: no rows returned", table.Name)
-	}
-	return normalizeRow(table, results[0]), nil
+	return execReturning(context.Background(), transaction, table, query, args, fmt.Errorf("insert %s: no rows returned", table.Name))
 }
 
 func UpdateTx(transaction pgx.Tx, table Table, identifier string, data row.Values) (row.Values, error) {
@@ -228,18 +216,7 @@ func UpdateTx(transaction pgx.Tx, table Table, identifier string, data row.Value
 	args = append(args, identifier)
 	query := fmt.Sprintf(`UPDATE "%s" SET %s WHERE "id" = $%d RETURNING *`,
 		table.Name, strings.Join(sets, ", "), placeholder)
-	rows, err := transaction.Query(context.Background(), query, args...)
-	if err != nil {
-		return nil, fmt.Errorf("update %s: %w", table.Name, err)
-	}
-	results, err := collectRows(rows)
-	if err != nil {
-		return nil, err
-	}
-	if len(results) == 0 {
-		return nil, fmt.Errorf("not_found")
-	}
-	return normalizeRow(table, results[0]), nil
+	return execReturning(context.Background(), transaction, table, query, args, fmt.Errorf("not_found"))
 }
 
 func DeleteTx(transaction pgx.Tx, table Table, identifier, updatedAt string) error {
@@ -256,19 +233,7 @@ func DeleteTx(transaction pgx.Tx, table Table, identifier, updatedAt string) err
 }
 
 func ReadTx(transaction pgx.Tx, table Table, identifier string) (row.Values, error) {
-	query := fmt.Sprintf(`SELECT * FROM "%s" WHERE "id" = $1 AND %s LIMIT 1`, table.Name, activeOnly)
-	rows, err := transaction.Query(context.Background(), query, identifier)
-	if err != nil {
-		return nil, fmt.Errorf("read %s: %w", table.Name, err)
-	}
-	results, err := collectRows(rows)
-	if err != nil {
-		return nil, err
-	}
-	if len(results) == 0 {
-		return nil, fmt.Errorf("not_found")
-	}
-	return normalizeRow(table, results[0]), nil
+	return readByID(context.Background(), transaction, table, identifier)
 }
 
 func SumTx(transaction pgx.Tx, table Table, column, excludeID string, filters []Filter) (int64, error) {
@@ -430,8 +395,12 @@ func SetEntityHeadersTx(transaction pgx.Tx, table Table, identifier string, head
 }
 
 func (database *DB) Read(table Table, identifier string) (row.Values, error) {
+	return readByID(context.Background(), database.Pool, table, identifier)
+}
+
+func readByID(ctx context.Context, querier Querier, table Table, identifier string) (row.Values, error) {
 	query := fmt.Sprintf(`SELECT * FROM "%s" WHERE "id" = $1 AND %s LIMIT 1`, table.Name, activeOnly)
-	rows, err := database.Pool.Query(context.Background(), query, identifier)
+	rows, err := querier.Query(ctx, query, identifier)
 	if err != nil {
 		return nil, fmt.Errorf("read %s: %w", table.Name, err)
 	}
@@ -445,12 +414,19 @@ func (database *DB) Read(table Table, identifier string) (row.Values, error) {
 	return normalizeRow(table, results[0]), nil
 }
 
-func AdvisoryLock(transaction pgx.Tx, key string) error {
-	hasher := fnv.New64a()
-	_, _ = hasher.Write([]byte(key))
-	lockKey := int64(hasher.Sum64()) //nolint:gosec
-	_, err := transaction.Exec(context.Background(), "SELECT pg_advisory_xact_lock($1)", lockKey)
-	return err
+func execReturning(ctx context.Context, transaction pgx.Tx, table Table, query string, args []any, noRowsErr error) (row.Values, error) {
+	rows, err := transaction.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("exec %s: %w", table.Name, err)
+	}
+	results, err := collectRows(rows)
+	if err != nil {
+		return nil, err
+	}
+	if len(results) == 0 {
+		return nil, noRowsErr
+	}
+	return normalizeRow(table, results[0]), nil
 }
 
 func buildFilterClause(filter Filter, placeholder int) (string, []any, error) {

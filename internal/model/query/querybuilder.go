@@ -1,6 +1,7 @@
-package model
+package query
 
 import (
+	"github.com/fookiejs/fookie/internal/model/schemawire"
 	"github.com/fookiejs/fookie/semantic"
 	"github.com/jackc/pgx/v5"
 )
@@ -14,8 +15,8 @@ const (
 )
 
 type Builder struct {
-	Model     *StoredModel
-	Filters   []ListFilter
+	Model     *schemawire.StoredModel
+	Filters   []schemawire.ListFilter
 	orders    []OrderExpr
 	Limit     int
 	Cursor    string
@@ -40,12 +41,12 @@ func (o *OrderClause) Asc() {
 	o.QB.orders = append(o.QB.orders, OrderExpr{field: o.Key, desc: false})
 }
 
-func NewBuilder(stored *StoredModel) *Builder {
+func NewBuilder(stored *schemawire.StoredModel) *Builder {
 	return &Builder{Model: stored}
 }
 
 func (queryBuilder *Builder) Add(field, operation string, value semantic.FilterValue) {
-	queryBuilder.Filters = append(queryBuilder.Filters, ListFilter{Field: field, Op: operation, Value: value})
+	queryBuilder.Filters = append(queryBuilder.Filters, schemawire.ListFilter{Field: field, Op: operation, Value: value})
 }
 
 func (o OrderExpr) Field() string { return o.field }

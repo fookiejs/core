@@ -1,10 +1,11 @@
-package model
+package query
 
 import (
+	"github.com/fookiejs/fookie/internal/model/schemawire"
 	"github.com/fookiejs/fookie/internal/persistence/store"
 )
 
-func StoreFilters(m *StoredModel, fs []ListFilter) []store.Filter {
+func StoreFilters(m *schemawire.StoredModel, fs []schemawire.ListFilter) []store.Filter {
 	out := make([]store.Filter, 0, len(fs))
 	for _, f := range fs {
 		out = append(out, store.Filter{Field: m.ColumnForField(f.Field), Op: f.Op, Value: f.Value})
@@ -12,7 +13,7 @@ func StoreFilters(m *StoredModel, fs []ListFilter) []store.Filter {
 	return out
 }
 
-func BuildStoreQuery(modelDefinition *StoredModel, queryBuilder *Builder) store.Query {
+func BuildStoreQuery(modelDefinition *schemawire.StoredModel, queryBuilder *Builder) store.Query {
 	orders := make([]store.Order, 0, len(queryBuilder.Orders()))
 	for _, o := range queryBuilder.Orders() {
 		orders = append(orders, store.Order{Field: o.Field(), Desc: o.Desc()})

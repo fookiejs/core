@@ -1,4 +1,4 @@
-package model
+package flowext
 
 import (
 	"github.com/fookiejs/fookie/internal/persistence"

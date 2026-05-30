@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	graphqlapi "github.com/fookiejs/fookie/internal/api/graphql"
-	"github.com/fookiejs/fookie/internal/model"
+	"github.com/fookiejs/fookie/internal/model/flowext"
 	"github.com/fookiejs/fookie/semantic"
 	"github.com/graphql-go/graphql"
 )
@@ -26,8 +26,8 @@ type gqlProductFields struct {
 
 func TestGraphQLSchema_NamingAndRelations(t *testing.T) {
 	a := New(nil)
-	RegisterModel(a, &model.Model[gqlUserFields]{Name: "User"})
-	RegisterModel(a, &model.Model[gqlProductFields]{Name: "Product"})
+	RegisterModel(a, &flowext.Model[gqlUserFields]{Name: "User"})
+	RegisterModel(a, &flowext.Model[gqlProductFields]{Name: "Product"})
 
 	gqlSchema, err := graphqlapi.BuildSchema(a)
 	if err != nil {

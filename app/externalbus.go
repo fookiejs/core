@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"reflect"
 
 	"github.com/fookiejs/fookie/internal/reliability"
@@ -21,7 +22,10 @@ type ExternalEvent struct {
 func (ev ExternalEvent) Decode(v any) error {
 	dec := json.NewDecoder(bytes.NewReader(ev.Input))
 	dec.DisallowUnknownFields()
-	return dec.Decode(v)
+	if err := dec.Decode(v); err != nil {
+		return fmt.Errorf("decode external event: %w", err)
+	}
+	return nil
 }
 
 type ExternalStatus int
@@ -102,6 +106,7 @@ func (a *App) startResultLoop() {
 
 func (a *App) applyResult(result ExternalResult) {
 	switch result.Status {
+	case ExternalOK:
 	case ExternalPending:
 		return
 	case ExternalFail:

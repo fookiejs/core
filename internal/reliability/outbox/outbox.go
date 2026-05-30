@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -20,6 +21,8 @@ const (
 	StatusCompleted  = "completed"
 	StatusFailed     = "failed"
 )
+
+var errEmptyInput = errors.New("empty input")
 
 type Entry struct {
 	ID          string
@@ -110,9 +113,19 @@ func Migrate(pool *pgxpool.Pool) error {
 	}
 	_, _ = pool.Exec(ctx, `
 		ALTER TABLE fookie_saga_step ADD COLUMN IF NOT EXISTS output_json JSONB`)
+	_, _ = pool.Exec(ctx, `
+		ALTER TABLE fookie_saga_step ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active'`)
+	_, _ = pool.Exec(ctx, `
+		ALTER TABLE fookie_saga_step ADD COLUMN IF NOT EXISTS compensated_at TIMESTAMPTZ`)
 	_, err = pool.Exec(ctx, `
 		CREATE INDEX IF NOT EXISTS fookie_saga_step_entity_idx
 		ON fookie_saga_step (entity_id, model)`)
+	if err != nil {
+		return err
+	}
+	_, err = pool.Exec(ctx, `
+		CREATE INDEX IF NOT EXISTS fookie_saga_step_active_idx
+		ON fookie_saga_step (entity_id, model) WHERE status = 'active'`)
 	if err != nil {
 		return err
 	}
@@ -164,13 +177,16 @@ func ExternalID(entityID, serviceName string, inputJSON []byte) (string, error) 
 	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
-func BusinessExternalID(serviceName, businessKey string) string {
+func InputExternalID(serviceName string, inputJSON []byte) (string, error) {
+	if len(inputJSON) == 0 {
+		return "", fmt.Errorf("input external id: %w", errEmptyInput)
+	}
 	h := sha256.New()
-	_, _ = h.Write([]byte("biz:"))
+	_, _ = h.Write([]byte("in:"))
 	_, _ = h.Write([]byte(serviceName))
 	_, _ = h.Write([]byte(":"))
-	_, _ = h.Write([]byte(businessKey))
-	return hex.EncodeToString(h.Sum(nil))
+	_, _ = h.Write(inputJSON)
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
 func Lookup(transaction pgx.Tx, externalID string) (*Entry, error) {
@@ -285,7 +301,7 @@ func ClaimBatch(ctx context.Context, pool *pgxpool.Pool, batchSize int, names []
 	if err != nil {
 		return nil, err
 	}
-	defer transaction.Rollback(ctx)
+	defer func() { _ = transaction.Rollback(ctx) }()
 
 	var rows pgx.Rows
 	if len(names) == 0 {
@@ -399,7 +415,7 @@ func LoadSagaSteps(transaction pgx.Tx, entityID, model string) ([]SagaStep, erro
 	rows, err := transaction.Query(context.Background(),
 		`SELECT step_name, compensate, input_json, COALESCE(output_json, 'null'::jsonb)
 		 FROM fookie_saga_step
-		 WHERE entity_id = $1 AND model = $2
+		 WHERE entity_id = $1 AND model = $2 AND status = 'active'
 		 ORDER BY created_at DESC`,
 		entityID, model)
 	if err != nil {
@@ -423,7 +439,8 @@ func LoadSagaSteps(transaction pgx.Tx, entityID, model string) ([]SagaStep, erro
 
 func ClearSagaSteps(transaction pgx.Tx, entityID, model string) error {
 	_, err := transaction.Exec(context.Background(),
-		`DELETE FROM fookie_saga_step WHERE entity_id = $1 AND model = $2`,
+		`UPDATE fookie_saga_step SET status = 'compensated', compensated_at = NOW()
+		 WHERE entity_id = $1 AND model = $2 AND status = 'active'`,
 		entityID, model)
 	return err
 }

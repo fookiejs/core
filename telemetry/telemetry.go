@@ -1,16 +1,20 @@
 package telemetry
 
-import "github.com/fookiejs/fookie/internal/observability"
+import (
+	coretelemetry "github.com/fookiejs/fookie/internal/observability/telemetry"
+	"github.com/fookiejs/fookie/internal/observability"
+)
 
 type (
-	Config     = observability.Config
+	Config     = coretelemetry.Config
 	FlowMetric = observability.FlowMetric
 )
 
 var (
-	Init                     = observability.InitTelemetry
-	ConfigFromEnv            = observability.ConfigFromEnv
-	Shutdown                 = observability.ShutdownTelemetry
+	ConfigFromEnv            = coretelemetry.ConfigFromEnv
+	ConfigFromInternal       = coretelemetry.ConfigFromInternal
+	Init                     = coretelemetry.Init
+	Shutdown                 = coretelemetry.Shutdown
 	NewFlowMetric            = observability.NewFlowMetric
-	BindMeterProviderForTest = observability.BindMeterProviderForTest
+	BindMeterProviderForTest = coretelemetry.BindMeterProviderForTest
 )

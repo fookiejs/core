@@ -36,7 +36,6 @@ linters:
             - $all
             - "!$test"
             - "!**/internal/persistence/**"
-            - "!**/internal/model/**"
             - "!**/internal/runtime/**"
             - "!**/internal/api/graphql/**"
             - "!**/internal/reliability/**"
@@ -58,7 +57,11 @@ linters:
           files:
             - "**/internal/persistence/**"
           deny:
-            - pkg: github.com/fookiejs/fookie/internal/model
+            - pkg: github.com/fookiejs/fookie/internal/model/schemawire
+              desc: "persistence is below model"
+            - pkg: github.com/fookiejs/fookie/internal/model/query
+              desc: "persistence is below model"
+            - pkg: github.com/fookiejs/fookie/internal/model/flowext
               desc: "persistence is below model"
             - pkg: github.com/fookiejs/fookie/internal/runtime
               desc: "persistence is below runtime"
@@ -108,6 +111,8 @@ linters:
           msg: "entity ID guarantees must not be re-checked via empty string after type erasure"
         - pattern: 'func\s+\([^)]*\)\s+CurrentEntityID\(\)\s+string\s*\{\s*return\s+""'
           msg: "contexts without an entity must not fake absence with empty string; use a separate type or method set"
+        - pattern: 'map\[string\]any'
+          msg: "map[string]any erases field guarantees; use typed structs at boundaries (graphql/http edge only)"
       exclude-godoc-examples: true
     funlen:
       lines: 110

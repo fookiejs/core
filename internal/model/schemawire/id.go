@@ -1,4 +1,4 @@
-package model
+package schemawire
 
 import "github.com/fookiejs/fookie/internal/platform"
 

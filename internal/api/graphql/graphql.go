@@ -8,16 +8,18 @@ import (
 	"time"
 
 	httpapi "github.com/fookiejs/fookie/internal/api/http"
-	"github.com/fookiejs/fookie/internal/model"
-	"github.com/fookiejs/fookie/internal/observability"
+	"github.com/fookiejs/fookie/internal/model/schemawire"
+	"github.com/fookiejs/fookie/internal/observability/telemetry"
 	"github.com/fookiejs/fookie/internal/persistence/serde"
 	"github.com/fookiejs/fookie/semantic"
 	"github.com/graphql-go/graphql"
 )
 
-func BuildSchema(a App) (graphql.Schema, error) {
-	a.WireRelations()
-	models := a.Models()
+const graphqlFieldCursor = "cursor"
+
+func BuildSchema(app App) (graphql.Schema, error) {
+	app.WireRelations()
+	models := app.Models()
 
 	filterTypes := make(map[string]*graphql.InputObject, len(models))
 	for _, stored := range models {
@@ -30,11 +32,31 @@ func BuildSchema(a App) (graphql.Schema, error) {
 		objectTypes[current.Name] = graphql.NewObject(graphql.ObjectConfig{
 			Name: current.Name,
 			Fields: graphql.FieldsThunk(func() graphql.Fields {
-				return buildObjectFields(a, current, objectTypes, filterTypes)
+				return buildObjectFields(app, current, objectTypes, filterTypes)
 			}),
 		})
 	}
 
+	connectionTypes := buildConnectionTypes(models, objectTypes)
+	queryFields, mutationFields := buildRootFields(app, models, objectTypes, connectionTypes, filterTypes)
+
+	gqlSchema, err := graphql.NewSchema(graphql.SchemaConfig{
+		Query: graphql.NewObject(graphql.ObjectConfig{
+			Name:   "Query",
+			Fields: queryFields,
+		}),
+		Mutation: graphql.NewObject(graphql.ObjectConfig{
+			Name:   "Mutation",
+			Fields: mutationFields,
+		}),
+	})
+	if err != nil {
+		return graphql.Schema{}, fmt.Errorf("graphql schema: %w", err)
+	}
+	return gqlSchema, nil
+}
+
+func buildConnectionTypes(models []*schemawire.StoredModel, objectTypes map[string]*graphql.Object) map[string]*graphql.Object {
 	connectionTypes := make(map[string]*graphql.Object, len(models))
 	for _, stored := range models {
 		obj := objectTypes[stored.Name]
@@ -42,11 +64,14 @@ func BuildSchema(a App) (graphql.Schema, error) {
 			Name: stored.Name + "Connection",
 			Fields: graphql.Fields{
 				"items":  &graphql.Field{Type: graphql.NewList(obj)},
-				"cursor": &graphql.Field{Type: graphql.String},
+				graphqlFieldCursor: &graphql.Field{Type: graphql.String},
 			},
 		})
 	}
+	return connectionTypes
+}
 
+func buildRootFields(app App, models []*schemawire.StoredModel, objectTypes map[string]*graphql.Object, connectionTypes map[string]*graphql.Object, filterTypes map[string]*graphql.InputObject) (graphql.Fields, graphql.Fields) {
 	queryFields := make(graphql.Fields, len(models)*2)
 	mutationFields := make(graphql.Fields, len(models)*3)
 
@@ -62,20 +87,20 @@ func BuildSchema(a App) (graphql.Schema, error) {
 			},
 			Resolve: func(p graphql.ResolveParams) (any, error) {
 				id, _ := p.Args["id"].(string)
-				return a.Engine(stored.Name).Read(p.Context, graphqlHeaders(p), model.ID(id))
+				return app.Engine(stored.Name).Read(p.Context, graphqlHeaders(p), schemawire.ID(id))
 			},
 		}
 
 		queryFields["ALL_"+stored.Name] = &graphql.Field{
 			Type: connectionTypes[stored.Name],
 			Args: graphql.FieldConfigArgument{
-				"cursor": &graphql.ArgumentConfig{Type: graphql.String},
-				"filter": &graphql.ArgumentConfig{Type: filterType},
+				graphqlFieldCursor: &graphql.ArgumentConfig{Type: graphql.String},
+				"filter":           &graphql.ArgumentConfig{Type: filterType},
 			},
 			Resolve: func(p graphql.ResolveParams) (any, error) {
-				cursor, _ := p.Args["cursor"].(string)
+				cursor, _ := p.Args[graphqlFieldCursor].(string)
 				filters := applyTopLevelFilters(stored, p.Args["filter"])
-				items, next, err := a.Engine(stored.Name).List(p.Context, graphqlHeaders(p), cursor, filters)
+				items, next, err := app.Engine(stored.Name).List(p.Context, graphqlHeaders(p), cursor, filters)
 				if err != nil {
 					return nil, err
 				}
@@ -83,7 +108,7 @@ func BuildSchema(a App) (graphql.Schema, error) {
 				if len(next) > 0 {
 					nextCursor = next
 				}
-				return map[string]any{"items": items, "cursor": nextCursor}, nil
+				return map[string]any{"items": items, graphqlFieldCursor: nextCursor}, nil
 			},
 		}
 
@@ -96,7 +121,7 @@ func BuildSchema(a App) (graphql.Schema, error) {
 			},
 			Resolve: func(p graphql.ResolveParams) (any, error) {
 				input, _ := p.Args["input"].(map[string]any)
-				res, err := a.Engine(stored.Name).Create(p.Context, graphqlHeaders(p), NormalizeGraphQLInput(stored, input))
+				res, err := app.Engine(stored.Name).Create(p.Context, graphqlHeaders(p), NormalizeGraphQLInput(stored, input))
 				if err != nil {
 					return nil, err
 				}
@@ -113,7 +138,7 @@ func BuildSchema(a App) (graphql.Schema, error) {
 			Resolve: func(p graphql.ResolveParams) (any, error) {
 				id, _ := p.Args["id"].(string)
 				input, _ := p.Args["input"].(map[string]any)
-				res, err := a.Engine(stored.Name).Update(p.Context, graphqlHeaders(p), model.ID(id), NormalizeGraphQLInput(stored, input))
+				res, err := app.Engine(stored.Name).Update(p.Context, graphqlHeaders(p), schemawire.ID(id), NormalizeGraphQLInput(stored, input))
 				if err != nil {
 					return nil, err
 				}
@@ -128,26 +153,12 @@ func BuildSchema(a App) (graphql.Schema, error) {
 			},
 			Resolve: func(p graphql.ResolveParams) (any, error) {
 				id, _ := p.Args["id"].(string)
-				err := a.Engine(stored.Name).Delete(p.Context, graphqlHeaders(p), model.ID(id))
+				err := app.Engine(stored.Name).Delete(p.Context, graphqlHeaders(p), schemawire.ID(id))
 				return err == nil, err
 			},
 		}
 	}
-
-	gqlSchema, err := graphql.NewSchema(graphql.SchemaConfig{
-		Query: graphql.NewObject(graphql.ObjectConfig{
-			Name:   "Query",
-			Fields: queryFields,
-		}),
-		Mutation: graphql.NewObject(graphql.ObjectConfig{
-			Name:   "Mutation",
-			Fields: mutationFields,
-		}),
-	})
-	if err != nil {
-		return graphql.Schema{}, fmt.Errorf("graphql schema: %w", err)
-	}
-	return gqlSchema, nil
+	return queryFields, mutationFields
 }
 
 func HandleGraphQL(application App, w http.ResponseWriter, r *http.Request) {
@@ -166,7 +177,7 @@ func HandleGraphQL(application App, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	observability.GraphQLReceived(r.Context(), params.OperationName)
+	telemetry.GraphQLReceived(r.Context(), params.OperationName)
 	start := time.Now()
 	gqlCtx := context.WithValue(r.Context(), graphqlRequestKey{}, r)
 	result := graphql.Do(graphql.Params{
@@ -177,11 +188,14 @@ func HandleGraphQL(application App, w http.ResponseWriter, r *http.Request) {
 		Context:        gqlCtx,
 	})
 
-	observability.EmitGraphQLDuration(r.Context(), params.OperationName, msElapsed(start), len(result.Errors) > 0)
+	telemetry.GraphQLDuration(r.Context(), params.OperationName, msElapsed(start))
+	if len(result.Errors) > 0 {
+		telemetry.GraphQLFailed(r.Context(), params.OperationName)
+	}
 	httpapi.WriteJSON(w, 200, result)
 }
 
-func buildObjectFields(application App, stored *model.StoredModel, objectTypes map[string]*graphql.Object, filterTypes map[string]*graphql.InputObject) graphql.Fields {
+func buildObjectFields(application App, stored *schemawire.StoredModel, objectTypes map[string]*graphql.Object, filterTypes map[string]*graphql.InputObject) graphql.Fields {
 	fields := make(graphql.Fields, len(stored.Fields())+8)
 	fields["id"] = idField()
 
@@ -195,7 +209,7 @@ func buildObjectFields(application App, stored *model.StoredModel, objectTypes m
 			fields[field.GraphQLName()] = &graphql.Field{
 				Type: relType,
 				Resolve: func(params graphql.ResolveParams) (any, error) {
-					record, ok := params.Source.(model.Record)
+					record, ok := params.Source.(schemawire.Record)
 					if !ok || fieldCopy.Relation == nil {
 						return nil, nil
 					}
@@ -207,7 +221,7 @@ func buildObjectFields(application App, stored *model.StoredModel, objectTypes m
 					if !ok || len(fkText) == 0 {
 						return nil, nil
 					}
-					return application.Engine(fieldCopy.Relation.Name).Read(params.Context, graphqlHeaders(params), model.ID(fkText))
+					return application.Engine(fieldCopy.Relation.Name).Read(params.Context, graphqlHeaders(params), schemawire.ID(fkText))
 				},
 			}
 			continue
@@ -215,12 +229,12 @@ func buildObjectFields(application App, stored *model.StoredModel, objectTypes m
 		fields[field.Name] = scalarField(field.Name, GraphQLScalarFor(field))
 	}
 
-	childRels := model.ChildRelationsForParent(application.ChildRelations(), stored.Name)
+	childRels := schemawire.ChildRelationsForParent(application.ChildRelations(), stored.Name)
 	for _, childRel := range childRels {
 		childRel := childRel
 		childObj := objectTypes[childRel.ChildModel.Name]
 		childFilter := filterTypes[childRel.ChildModel.Name]
-		fieldName := model.RelationListGraphQLName(childRel.ChildModel.Name, childRel.FKField, model.CountChildRelationsToParent(childRels, childRel.ChildModel.Name))
+		fieldName := schemawire.RelationListGraphQLName(childRel.ChildModel.Name, childRel.FKField, schemawire.CountChildRelationsToParent(childRels, childRel.ChildModel.Name))
 		if _, exists := fields[fieldName]; exists {
 			continue
 		}
@@ -230,12 +244,12 @@ func buildObjectFields(application App, stored *model.StoredModel, objectTypes m
 				"filter": &graphql.ArgumentConfig{Type: childFilter},
 			},
 			Resolve: func(p graphql.ResolveParams) (any, error) {
-				parent, ok := p.Source.(model.Record)
+				parent, ok := p.Source.(schemawire.Record)
 				if !ok || len(parent.ID) == 0 {
-					return []model.Record{}, nil
+					return []schemawire.Record{}, nil
 				}
 				filters := FiltersFromGraphQL(childRel.ChildModel, p.Args["filter"])
-				filters = MergeFilters(filters, model.ListFilter{
+				filters = MergeFilters(filters, schemawire.ListFilter{
 					Field: childRel.FKField.ColumnName(),
 					Op:    "=",
 					Value: semantic.FilterText(parent.ID.String()),
@@ -256,7 +270,7 @@ func scalarField(name string, gqlType *graphql.Scalar) *graphql.Field {
 	return &graphql.Field{
 		Type: gqlType,
 		Resolve: func(p graphql.ResolveParams) (any, error) {
-			record, ok := p.Source.(model.Record)
+			record, ok := p.Source.(schemawire.Record)
 			if !ok || record.Data == nil {
 				return nil, nil
 			}
@@ -273,7 +287,7 @@ func idField() *graphql.Field {
 	return &graphql.Field{
 		Type: graphql.String,
 		Resolve: func(p graphql.ResolveParams) (any, error) {
-			record, ok := p.Source.(model.Record)
+			record, ok := p.Source.(schemawire.Record)
 			if !ok || len(record.ID) == 0 {
 				return nil, nil
 			}
@@ -286,7 +300,7 @@ func statusField() *graphql.Field {
 	return &graphql.Field{
 		Type: graphql.String,
 		Resolve: func(p graphql.ResolveParams) (any, error) {
-			record, ok := p.Source.(model.Record)
+			record, ok := p.Source.(schemawire.Record)
 			if !ok || len(record.Status) == 0 {
 				return nil, nil
 			}
@@ -299,7 +313,7 @@ func errorField() *graphql.Field {
 	return &graphql.Field{
 		Type: graphql.String,
 		Resolve: func(p graphql.ResolveParams) (any, error) {
-			record, ok := p.Source.(model.Record)
+			record, ok := p.Source.(schemawire.Record)
 			if !ok || len(record.Error) == 0 {
 				return nil, nil
 			}
@@ -308,15 +322,15 @@ func errorField() *graphql.Field {
 	}
 }
 
-func recordFromOpResult(res model.OpResult) model.Record {
-	status := model.EntityStatusActive
+func recordFromOpResult(res schemawire.OpResult) schemawire.Record {
+	status := schemawire.EntityStatusActive
 	if res.Pending {
-		status = model.EntityStatusPending
+		status = schemawire.EntityStatusPending
 	}
-	return model.Record{ID: res.ID, Status: status}
+	return schemawire.Record{ID: res.ID, Status: status}
 }
 
-func buildInputType(stored *model.StoredModel) *graphql.InputObject {
+func buildInputType(stored *schemawire.StoredModel) *graphql.InputObject {
 	fields := make(graphql.InputObjectConfigFieldMap, len(stored.Fields()))
 	for _, field := range stored.Fields() {
 		if field.Name == "id" || isProtectedInputField(field.Name) {

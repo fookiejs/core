@@ -47,8 +47,11 @@ func testOutboxDB(t *testing.T) (*store.DB, pgx.Tx) {
 
 func TestOutboxInsert_DedupesByExternalID(t *testing.T) {
 	_, transaction := testOutboxDB(t)
-	externalID := BusinessExternalID("test_PayGateway", "ref-dedupe")
 	input := []byte(`{"reference":"ref-dedupe","amount":100}`)
+	externalID, err := ExternalID("entity-dedupe", "test_PayGateway", input)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := Insert(transaction, "test_PayGateway", externalID, input, RetryPolicy{Attempts: 3}); err != nil {
 		t.Fatal(err)
 	}

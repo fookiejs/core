@@ -1,22 +1,25 @@
-package model
+package flowext
 
 import (
 	"fmt"
 
+	"github.com/fookiejs/fookie/internal/model/schemawire"
 	"github.com/fookiejs/fookie/internal/persistence/store"
 )
 
 type Composer interface {
 	OpTx() *OpTx
 	OpHeaders() map[string]string
-	Savepoint(func() (Signal, *FailError)) Signal
+	Savepoint(func() (schemawire.Signal, *schemawire.FailError)) schemawire.Signal
 }
 
 func (c *Flow[F]) OpTx() *OpTx { return c.requireOpTx() }
 
 func (c *Flow[F]) OpHeaders() map[string]string { return c.Headers }
 
-func (c *Flow[F]) Savepoint(run func() (Signal, *FailError)) Signal { return c.withSavepoint(run) }
+func (c *Flow[F]) Savepoint(run func() (schemawire.Signal, *schemawire.FailError)) schemawire.Signal {
+	return c.withSavepoint(run)
+}
 
 func (c *Flow[F]) requireOpTx() *OpTx {
 	if c.operationTransaction == nil {
@@ -25,7 +28,7 @@ func (c *Flow[F]) requireOpTx() *OpTx {
 	return c.operationTransaction
 }
 
-func (c *Flow[F]) withSavepoint(run func() (Signal, *FailError)) Signal {
+func (c *Flow[F]) withSavepoint(run func() (schemawire.Signal, *schemawire.FailError)) schemawire.Signal {
 	operationTransaction := c.requireOpTx()
 	savepoint := operationTransaction.NextSavepoint()
 	ctx := c.execContext()
@@ -33,12 +36,12 @@ func (c *Flow[F]) withSavepoint(run func() (Signal, *FailError)) Signal {
 		fail(fmt.Errorf("savepoint: %w", err))
 	}
 	signal, failError := run()
-	if signal == Failed {
+	if signal == schemawire.Failed {
 		_ = store.RollbackToSavepointTx(ctx, c.transaction, savepoint)
 		if failError != nil {
 			c.failErr = failError
 		}
-		return Failed
+		return schemawire.Failed
 	}
 	_ = store.ReleaseSavepointTx(ctx, c.transaction, savepoint)
 	return signal

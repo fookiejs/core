@@ -1,4 +1,4 @@
-package model
+package schemawire
 
 import (
 	"reflect"
@@ -8,56 +8,57 @@ import (
 	"github.com/fookiejs/fookie/semantic"
 )
 
-type FieldSnapshot struct {
-	FieldDef
-	bindFilter func(semantic.FilterFn)
+type KeySetter interface {
+	SetKey(string)
 }
 
-type keySetter interface {
+type FilterSetter interface {
 	SetKey(string)
+	SetFilter(semantic.FilterFn)
 }
 
 type tagApplier interface {
 	ApplyTag(part string, schema *semantic.SchemaFlags) bool
 }
 
-type filterSetter interface {
-	SetKey(string)
-	SetFilter(semantic.FilterFn)
-}
-
 func WireFields(schema any) []FieldSnapshot {
-	rv := reflect.ValueOf(schema)
-	if rv.Kind() == reflect.Pointer {
-		rv = rv.Elem()
+	root := reflect.ValueOf(schema)
+	if root.Kind() == reflect.Pointer {
+		root = root.Elem()
 	}
-	return wireFieldsCollect(rv)
+	return wireFieldsCollect(root)
 }
 
-func wireFieldsCollect(reflectValue reflect.Value) []FieldSnapshot {
-	if reflectValue.Kind() != reflect.Struct {
-		return nil
+func WalkSchemaFields(root reflect.Value, visit func(structField reflect.StructField, fieldValue reflect.Value)) {
+	if root.Kind() != reflect.Struct {
+		return
 	}
-	rt := reflectValue.Type()
-	out := make([]FieldSnapshot, 0, rt.NumField())
-	for i := range rt.NumField() {
-		structField := rt.Field(i)
-		fieldValue := reflectValue.Field(i)
+	structType := root.Type()
+	for index := range structType.NumField() {
+		structField := structType.Field(index)
+		fieldValue := root.Field(index)
 		if structField.Anonymous && fieldValue.Kind() == reflect.Struct {
-			out = append(out, wireFieldsCollect(fieldValue)...)
+			WalkSchemaFields(fieldValue, visit)
 			continue
 		}
+		visit(structField, fieldValue)
+	}
+}
+
+func wireFieldsCollect(root reflect.Value) []FieldSnapshot {
+	var out []FieldSnapshot
+	WalkSchemaFields(root, func(structField reflect.StructField, fieldValue reflect.Value) {
 		typed, ok := fieldValue.Interface().(semantic.TypedField)
 		if !ok {
-			continue
+			return
 		}
 		name := serde.ToSnake(structField.Name)
 		var bind func(semantic.FilterFn)
 		if fieldValue.CanAddr() {
-			if ks, ok := fieldValue.Addr().Interface().(keySetter); ok {
+			if ks, ok := fieldValue.Addr().Interface().(KeySetter); ok {
 				ks.SetKey(name)
 			}
-			if fs, ok := fieldValue.Addr().Interface().(filterSetter); ok {
+			if fs, ok := fieldValue.Addr().Interface().(FilterSetter); ok {
 				setter := fs
 				bind = func(callback semantic.FilterFn) {
 					setter.SetFilter(callback)
@@ -72,7 +73,7 @@ func wireFieldsCollect(reflectValue reflect.Value) []FieldSnapshot {
 			applyFieldTags(fieldValue.Addr().Interface(), tag, &snap.FieldDef)
 		}
 		out = append(out, snap)
-	}
+	})
 	return out
 }
 
@@ -102,16 +103,6 @@ func mergeSchemaFlags(def *FieldDef, flags *semantic.SchemaFlags) {
 	if flags.Relation != "" {
 		def.RelationName = flags.Relation
 	}
-}
-
-func NewStored[S any](modelDefinition *Model[S]) *StoredModel {
-	stored := &StoredModel{
-		Name:      modelDefinition.Name,
-		snapshots: EnsureBaseFields(WireFields(&modelDefinition.Field)),
-		def:       modelDefinition,
-	}
-	modelDefinition.stored = stored
-	return stored
 }
 
 const (

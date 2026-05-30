@@ -1,10 +1,12 @@
-package model
+package flowext
 
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
+	"github.com/fookiejs/fookie/internal/model/schemawire"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
@@ -15,7 +17,7 @@ type txBeginner interface {
 	Begin(ctx context.Context) (pgx.Tx, error)
 }
 
-func RunInTx(ctx context.Context, database txBeginner, callback func(transaction pgx.Tx) (Signal, *FailError, error)) (Signal, *FailError, error) {
+func RunInTx(ctx context.Context, database txBeginner, callback func(transaction pgx.Tx) (schemawire.Signal, *schemawire.FailError, error)) (schemawire.Signal, *schemawire.FailError, error) {
 	var lastInfra error
 	for attempt := 0; attempt < txMaxAttempts; attempt++ {
 		if attempt > 0 {
@@ -23,7 +25,7 @@ func RunInTx(ctx context.Context, database txBeginner, callback func(transaction
 		}
 		transaction, err := database.Begin(ctx)
 		if err != nil {
-			return Failed, nil, err
+			return schemawire.Failed, nil, err
 		}
 		signal, failError, opErr := callback(transaction)
 		if opErr != nil {
@@ -32,11 +34,11 @@ func RunInTx(ctx context.Context, database txBeginner, callback func(transaction
 				lastInfra = opErr
 				continue
 			}
-			return Failed, failError, opErr
+			return schemawire.Failed, failError, opErr
 		}
-		if signal == Failed {
+		if signal == schemawire.Failed {
 			_ = transaction.Rollback(ctx)
-			return Failed, failError, nil
+			return schemawire.Failed, failError, nil
 		}
 		if err := transaction.Commit(ctx); err != nil {
 			_ = transaction.Rollback(ctx)
@@ -44,14 +46,14 @@ func RunInTx(ctx context.Context, database txBeginner, callback func(transaction
 				lastInfra = err
 				continue
 			}
-			return Failed, nil, err
+			return schemawire.Failed, nil, fmt.Errorf("commit transaction: %w", err)
 		}
 		return signal, nil, nil
 	}
 	if lastInfra != nil {
-		return Failed, nil, lastInfra
+		return schemawire.Failed, nil, lastInfra
 	}
-	return Failed, nil, errors.New("transaction retries exhausted")
+	return schemawire.Failed, nil, errors.New("transaction retries exhausted")
 }
 
 func isRetryablePg(err error) bool {

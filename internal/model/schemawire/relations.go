@@ -1,4 +1,4 @@
-package model
+package schemawire
 
 type ChildRelation struct {
 	ChildModel *StoredModel

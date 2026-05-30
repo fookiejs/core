@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/fookiejs/fookie/internal/observability"
+	"github.com/fookiejs/fookie/internal/observability/telemetry"
 	"github.com/fookiejs/fookie/internal/reliability/outbox"
 )
 
@@ -85,8 +86,8 @@ func processOutboxEntry(ctx context.Context, app App, entry outbox.Entry) {
 	dur := observability.MsElapsed(start)
 
 	if err != nil {
-		observability.ExternalRetry(ctx, entry.Name, map[string]string{observability.ExternalID: entry.ExternalID, "error_phase": "handler"})
-		observability.SchedulerRetry(ctx, entry.Name, map[string]string{observability.ExternalID: entry.ExternalID})
+		telemetry.ExternalRetry(ctx, entry.Name, map[string]string{observability.ExternalID: entry.ExternalID, "error_phase": "handler"})
+		telemetry.SchedulerRetry(ctx, entry.Name, map[string]string{observability.ExternalID: entry.ExternalID})
 		observability.Warn("outbox.handler_error",
 			observability.ServiceKey, entry.Name,
 			observability.ExternalID, entry.ExternalID,

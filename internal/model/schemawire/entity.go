@@ -1,4 +1,4 @@
-package model
+package schemawire
 
 type EntityStatus string
 
@@ -29,3 +29,19 @@ type Record struct {
 }
 
 type FailPanic struct{ Err error }
+
+type FailError struct {
+	Code        string
+	Description string
+}
+
+func (e *FailError) Error() string {
+	if e.Description == "" {
+		return e.Code
+	}
+	return e.Code + ": " + e.Description
+}
+
+func NewError(code, description string) *FailError {
+	return &FailError{Code: code, Description: description}
+}

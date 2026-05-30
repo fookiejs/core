@@ -1,4 +1,4 @@
-package model
+package schemawire
 
 type Signal uint8
 

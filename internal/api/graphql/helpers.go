@@ -1,14 +1,14 @@
 package graphqlapi
 
 import (
-	"github.com/fookiejs/fookie/internal/model"
+	"github.com/fookiejs/fookie/internal/model/schemawire"
 	"github.com/fookiejs/fookie/internal/persistence/row"
 	"github.com/fookiejs/fookie/internal/persistence/serde"
 	"github.com/fookiejs/fookie/semantic"
 	"github.com/graphql-go/graphql"
 )
 
-func GraphQLScalarFor(field model.FieldDef) *graphql.Scalar {
+func GraphQLScalarFor(field schemawire.FieldDef) *graphql.Scalar {
 	kindToGraphQL := map[semantic.Kind]*graphql.Scalar{
 		semantic.StringKind:     graphql.String,
 		semantic.EmailKind:      graphql.String,
@@ -36,12 +36,12 @@ func GraphQLScalarFor(field model.FieldDef) *graphql.Scalar {
 	return graphql.String
 }
 
-func FiltersFromGraphQL(stored *model.StoredModel, raw any) []model.ListFilter {
+func FiltersFromGraphQL(stored *schemawire.StoredModel, raw any) []schemawire.ListFilter {
 	dataMap, ok := raw.(map[string]any)
 	if !ok || len(dataMap) == 0 {
 		return nil
 	}
-	var out []model.ListFilter
+	var out []schemawire.ListFilter
 	for _, field := range stored.Fields() {
 		if field.Name == "id" || field.RelationName != "" {
 			continue
@@ -50,7 +50,7 @@ func FiltersFromGraphQL(stored *model.StoredModel, raw any) []model.ListFilter {
 		if !ok || value == nil {
 			continue
 		}
-		out = append(out, model.ListFilter{
+		out = append(out, schemawire.ListFilter{
 			Field: stored.ColumnForField(field.Name),
 			Op:    "=",
 			Value: row.FilterValueFromGraphQL(value),
@@ -59,17 +59,17 @@ func FiltersFromGraphQL(stored *model.StoredModel, raw any) []model.ListFilter {
 	return out
 }
 
-func MergeFilters(base []model.ListFilter, extra ...model.ListFilter) []model.ListFilter {
+func MergeFilters(base []schemawire.ListFilter, extra ...schemawire.ListFilter) []schemawire.ListFilter {
 	if len(extra) == 0 {
 		return base
 	}
-	out := make([]model.ListFilter, 0, len(base)+len(extra))
+	out := make([]schemawire.ListFilter, 0, len(base)+len(extra))
 	out = append(out, base...)
 	out = append(out, extra...)
 	return out
 }
 
-func NormalizeGraphQLInput(stored *model.StoredModel, input map[string]any) row.Values {
+func NormalizeGraphQLInput(stored *schemawire.StoredModel, input map[string]any) row.Values {
 	out := row.FromAnyMap(input)
 	for _, field := range stored.Fields() {
 		if field.RelationName == "" {
@@ -87,6 +87,6 @@ func isProtectedInputField(name string) bool {
 	return serde.IsProtectedBaseColumn(name)
 }
 
-func applyTopLevelFilters(stored *model.StoredModel, filterArg any) []model.ListFilter {
+func applyTopLevelFilters(stored *schemawire.StoredModel, filterArg any) []schemawire.ListFilter {
 	return FiltersFromGraphQL(stored, filterArg)
 }

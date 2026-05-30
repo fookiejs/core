@@ -1,22 +1,23 @@
 package runtime
 
 import (
-	"github.com/fookiejs/fookie/internal/model"
+	"github.com/fookiejs/fookie/internal/model/flowext"
+	"github.com/fookiejs/fookie/internal/model/schemawire"
 	"github.com/fookiejs/fookie/internal/persistence/row"
 	"github.com/fookiejs/fookie/internal/persistence/serde"
 )
 
-func NestedCreate[Schema any](composer model.Composer, target *model.Model[Schema], input any) (model.ID, model.Signal) {
-	bodyRow := inputToRowMap(input)
+func NestedCreate[Schema any](composer flowext.Composer, target *flowext.Model[Schema], input any) (schemawire.ID, schemawire.Signal) {
+	bodyRow := anyToRowValues(input, false)
 	operationTransaction, headers := composer.OpTx(), composer.OpHeaders()
-	var identifier model.ID
-	signal := composer.Savepoint(func() (model.Signal, *model.FailError) {
+	var identifier schemawire.ID
+	signal := composer.Savepoint(func() (schemawire.Signal, *schemawire.FailError) {
 		result, operationSignal, failError, opErr := createTx[Schema](target.StoredModel(), target.Operations.Create, operationTransaction, headers, bodyRow)
 		if opErr != nil {
-			panic(model.FailPanic{Err: opErr})
+			panic(schemawire.FailPanic{Err: opErr})
 		}
-		if operationSignal == model.Failed {
-			return model.Failed, failError
+		if operationSignal == schemawire.Failed {
+			return schemawire.Failed, failError
 		}
 		identifier = result.ID
 		return operationSignal, nil
@@ -24,16 +25,16 @@ func NestedCreate[Schema any](composer model.Composer, target *model.Model[Schem
 	return identifier, signal
 }
 
-func NestedRead[Schema any](composer model.Composer, target *model.Model[Schema], id model.ID) (model.Entity[Schema], model.Signal) {
+func NestedRead[Schema any](composer flowext.Composer, target *flowext.Model[Schema], id schemawire.ID) (schemawire.Entity[Schema], schemawire.Signal) {
 	operationTransaction, headers := composer.OpTx(), composer.OpHeaders()
-	var entity model.Entity[Schema]
-	signal := composer.Savepoint(func() (model.Signal, *model.FailError) {
+	var entity schemawire.Entity[Schema]
+	signal := composer.Savepoint(func() (schemawire.Signal, *schemawire.FailError) {
 		record, operationSignal, failError, opErr := readTx[Schema](target.StoredModel(), target.Operations.Read, operationTransaction, headers, id)
 		if opErr != nil {
-			panic(model.FailPanic{Err: opErr})
+			panic(schemawire.FailPanic{Err: opErr})
 		}
-		if operationSignal == model.Failed {
-			return model.Failed, failError
+		if operationSignal == schemawire.Failed {
+			return schemawire.Failed, failError
 		}
 		entity = entityFromRecord[Schema](record)
 		return operationSignal, nil
@@ -41,42 +42,42 @@ func NestedRead[Schema any](composer model.Composer, target *model.Model[Schema]
 	return entity, signal
 }
 
-func NestedUpdate[Schema any](composer model.Composer, target *model.Model[Schema], id model.ID, patch any) model.Signal {
-	patchRow := patchToRowMap(patch)
+func NestedUpdate[Schema any](composer flowext.Composer, target *flowext.Model[Schema], id schemawire.ID, patch any) schemawire.Signal {
+	patchRow := anyToRowValues(patch, true)
 	operationTransaction, headers := composer.OpTx(), composer.OpHeaders()
-	return composer.Savepoint(func() (model.Signal, *model.FailError) {
+	return composer.Savepoint(func() (schemawire.Signal, *schemawire.FailError) {
 		_, operationSignal, failError, opErr := updateTx[Schema](target.StoredModel(), target.Operations.Update, operationTransaction, headers, id, patchRow)
 		if opErr != nil {
-			panic(model.FailPanic{Err: opErr})
+			panic(schemawire.FailPanic{Err: opErr})
 		}
 		return operationSignal, failError
 	})
 }
 
-func NestedDelete[Schema any](composer model.Composer, target *model.Model[Schema], id model.ID) model.Signal {
+func NestedDelete[Schema any](composer flowext.Composer, target *flowext.Model[Schema], id schemawire.ID) schemawire.Signal {
 	operationTransaction, headers := composer.OpTx(), composer.OpHeaders()
-	return composer.Savepoint(func() (model.Signal, *model.FailError) {
+	return composer.Savepoint(func() (schemawire.Signal, *schemawire.FailError) {
 		operationSignal, failError, opErr := deleteTx[Schema](target.StoredModel(), target.Operations.Delete, operationTransaction, headers, id)
 		if opErr != nil {
-			panic(model.FailPanic{Err: opErr})
+			panic(schemawire.FailPanic{Err: opErr})
 		}
 		return operationSignal, failError
 	})
 }
 
-func NestedListFor[Schema any](composer model.Composer, target *model.Model[Schema], cursor string, extra []model.ListFilter) ([]model.Entity[Schema], string, model.Signal) {
+func NestedListFor[Schema any](composer flowext.Composer, target *flowext.Model[Schema], cursor string, extra []schemawire.ListFilter) ([]schemawire.Entity[Schema], string, schemawire.Signal) {
 	operationTransaction, headers := composer.OpTx(), composer.OpHeaders()
-	var entities []model.Entity[Schema]
+	var entities []schemawire.Entity[Schema]
 	var next string
-	signal := composer.Savepoint(func() (model.Signal, *model.FailError) {
+	signal := composer.Savepoint(func() (schemawire.Signal, *schemawire.FailError) {
 		records, nextCursor, operationSignal, failError, opErr := listTx[Schema](target.StoredModel(), target, target.Operations.List, operationTransaction, headers, cursor, extra)
 		if opErr != nil {
-			panic(model.FailPanic{Err: opErr})
+			panic(schemawire.FailPanic{Err: opErr})
 		}
-		if operationSignal == model.Failed {
-			return model.Failed, failError
+		if operationSignal == schemawire.Failed {
+			return schemawire.Failed, failError
 		}
-		entities = make([]model.Entity[Schema], len(records))
+		entities = make([]schemawire.Entity[Schema], len(records))
 		for index, record := range records {
 			entities[index] = entityFromRecord[Schema](record)
 		}
@@ -86,34 +87,22 @@ func NestedListFor[Schema any](composer model.Composer, target *model.Model[Sche
 	return entities, next, signal
 }
 
-func inputToRowMap(input any) row.Values {
+func anyToRowValues(input any, patch bool) row.Values {
 	switch value := input.(type) {
 	case nil:
 		return row.Values{}
 	case row.Values:
 		return serde.FilterInputRow(value.Clone())
-	case map[string]any:
-		return serde.FilterInputRow(row.FromAnyMap(value))
 	default:
+		if patch {
+			return serde.PatchValues(input)
+		}
 		return serde.Values(input)
 	}
 }
 
-func patchToRowMap(patch any) row.Values {
-	switch value := patch.(type) {
-	case nil:
-		return row.Values{}
-	case row.Values:
-		return serde.FilterInputRow(value.Clone())
-	case map[string]any:
-		return serde.FilterInputRow(row.FromAnyMap(value))
-	default:
-		return serde.PatchValues(patch)
-	}
-}
-
-func entityFromRecord[Schema any](record model.Record) model.Entity[Schema] {
-	entity := model.Entity[Schema]{ID: record.ID, Status: record.Status}
+func entityFromRecord[Schema any](record schemawire.Record) schemawire.Entity[Schema] {
+	entity := schemawire.Entity[Schema]{ID: record.ID, Status: record.Status}
 	if typedData, ok := record.Data.(*Schema); ok && typedData != nil {
 		entity.Data = *typedData
 	}

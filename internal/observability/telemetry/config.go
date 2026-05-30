@@ -8,3 +8,13 @@ type Config struct {
 	OTLPEndpoint string
 	OTLPProtocol string
 }
+
+func ConfigFromInternal(enabled, metrics, traces bool, serviceName, endpoint string) Config {
+	return Config{
+		Enabled:      enabled,
+		Metrics:      metrics,
+		Traces:       traces,
+		ServiceName:  serviceName,
+		OTLPEndpoint: endpoint,
+	}
+}
