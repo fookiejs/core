@@ -22,6 +22,12 @@ jobs:
         with:
           version: v2.4.0
           args: --timeout=5m
+      - name: no-prose-comments
+        run: |
+          if grep -rnE '^[[:space:]]*(//|/\*)' --include='*.go' . | grep -vE '//(go:|nolint|\+build)'; then
+            echo "::error::prose comments are forbidden; only //go:build, //go:generate, //nolint directives are allowed"
+            exit 1
+          fi
 
   vuln:
     runs-on: ubuntu-latest

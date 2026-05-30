@@ -3,8 +3,6 @@ package model
 import (
 	"strings"
 	"unicode"
-
-	"github.com/fookiejs/fookie/internal/persistence/row"
 )
 
 func (f FieldDef) ColumnName() string {
@@ -50,16 +48,6 @@ func (m *StoredModel) ColumnForField(name string) string {
 		}
 	}
 	return name
-}
-
-func RelationFKValue(data row.Map, f FieldDef) (row.Cell, bool) {
-	if v, ok := data[f.Name]; ok && v.Kind != row.KindEmpty {
-		return v, true
-	}
-	if v, ok := data[f.ColumnName()]; ok && v.Kind != row.KindEmpty {
-		return v, true
-	}
-	return row.EmptyCell(), false
 }
 
 func (f FieldDef) KindValue() string { return string(f.Kind) }

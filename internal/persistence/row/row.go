@@ -2,7 +2,6 @@ package row
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/fookiejs/fookie/semantic"
 )
@@ -17,8 +16,6 @@ const (
 	KindTruth
 	KindBytes
 )
-
-type Map map[string]Cell
 
 type Cell struct {
 	Kind    Kind
@@ -135,40 +132,10 @@ func (c Cell) String() string {
 	}
 }
 
-func (m Map) MarshalJSON() ([]byte, error) {
-	raw := make(map[string]any, len(m))
-	for k, c := range m {
-		if c.Kind == KindEmpty {
-			continue
-		}
-		raw[k] = c.DriverValue(false)
-	}
-	return json.Marshal(raw)
-}
-
-func (m Map) TextOr(key, fallback string) string {
-	c, ok := m[key]
-	if !ok || c.Kind != KindText {
-		return fallback
-	}
-	return c.Text
-}
-
-func (m Map) RequireText(key string) string {
-	c, ok := m[key]
-	if !ok || c.Kind != KindText || c.Text == "" {
-		panic(fmt.Sprintf("row: required text column %q missing or empty", key))
-	}
-	return c.Text
-}
-
-func FromAnyMap(m map[string]any) Map {
-	if m == nil {
-		return nil
-	}
-	out := make(Map, len(m))
-	for k, v := range m {
-		out[k] = FromDriver(v)
+func FromAnyMap(input map[string]any) Values {
+	out := make(Values, 0, len(input))
+	for key, value := range input {
+		out = append(out, Field{Column: key, Cell: FromDriver(value)})
 	}
 	return out
 }

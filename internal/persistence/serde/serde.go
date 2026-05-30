@@ -34,115 +34,49 @@ func ToSnake(name string) string {
 	return builder.String()
 }
 
-func ToRow[S any](s S) row.Map {
-	out := make(row.Map)
-	collectSchemaValues(reflect.ValueOf(s), out)
-	return out
-}
-
-func ToPatchRow[S any](s S) row.Map {
-	out := make(row.Map)
-	collectPatchValues(reflect.ValueOf(s), out)
-	return out
-}
-
-func collectPatchValues(rv reflect.Value, out row.Map) {
-	collectRowValues(rv, out, true)
-}
-
-func collectSchemaValues(rv reflect.Value, out row.Map) {
-	collectRowValues(rv, out, false)
-}
-
-func collectRowValues(rv reflect.Value, out row.Map, patchOnly bool) {
-	rt := rv.Type()
-	for i := range rt.NumField() {
-		structField := rt.Field(i)
-		fieldValue := rv.Field(i)
-
-		if structField.Anonymous && fieldValue.Kind() == reflect.Struct {
-			if fieldValue.Type() == baseType {
-				collectBaseValues(fieldValue, out, patchOnly)
-			} else {
-				collectRowValues(fieldValue, out, patchOnly)
-			}
-			continue
-		}
-
-		if patchOnly && fieldValue.IsZero() {
-			continue
-		}
-
-		key := ToSnake(structField.Name)
-		if rv, ok := rowValueFromField(fieldValue); ok {
-			out[key] = row.FromValue(rv)
-		}
-	}
-}
-
-func collectBaseValues(fieldValue reflect.Value, out row.Map, patchOnly bool) {
-	for i := range baseType.NumField() {
-		structField := baseType.Field(i)
-		if semantic.IsProtectedBaseField(structField.Name) {
-			continue
-		}
-		bfv := fieldValue.Field(i)
-		if patchOnly && bfv.IsZero() {
-			continue
-		}
-		key := ToSnake(structField.Name)
-		if rv, ok := rowValueFromField(bfv); ok {
-			out[key] = row.FromValue(rv)
-		}
-	}
-}
-
-func FilterInputRow(m row.Map) row.Map {
-	if len(m) == 0 {
-		return m
-	}
-	out := make(row.Map, len(m))
-	for k, v := range m {
-		if IsProtectedBaseColumn(k) {
-			continue
-		}
-		out[k] = v
+func Values[Schema any](schema Schema) row.Values {
+	root := addressableStruct(reflect.ValueOf(schema))
+	metas := metaFor(root.Type())
+	out := make(row.Values, 0, len(metas))
+	for _, meta := range metas {
+		rowField := root.FieldByIndex(meta.index).Addr().Interface().(semantic.RowField)
+		out = append(out, row.Field{Column: meta.column, Cell: row.FromValue(rowField.RowValue())})
 	}
 	return out
 }
 
-func IsProtectedBaseColumn(name string) bool {
-	for i := range baseType.NumField() {
-		sf := baseType.Field(i)
-		if !semantic.IsProtectedBaseField(sf.Name) {
+func PatchValues[Schema any](schema Schema) row.Values {
+	root := addressableStruct(reflect.ValueOf(schema))
+	out := make(row.Values, 0)
+	for _, meta := range metaFor(root.Type()) {
+		field := root.FieldByIndex(meta.index)
+		if field.IsZero() {
 			continue
 		}
-		if ToSnake(sf.Name) == name {
-			return true
-		}
+		out = append(out, row.Field{Column: meta.column, Cell: row.FromValue(field.Addr().Interface().(semantic.RowField).RowValue())})
 	}
-	return false
+	return out
 }
 
-func rowValueFromField(fieldValue reflect.Value) (any, bool) {
-	if fieldValue.CanAddr() {
-		if rf, ok := fieldValue.Addr().Interface().(semantic.RowField); ok {
-			return rf.RowValue(), true
+func IntoStruct[Schema any](values row.Values, schema *Schema) {
+	if schema == nil || len(values) == 0 {
+		return
+	}
+	root := reflect.ValueOf(schema).Elem()
+	for _, meta := range metaFor(root.Type()) {
+		cell, ok := values.Find(meta.column)
+		if !ok || cell.Kind == row.KindEmpty {
+			continue
 		}
+		root.FieldByIndex(meta.index).Addr().Interface().(semantic.RowField).RowSet(cell.DriverValue(false))
 	}
-	tmp := reflect.New(fieldValue.Type()).Elem()
-	tmp.Set(fieldValue)
-	if rf, ok := tmp.Addr().Interface().(semantic.RowField); ok {
-		return rf.RowValue(), true
-	}
-	return nil, false
 }
 
-func FieldValue(s any, snakeName string) (any, bool) {
-	if s == nil {
+func FieldValue(schema any, snakeName string) (any, bool) {
+	if schema == nil {
 		return nil, false
 	}
-	reflectValue := reflect.ValueOf(s)
+	reflectValue := reflect.ValueOf(schema)
 	if reflectValue.Kind() == reflect.Pointer {
 		if reflectValue.IsNil() {
 			return nil, false
@@ -152,56 +86,36 @@ func FieldValue(s any, snakeName string) (any, bool) {
 	if reflectValue.Kind() != reflect.Struct {
 		return nil, false
 	}
-	return fieldValueWalk(reflectValue, snakeName)
-}
-
-func fieldValueWalk(rv reflect.Value, snakeName string) (any, bool) {
-	rt := rv.Type()
-	for i := range rt.NumField() {
-		structField := rt.Field(i)
-		fieldValue := rv.Field(i)
-		if structField.Anonymous && fieldValue.Kind() == reflect.Struct {
-			if v, ok := fieldValueWalk(fieldValue, snakeName); ok {
-				return v, true
-			}
+	root := addressableStruct(reflectValue)
+	for _, meta := range metaFor(root.Type()) {
+		if meta.column != snakeName {
 			continue
 		}
-		if ToSnake(structField.Name) != snakeName {
-			continue
-		}
-		return rowValueFromField(fieldValue)
+		return root.FieldByIndex(meta.index).Addr().Interface().(semantic.RowField).RowValue(), true
 	}
 	return nil, false
 }
 
-func FromRow[S any](m row.Map, s *S) {
-	if s == nil || len(m) == 0 {
-		return
+func FilterInputRow(values row.Values) row.Values {
+	out := make(row.Values, 0, len(values))
+	for _, field := range values {
+		if IsProtectedBaseColumn(field.Column) {
+			continue
+		}
+		out = append(out, field)
 	}
-	rv := reflect.ValueOf(s).Elem()
-	applyRowToValue(m, rv)
+	return out
 }
 
-func applyRowToValue(dataMap row.Map, rv reflect.Value) {
-	rt := rv.Type()
-	for i := range rt.NumField() {
-		structField := rt.Field(i)
-		fieldValue := rv.Field(i)
-
-		if structField.Anonymous && fieldValue.Kind() == reflect.Struct && fieldValue.CanAddr() {
-			applyRowToValue(dataMap, fieldValue)
+func IsProtectedBaseColumn(name string) bool {
+	for i := range baseType.NumField() {
+		structField := baseType.Field(i)
+		if !semantic.IsProtectedBaseField(structField.Name) {
 			continue
 		}
-
-		key := ToSnake(structField.Name)
-		cell, ok := dataMap[key]
-		if !ok || cell.Kind == row.KindEmpty || !fieldValue.CanAddr() {
-			continue
+		if ToSnake(structField.Name) == name {
+			return true
 		}
-		rf, ok := fieldValue.Addr().Interface().(semantic.RowField)
-		if !ok {
-			continue
-		}
-		rf.RowSet(cell.DriverValue(false))
 	}
+	return false
 }

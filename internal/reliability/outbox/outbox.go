@@ -132,7 +132,7 @@ func BusinessReferenceFromInput(inputJSON []byte) (string, bool, error) {
 	if err != nil {
 		return "", false, fmt.Errorf("BusinessReferenceFromInput: %w", err)
 	}
-	cell, exists := raw["reference"]
+	cell, exists := raw.Find("reference")
 	if !exists || cell.Kind != row.KindText {
 		return "", false, nil
 	}

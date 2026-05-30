@@ -3,61 +3,46 @@ package row
 import (
 	"bytes"
 	"encoding/json"
-	"strconv"
+	"fmt"
 )
 
-func UnmarshalJSON(data []byte) (Map, error) {
+func UnmarshalJSON(data []byte) (Values, error) {
 	if len(data) == 0 {
-		return Map{}, nil
+		return Values{}, nil
 	}
-	dec := json.NewDecoder(bytes.NewReader(data))
-	dec.UseNumber()
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.UseNumber()
 	var raw map[string]json.RawMessage
-	if err := dec.Decode(&raw); err != nil {
-		return nil, err
+	if err := decoder.Decode(&raw); err != nil {
+		return nil, fmt.Errorf("row: unmarshal: %w", err)
 	}
-	out := make(Map, len(raw))
-	for k, rm := range raw {
-		cell, err := cellFromJSON(rm)
-		if err != nil {
-			return nil, err
-		}
-		out[k] = cell
+	out := make(Values, 0, len(raw))
+	for key, message := range raw {
+		out = append(out, Field{Column: key, Cell: cellFromJSON(message)})
 	}
 	return out, nil
 }
 
-func cellFromJSON(rm json.RawMessage) (Cell, error) {
-	if string(rm) == "null" {
-		return EmptyCell(), nil
+func cellFromJSON(message json.RawMessage) Cell {
+	if string(message) == "null" {
+		return EmptyCell()
 	}
-	var s string
-	if err := json.Unmarshal(rm, &s); err == nil {
-		return FromText(s), nil
+	var text string
+	if err := json.Unmarshal(message, &text); err == nil {
+		return FromText(text)
 	}
-	var b bool
-	if err := json.Unmarshal(rm, &b); err == nil {
-		return FromTruth(b), nil
+	var truth bool
+	if err := json.Unmarshal(message, &truth); err == nil {
+		return FromTruth(truth)
 	}
-	var n json.Number
-	if err := json.Unmarshal(rm, &n); err == nil {
-		if i, err := n.Int64(); err == nil {
-			return FromInteger(i), nil
+	var number json.Number
+	if err := json.Unmarshal(message, &number); err == nil {
+		if integer, err := number.Int64(); err == nil {
+			return FromInteger(integer)
 		}
-		if f, err := n.Float64(); err == nil {
-			return FromNumber(f), nil
+		if float, err := number.Float64(); err == nil {
+			return FromNumber(float)
 		}
 	}
-	var ints []int64
-	if err := json.Unmarshal(rm, &ints); err == nil {
-		return FromBytes(rm), nil
-	}
-	var strs []string
-	if err := json.Unmarshal(rm, &strs); err == nil {
-		return FromBytes(rm), nil
-	}
-	if _, err := strconv.Unquote(string(rm)); err == nil {
-		return FromBytes(rm), nil
-	}
-	return FromBytes(rm), nil
+	return FromBytes(message)
 }

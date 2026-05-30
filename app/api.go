@@ -11,21 +11,21 @@ import (
 	pubmodel "github.com/fookiejs/fookie/model"
 )
 
-func inputRow(input any) row.Map {
+func inputRow(input any) row.Values {
 	switch typedInput := input.(type) {
 	case nil:
-		return row.Map{}
-	case row.Map:
+		return row.Values{}
+	case row.Values:
 		return serde.FilterInputRow(typedInput)
 	case map[string]any:
 		return serde.FilterInputRow(row.FromAnyMap(typedInput))
 	default:
-		return serde.ToPatchRow(input)
+		return serde.PatchValues(input)
 	}
 }
 
 func Create[S any](app *App, model *pubmodel.Model[S], headers map[string]string, input S) (string, error) {
-	res, err := app.engines[model.Name].Create(context.Background(), headers, serde.ToRow(input))
+	res, err := app.engines[model.Name].Create(context.Background(), headers, serde.Values(input))
 	if err != nil {
 		return "", err
 	}

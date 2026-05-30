@@ -44,7 +44,6 @@ linters:
           deny:
             - pkg: github.com/fookiejs/fookie/internal/persistence/row
               desc: row.Map erases field guarantees into generic cells; keep it inside persistence/serde/runtime/graphql boundaries and use typed Entity/Record/OpResult elsewhere
-        # Domain DAG: schema/persistence are below runtime/api. Edges may only point down.
         model-layer:
           list-mode: lax
           files:
@@ -72,6 +71,15 @@ linters:
           deny:
             - pkg: github.com/fookiejs/fookie/internal/api
               desc: "runtime is below api; api depends on runtime, not the reverse"
+        no-concrete-app:
+          list-mode: lax
+          files:
+            - $all
+            - "!$test"
+            - "!**/app/**"
+          deny:
+            - pkg: github.com/fookiejs/fookie/app
+              desc: "domains must declare and consume their own narrow interface (ISP); never import the concrete app package"
     forbidigo:
       forbid:
         - pattern: '^go\s'

@@ -249,7 +249,7 @@ func (c *ListFlow[F]) ApplyPagination(cursor string, limit int) {
 	c.queryBuilder.Limit = limit
 }
 
-func (c *ListFlow[F]) ListItems(app AppRef) ([]row.Map, string, error) {
+func (c *ListFlow[F]) ListItems(app AppRef) ([]row.Values, string, error) {
 	items, err := app.DB().List(TableFor(c.Model), BuildStoreQuery(c.Model, c.queryBuilder))
 	if err != nil {
 		return nil, "", err
@@ -258,7 +258,7 @@ func (c *ListFlow[F]) ListItems(app AppRef) ([]row.Map, string, error) {
 	return items, next, nil
 }
 
-func (c *ListFlow[F]) ListItemsTx(operationTransaction *OpTx) ([]row.Map, string, error) {
+func (c *ListFlow[F]) ListItemsTx(operationTransaction *OpTx) ([]row.Values, string, error) {
 	items, err := store.ListTx(operationTransaction.Ctx, operationTransaction.Tx, TableFor(c.Model), BuildStoreQuery(c.Model, c.queryBuilder))
 	if err != nil {
 		return nil, "", err
@@ -267,10 +267,10 @@ func (c *ListFlow[F]) ListItemsTx(operationTransaction *OpTx) ([]row.Map, string
 	return items, next, nil
 }
 
-func paginateList(items []row.Map, limit int) ([]row.Map, string) {
+func paginateList(items []row.Values, limit int) ([]row.Values, string) {
 	next := ""
 	if limit > 0 && len(items) == limit {
-		if idCell, ok := items[len(items)-1]["id"]; ok && idCell.Kind == row.KindText {
+		if idCell, ok := items[len(items)-1].Find("id"); ok && idCell.Kind == row.KindText {
 			next = idCell.Text
 		}
 	}

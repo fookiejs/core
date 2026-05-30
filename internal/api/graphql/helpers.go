@@ -69,18 +69,15 @@ func MergeFilters(base []model.ListFilter, extra ...model.ListFilter) []model.Li
 	return out
 }
 
-func NormalizeGraphQLInput(stored *model.StoredModel, input map[string]any) row.Map {
-	if input == nil {
-		return row.Map{}
-	}
+func NormalizeGraphQLInput(stored *model.StoredModel, input map[string]any) row.Values {
 	out := row.FromAnyMap(input)
 	for _, field := range stored.Fields() {
 		if field.RelationName == "" {
 			continue
 		}
-		if c, ok := out[field.GraphQLName()]; ok && c.Kind != row.KindEmpty {
-			out[field.Name] = c
-			delete(out, field.GraphQLName())
+		if cell, ok := out.Find(field.GraphQLName()); ok && cell.Kind != row.KindEmpty {
+			out = out.Upsert(field.Name, cell)
+			out = out.Remove(field.GraphQLName())
 		}
 	}
 	return serde.FilterInputRow(out)

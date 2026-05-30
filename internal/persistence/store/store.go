@@ -81,8 +81,8 @@ func Open(connStr string) (*DB, error) {
 	return &DB{Pool: pool}, nil
 }
 
-func (d *DB) Begin(ctx context.Context) (pgx.Tx, error) {
-	return d.Pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable})
+func (database *DB) Begin(ctx context.Context) (pgx.Tx, error) {
+	return database.Pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable})
 }
 
 func SavepointTx(ctx context.Context, transaction pgx.Tx, name string) error {
@@ -115,26 +115,25 @@ func validSavepointName(name string) bool {
 	return savepointNamePattern.MatchString(name)
 }
 
-func (d *DB) Migrate(tables []Table) error {
-	for _, t := range tables {
-		if err := d.migrateTable(t); err != nil {
-			return fmt.Errorf("migrate %s: %w", t.Name, err)
+func (database *DB) Migrate(tables []Table) error {
+	for _, table := range tables {
+		if err := database.migrateTable(table); err != nil {
+			return fmt.Errorf("migrate %s: %w", table.Name, err)
 		}
 	}
 	return nil
 }
 
-func (d *DB) migrateTable(table Table) error {
+func (database *DB) migrateTable(table Table) error {
 	cols := []string{`"id" TEXT PRIMARY KEY`}
-	for _, c := range table.Columns {
-		if c.IsID {
+	for _, column := range table.Columns {
+		if column.IsID {
 			continue
 		}
-		col := fmt.Sprintf(`"%s" %s`, c.Name, c.SQLType)
-		cols = append(cols, col)
+		cols = append(cols, fmt.Sprintf(`"%s" %s`, column.Name, column.SQLType))
 	}
 	query := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (%s)`, table.Name, strings.Join(cols, ", "))
-	if _, err := d.Pool.Exec(context.Background(), query); err != nil {
+	if _, err := database.Pool.Exec(context.Background(), query); err != nil {
 		return err
 	}
 
@@ -147,7 +146,7 @@ func (d *DB) migrateTable(table Table) error {
 		fmt.Sprintf(`ALTER TABLE "%s" ADD COLUMN IF NOT EXISTS "updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()`, table.Name),
 		fmt.Sprintf(`ALTER TABLE "%s" ADD COLUMN IF NOT EXISTS "is_deleted" BOOLEAN NOT NULL DEFAULT false`, table.Name),
 	} {
-		if _, err := d.Pool.Exec(ctx, query); err != nil {
+		if _, err := database.Pool.Exec(ctx, query); err != nil {
 			return fmt.Errorf("alter table %s: %w", table.Name, err)
 		}
 	}
@@ -156,7 +155,7 @@ func (d *DB) migrateTable(table Table) error {
 		if column.IsID {
 			continue
 		}
-		if _, err := d.Pool.Exec(context.Background(),
+		if _, err := database.Pool.Exec(context.Background(),
 			fmt.Sprintf(`ALTER TABLE "%s" ADD COLUMN IF NOT EXISTS "%s" %s`, table.Name, column.Name, column.SQLType)); err != nil {
 			return fmt.Errorf("add column %s.%s: %w", table.Name, column.Name, err)
 		}
@@ -167,7 +166,7 @@ func (d *DB) migrateTable(table Table) error {
 			continue
 		}
 		idx := fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s_%s_idx" ON "%s" ("%s")`, table.Name, column.Name, table.Name, column.Name)
-		if _, err := d.Pool.Exec(context.Background(), idx); err != nil {
+		if _, err := database.Pool.Exec(context.Background(), idx); err != nil {
 			return fmt.Errorf("index %s.%s: %w", table.Name, column.Field, err)
 		}
 	}
@@ -176,21 +175,21 @@ func (d *DB) migrateTable(table Table) error {
 			continue
 		}
 		idx := fmt.Sprintf(`CREATE UNIQUE INDEX IF NOT EXISTS "%s_%s_unique_idx" ON "%s" ("%s") WHERE %s`, table.Name, column.Name, table.Name, column.Name, activeOnly)
-		if _, err := d.Pool.Exec(context.Background(), idx); err != nil {
+		if _, err := database.Pool.Exec(context.Background(), idx); err != nil {
 			return fmt.Errorf("unique index %s.%s: %w", table.Name, column.Field, err)
 		}
 	}
 	return nil
 }
 
-func InsertTx(transaction pgx.Tx, table Table, data row.Map) (row.Map, error) {
+func InsertTx(transaction pgx.Tx, table Table, data row.Values) (row.Values, error) {
 	cols, args, placeholders := buildInsertParts(table, data)
 	if len(cols) == 0 {
 		return nil, fmt.Errorf("insert %s: empty row", table.Name)
 	}
-	q := fmt.Sprintf(`INSERT INTO "%s" (%s) VALUES (%s) RETURNING *`,
+	query := fmt.Sprintf(`INSERT INTO "%s" (%s) VALUES (%s) RETURNING *`,
 		table.Name, strings.Join(cols, ", "), strings.Join(placeholders, ", "))
-	rows, err := transaction.Query(context.Background(), q, args...)
+	rows, err := transaction.Query(context.Background(), query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("insert %s: %w", table.Name, err)
 	}
@@ -204,32 +203,32 @@ func InsertTx(transaction pgx.Tx, table Table, data row.Map) (row.Map, error) {
 	return normalizeRow(table, results[0]), nil
 }
 
-func UpdateTx(transaction pgx.Tx, table Table, identifier string, data row.Map) (row.Map, error) {
+func UpdateTx(transaction pgx.Tx, table Table, identifier string, data row.Values) (row.Values, error) {
 	if len(data) == 0 {
 		return ReadTx(transaction, table, identifier)
 	}
 	var sets []string
 	var args []any
-	n := 1
+	placeholder := 1
 	for _, column := range table.Columns {
 		if column.IsID {
 			continue
 		}
-		v, ok := data[column.Field]
+		cell, ok := data.Find(column.Field)
 		if !ok {
 			continue
 		}
-		sets = append(sets, fmt.Sprintf(`"%s" = $%d`, column.Name, n))
-		args = append(args, encodeVal(column, v))
-		n++
+		sets = append(sets, fmt.Sprintf(`"%s" = $%d`, column.Name, placeholder))
+		args = append(args, encodeVal(column, cell))
+		placeholder++
 	}
 	if len(sets) == 0 {
 		return ReadTx(transaction, table, identifier)
 	}
 	args = append(args, identifier)
-	q := fmt.Sprintf(`UPDATE "%s" SET %s WHERE "id" = $%d RETURNING *`,
-		table.Name, strings.Join(sets, ", "), n)
-	rows, err := transaction.Query(context.Background(), q, args...)
+	query := fmt.Sprintf(`UPDATE "%s" SET %s WHERE "id" = $%d RETURNING *`,
+		table.Name, strings.Join(sets, ", "), placeholder)
+	rows, err := transaction.Query(context.Background(), query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("update %s: %w", table.Name, err)
 	}
@@ -243,12 +242,12 @@ func UpdateTx(transaction pgx.Tx, table Table, identifier string, data row.Map) 
 	return normalizeRow(table, results[0]), nil
 }
 
-func DeleteTx(transaction pgx.Tx, t Table, id, updatedAt string) error {
+func DeleteTx(transaction pgx.Tx, table Table, identifier, updatedAt string) error {
 	tag, err := transaction.Exec(context.Background(),
-		fmt.Sprintf(`UPDATE "%s" SET "is_deleted" = true, "updated_at" = $1 WHERE "id" = $2 AND %s`, t.Name, activeOnly),
-		updatedAt, id)
+		fmt.Sprintf(`UPDATE "%s" SET "is_deleted" = true, "updated_at" = $1 WHERE "id" = $2 AND %s`, table.Name, activeOnly),
+		updatedAt, identifier)
 	if err != nil {
-		return fmt.Errorf("delete %s: %w", t.Name, err)
+		return fmt.Errorf("delete %s: %w", table.Name, err)
 	}
 	if tag.RowsAffected() == 0 {
 		return fmt.Errorf("not_found")
@@ -256,9 +255,9 @@ func DeleteTx(transaction pgx.Tx, t Table, id, updatedAt string) error {
 	return nil
 }
 
-func ReadTx(transaction pgx.Tx, table Table, id string) (row.Map, error) {
-	q := fmt.Sprintf(`SELECT * FROM "%s" WHERE "id" = $1 AND %s LIMIT 1`, table.Name, activeOnly)
-	rows, err := transaction.Query(context.Background(), q, id)
+func ReadTx(transaction pgx.Tx, table Table, identifier string) (row.Values, error) {
+	query := fmt.Sprintf(`SELECT * FROM "%s" WHERE "id" = $1 AND %s LIMIT 1`, table.Name, activeOnly)
+	rows, err := transaction.Query(context.Background(), query, identifier)
 	if err != nil {
 		return nil, fmt.Errorf("read %s: %w", table.Name, err)
 	}
@@ -275,18 +274,18 @@ func ReadTx(transaction pgx.Tx, table Table, id string) (row.Map, error) {
 func SumTx(transaction pgx.Tx, table Table, column, excludeID string, filters []Filter) (int64, error) {
 	var where []string
 	var args []any
-	n := 1
-	for _, f := range filters {
-		filterArguments, clauseArguments, err := buildFilterClause(f, n)
+	placeholder := 1
+	for _, filter := range filters {
+		clause, clauseArguments, err := buildFilterClause(filter, placeholder)
 		if err != nil {
 			return 0, err
 		}
-		where = append(where, filterArguments)
+		where = append(where, clause)
 		args = append(args, clauseArguments...)
-		n += len(clauseArguments)
+		placeholder += len(clauseArguments)
 	}
 	if excludeID != "" {
-		where = append(where, fmt.Sprintf(`"id" != $%d`, n))
+		where = append(where, fmt.Sprintf(`"id" != $%d`, placeholder))
 		args = append(args, excludeID)
 	}
 	where = append(where, activeOnly)
@@ -302,20 +301,20 @@ func SumTx(transaction pgx.Tx, table Table, column, excludeID string, filters []
 	return total, err
 }
 
-func (d *DB) List(t Table, q Query) ([]row.Map, error) {
-	return ListQuerier(context.Background(), d.Pool, t, q)
+func (database *DB) List(table Table, query Query) ([]row.Values, error) {
+	return ListQuerier(context.Background(), database.Pool, table, query)
 }
 
-func ListTx(ctx context.Context, transaction pgx.Tx, t Table, q Query) ([]row.Map, error) {
-	return ListQuerier(ctx, transaction, t, q)
+func ListTx(ctx context.Context, transaction pgx.Tx, table Table, query Query) ([]row.Values, error) {
+	return ListQuerier(ctx, transaction, table, query)
 }
 
-func ListQuerier(ctx context.Context, q Querier, table Table, query Query) ([]row.Map, error) {
-	qry, args, err := buildListSQL(table, query)
+func ListQuerier(ctx context.Context, querier Querier, table Table, query Query) ([]row.Values, error) {
+	sql, args, err := buildListSQL(table, query)
 	if err != nil {
 		return nil, err
 	}
-	rows, err := q.Query(ctx, qry, args...)
+	rows, err := querier.Query(ctx, sql, args...)
 	if err != nil {
 		return nil, fmt.Errorf("list %s: %w", table.Name, err)
 	}
@@ -326,76 +325,76 @@ func ListQuerier(ctx context.Context, q Querier, table Table, query Query) ([]ro
 	return normalizeRows(table, out), nil
 }
 
-func buildListSQL(table Table, querier Query) (string, []any, error) {
+func buildListSQL(table Table, query Query) (string, []any, error) {
 	var where []string
 	var args []any
-	n := 1
+	placeholder := 1
 	where = append(where, activeOnly)
-	for _, f := range querier.Filters {
-		filterArguments, clauseArguments, err := buildFilterClause(f, n)
+	for _, filter := range query.Filters {
+		clause, clauseArguments, err := buildFilterClause(filter, placeholder)
 		if err != nil {
 			return "", nil, err
 		}
-		where = append(where, filterArguments)
+		where = append(where, clause)
 		args = append(args, clauseArguments...)
-		n += len(clauseArguments)
+		placeholder += len(clauseArguments)
 	}
-	switch querier.CursorDir {
+	switch query.CursorDir {
 	case CursorAfter:
-		where = append(where, fmt.Sprintf(`"id" > $%d`, n))
-		args = append(args, querier.Cursor)
+		where = append(where, fmt.Sprintf(`"id" > $%d`, placeholder))
+		args = append(args, query.Cursor)
 	case CursorBefore:
-		where = append(where, fmt.Sprintf(`"id" < $%d`, n))
-		args = append(args, querier.Cursor)
+		where = append(where, fmt.Sprintf(`"id" < $%d`, placeholder))
+		args = append(args, query.Cursor)
 	}
-	qry := fmt.Sprintf(`SELECT * FROM "%s"`, table.Name)
+	sql := fmt.Sprintf(`SELECT * FROM "%s"`, table.Name)
 	if len(where) > 0 {
-		qry += " WHERE " + strings.Join(where, " AND ")
+		sql += " WHERE " + strings.Join(where, " AND ")
 	}
-	if len(querier.Orders) > 0 {
-		parts := make([]string, 0, len(querier.Orders))
-		for _, o := range querier.Orders {
-			dir := "ASC"
-			if o.Desc {
-				dir = "DESC"
+	if len(query.Orders) > 0 {
+		parts := make([]string, 0, len(query.Orders))
+		for _, order := range query.Orders {
+			direction := "ASC"
+			if order.Desc {
+				direction = "DESC"
 			}
-			parts = append(parts, fmt.Sprintf(`"%s" %s`, o.Field, dir))
+			parts = append(parts, fmt.Sprintf(`"%s" %s`, order.Field, direction))
 		}
-		qry += " ORDER BY " + strings.Join(parts, ", ")
+		sql += " ORDER BY " + strings.Join(parts, ", ")
 	}
-	limit := querier.Limit
+	limit := query.Limit
 	if limit <= 0 {
 		limit = 50
 	}
-	qry += fmt.Sprintf(" LIMIT %d", limit)
-	return qry, args, nil
+	sql += fmt.Sprintf(" LIMIT %d", limit)
+	return sql, args, nil
 }
 
-func FindExistingByUnique(ctx context.Context, querier Querier, table Table, data row.Map) (row.Map, error) {
+func FindExistingByUnique(ctx context.Context, querier Querier, table Table, data row.Values) (row.Values, error) {
 	var where []string
 	var args []any
-	n := 1
+	placeholder := 1
 	for _, column := range table.Columns {
 		if !column.Unique || column.IsID {
 			continue
 		}
-		value, ok := data[column.Field]
-		if !ok || value.Kind == row.KindEmpty {
+		cell, ok := data.Find(column.Field)
+		if !ok || cell.Kind == row.KindEmpty {
 			continue
 		}
-		if value.Kind == row.KindText && value.Text == "" {
+		if cell.Kind == row.KindText && cell.Text == "" {
 			continue
 		}
-		where = append(where, fmt.Sprintf(`"%s" = $%d`, column.Name, n))
-		args = append(args, encodeVal(column, value))
-		n++
+		where = append(where, fmt.Sprintf(`"%s" = $%d`, column.Name, placeholder))
+		args = append(args, encodeVal(column, cell))
+		placeholder++
 	}
 	if len(where) == 0 {
 		return nil, nil
 	}
 	where = append(where, activeOnly)
-	qry := fmt.Sprintf(`SELECT * FROM "%s" WHERE %s LIMIT 1`, table.Name, strings.Join(where, " AND "))
-	rows, err := querier.Query(ctx, qry, args...)
+	sql := fmt.Sprintf(`SELECT * FROM "%s" WHERE %s LIMIT 1`, table.Name, strings.Join(where, " AND "))
+	rows, err := querier.Query(ctx, sql, args...)
 	if err != nil {
 		return nil, fmt.Errorf("find unique %s: %w", table.Name, err)
 	}
@@ -409,30 +408,30 @@ func FindExistingByUnique(ctx context.Context, querier Querier, table Table, dat
 	return normalizeRow(table, results[0]), nil
 }
 
-func (d *DB) ResetEntityPending(ctx context.Context, t Table, id string) error {
-	_, err := d.Pool.Exec(ctx,
-		fmt.Sprintf(`UPDATE "%s" SET "_fookie_status"='pending', "_fookie_error"=NULL WHERE "id"=$1`, t.Name),
-		id)
+func (database *DB) ResetEntityPending(ctx context.Context, table Table, identifier string) error {
+	_, err := database.Pool.Exec(ctx,
+		fmt.Sprintf(`UPDATE "%s" SET "_fookie_status"='pending', "_fookie_error"=NULL WHERE "id"=$1`, table.Name),
+		identifier)
 	return err
 }
 
-func SetEntityStatusTx(transaction pgx.Tx, t Table, id, status string) error {
+func SetEntityStatusTx(transaction pgx.Tx, table Table, identifier, status string) error {
 	_, err := transaction.Exec(context.Background(),
-		fmt.Sprintf(`UPDATE "%s" SET "_fookie_status"=$1, "_fookie_error"=NULL WHERE "id"=$2`, t.Name),
-		status, id)
+		fmt.Sprintf(`UPDATE "%s" SET "_fookie_status"=$1, "_fookie_error"=NULL WHERE "id"=$2`, table.Name),
+		status, identifier)
 	return err
 }
 
-func SetEntityHeadersTx(transaction pgx.Tx, t Table, id string, headersJSON []byte) error {
+func SetEntityHeadersTx(transaction pgx.Tx, table Table, identifier string, headersJSON []byte) error {
 	_, err := transaction.Exec(context.Background(),
-		fmt.Sprintf(`UPDATE "%s" SET "_fookie_headers"=$1 WHERE "id"=$2`, t.Name),
-		string(headersJSON), id)
+		fmt.Sprintf(`UPDATE "%s" SET "_fookie_headers"=$1 WHERE "id"=$2`, table.Name),
+		string(headersJSON), identifier)
 	return err
 }
 
-func (d *DB) Read(table Table, id string) (row.Map, error) {
-	q := fmt.Sprintf(`SELECT * FROM "%s" WHERE "id" = $1 AND %s LIMIT 1`, table.Name, activeOnly)
-	rows, err := d.Pool.Query(context.Background(), q, id)
+func (database *DB) Read(table Table, identifier string) (row.Values, error) {
+	query := fmt.Sprintf(`SELECT * FROM "%s" WHERE "id" = $1 AND %s LIMIT 1`, table.Name, activeOnly)
+	rows, err := database.Pool.Query(context.Background(), query, identifier)
 	if err != nil {
 		return nil, fmt.Errorf("read %s: %w", table.Name, err)
 	}
@@ -447,100 +446,92 @@ func (d *DB) Read(table Table, id string) (row.Map, error) {
 }
 
 func AdvisoryLock(transaction pgx.Tx, key string) error {
-	h := fnv.New64a()
-	_, _ = h.Write([]byte(key))
-	lockKey := int64(h.Sum64())
+	hasher := fnv.New64a()
+	_, _ = hasher.Write([]byte(key))
+	lockKey := int64(hasher.Sum64()) //nolint:gosec
 	_, err := transaction.Exec(context.Background(), "SELECT pg_advisory_xact_lock($1)", lockKey)
 	return err
 }
 
-func buildFilterClause(filter Filter, n int) (string, []any, error) {
+func buildFilterClause(filter Filter, placeholder int) (string, []any, error) {
 	switch filter.Op {
 	case opIn:
-		return fmt.Sprintf(`"%s" = ANY($%d)`, filter.Field, n), []any{row.FilterDriver(filter.Value)}, nil
+		return fmt.Sprintf(`"%s" = ANY($%d)`, filter.Field, placeholder), []any{row.FilterDriver(filter.Value)}, nil
 	case opNear:
 		coordinateFilter, ok := filter.Value.(semantic.CoordinateFilter)
 		if !ok {
 			return "", nil, fmt.Errorf("buildFilterClause: @NEAR filter on field %q expects CoordinateFilter, got %T", filter.Field, filter.Value)
 		}
-		dLat := coordinateFilter.Radius / 111111.0
-		dLon := coordinateFilter.Radius / (111111.0 * math.Cos(coordinateFilter.Lat*math.Pi/180.0))
+		deltaLat := coordinateFilter.Radius / 111111.0
+		deltaLon := coordinateFilter.Radius / (111111.0 * math.Cos(coordinateFilter.Lat*math.Pi/180.0))
 		clause := fmt.Sprintf(`"%s" <@ box(point($%d,$%d),point($%d,$%d))`,
-			filter.Field, n, n+1, n+2, n+3)
-		return clause, []any{coordinateFilter.Lat - dLat, coordinateFilter.Lon - dLon, coordinateFilter.Lat + dLat, coordinateFilter.Lon + dLon}, nil
+			filter.Field, placeholder, placeholder+1, placeholder+2, placeholder+3)
+		return clause, []any{coordinateFilter.Lat - deltaLat, coordinateFilter.Lon - deltaLon, coordinateFilter.Lat + deltaLat, coordinateFilter.Lon + deltaLon}, nil
 	case opBox:
 		boxFilter, ok := filter.Value.(semantic.BoxFilter)
 		if !ok {
 			return "", nil, fmt.Errorf("buildFilterClause: @BOX filter on field %q expects BoxFilter, got %T", filter.Field, filter.Value)
 		}
 		clause := fmt.Sprintf(`"%s" <@ box(point($%d,$%d),point($%d,$%d))`,
-			filter.Field, n, n+1, n+2, n+3)
+			filter.Field, placeholder, placeholder+1, placeholder+2, placeholder+3)
 		return clause, []any{boxFilter.MinLat, boxFilter.MinLon, boxFilter.MaxLat, boxFilter.MaxLon}, nil
 	default:
-		return fmt.Sprintf(`"%s" %s $%d`, filter.Field, filter.Op, n), []any{row.FilterDriver(filter.Value)}, nil
+		return fmt.Sprintf(`"%s" %s $%d`, filter.Field, filter.Op, placeholder), []any{row.FilterDriver(filter.Value)}, nil
 	}
 }
 
-func buildInsertParts(t Table, data row.Map) (cols []string, args []any, placeholders []string) {
-	seen := map[string]bool{}
-	i := 1
-	for _, column := range t.Columns {
-		if seen[column.Field] {
-			continue
-		}
-		value, ok := data[column.Field]
+func buildInsertParts(table Table, data row.Values) (cols []string, args []any, placeholders []string) {
+	placeholder := 1
+	for _, column := range table.Columns {
+		cell, ok := data.Find(column.Field)
 		if !ok {
 			continue
 		}
-		seen[column.Field] = true
 		cols = append(cols, fmt.Sprintf(`"%s"`, column.Name))
-		args = append(args, encodeVal(column, value))
-		placeholders = append(placeholders, fmt.Sprintf("$%d", i))
-		i++
+		args = append(args, encodeVal(column, cell))
+		placeholders = append(placeholders, fmt.Sprintf("$%d", placeholder))
+		placeholder++
 	}
 	return cols, args, placeholders
 }
 
-func encodeVal(c Column, v row.Cell) any {
-	return v.DriverValue(c.IsJSON)
+func encodeVal(column Column, cell row.Cell) any {
+	return cell.DriverValue(column.IsJSON)
 }
 
-func normalizeRow(t Table, data row.Map) row.Map {
-	if data == nil {
-		return data
-	}
-	for _, c := range t.Columns {
-		if c.Name == c.Field {
+func normalizeRow(table Table, data row.Values) row.Values {
+	for _, column := range table.Columns {
+		if column.Name == column.Field {
 			continue
 		}
-		if v, ok := data[c.Name]; ok {
-			data[c.Field] = v
+		if cell, ok := data.Find(column.Name); ok {
+			data = data.Upsert(column.Field, cell)
 		}
 	}
 	return data
 }
 
-func normalizeRows(t Table, rows []row.Map) []row.Map {
-	for i := range rows {
-		rows[i] = normalizeRow(t, rows[i])
+func normalizeRows(table Table, records []row.Values) []row.Values {
+	for index := range records {
+		records[index] = normalizeRow(table, records[index])
 	}
-	return rows
+	return records
 }
 
-func collectRows(rows pgx.Rows) ([]row.Map, error) {
+func collectRows(rows pgx.Rows) ([]row.Values, error) {
 	defer rows.Close()
 	descs := rows.FieldDescriptions()
-	var out []row.Map
+	var out []row.Values
 	for rows.Next() {
 		vals, err := rows.Values()
 		if err != nil {
 			return nil, err
 		}
-		rowMap := make(row.Map, len(descs))
-		for i, d := range descs {
-			rowMap[d.Name] = row.FromDriver(vals[i])
+		record := make(row.Values, len(descs))
+		for index, desc := range descs {
+			record[index] = row.Field{Column: desc.Name, Cell: row.FromDriver(vals[index])}
 		}
-		out = append(out, rowMap)
+		out = append(out, record)
 	}
 	return out, rows.Err()
 }

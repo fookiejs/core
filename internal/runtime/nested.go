@@ -86,29 +86,29 @@ func NestedListFor[Schema any](composer model.Composer, target *model.Model[Sche
 	return entities, next, signal
 }
 
-func inputToRowMap(input any) row.Map {
+func inputToRowMap(input any) row.Values {
 	switch value := input.(type) {
 	case nil:
-		return row.Map{}
-	case row.Map:
-		return serde.FilterInputRow(cloneRowMap(value))
+		return row.Values{}
+	case row.Values:
+		return serde.FilterInputRow(value.Clone())
 	case map[string]any:
 		return serde.FilterInputRow(row.FromAnyMap(value))
 	default:
-		return serde.ToRow(input)
+		return serde.Values(input)
 	}
 }
 
-func patchToRowMap(patch any) row.Map {
+func patchToRowMap(patch any) row.Values {
 	switch value := patch.(type) {
 	case nil:
-		return row.Map{}
-	case row.Map:
-		return serde.FilterInputRow(cloneRowMap(value))
+		return row.Values{}
+	case row.Values:
+		return serde.FilterInputRow(value.Clone())
 	case map[string]any:
 		return serde.FilterInputRow(row.FromAnyMap(value))
 	default:
-		return serde.ToPatchRow(patch)
+		return serde.PatchValues(patch)
 	}
 }
 
