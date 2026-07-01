@@ -1,9 +1,44 @@
-# Fookie
+# @fookiejs/core
 
-Go library for schema-first apps: models, hooks, internals, externals, Postgres migrations, and HTTP API.
+Model-driven TypeScript framework with observable flows, PostgreSQL persistence, and outbox-based externals.
 
-Import as `github.com/fookiejs/fookie` and `github.com/fookiejs/fookie/semantic`.
+## Install
 
-See `../demo/bank` for an example app. GraphQL (`/graphql`) is consumed from `@fookiejs/client` or any HTTP client; there is no Go CLI in this repo.
+```bash
+npm install @fookiejs/core pg zod
+```
 
-Telemetry is optional and exports only through OTLP (gRPC or HTTP). Core does not know Prometheus, Grafana, or any other backend; an OpenTelemetry Collector routes metrics and traces. Set `OTEL_ENABLED=true` and `OTEL_EXPORTER_OTLP_ENDPOINT` before `App.Run()`. User metrics: `flow.Metric.Increment`, `Histogram`, `Gauge` with `custom.*` names only.
+## Quick start
+
+See `example.ts` for the full contract. Run locally:
+
+```bash
+npm install
+npm run build
+npm run example
+```
+
+Requires PostgreSQL at `postgres://localhost:5432/fookie` when running the example.
+
+## API
+
+- `Model`, `External`, `Types`, `flows`, `app`
+- CRUD via `fookie.create`, `list`, `update`, `delete`
+- Saga resume via `fookie.resume(runId)` and `fookie.setExternalResult`
+- HTTP server via `fookie.run()` — `POST /{model}/create`, `/list`, `/{id}/update`, `/{id}/delete`, `/external/result`
+- Observability via `fookie.logs()`, `fookie.metrics()`, `fookie.spans()`
+
+## Scripts
+
+| Script | Description |
+|--------|-------------|
+| `npm test` | Run tests (node:test) |
+| `npm run test:coverage` | Coverage (99%+ lines) |
+| `npm run build` | Compile to `dist/` |
+| `npm run example` | Run `example.ts` against local `src` |
+
+## PostgreSQL integration test
+
+```bash
+FOOKIE_TEST_DATABASE=postgres://localhost:5432/fookie_test npm test
+```

@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true,
+    "paths": {
+      "@fookiejs/core": ["./src/index.ts"]
+    }
+  },
+  "include": ["example.ts", "src/index.ts"]
+}
