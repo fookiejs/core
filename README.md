@@ -27,6 +27,7 @@ Requires PostgreSQL at `postgres://localhost:5432/fookie` when running the examp
 - Saga resume via `fookie.resume(runId)` and `fookie.setExternalResult`
 - HTTP server via `fookie.run()` — `POST /{model}/create`, `/list`, `/{id}/update`, `/{id}/delete`, `/external/result`
 - Observability via `fookie.logs()`, `fookie.metrics()`, `fookie.spans()`
+- OpenTelemetry: spans, counters, and histograms are emitted through `@opentelemetry/api` — register any OTel SDK/exporter in your app and framework telemetry flows to it; without an SDK the calls are no-ops
 
 ## Scripts
 

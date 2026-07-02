@@ -37,7 +37,7 @@ export class MockDb implements InjectablePool {
       if (this.mode === "fail-create-table") {
         throw new Error("create");
       }
-      const match = sql.match(/CREATE TABLE IF NOT EXISTS (\w+)/);
+      const match = sql.match(/CREATE TABLE IF NOT EXISTS (?:public\.)?(\w+)/);
       if (match?.[1]) {
         this.tables.add(match[1]);
         if (!this.rows.has(match[1])) {
@@ -77,7 +77,7 @@ export class MockDb implements InjectablePool {
       if (this.mode === "fail-upsert") {
         throw new Error("upsert");
       }
-      const tableMatch = sql.match(/INSERT INTO (\w+)/);
+      const tableMatch = sql.match(/INSERT INTO (?:public\.)?(\w+)/);
       const colsMatch = sql.match(/\(([^)]+)\) VALUES/);
       const table = tableMatch?.[1] ?? "unknown";
       const cols = colsMatch?.[1]?.split(",").map((c) => c.trim()) ?? [];
@@ -100,7 +100,7 @@ export class MockDb implements InjectablePool {
       if (this.mode === "fail-select") {
         throw new Error("select");
       }
-      const tableMatch = sql.match(/SELECT \* FROM (\w+)/);
+      const tableMatch = sql.match(/SELECT \* FROM (?:public\.)?(\w+)/);
       const table = tableMatch?.[1] ?? "";
       const tableRows = this.rows.get(table);
       if (!tableRows) {
@@ -141,12 +141,20 @@ export function httpPost(port: number, path: string, body: Record<string, unknow
         port,
         path,
         method: "POST",
-        headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(payload) },
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(payload),
+        },
       },
       (res) => {
         const chunks: Buffer[] = [];
         res.on("data", (c) => chunks.push(c));
-        res.on("end", () => resolve({ status: res.statusCode ?? 0, json: JSON.parse(Buffer.concat(chunks).toString("utf8")) }));
+        res.on("end", () =>
+          resolve({
+            status: res.statusCode ?? 0,
+            json: JSON.parse(Buffer.concat(chunks).toString("utf8")),
+          }),
+        );
       },
     );
     req.on("error", reject);
@@ -184,7 +192,13 @@ export function httpTruncateBody(port: number, path: string) {
 export function httpAbort(port: number, path: string) {
   return new Promise<number>((resolve) => {
     const req = http.request(
-      { hostname: "127.0.0.1", port, path, method: "POST", headers: { "Content-Type": "application/json" } },
+      {
+        hostname: "127.0.0.1",
+        port,
+        path,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      },
       (res) => {
         res.resume();
         resolve(res.statusCode ?? 0);
@@ -207,14 +221,27 @@ export function httpGet(port: number, path: string) {
   });
 }
 
-export function httpRaw(port: number, path: string, payload: string, headers: Record<string, string> = {}) {
+export function httpRaw(
+  port: number,
+  path: string,
+  payload: string,
+  headers: Record<string, string> = {},
+) {
   return new Promise<{ status: number; body: string }>((resolve, reject) => {
     const req = http.request(
-      { hostname: "127.0.0.1", port, path, method: "POST", headers: { "Content-Type": "application/json", ...headers } },
+      {
+        hostname: "127.0.0.1",
+        port,
+        path,
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...headers },
+      },
       (res) => {
         const chunks: Buffer[] = [];
         res.on("data", (c) => chunks.push(c));
-        res.on("end", () => resolve({ status: res.statusCode ?? 0, body: Buffer.concat(chunks).toString("utf8") }));
+        res.on("end", () =>
+          resolve({ status: res.statusCode ?? 0, body: Buffer.concat(chunks).toString("utf8") }),
+        );
       },
     );
     req.on("error", reject);

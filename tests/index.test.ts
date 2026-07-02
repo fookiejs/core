@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { app, Model, External, Types, Done, Running, Failed, flows, models } from "../src/index.ts";
 import { MockDb, httpPost, httpGet } from "./mock-db.ts";
 
+let nextPort = 41000;
+
 const scoreExt = External({
   name: "fraud.score",
   input: { amount: Types.currency },
@@ -39,7 +41,8 @@ describe("fookie core", () => {
 
   beforeEach(() => {
     db = new MockDb();
-    port = 41000 + Math.floor(Math.random() * 1000);
+    port = nextPort;
+    nextPort += 10;
   });
 
   function createApp(flow: ReturnType<typeof flows>, onExternalEvent = async () => {}) {

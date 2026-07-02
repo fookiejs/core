@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { app, Model, External, Types, Done, flows } from "../src/index.ts";
 import { MockDb, httpPost, httpSocketDrop } from "./mock-db.ts";
 
+let nextPort = 46000;
+
 const scoreExt = External({
   name: "fraud.score",
   input: { amount: Types.currency },
@@ -17,7 +19,8 @@ describe("filter and http branches", () => {
 
   beforeEach(() => {
     db = new MockDb();
-    port = 46000 + Math.floor(Math.random() * 1000);
+    port = nextPort;
+    nextPort += 10;
   });
 
   it("exercises disabled runtime filter ops per field group", async () => {
@@ -139,7 +142,7 @@ describe("filter and http branches", () => {
     });
   });
 
-  it("parses http filters with skipped invalid operators", async () => {
+  it("rejects http filters carrying invalid operators", async () => {
     const user = Model({
       name: "HttpFilter",
       fields: { email: Types.email, score: Types.int, meta: Types.jsonb },
@@ -183,10 +186,12 @@ describe("filter and http branches", () => {
         score: { gt: "bad" },
       },
     });
-    const stripped = await httpPost(port, "/httpfilter/list", {
-      filter: { email: { eq: "h@f.com", ne: {}, like: false } },
+    assert.equal(junk.status, 400);
+
+    const clean = await httpPost(port, "/httpfilter/list", {
+      filter: { email: { eq: "h@f.com" } },
     });
-    assert.equal(stripped.status, 200);
+    assert.equal(clean.status, 200);
   });
 
   it("covers pg parse branches and outbox json skips", async () => {

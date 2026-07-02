@@ -143,7 +143,7 @@ Framework bunları `order.created`, `order.validation_failed` yapar.
 | Log | stdout / OTLP | structured JSON |
 | Metric | OTLP / Prometheus | counter + histogram |
 
-Developer exporter seçmez. `app({ telemetry: ... })` veya env ile framework bağlar.
+Framework tüm span/counter/histogram'ları `@opentelemetry/api` üzerinden üretir. Uygulama tarafında herhangi bir OTel SDK/exporter register edildiğinde telemetri otomatik oraya akar; SDK yoksa çağrılar no-op'tur. Developer exporter'ı env veya SDK kurulumuyla seçer, framework koduna dokunmaz.
 
 ## Flow'da olmayanlar
 

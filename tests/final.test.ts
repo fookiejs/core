@@ -4,6 +4,8 @@ import http from "node:http";
 import { app, Model, External, Types, Done, Failed, Running, flows } from "../src/index.ts";
 import { MockDb, httpPost, httpRaw, httpAbort, httpSocketDrop } from "./mock-db.ts";
 
+let nextPort = 44000;
+
 const scoreExt = External({
   name: "fraud.score",
   input: { amount: Types.currency },
@@ -38,7 +40,8 @@ describe("final coverage", () => {
 
   beforeEach(() => {
     db = new MockDb();
-    port = 44000 + Math.floor(Math.random() * 1000);
+    port = nextPort;
+    nextPort += 10;
   });
 
   it("covers external invalid completed output and ghost resume", async () => {
@@ -669,7 +672,7 @@ describe("final coverage", () => {
       body: { email: "n@e.com" },
       filter: {},
     });
-    assert.equal(miss, "done");
+    assert.equal(miss, "failed");
     db.mode = "ok";
   });
 

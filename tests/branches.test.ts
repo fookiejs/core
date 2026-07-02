@@ -13,6 +13,8 @@ import {
 } from "../src/index.ts";
 import { MockDb, httpPost, httpRaw } from "./mock-db.ts";
 
+let nextPort = 43000;
+
 const scoreExt = External({
   name: "fraud.score",
   input: { amount: Types.currency },
@@ -27,7 +29,8 @@ describe("branch coverage", () => {
 
   beforeEach(() => {
     db = new MockDb();
-    port = 43000 + Math.floor(Math.random() * 1000);
+    port = nextPort;
+    nextPort += 10;
   });
 
   it("covers relation models, filter branches, and pg parsing", async () => {
@@ -234,14 +237,21 @@ describe("branch coverage", () => {
     assert.equal(again, "running");
     assert.equal(await fookie.resume("missing-run"), "failed");
 
-    await fookie.create(parent, { email: "p@p.com" });
+    const parentCreated = await fookie.create(parent, { email: "p@p.com" });
+    assert.equal(parentCreated.signal, "done");
+    if (parentCreated.signal !== "done") {
+      return;
+    }
     await fookie.list(parent, {});
-    await fookie.update(parent, {
-      id: "00000000-0000-7000-8000-000000000099",
-      body: {},
-      filter: {},
-    });
-    await fookie.delete(parent, { id: "00000000-0000-7000-8000-000000000099", filter: {} });
+    assert.equal(
+      await fookie.update(parent, { id: parentCreated.id, body: {}, filter: {} }),
+      "done",
+    );
+    assert.equal(await fookie.delete(parent, { id: parentCreated.id, filter: {} }), "done");
+
+    const missingId = "00000000-0000-7000-8000-000000000099";
+    assert.equal(await fookie.update(parent, { id: missingId, body: {}, filter: {} }), "failed");
+    assert.equal(await fookie.delete(parent, { id: missingId, filter: {} }), "failed");
   });
 
   it("covers outbox hydration and invalid rows", async () => {
@@ -941,7 +951,7 @@ describe("branch coverage", () => {
 
     fookie.run();
     const badBody = await httpPost(port, "/cacheuser/create", { body: 123 });
-    assert.equal(badBody.status, 200);
+    assert.equal(badBody.status, 400);
 
     const badList = await httpPost(port, "/cacheuser/list", { filter: { email: { eq: 1 } } });
     assert.equal(badList.status, 400);

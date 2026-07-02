@@ -14,6 +14,8 @@ import {
 } from "../src/index.ts";
 import { MockDb, httpPost } from "./mock-db.ts";
 
+let nextPort = 45000;
+
 const fraud = External({
   name: "fraud.score",
   input: { amount: Types.currency },
@@ -406,7 +408,8 @@ describe("order flow integration", () => {
   });
 
   it("serves order http api mirroring example models", async () => {
-    const port = 45000 + Math.floor(Math.random() * 1000);
+    const port = nextPort;
+    nextPort += 10;
     const fookie = app({
       listen: String(port),
       database: "postgres://mock",

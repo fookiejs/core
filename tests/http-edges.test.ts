@@ -4,6 +4,8 @@ import http from "node:http";
 import { app, Model, External, Types, Done, flows } from "../src/index.ts";
 import { MockDb, httpPost, httpRaw, httpTruncateBody, httpSocketDrop } from "./mock-db.ts";
 
+let nextPort = 47000;
+
 const scoreExt = External({
   name: "fraud.score",
   input: { amount: Types.currency },
@@ -18,7 +20,8 @@ describe("http edge routes", () => {
 
   beforeEach(() => {
     db = new MockDb();
-    port = 47000 + Math.floor(Math.random() * 1000);
+    port = nextPort;
+    nextPort += 10;
   });
 
   it("covers 404 paths and external payload branches", async () => {
@@ -312,14 +315,14 @@ describe("http edge routes", () => {
       "/filterops/list",
       JSON.stringify({ filter: { email: { like: 1, startsWith: 1, endsWith: false } } }),
     );
-    assert.equal(invalidLike.status, 200);
+    assert.equal(invalidLike.status, 400);
 
     const invalidNear = await httpRaw(
       port,
       "/filterops/list",
       JSON.stringify({ filter: { loc: { near: ["a", "b"] } } }),
     );
-    assert.equal(invalidNear.status, 200);
+    assert.equal(invalidNear.status, 400);
 
     const arrayBody = await httpRaw(port, "/filterops/list", "[]");
     assert.equal(arrayBody.status, 400);
