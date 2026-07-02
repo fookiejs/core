@@ -1,7 +1,7 @@
-import { beforeEach, describe, it } from "node:test";
+import { afterEach, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { app, Model, External, Types, Done, flows } from "../src/index.ts";
-import { MockDb, httpPost, httpSocketDrop } from "./mock-db.ts";
+import { MockDb, httpPost, httpSocketDrop, trackApp, shutdownLiveApps } from "./mock-db.ts";
 
 let nextPort = 46000;
 
@@ -21,6 +21,10 @@ describe("filter and http branches", () => {
     db = new MockDb();
     port = nextPort;
     nextPort += 10;
+  });
+
+  afterEach(async () => {
+    await shutdownLiveApps();
   });
 
   it("exercises disabled runtime filter ops per field group", async () => {
@@ -162,14 +166,14 @@ describe("filter and http branches", () => {
       }),
     });
 
-    const fookie = app({
+    const fookie = trackApp(app({
       listen: String(port),
       database: "postgres://mock",
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
       pool: db,
-    });
+    }));
     fookie.run();
 
     await fookie.create(user, { email: "h@f.com", score: 1, meta: "{}" });
@@ -300,7 +304,7 @@ describe("filter and http branches", () => {
     });
 
     const events: { externalId: string }[] = [];
-    const fookie = app({
+    const fookie = trackApp(app({
       listen: String(port),
       database: "postgres://mock",
       models: [user],
@@ -309,7 +313,7 @@ describe("filter and http branches", () => {
         events.push(event);
       },
       pool: db,
-    });
+    }));
     fookie.run();
 
     const pending = await fookie.create(user, { email: "e@h.com" });
@@ -413,14 +417,14 @@ describe("filter and http branches", () => {
       }),
     });
 
-    const fookie = app({
+    const fookie = trackApp(app({
       listen: String(port),
       database: "postgres://mock",
       models: [failUser, known],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
       pool: db,
-    });
+    }));
     fookie.run();
 
     const failed = await httpPost(port, "/httpfail/create", {

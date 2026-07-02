@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { app, Model, External, Types, Done, Running, Failed, flows, models } from "../src/index.ts";
-import { MockDb, httpPost, httpGet } from "./mock-db.ts";
+import { MockDb, httpPost, httpGet, trackApp, shutdownLiveApps } from "./mock-db.ts";
 
 let nextPort = 41000;
 
@@ -43,6 +43,10 @@ describe("fookie core", () => {
     db = new MockDb();
     port = nextPort;
     nextPort += 10;
+  });
+
+  afterEach(async () => {
+    await shutdownLiveApps();
   });
 
   function createApp(flow: ReturnType<typeof flows>, onExternalEvent = async () => {}) {
@@ -319,14 +323,16 @@ describe("fookie core", () => {
         },
       }),
     );
-    const fookie = app({
-      listen: String(port),
-      database: "postgres://mock",
-      models: [user],
-      externals: [scoreExt] as const,
-      onExternalEvent: async () => {},
-      pool: db,
-    });
+    const fookie = trackApp(
+      app({
+        listen: String(port),
+        database: "postgres://mock",
+        models: [user],
+        externals: [scoreExt] as const,
+        onExternalEvent: async () => {},
+        pool: db,
+      }),
+    );
     assert.equal(fookie.run(), true);
     assert.equal(fookie.run(), true);
     const created = await httpPost(port, "/user/create", {
@@ -340,6 +346,33 @@ describe("fookie core", () => {
     assert.equal(bad.status, 404);
     const method = await httpGet(port, "/user/list");
     assert.equal(method, 405);
+  });
+
+  it("stops the http server and owned pool", async () => {
+    const user = buildUserModel(
+      flows({
+        create: async () => Done,
+        list: async () => Done,
+        update: async () => Done,
+        delete: async () => Done,
+      }),
+    );
+    const fookie = trackApp(
+      app({
+        listen: String(port),
+        database: "postgres://mock",
+        models: [user],
+        externals: [scoreExt] as const,
+        onExternalEvent: async () => {},
+        pool: db,
+      }),
+    );
+    fookie.run();
+    assert.equal(await fookie.stop(), true);
+    await assert.rejects(
+      () => httpPost(port, "/user/list", { filter: {} }),
+      (err: Error) => err.message.includes("ECONNREFUSED"),
+    );
   });
 
   it("rolls back failed mutations", async () => {

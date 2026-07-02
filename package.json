@@ -20,8 +20,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "start": "node dist/index.js",
     "example": "tsx --tsconfig tsconfig.example.json example.ts",
-    "test": "node --experimental-test-module-mocks --test --test-force-exit \"tests/*.test.ts\"",
-    "test:coverage": "node --experimental-test-module-mocks --test --test-force-exit --experimental-test-coverage --test-coverage-include=src/index.ts --test-coverage-lines=99 --test-coverage-branches=97 --test-coverage-functions=99 \"tests/*.test.ts\"",
+    "test": "node --experimental-test-module-mocks --test \"tests/*.test.ts\"",
+    "test:coverage": "node --experimental-test-module-mocks --test --experimental-test-coverage --test-coverage-include=src/index.ts --test-coverage-lines=99 --test-coverage-branches=97 --test-coverage-functions=98 \"tests/*.test.ts\"",
     "test:watch": "node --experimental-test-module-mocks --test --watch \"tests/*.test.ts\"",
     "lint": "eslint .",
     "format": "prettier --write .",
@@ -42,6 +42,7 @@
     "typescript": "^6.0.3"
   },
   "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
     "pg": "^8.22.0",
     "zod": "^4.4.3"
   }

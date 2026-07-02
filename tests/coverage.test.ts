@@ -1,7 +1,7 @@
-import { beforeEach, describe, it, mock } from "node:test";
+import { afterEach, beforeEach, describe, it, mock } from "node:test";
 import assert from "node:assert/strict";
 import { app, Model, External, Types, Done, Running, Failed, flows, models } from "../src/index.ts";
-import { MockDb, httpPost, httpRaw } from "./mock-db.ts";
+import { MockDb, httpPost, httpRaw, trackApp, shutdownLiveApps } from "./mock-db.ts";
 
 let nextPort = 42000;
 
@@ -21,6 +21,10 @@ describe("coverage", () => {
     db = new MockDb();
     port = nextPort;
     nextPort += 10;
+  });
+
+  afterEach(async () => {
+    await shutdownLiveApps();
   });
 
   it("covers types builders and filter ops", async () => {
@@ -302,14 +306,14 @@ describe("coverage", () => {
         delete: async () => Done,
       }),
     });
-    const fookie = app({
+    const fookie = trackApp(app({
       listen: String(port),
       database: "postgres://mock",
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
       pool: db,
-    });
+    }));
     fookie.run();
     const created = await httpPost(port, "/httpuser/create", {
       body: { email: "h@u.com", name: "H" },

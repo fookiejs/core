@@ -1,8 +1,8 @@
-import { beforeEach, describe, it } from "node:test";
+import { afterEach, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
 import { app, Model, External, Types, Done, Failed, Running, flows } from "../src/index.ts";
-import { MockDb, httpPost, httpRaw, httpAbort, httpSocketDrop } from "./mock-db.ts";
+import { MockDb, httpPost, httpRaw, httpAbort, httpSocketDrop, trackApp, shutdownLiveApps } from "./mock-db.ts";
 
 let nextPort = 44000;
 
@@ -42,6 +42,10 @@ describe("final coverage", () => {
     db = new MockDb();
     port = nextPort;
     nextPort += 10;
+  });
+
+  afterEach(async () => {
+    await shutdownLiveApps();
   });
 
   it("covers external invalid completed output and ghost resume", async () => {
@@ -335,14 +339,14 @@ describe("final coverage", () => {
       }),
     });
 
-    const fookie = app({
+    const fookie = trackApp(app({
       listen: String(port),
       database: "postgres://mock",
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
       pool: db,
-    });
+    }));
     fookie.run();
 
     const failedCreate = await httpPost(port, "/httpfinal/create", {
@@ -649,14 +653,14 @@ describe("final coverage", () => {
         },
       }),
     });
-    const f3 = app({
+    const f3 = trackApp(app({
       listen: String(port + 2),
       database: "postgres://mock",
       models: [httpModel],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
       pool: db,
-    });
+    }));
     f3.run();
     const slash = await httpPost(port + 2, "/httpleft//update", {
       filter: {},
@@ -697,14 +701,14 @@ describe("final coverage", () => {
       }),
     });
 
-    const fookie = app({
+    const fookie = trackApp(app({
       listen: String(port),
       database: "postgres://mock",
       models: [jsonUser],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
       pool: db,
-    });
+    }));
     fookie.run();
 
     const created = await fookie.create(jsonUser, { email: "j@c.com", data: "{}" });

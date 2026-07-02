@@ -1,4 +1,4 @@
-import { beforeEach, describe, it } from "node:test";
+import { afterEach, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
   app,
@@ -12,7 +12,7 @@ import {
   type ExternalEventOf,
   type ExternalOutputOf,
 } from "../src/index.ts";
-import { MockDb, httpPost } from "./mock-db.ts";
+import { MockDb, httpPost, trackApp, shutdownLiveApps } from "./mock-db.ts";
 
 let nextPort = 45000;
 
@@ -185,6 +185,10 @@ describe("order flow integration", () => {
     db = new MockDb();
     events = [];
     capturedEvents = [];
+  });
+
+  afterEach(async () => {
+    await shutdownLiveApps();
   });
 
   function trackEvent(event: ExternalEvent) {
@@ -410,7 +414,7 @@ describe("order flow integration", () => {
   it("serves order http api mirroring example models", async () => {
     const port = nextPort;
     nextPort += 10;
-    const fookie = app({
+    const fookie = trackApp(app({
       listen: String(port),
       database: "postgres://mock",
       models: [user, merchant, orderLog, order],
@@ -419,7 +423,7 @@ describe("order flow integration", () => {
         trackEvent(event);
       },
       pool: db,
-    });
+    }));
     fookie.run();
 
     const userRes = await httpPost(port, "/user/create", {

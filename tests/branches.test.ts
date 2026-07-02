@@ -1,4 +1,4 @@
-import { beforeEach, describe, it } from "node:test";
+import { afterEach, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
   app,
@@ -11,7 +11,7 @@ import {
   flows,
   type CreateResult,
 } from "../src/index.ts";
-import { MockDb, httpPost, httpRaw } from "./mock-db.ts";
+import { MockDb, httpPost, httpRaw, trackApp, shutdownLiveApps } from "./mock-db.ts";
 
 let nextPort = 43000;
 
@@ -31,6 +31,10 @@ describe("branch coverage", () => {
     db = new MockDb();
     port = nextPort;
     nextPort += 10;
+  });
+
+  afterEach(async () => {
+    await shutdownLiveApps();
   });
 
   it("covers relation models, filter branches, and pg parsing", async () => {
@@ -366,14 +370,14 @@ describe("branch coverage", () => {
       }),
     });
 
-    const fookie = app({
+    const fookie = trackApp(app({
       listen: String(port),
       database: "postgres://mock",
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
       pool: db,
-    });
+    }));
     fookie.run();
 
     const running = await httpPost(port, "/edge/create", {
@@ -604,14 +608,14 @@ describe("branch coverage", () => {
       }),
     });
 
-    const fookie = app({
+    const fookie = trackApp(app({
       listen: String(port),
       database: "postgres://mock",
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
       pool: db,
-    });
+    }));
     fookie.run();
 
     const badDeleteFilter = await httpPost(port, "/left/id/delete", {
@@ -845,14 +849,14 @@ describe("branch coverage", () => {
       }),
     });
 
-    const fookie = app({
+    const fookie = trackApp(app({
       listen: String(port),
       database: "postgres://mock",
       models: [refParent, refChild, cacheUser],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
       pool: db,
-    });
+    }));
 
     const parentCreated = await fookie.create(refParent, { email: "ref@p.com" });
     if (parentCreated.signal === "done") {

@@ -1,6 +1,6 @@
 import http from "node:http";
 import net from "node:net";
-import type { InjectablePool } from "../src/index.ts";
+import type { App, InjectablePool } from "../src/index.ts";
 
 export type Row = Record<string, string | number | boolean | null>;
 
@@ -248,4 +248,16 @@ export function httpRaw(
     req.write(payload);
     req.end();
   });
+}
+
+const liveApps = new Set<App>();
+
+export function trackApp<T extends App>(instance: T): T {
+  liveApps.add(instance);
+  return instance;
+}
+
+export async function shutdownLiveApps(): Promise<void> {
+  await Promise.all([...liveApps].map((instance) => instance.stop()));
+  liveApps.clear();
 }

@@ -1,8 +1,16 @@
-import { beforeEach, describe, it } from "node:test";
+import { afterEach, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
 import { app, Model, External, Types, Done, flows } from "../src/index.ts";
-import { MockDb, httpPost, httpRaw, httpTruncateBody, httpSocketDrop } from "./mock-db.ts";
+import {
+  MockDb,
+  httpPost,
+  httpRaw,
+  httpTruncateBody,
+  httpSocketDrop,
+  trackApp,
+  shutdownLiveApps,
+} from "./mock-db.ts";
 
 let nextPort = 47000;
 
@@ -22,6 +30,10 @@ describe("http edge routes", () => {
     db = new MockDb();
     port = nextPort;
     nextPort += 10;
+  });
+
+  afterEach(async () => {
+    await shutdownLiveApps();
   });
 
   it("covers 404 paths and external payload branches", async () => {
@@ -44,14 +56,14 @@ describe("http edge routes", () => {
       }),
     });
 
-    const fookie = app({
+    const fookie = trackApp(app({
       listen: String(port),
       database: "postgres://mock",
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
       pool: db,
-    });
+    }));
     fookie.run();
 
     const root = await httpPost(port, "/only", {});
@@ -96,14 +108,14 @@ describe("http edge routes", () => {
       }),
     });
 
-    const fookie = app({
+    const fookie = trackApp(app({
       listen: String(port),
       database: "postgres://mock",
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
       pool: db,
-    });
+    }));
     fookie.run();
 
     await httpPost(port, "/filteredge/create", {
@@ -148,14 +160,14 @@ describe("http edge routes", () => {
       }),
     });
 
-    const fookie = app({
+    const fookie = trackApp(app({
       listen: String(port),
       database: "postgres://mock",
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
       pool: db,
-    });
+    }));
     fookie.run();
 
     const created = await httpPost(port, "/mutate/create", {
@@ -226,14 +238,14 @@ describe("http edge routes", () => {
       }),
     });
 
-    const fookie = app({
+    const fookie = trackApp(app({
       listen: String(port),
       database: "postgres://mock",
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
       pool: db,
-    });
+    }));
     fookie.run();
 
     const created = await httpRaw(
@@ -283,14 +295,14 @@ describe("http edge routes", () => {
       }),
     });
 
-    const fookie = app({
+    const fookie = trackApp(app({
       listen: String(port),
       database: "postgres://mock",
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
       pool: db,
-    });
+    }));
     fookie.run();
 
     await httpPost(port, "/filterops/create", {

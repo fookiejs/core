@@ -814,6 +814,7 @@ type PgClient = PgQueryable & { release: () => void };
 
 export type InjectablePool = PgQueryable & {
   connect: () => Promise<PgClient>;
+  end?: () => Promise<void>;
 };
 
 const outboxTableName = "public.fookie_outbox";
@@ -1563,6 +1564,7 @@ type PendingEntityWrite = {
 };
 
 const observabilityBufferLimit = 10_000;
+const runBufferLimit = 10_000;
 
 function pushBounded<T>(buffer: T[], entry: T): void {
   if (buffer.length >= observabilityBufferLimit) {
@@ -2513,6 +2515,7 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
   private readonly externals: E;
   private readonly onExternalEvent: (event: ExternalEventOf<E[number]>) => Promise<void>;
   private readonly pool: InjectablePool;
+  private readonly ownsPool: boolean;
   private readonly store: PostgresStore;
   private readonly runs = new Map<string, FlowRun<ModelFieldsInput>>();
   private readonly outbox = new Map<string, OutboxEntry>();
@@ -2530,8 +2533,47 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
     this.registeredModels = config.models;
     this.externals = config.externals;
     this.onExternalEvent = config.onExternalEvent;
+    this.ownsPool = config.pool === undefined;
     this.pool = config.pool ?? new pg.Pool({ connectionString: config.database });
     this.store = new PostgresStore(this.pool);
+  }
+
+  async stop(): Promise<boolean> {
+    const server = this.server;
+    if (server !== false) {
+      await new Promise<void>((resolve, reject) => {
+        server.close((err) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          resolve();
+        });
+      });
+      this.server = false;
+    }
+    if (this.ownsPool && "end" in this.pool && typeof this.pool.end === "function") {
+      await this.pool.end();
+    }
+    return true;
+  }
+
+  private finalizeRun(runId: string, run: FlowRun<ModelFieldsInput>, signal: Signal): void {
+    run.signal = signal;
+    if (signal === Failed) {
+      this.runs.delete(runId);
+    }
+    if (this.runs.size <= runBufferLimit) {
+      return;
+    }
+    for (const [id, entry] of this.runs) {
+      if (id !== runId && entry.signal !== Running) {
+        this.runs.delete(id);
+        if (this.runs.size <= runBufferLimit) {
+          return;
+        }
+      }
+    }
   }
 
   run(): boolean {
@@ -2569,6 +2611,7 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
     this.runs.set(runId, run);
     return executeRun(this.runtimeFor(runId, model, entityId, "create"), run).then(
       (signal): CreateResult<ModelEntity<D>> => {
+        this.finalizeRun(runId, run, signal);
         if (signal === Done && run.created !== false) {
           return { signal: Done, id: entityId, entity: run.created };
         }
@@ -2596,7 +2639,10 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       signal: Running,
     };
     this.runs.set(runId, run);
-    return executeRun(this.runtimeFor(runId, model, entityId, "list"), run);
+    return executeRun(this.runtimeFor(runId, model, entityId, "list"), run).then((signal) => {
+      this.finalizeRun(runId, run, signal);
+      return signal;
+    });
   }
 
   update<D extends ModelFieldsInput>(
@@ -2617,7 +2663,10 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       signal: Running,
     };
     this.runs.set(runId, run);
-    return executeRun(this.runtimeFor(runId, model, input.id, "update"), run);
+    return executeRun(this.runtimeFor(runId, model, input.id, "update"), run).then((signal) => {
+      this.finalizeRun(runId, run, signal);
+      return signal;
+    });
   }
 
   delete<D extends ModelFieldsInput>(
@@ -2638,7 +2687,10 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       signal: Running,
     };
     this.runs.set(runId, run);
-    return executeRun(this.runtimeFor(runId, model, input.id, "delete"), run);
+    return executeRun(this.runtimeFor(runId, model, input.id, "delete"), run).then((signal) => {
+      this.finalizeRun(runId, run, signal);
+      return signal;
+    });
   }
 
   resume(runId: string): Promise<Signal> {
@@ -2646,7 +2698,12 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
     if (run === false) {
       return Promise.resolve(Failed);
     }
-    return executeRun(this.runtimeFor(runId, run.model, run.entityId, run.operation), run);
+    return executeRun(this.runtimeFor(runId, run.model, run.entityId, run.operation), run).then(
+      (signal) => {
+        this.finalizeRun(runId, run, signal);
+        return signal;
+      },
+    );
   }
 
   async setExternalResult(result: { externalId: string; output: JsonValue }): Promise<boolean> {
@@ -2857,6 +2914,7 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       };
       this.runs.set(runId, run);
       const signal = await executeRun(this.runtimeFor(runId, model, entityId, "create"), run);
+      this.finalizeRun(runId, run, signal);
       if (signal === Done && run.created !== false) {
         sendJson(res, 200, { signal: Done, id: entityId, entity: run.created });
         return;
@@ -2890,6 +2948,7 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       };
       this.runs.set(runId, run);
       const signal = await executeRun(this.runtimeFor(runId, model, entityId, "list"), run);
+      this.finalizeRun(runId, run, signal);
       sendJson(res, 200, { signal, results: run.results });
       return;
     }
@@ -2926,6 +2985,7 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       };
       this.runs.set(runId, run);
       const signal = await executeRun(this.runtimeFor(runId, model, entityId, "update"), run);
+      this.finalizeRun(runId, run, signal);
       sendJson(res, 200, { signal });
       return;
     }
@@ -2950,6 +3010,7 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       };
       this.runs.set(runId, run);
       const signal = await executeRun(this.runtimeFor(runId, model, entityId, "delete"), run);
+      this.finalizeRun(runId, run, signal);
       sendJson(res, 200, { signal });
       return;
     }
