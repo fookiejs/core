@@ -262,7 +262,7 @@ describe("order flow integration", () => {
       onExternalEvent: async (event) => {
         trackEvent(event);
       },
-      pool: db,
+      pool: [db],
     });
 
     const userCreated = await fookie.create(user, {
@@ -336,7 +336,7 @@ describe("order flow integration", () => {
       onExternalEvent: async (event) => {
         trackEvent(event);
       },
-      pool: db,
+      pool: [db],
     });
 
     const userCreated = await fookie.create(user, {
@@ -380,7 +380,7 @@ describe("order flow integration", () => {
       onExternalEvent: async (event) => {
         trackEvent(event);
       },
-      pool: db,
+      pool: [db],
     });
 
     const row = await seedOrder(fookie);
@@ -422,7 +422,7 @@ describe("order flow integration", () => {
       onExternalEvent: async (event) => {
         trackEvent(event);
       },
-      pool: db,
+      pool: [db],
     }));
     fookie.run();
 
@@ -493,7 +493,7 @@ describe("order flow integration", () => {
       externalId: "missing",
       output: { score: 1 },
     });
-    assert.equal(extRes.json.ok, false);
+    assert.equal(extRes.json.error, "external result rejected");
   });
 
   it("fails notify external and aborts order saga", async () => {
@@ -505,7 +505,7 @@ describe("order flow integration", () => {
       onExternalEvent: async (event) => {
         trackEvent(event);
       },
-      pool: db,
+      pool: [db],
     });
 
     const userCreated = await fookie.create(user, {
@@ -557,7 +557,7 @@ describe("order flow integration", () => {
       onExternalEvent: async (event) => {
         trackEvent(event);
       },
-      pool: db,
+      pool: [db],
     });
 
     const row = await seedOrder(fookie);

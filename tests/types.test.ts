@@ -68,7 +68,7 @@ describe("types and helpers", () => {
         },
       }),
     });
-    const list = models(a, b);
+    const list = models([a, b]);
     assert.equal(list.length, 2);
     assert.equal(list[0]?.name, "A");
     assert.equal(list[1]?.name, "B");

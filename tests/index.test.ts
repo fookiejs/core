@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { app, Model, External, Types, Done, Running, Failed, flows, models } from "../src/index.ts";
+import { app, Model, External, Types, Done, Running, Failed, flows, models, OutboxPending, OutboxFailed, OutboxCompleted } from "../src/index.ts";
 import { MockDb, httpPost, httpGet, trackApp, shutdownLiveApps } from "./mock-db.ts";
 
 let nextPort = 41000;
@@ -54,10 +54,10 @@ describe("fookie core", () => {
     return app({
       listen: String(port),
       database: "postgres://mock",
-      models: models(user),
+      models: models([user]),
       externals: [scoreExt, notifyExt] as const,
       onExternalEvent,
-      pool: db,
+      pool: [db],
     });
   }
 
@@ -84,7 +84,7 @@ describe("fookie core", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
     const result = await fookie.create(user, {
       email: "a@b.com",
@@ -158,7 +158,7 @@ describe("fookie core", () => {
       onExternalEvent: async (event) => {
         events.push(event.externalId);
       },
-      pool: db,
+      pool: [db],
     });
     const pending = await fookie.create(user, {
       email: "c@d.com",
@@ -203,7 +203,7 @@ describe("fookie core", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
     const created = await fookie.create(user, {
       email: "l@t.com",
@@ -293,7 +293,7 @@ describe("fookie core", () => {
       models: [user, child],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
     const created = await fookie.create(user, {
       email: "n@e.com",
@@ -330,7 +330,7 @@ describe("fookie core", () => {
         models: [user],
         externals: [scoreExt] as const,
         onExternalEvent: async () => {},
-        pool: db,
+        pool: [db],
       }),
     );
     assert.equal(fookie.run(), true);
@@ -364,7 +364,7 @@ describe("fookie core", () => {
         models: [user],
         externals: [scoreExt] as const,
         onExternalEvent: async () => {},
-        pool: db,
+        pool: [db],
       }),
     );
     fookie.run();
@@ -399,7 +399,7 @@ describe("fookie core", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
     const result = await fookie.create(user, {
       email: "r@b.com",
@@ -415,12 +415,13 @@ describe("fookie core", () => {
     db.outbox.set("e1", {
       external_id: "e1",
       name: "fraud.score",
-      status: "completed",
+      status: OutboxCompleted,
       input: { amount: 1 },
       output: { score: 1 },
       entity_id: "ent",
       model: "User",
       run_id: "run",
+      attempt: 1,
     });
     const user = buildUserModel(
       flows({
@@ -444,7 +445,7 @@ describe("fookie core", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
     await fookie.list(user, {});
     const ok = await fookie.setExternalResult({ externalId: "e1", output: { score: 2 } });
@@ -476,7 +477,7 @@ describe("fookie core", () => {
       models: [user],
       externals: [scoreExt, notifyExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
     await fookie.create(user, {
       email: "f@f.com",

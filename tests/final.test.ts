@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
-import { app, Model, External, Types, Done, Failed, Running, flows } from "../src/index.ts";
+import { app, Model, External, Types, Done, Failed, Running, flows, OutboxPending, OutboxFailed, OutboxCompleted } from "../src/index.ts";
 import { MockDb, httpPost, httpRaw, httpAbort, httpSocketDrop, trackApp, shutdownLiveApps } from "./mock-db.ts";
 
 let nextPort = 44000;
@@ -39,6 +39,7 @@ describe("final coverage", () => {
   let port: number;
 
   beforeEach(() => {
+    process.env.FOOKIE_ALLOW_TEST_THROW = "1";
     db = new MockDb();
     port = nextPort;
     nextPort += 10;
@@ -79,7 +80,7 @@ describe("final coverage", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async (e) => events.push(e.externalId),
-      pool: db,
+      pool: [db],
     });
 
     const pending = await fookie.create(user, { email: "g@g.com" });
@@ -87,18 +88,20 @@ describe("final coverage", () => {
       return;
     }
     const externalId = events[0] ?? "";
-    fookie.patchOutbox(externalId, { score: "bad" });
-    assert.equal(await fookie.resume(pending.runId), "failed");
+    assert.equal(await fookie.patchOutbox(externalId, { score: "bad" }), false);
+    assert.equal(await fookie.patchOutbox(externalId, { score: 3 }), true);
+    assert.equal(await fookie.resume(pending.runId), "done");
 
     db.outbox.set("ghost", {
       external_id: "ghost",
       name: "fraud.score",
-      status: "pending",
+      status: OutboxPending,
       input: { amount: 1 },
       output: null,
       entity_id: "e",
       model: "Ghost",
       run_id: "missing-run",
+      attempt: 1,
     });
     const fookie2 = app({
       listen: String(port + 1),
@@ -106,7 +109,7 @@ describe("final coverage", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
     await fookie2.list(user, {});
     assert.equal(
@@ -186,7 +189,7 @@ describe("final coverage", () => {
       models: [parent, child, wrapper],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
 
     const parentCreated = await fookie.create(parent, { email: "p@p.com" });
@@ -221,7 +224,7 @@ describe("final coverage", () => {
       models: [parent, child, failParent],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
     await f2.create(failParent, { email: "f@f.com" });
 
@@ -250,7 +253,7 @@ describe("final coverage", () => {
       models: [coord],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
     const c = await f3.create(coord, { email: "c@c.com", loc: [1, 2] });
     if (c.signal === "done") {
@@ -302,7 +305,7 @@ describe("final coverage", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
     assert.equal((await f1.create(user, { email: "b@b.com" })).signal, "failed");
 
@@ -314,7 +317,7 @@ describe("final coverage", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
     assert.equal((await f2.create(user, { email: "b2@b.com" })).signal, "failed");
   });
@@ -345,7 +348,7 @@ describe("final coverage", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     }));
     fookie.run();
 
@@ -369,7 +372,8 @@ describe("final coverage", () => {
     const filterOps = await httpPost(port, "/httpfinal/list", {
       filter: {
         n: { gt: 1, gte: 2, lt: 10, lte: 9, ne: 0 },
-        email: { like: "%@%", ilike: "%a%", contains: "a" },
+        email: { like: "%@%", ilike: "%a%" },
+        note: { contains: "a" },
       },
     });
     assert.equal(filterOps.status, 200);
@@ -412,7 +416,7 @@ describe("final coverage", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
 
     const created = await fookie.create(user, {
@@ -431,8 +435,8 @@ describe("final coverage", () => {
       n: "42",
       active: "t",
       pt: "(4,5)",
-      created_at: "2020-01-01T00:00:00.000Z",
-      updated_at: "2020-01-01T00:00:00.000Z",
+      created_at: "2020-01-01T00:00:00.000",
+      updated_at: "2020-01-01T00:00:00.000",
       is_deleted: false,
     });
 
@@ -493,11 +497,11 @@ describe("final coverage", () => {
       models: [parent, child],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
     await f2.create(parent, { email: "b@n.com" });
 
-    assert.equal(fookie.patchOutbox("missing", { score: 1 }), false);
+    assert.equal(await fookie.patchOutbox("missing", { score: 1 }), false);
   });
 
   it("covers remaining runtime and http branches", async () => {
@@ -608,7 +612,7 @@ describe("final coverage", () => {
       models: [parent, child, wrapper, extUser],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
 
     await fookie.create(wrapper, { email: "w@w.com" });
@@ -627,7 +631,7 @@ describe("final coverage", () => {
       models: [extUser],
       externals: [scoreExt] as const,
       onExternalEvent: async (e) => events.push(e.externalId),
-      pool: db,
+      pool: [db],
     });
     const pending = await f2.create(extUser, { email: "e@e.com" });
     if (pending.signal === "running") {
@@ -659,7 +663,7 @@ describe("final coverage", () => {
       models: [httpModel],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     }));
     f3.run();
     const slash = await httpPost(port + 2, "/httpleft//update", {
@@ -707,7 +711,7 @@ describe("final coverage", () => {
       models: [jsonUser],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     }));
     fookie.run();
 

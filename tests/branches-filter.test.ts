@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { app, Model, External, Types, Done, flows } from "../src/index.ts";
+import { app, Model, External, Types, Done, flows, OutboxPending, OutboxFailed, OutboxCompleted } from "../src/index.ts";
 import { MockDb, httpPost, httpSocketDrop, trackApp, shutdownLiveApps } from "./mock-db.ts";
 
 let nextPort = 46000;
@@ -119,7 +119,7 @@ describe("filter and http branches", () => {
       models: [buyer, full],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
 
     const created = await fookie.create(buyer, { email: "b@f.com" });
@@ -134,8 +134,8 @@ describe("filter and http branches", () => {
       active: true,
       point: [2, 3],
       meta: "{}",
-      blob: "00",
-      shape: "(0,0)",
+      blob: "\\x00",
+      shape: "{1,0,-1}",
     });
 
     await fookie.list(full, {
@@ -172,7 +172,7 @@ describe("filter and http branches", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     }));
     fookie.run();
 
@@ -226,12 +226,13 @@ describe("filter and http branches", () => {
     db.outbox.set("mix", {
       external_id: "mix",
       name: "fraud.score",
-      status: "completed",
+      status: OutboxCompleted,
       input: { amount: 1, junk: { nested: true } },
       output: { score: 1, junk: [1, 2, 3] },
       entity_id: "e",
       model: "PgParse",
       run_id: "r",
+      attempt: 1,
     });
 
     const fookie = app({
@@ -240,7 +241,7 @@ describe("filter and http branches", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
 
     const created = await fookie.create(user, {
@@ -260,8 +261,8 @@ describe("filter and http branches", () => {
       score: "not-a-number",
       active: "t",
       point: "not-a-point",
-      created_at: "2020-01-01T00:00:00.000Z",
-      updated_at: "2020-01-01T00:00:00.000Z",
+      created_at: "2020-01-01T00:00:00.000",
+      updated_at: "2020-01-01T00:00:00.000",
       is_deleted: false,
     });
 
@@ -271,7 +272,7 @@ describe("filter and http branches", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
 
     await fookie2.list(user, { email: { eq: "p@p.com" } });
@@ -312,7 +313,7 @@ describe("filter and http branches", () => {
       onExternalEvent: async (event) => {
         events.push(event);
       },
-      pool: db,
+      pool: [db],
     }));
     fookie.run();
 
@@ -325,7 +326,7 @@ describe("filter and http branches", () => {
       externalId,
       output: { score: 2 },
     });
-    assert.equal(ok.json.ok, true);
+    assert.equal(ok.json.signal, "done");
 
     const dropped = await httpSocketDrop(port, "/exthttp/list");
     assert.equal(dropped, 400);
@@ -354,12 +355,13 @@ describe("filter and http branches", () => {
     db.outbox.set("ghost2", {
       external_id: "ghost2",
       name: "fraud.score",
-      status: "pending",
+      status: OutboxPending,
       input: { amount: 3 },
       output: null,
       entity_id: "e",
       model: "GhostResume",
       run_id: "missing",
+      attempt: 1,
     });
 
     const fookie = app({
@@ -368,7 +370,7 @@ describe("filter and http branches", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
 
     await fookie.list(user, {});
@@ -423,7 +425,7 @@ describe("filter and http branches", () => {
       models: [failUser, known],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     }));
     fookie.run();
 
@@ -436,7 +438,7 @@ describe("filter and http branches", () => {
     db.outbox.set("orphan", {
       external_id: "orphan",
       name: "fraud.score",
-      status: "pending",
+      status: OutboxPending,
       input: { amount: 2 },
       output: null,
       entity_id: "e",
@@ -451,7 +453,7 @@ describe("filter and http branches", () => {
       models: [known],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
 
     await fookie2.list(known, {});

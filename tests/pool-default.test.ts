@@ -17,7 +17,25 @@ class PoolMock {
   }
 }
 
-mock.module("pg", { exports: { default: { Pool: PoolMock } } });
+mock.module("pg", {
+  exports: {
+    default: {
+      Pool: PoolMock,
+      types: {
+        builtins: {
+          DATE: 1082,
+          TIMESTAMP: 1114,
+          TIMESTAMPTZ: 1184,
+          INTERVAL: 1186,
+          CIRCLE: 718,
+          JSON: 114,
+          JSONB: 3802,
+        },
+        setTypeParser: () => {},
+      },
+    },
+  },
+});
 
 const { app, Model, Types, flows, Done } = await import("../src/index.ts");
 
@@ -48,6 +66,7 @@ describe("default pg pool", () => {
       models: [user],
       externals: [],
       onExternalEvent: async () => {},
+      pool: [],
     });
 
     assert.deepEqual(poolConfigs[0], { connectionString: "postgres://default-pool" });
@@ -71,6 +90,7 @@ describe("default pg pool", () => {
       models: [user],
       externals: [],
       onExternalEvent: async () => {},
+      pool: [],
     });
 
     fookie.run();

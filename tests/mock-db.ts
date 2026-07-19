@@ -12,6 +12,7 @@ export class MockDb implements InjectablePool {
   failOnSql = "";
   failRollback = false;
   queries: string[] = [];
+  end: readonly (() => Promise<void>)[] = [];
 
   async query(sql: string, params?: unknown[]) {
     this.queries.push(sql);
@@ -60,6 +61,20 @@ export class MockDb implements InjectablePool {
         throw new Error("outbox");
       }
       const externalId = String(params?.[0] ?? "");
+      if (sql.includes("NULL::jsonb")) {
+        this.outbox.set(externalId, {
+          external_id: externalId,
+          name: String(params?.[1] ?? ""),
+          status: String(params?.[2] ?? ""),
+          input: JSON.parse(String(params?.[3] ?? "{}")),
+          output: null,
+          entity_id: String(params?.[4] ?? ""),
+          model: String(params?.[5] ?? ""),
+          run_id: String(params?.[6] ?? ""),
+          attempt: typeof params?.[7] === "number" ? params[7] : 1,
+        });
+        return { rows: [], rowCount: 1 };
+      }
       this.outbox.set(externalId, {
         external_id: externalId,
         name: String(params?.[1] ?? ""),

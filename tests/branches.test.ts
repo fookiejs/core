@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import {
-  app,
+import { app,
   Model,
   External,
   Types,
@@ -9,8 +8,7 @@ import {
   Running,
   Failed,
   flows,
-  type CreateResult,
-} from "../src/index.ts";
+  type CreateResult, OutboxPending, OutboxFailed, OutboxCompleted } from "../src/index.ts";
 import { MockDb, httpPost, httpRaw, trackApp, shutdownLiveApps } from "./mock-db.ts";
 
 let nextPort = 43000;
@@ -94,7 +92,7 @@ describe("branch coverage", () => {
       models: [buyer, order],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
 
     const buyerCreated = await fookie.create(buyer, { email: "b@o.com" });
@@ -128,8 +126,8 @@ describe("branch coverage", () => {
         point: "(2,3)",
         meta: "{}",
         status: "a",
-        created_at: "2020-01-01T00:00:00.000Z",
-        updated_at: "2020-01-01T00:00:00.000Z",
+        created_at: "2020-01-01T00:00:00.000",
+        updated_at: "2020-01-01T00:00:00.000",
         is_deleted: false,
       });
       await fookie.list(order, { buyer: { eq: buyerCreated.id } });
@@ -141,7 +139,7 @@ describe("branch coverage", () => {
       name: "Note",
       fields: {
         title: Types.string,
-        owner: Types.relation({ name: "Owner" }),
+        owner: Types.relation({ name: "Parent" }),
       },
       flow: flows({
         async create() {
@@ -229,7 +227,7 @@ describe("branch coverage", () => {
       models: [owner, child, parent],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
 
     const pending = await fookie.create(owner, { email: "o@o.com" });
@@ -262,62 +260,35 @@ describe("branch coverage", () => {
     db.outbox.set("p1", {
       external_id: "p1",
       name: "fraud.score",
-      status: "pending",
+      status: OutboxPending,
       input: { amount: 1 },
       output: null,
       entity_id: "e1",
       model: "Owner",
       run_id: "r1",
+      attempt: 1,
     });
     db.outbox.set("f2", {
       external_id: "f2",
       name: "fraud.score",
-      status: "failed",
+      status: OutboxFailed,
       input: { amount: 2 },
       output: null,
       entity_id: "e2",
       model: "Owner",
       run_id: "r2",
+      attempt: 1,
     });
     db.outbox.set("c1", {
       external_id: "c1",
       name: "fraud.score",
-      status: "completed",
+      status: OutboxCompleted,
       input: { amount: 3 },
       output: { score: 3 },
       entity_id: "e3",
       model: "Owner",
       run_id: "r3",
-    });
-    db.outbox.set("bad1", {
-      external_id: "bad1",
-      name: "fraud.score",
-      status: 99,
-      input: { amount: 4 },
-      output: null,
-      entity_id: "e4",
-      model: "Owner",
-      run_id: "r4",
-    });
-    db.outbox.set("bad2", {
-      external_id: "bad2",
-      name: "fraud.score",
-      status: "completed",
-      input: "not-json",
-      output: null,
-      entity_id: "e5",
-      model: "Owner",
-      run_id: "r5",
-    });
-    db.outbox.set("bad3", {
-      external_id: "bad3",
-      name: "fraud.score",
-      status: "completed",
-      input: { amount: 5 },
-      output: "bad",
-      entity_id: "e6",
-      model: "Owner",
-      run_id: "r6",
+      attempt: 1,
     });
 
     const user = Model({
@@ -345,9 +316,30 @@ describe("branch coverage", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
-    await fookie.list(user, {});
+    assert.equal(await fookie.list(user, {}), "done");
+
+    db.outbox.clear();
+    db.outbox.set("bad1", {
+      external_id: "bad1",
+      name: "fraud.score",
+      status: 99,
+      input: { amount: 4 },
+      output: null,
+      entity_id: "e4",
+      model: "Owner",
+      run_id: "r4",
+    });
+    const poisoned = app({
+      listen: String(port + 1),
+      database: "postgres://mock",
+      models: [user],
+      externals: [scoreExt] as const,
+      onExternalEvent: async () => {},
+      pool: [db],
+    });
+    assert.equal(await poisoned.list(user, {}), "failed");
   });
 
   it("covers http edge cases and mutation signals", async () => {
@@ -376,7 +368,7 @@ describe("branch coverage", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     }));
     fookie.run();
 
@@ -409,7 +401,7 @@ describe("branch coverage", () => {
     assert.equal(filterOps.status, 200);
 
     const ext = await httpPost(port, "/external/result", { externalId: "x", output: { score: 1 } });
-    assert.equal(ext.json.ok, false);
+    assert.equal(ext.json.error, "external result rejected");
   });
 
   it("covers failed external resume and update coordinate body", async () => {
@@ -443,7 +435,7 @@ describe("branch coverage", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async (e) => events.push(e.externalId),
-      pool: db,
+      pool: [db],
     });
 
     const pending = await fookie.create(user, { email: "r@r.com", loc: [0, 0] });
@@ -492,7 +484,7 @@ describe("branch coverage", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
     await f1.list(user, { email: { eq: "a@a.com" } });
 
@@ -504,7 +496,7 @@ describe("branch coverage", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
     assert.equal((await f2.create(user, { email: "d@d.com", data: "{}" })).signal, "failed");
 
@@ -517,7 +509,7 @@ describe("branch coverage", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
     assert.equal((await f3.create(user, { email: "e@e.com", data: "{}" })).signal, "failed");
   });
@@ -548,7 +540,7 @@ describe("branch coverage", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
 
     const bad: CreateResult<Record<string, string | number | boolean>> = await fookie.create(user, {
@@ -583,7 +575,7 @@ describe("branch coverage", () => {
       models: [parent, user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
     await f2.create(parent, { email: "b@b.com" });
   });
@@ -614,7 +606,7 @@ describe("branch coverage", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     }));
     fookie.run();
 
@@ -635,7 +627,7 @@ describe("branch coverage", () => {
     db.outbox.set("wrong-ext", {
       external_id: "wrong-ext",
       name: "other.service",
-      status: "pending",
+      status: OutboxPending,
       input: { amount: 1 },
       output: null,
       entity_id: "e",
@@ -674,7 +666,7 @@ describe("branch coverage", () => {
       models: [extUser],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
     await f2.create(extUser, { email: "o@f.com" });
 
@@ -702,7 +694,7 @@ describe("branch coverage", () => {
       models: [parent],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
     await f3.create(parent, { email: "n@f.com" });
     await f3.list(parent, {});
@@ -751,7 +743,7 @@ describe("branch coverage", () => {
       models: [parent2, child],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
     await f4.create(parent2, { email: "p@f.com" });
 
@@ -855,7 +847,7 @@ describe("branch coverage", () => {
       models: [refParent, refChild, cacheUser],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     }));
 
     const parentCreated = await fookie.create(refParent, { email: "ref@p.com" });
@@ -908,7 +900,7 @@ describe("branch coverage", () => {
       models: [refParent, refChild, extParent, extChild],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
     await fookieExt.create(extParent, { email: "ext@p.com" });
 
@@ -934,7 +926,7 @@ describe("branch coverage", () => {
       models: [cacheUser],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
     await fookie2.update(cacheUser, {
       id: created.id,

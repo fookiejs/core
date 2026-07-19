@@ -24,6 +24,7 @@ function throwingPool(error: unknown): InjectablePool {
       },
       release: () => true,
     }),
+    end: [],
   };
 }
 
@@ -35,7 +36,7 @@ describe("database error reporting", () => {
       models: [user],
       externals: [],
       onExternalEvent: async () => {},
-      pool: throwingPool(""),
+      pool: [throwingPool("")],
     });
     const result = await fookie.create(user, { email: "a@b.com" });
     assert.equal(result.signal, Failed);
@@ -50,7 +51,7 @@ describe("database error reporting", () => {
       models: [user],
       externals: [],
       onExternalEvent: async () => {},
-      pool: throwingPool("disk on fire"),
+      pool: [throwingPool("disk on fire")],
     });
     const result = await fookie.create(user, { email: "a@b.com" });
     assert.equal(result.signal, Failed);

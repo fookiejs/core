@@ -24,7 +24,6 @@ Aynı trace altında kalır:
 - nested `flow.create`
 - `flow.external` dispatch ve resume
 - `setExternalResult` sonrası idempotent rerun
-- saga compensate adımları
 
 Span hiyerarşisi:
 
@@ -44,7 +43,7 @@ Span otomatik attribute'lar:
 - `externalId` → external çağrıda
 - `externalName` → `fraud.score`
 
-`Running` dönünce span açık kalır, suspend olur. `setExternalResult` gelince aynı span resume edilir, yeni trace açılmaz.
+`Running` dönünce span kapanır (suspend). `setExternalResult` gelince aynı `traceId`/`runId` altında yeni span açılır; yeni trace açılmaz.
 
 Nested create parent trace'i inherit eder. Ayrı trace yok.
 
@@ -86,13 +85,11 @@ Framework her log satırına otomatik ekler:
 External lifecycle logları framework yazar, developer yazmaz:
 
 - `external.dispatch`
-- `external.pending`
 - `external.completed`
 - `external.failed`
+- `external.retry`
 - `flow.suspended`
 - `flow.resumed`
-- `saga.step_recorded`
-- `saga.compensation_dispatched`
 
 ## Metric
 
@@ -120,8 +117,10 @@ Developer tam isim yazmaz. Framework `{model}.{name}` yapar.
 | `{model}.external.completed` | `setExternalResult` |
 | `{model}.external.failed` | external fail |
 | `{model}.external.retry` | retry attempt |
-| `{model}.nested.create` | nested `flow.create` |
-| `{model}.saga.compensate` | compensate dispatch |
+| `{model}.nested.create` | nested `flow.create` (persist ok) |
+| `{model}.nested.update` | nested `flow.update` (persist ok) |
+| `{model}.nested.delete` | nested `flow.delete` (persist ok) |
+| `{model}.nested.list` | nested `flow.list` (query ok) |
 
 ### Semantic metrikler (developer yazar, kısa isim)
 
@@ -156,13 +155,13 @@ Observability dışında runtime'a giren şeyler log/metric/trace'e karışmaz:
 
 Observability sadece: `flow.log`, `flow.metric`, `flow.trace`
 
-## Null / error yok
+## Null yok; framework error var
 
 - Log field'larında `null` yok
 - Metric value'da `null` yok
 - Trace attribute'da `null` yok
-- Fail durumu log level `error` değil, `signal: Failed` + `flow.metric.increment("failed")` ile gider
-- Exception throw yok, error object yok
+- Flow fail: `signal: Failed` + `{model}.operation.failed`
+- Framework hataları (`listen` / `stop` / HTTP 500 / DB) log level `error` ile yazılır (`model: "app"` app-level scope)
 
 ## External + observability
 
@@ -177,14 +176,14 @@ Observability sadece: `flow.log`, `flow.metric`, `flow.trace`
 `setExternalResult` gelince:
 
 1. output'u `Types` → Zod ile validate eder
-2. span resume eder
+2. aynı `traceId` altında yeni span açar
 3. `{model}.external.completed` metric basar
-4. flow idempotent rerun
+4. flow idempotent rerun (`resume`)
 
 ## Özet
 
 Developer 3 şey yazar: `flow.log`, `flow.metric`, `flow.trace`
 
-Framework her şeyi bağlar: traceId, model, entityId, operation, duration, external lifecycle, saga lifecycle.
+Framework her şeyi bağlar: traceId, model, entityId, operation, duration, external lifecycle.
 
 Tüm çalışan süreçler otomatik ölçülür. Developer Prometheus/OTLP/stdout kurmaz.

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, it, mock } from "node:test";
 import assert from "node:assert/strict";
-import { app, Model, External, Types, Done, Running, Failed, flows, models } from "../src/index.ts";
+import { app, Model, External, Types, Done, Running, Failed, flows, models, OutboxPending, OutboxFailed, OutboxCompleted } from "../src/index.ts";
 import { MockDb, httpPost, httpRaw, trackApp, shutdownLiveApps } from "./mock-db.ts";
 
 let nextPort = 42000;
@@ -115,7 +115,7 @@ describe("coverage", () => {
           flow.filter.u
             .eq("00000000-0000-4000-8000-000000000001")
             .in(["00000000-0000-4000-8000-000000000001"]);
-          flow.filter.ts.eq("2020-01-01T00:00:00.000Z").gt("2019-01-01T00:00:00.000Z");
+          flow.filter.ts.eq("2020-01-01T00:00:00.000").gt("2019-01-01T00:00:00.000");
           flow.filter.pt.eq([1, 2]).near(0, 0, 10);
           flow.filter.jb.contains("{}");
           return Done;
@@ -163,10 +163,10 @@ describe("coverage", () => {
     const fookie = app({
       listen: String(port),
       database: "postgres://mock",
-      models: models(all, m2, m3, m4),
+      models: models([all, m2, m3, m4]),
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
 
     await fookie.list(all, {
@@ -174,7 +174,7 @@ describe("coverage", () => {
       s: { eq: "a", like: "%a%", ilike: "%A%", startsWith: "a", endsWith: "z" },
       bo: { eq: true },
       u: { eq: "00000000-0000-4000-8000-000000000001" },
-      ts: { gte: "2020-01-01T00:00:00.000Z" },
+      ts: { gte: "2020-01-01T00:00:00.000" },
       pt: { near: [0, 0, 5] },
       jb: { contains: "{}" },
     });
@@ -195,7 +195,7 @@ describe("coverage", () => {
       da: "2020-01-01",
       ti: "12:00:00",
       tt: "12:00:00+00",
-      ts: "2020-01-01T00:00:00.000Z",
+      ts: "2020-01-01T00:00:00.000",
       tz: "2020-01-01T00:00:00.000Z",
       iv: "1 day",
       js: "{}",
@@ -204,9 +204,9 @@ describe("coverage", () => {
       inet: "127.0.0.1",
       cidr: "127.0.0.0/24",
       mac: "00:11:22:33:44:55",
-      mo: 10,
+      mo: "10",
       pt: [1, 2],
-      ln: "line",
+      ln: "{1,0,-1}",
       em: "a@b.com",
       ur: "https://x.com",
       en: "x",
@@ -260,7 +260,7 @@ describe("coverage", () => {
       models: [userBad],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
     assert.equal((await fookie.create(userBad, { email: "e@e.com" })).signal, "failed");
 
@@ -271,23 +271,24 @@ describe("coverage", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async (e) => events.push(e.externalId),
-      pool: db,
+      pool: [db],
     });
     const pending = await fookie2.create(user, { email: "f@f.com" });
     assert.equal(pending.signal, "running");
     const externalId = events[0] ?? "";
     assert.equal(await fookie2.setExternalResult({ externalId, output: { score: 9 } }), true);
-    assert.equal(await fookie2.setExternalResult({ externalId, output: { score: "bad" } }), false);
+    assert.equal(await fookie2.setExternalResult({ externalId, output: { score: "bad" } }), true);
 
     db.outbox.set("wrong-name", {
       external_id: "wrong-name",
       name: "unknown.external",
-      status: "pending",
+      status: OutboxPending,
       input: { amount: 1 },
       output: null,
       entity_id: "e",
       model: "ExtUser",
       run_id: "r",
+      attempt: 1,
     });
     assert.equal(
       await fookie2.setExternalResult({ externalId: "wrong-name", output: { score: 1 } }),
@@ -312,7 +313,7 @@ describe("coverage", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     }));
     fookie.run();
     const created = await httpPost(port, "/httpuser/create", {
@@ -333,7 +334,7 @@ describe("coverage", () => {
       externalId: "missing",
       output: { score: 1 },
     });
-    assert.equal(ext.json.ok, false);
+    assert.equal(ext.json.error, "external result rejected");
     const invalid = await httpPost(port, "/httpuser/create", { body: { email: "bad", name: "X" } });
     assert.equal(invalid.status, 400);
     const badFilter = await httpPost(port, "/httpuser/list", { filter: { email: { eq: 1 } } });
@@ -360,7 +361,7 @@ describe("coverage", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
     await f2.list(user, {});
   });
@@ -384,7 +385,7 @@ describe("coverage", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
     assert.equal((await f1.create(user, { email: "a@a.com" })).signal, "failed");
     assert.equal(
@@ -419,7 +420,7 @@ describe("coverage", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
     assert.equal((await f2.create(user, { email: "b@b.com" })).signal, "failed");
 
@@ -431,7 +432,7 @@ describe("coverage", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
     assert.equal((await f3.create(user, { email: "c@c.com" })).signal, "failed");
 
@@ -443,7 +444,7 @@ describe("coverage", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
     await f4.create(user, { email: "d@d.com" });
   });
@@ -496,7 +497,7 @@ describe("coverage", () => {
       models: [user, child],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
     await fookie.create(user, { email: "p@p.com" });
     await fookie.list(user, {});
@@ -530,7 +531,7 @@ describe("coverage", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
     await fookie.create(user, { email: "h@h.com" });
     const created = await fookie.create(user, { email: "h2@h.com" });

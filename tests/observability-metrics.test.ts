@@ -51,7 +51,7 @@ describe("observability and external retry", () => {
       onExternalEvent: async () => {
         dispatched += 1;
       },
-      pool: db,
+      pool: [db],
     });
 
     const pending = await fookie.create(user, { email: "m@t.com" });
@@ -104,7 +104,7 @@ describe("observability and external retry", () => {
       onExternalEvent: async () => {
         dispatchCount += 1;
       },
-      pool: db,
+      pool: [db],
     });
 
     const pending = await fookie.create(user, { email: "r@t.com" });
@@ -129,7 +129,7 @@ describe("observability and external retry", () => {
     assert.equal(await fookie.resume(pending.runId), "failed");
   });
 
-  it("records saga compensate on transaction rollback", async () => {
+  it("records operation.failed on transaction rollback", async () => {
     const user = Model({
       name: "RollbackUser",
       fields: { email: Types.email },
@@ -155,13 +155,13 @@ describe("observability and external retry", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
 
     const result = await fookie.create(user, { email: "x@y.com" });
     assert.equal(result.signal, "failed");
     assert.equal(
-      fookie.metrics().some((metric) => metric.name === "rollbackuser.saga.compensate"),
+      fookie.metrics().some((metric) => metric.name === "rollbackuser.operation.failed"),
       true,
     );
   });

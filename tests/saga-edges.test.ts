@@ -1,6 +1,6 @@
 import { beforeEach, describe, it, mock } from "node:test";
 import assert from "node:assert/strict";
-import { app, Done, Failed, External, flows, Model, Types } from "../src/index.ts";
+import { app, Done, Failed, External, flows, Model, Types, OutboxPending, OutboxFailed, OutboxCompleted } from "../src/index.ts";
 import { MockDb } from "./mock-db.ts";
 
 const retryExt = External({
@@ -42,7 +42,7 @@ describe("saga edge behaviour", () => {
       onExternalEvent: async () => {
         dispatched += 1;
       },
-      pool: db,
+      pool: [db],
     });
 
     const pending = await fookie.create(user, { email: "e@x.com" });
@@ -73,7 +73,7 @@ describe("saga edge behaviour", () => {
     db.outbox.set("stale", {
       external_id: "stale",
       name: "retry.score",
-      status: "pending",
+      status: OutboxPending,
       input: { amount: -5 },
       output: null,
       entity_id: "e1",
@@ -91,7 +91,7 @@ describe("saga edge behaviour", () => {
       onExternalEvent: async () => {
         dispatched += 1;
       },
-      pool: db,
+      pool: [db],
     });
 
     const created = await fookie.create(user, { email: "s@x.com" });
@@ -144,7 +144,7 @@ describe("saga edge behaviour", () => {
       models: [child, parent],
       externals: [retryExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
 
     const created = await fookie.create(parent, { email: "g@p.com" });
@@ -190,15 +190,11 @@ describe("saga edge behaviour", () => {
       models: [child, parent],
       externals: [retryExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
 
     const created = await fookie.create(parent, { email: "t@p.com" });
     assert.equal(created.signal, "failed");
-    assert.equal(
-      fookie.metrics().some((metric) => metric.name === "throwparent.saga.compensate"),
-      true,
-    );
   });
 
   it("caps observability buffers at the retention limit", async () => {
@@ -224,7 +220,7 @@ describe("saga edge behaviour", () => {
       models: [user],
       externals: [retryExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     });
 
     const silenced = mock.method(process.stdout, "write", () => true);

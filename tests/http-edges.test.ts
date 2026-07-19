@@ -27,6 +27,7 @@ describe("http edge routes", () => {
   let port: number;
 
   beforeEach(() => {
+    process.env.FOOKIE_ALLOW_TEST_THROW = "1";
     db = new MockDb();
     port = nextPort;
     nextPort += 10;
@@ -62,7 +63,7 @@ describe("http edge routes", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     }));
     fookie.run();
 
@@ -82,7 +83,7 @@ describe("http edge routes", () => {
       output: { score: 1 },
     });
     assert.equal(badExt.status, 400);
-    assert.equal(badExt.json.ok, false);
+    assert.equal(badExt.json.error, "invalid externalId");
 
     const unknownAction = await httpPost(port, "/edgeroute/id/unknown", { filter: {} });
     assert.equal(unknownAction.status, 404);
@@ -114,7 +115,7 @@ describe("http edge routes", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     }));
     fookie.run();
 
@@ -166,7 +167,7 @@ describe("http edge routes", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     }));
     fookie.run();
 
@@ -244,7 +245,7 @@ describe("http edge routes", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     }));
     fookie.run();
 
@@ -301,7 +302,7 @@ describe("http edge routes", () => {
       models: [user],
       externals: [scoreExt] as const,
       onExternalEvent: async () => {},
-      pool: db,
+      pool: [db],
     }));
     fookie.run();
 
@@ -320,7 +321,7 @@ describe("http edge routes", () => {
     const nearTwo = await httpPost(port, "/filterops/list", {
       filter: { loc: { near: [10, 20] } },
     });
-    assert.equal(nearTwo.status, 200);
+    assert.equal(nearTwo.status, 400);
 
     const invalidLike = await httpRaw(
       port,
