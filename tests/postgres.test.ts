@@ -1,7 +1,7 @@
 import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import pg from "pg";
-import { app, Model, External, Types, Done, flows } from "../src/index.ts";
+import { Done, External, Model, Types, app, flows } from "../src/index.ts";
 
 const databaseUrl = process.env.FOOKIE_TEST_DATABASE ?? "";
 
@@ -11,6 +11,7 @@ const scoreExt = External({
   output: { score: Types.int },
   attempts: 1,
   backoff: "fixed",
+  timeoutMs: 30_000,
 });
 
 describe("postgres integration", { skip: databaseUrl.length === 0 }, () => {

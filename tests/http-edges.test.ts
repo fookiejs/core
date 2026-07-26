@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
-import { app, Model, External, Types, Done, flows } from "../src/index.ts";
+import { Done, External, Model, Types, app, flows } from "../src/index.ts";
 import {
   MockDb,
   httpPost,
@@ -20,6 +20,7 @@ const scoreExt = External({
   output: { score: Types.int },
   attempts: 1,
   backoff: "fixed",
+  timeoutMs: 30_000,
 });
 
 describe("http edge routes", () => {
@@ -57,14 +58,16 @@ describe("http edge routes", () => {
       }),
     });
 
-    const fookie = trackApp(app({
-      listen: String(port),
-      database: "postgres://mock",
-      models: [user],
-      externals: [scoreExt] as const,
-      onExternalEvent: async () => {},
-      pool: [db],
-    }));
+    const fookie = trackApp(
+      app({
+        listen: String(port),
+        database: "postgres://mock",
+        models: [user],
+        externals: [scoreExt] as const,
+        onExternalEvent: async () => {},
+        pool: [db],
+      }),
+    );
     fookie.run();
 
     const root = await httpPost(port, "/only", {});
@@ -109,14 +112,16 @@ describe("http edge routes", () => {
       }),
     });
 
-    const fookie = trackApp(app({
-      listen: String(port),
-      database: "postgres://mock",
-      models: [user],
-      externals: [scoreExt] as const,
-      onExternalEvent: async () => {},
-      pool: [db],
-    }));
+    const fookie = trackApp(
+      app({
+        listen: String(port),
+        database: "postgres://mock",
+        models: [user],
+        externals: [scoreExt] as const,
+        onExternalEvent: async () => {},
+        pool: [db],
+      }),
+    );
     fookie.run();
 
     await httpPost(port, "/filteredge/create", {
@@ -161,14 +166,16 @@ describe("http edge routes", () => {
       }),
     });
 
-    const fookie = trackApp(app({
-      listen: String(port),
-      database: "postgres://mock",
-      models: [user],
-      externals: [scoreExt] as const,
-      onExternalEvent: async () => {},
-      pool: [db],
-    }));
+    const fookie = trackApp(
+      app({
+        listen: String(port),
+        database: "postgres://mock",
+        models: [user],
+        externals: [scoreExt] as const,
+        onExternalEvent: async () => {},
+        pool: [db],
+      }),
+    );
     fookie.run();
 
     const created = await httpPost(port, "/mutate/create", {
@@ -239,14 +246,16 @@ describe("http edge routes", () => {
       }),
     });
 
-    const fookie = trackApp(app({
-      listen: String(port),
-      database: "postgres://mock",
-      models: [user],
-      externals: [scoreExt] as const,
-      onExternalEvent: async () => {},
-      pool: [db],
-    }));
+    const fookie = trackApp(
+      app({
+        listen: String(port),
+        database: "postgres://mock",
+        models: [user],
+        externals: [scoreExt] as const,
+        onExternalEvent: async () => {},
+        pool: [db],
+      }),
+    );
     fookie.run();
 
     const created = await httpRaw(
@@ -296,14 +305,16 @@ describe("http edge routes", () => {
       }),
     });
 
-    const fookie = trackApp(app({
-      listen: String(port),
-      database: "postgres://mock",
-      models: [user],
-      externals: [scoreExt] as const,
-      onExternalEvent: async () => {},
-      pool: [db],
-    }));
+    const fookie = trackApp(
+      app({
+        listen: String(port),
+        database: "postgres://mock",
+        models: [user],
+        externals: [scoreExt] as const,
+        onExternalEvent: async () => {},
+        pool: [db],
+      }),
+    );
     fookie.run();
 
     await httpPost(port, "/filterops/create", {
@@ -344,7 +355,13 @@ describe("http edge routes", () => {
 
 function readEntityId(json: Record<string, unknown>): string {
   const entity = json.entity;
-  if (entity && typeof entity === "object" && !Array.isArray(entity) && "id" in entity) {
+  if (
+    entity !== undefined &&
+    entity !== null &&
+    typeof entity === "object" &&
+    Array.isArray(entity) === false &&
+    "id" in entity
+  ) {
     const id = entity.id;
     if (typeof id === "string") {
       return id;

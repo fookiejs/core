@@ -1,0 +1,102 @@
+name: Publish npm
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # Never let two pushes race for the same patch version.
+  group: publish-npm
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip ci]')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      # Required for npm provenance attestation.
+      id-token: write
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: fookie_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      FOOKIE_TEST_DATABASE: postgres://postgres:postgres@localhost:5432/fookie_test
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24"
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - run: npm ci
+
+      # Same gates as ci.yml — main must never publish something CI would reject.
+      - name: lint
+        run: npm run lint
+      - name: format
+        run: npm run format:check
+      - name: typecheck
+        run: npm run typecheck
+      - name: typecheck (ratchet)
+        run: npm run typecheck:all
+      - name: build
+        run: npm run build
+
+      - name: prove postgres is reachable
+        run: |
+          node -e '
+            const pg = require("pg");
+            const pool = new pg.Pool({ connectionString: process.env.FOOKIE_TEST_DATABASE });
+            pool
+              .query("select version()")
+              .then((r) => { console.log(r.rows[0].version); return pool.end(); })
+              .catch((e) => { console.error(e.message); process.exit(1); });
+          '
+
+      - name: test
+        run: |
+          mkdir -p coverage
+          npm run test:ci
+
+      - name: bump patch version
+        id: version
+        run: |
+          npm version patch --no-git-tag-version
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: publish to npm
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: push version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git diff --staged --quiet && exit 0
+          git commit -m "chore(release): v${{ steps.version.outputs.version }} [skip ci]"
+          git tag "v${{ steps.version.outputs.version }}"
+          git push
+          git push --tags

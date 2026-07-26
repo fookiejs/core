@@ -1,14 +1,19 @@
 import { afterEach, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { app,
-  Model,
-  External,
-  Types,
+import {
   Done,
-  Running,
+  External,
   Failed,
+  Model,
+  OutboxCompleted,
+  OutboxFailed,
+  OutboxPending,
+  Running,
+  Types,
+  app,
   flows,
-  type CreateResult, OutboxPending, OutboxFailed, OutboxCompleted } from "../src/index.ts";
+  type CreateResult,
+} from "../src/index.ts";
 import { MockDb, httpPost, httpRaw, trackApp, shutdownLiveApps } from "./mock-db.ts";
 
 let nextPort = 43000;
@@ -19,6 +24,7 @@ const scoreExt = External({
   output: { score: Types.int },
   attempts: 1,
   backoff: "fixed",
+  timeoutMs: 30_000,
 });
 
 describe("branch coverage", () => {
@@ -362,14 +368,16 @@ describe("branch coverage", () => {
       }),
     });
 
-    const fookie = trackApp(app({
-      listen: String(port),
-      database: "postgres://mock",
-      models: [user],
-      externals: [scoreExt] as const,
-      onExternalEvent: async () => {},
-      pool: [db],
-    }));
+    const fookie = trackApp(
+      app({
+        listen: String(port),
+        database: "postgres://mock",
+        models: [user],
+        externals: [scoreExt] as const,
+        onExternalEvent: async () => {},
+        pool: [db],
+      }),
+    );
     fookie.run();
 
     const running = await httpPost(port, "/edge/create", {
@@ -600,14 +608,16 @@ describe("branch coverage", () => {
       }),
     });
 
-    const fookie = trackApp(app({
-      listen: String(port),
-      database: "postgres://mock",
-      models: [user],
-      externals: [scoreExt] as const,
-      onExternalEvent: async () => {},
-      pool: [db],
-    }));
+    const fookie = trackApp(
+      app({
+        listen: String(port),
+        database: "postgres://mock",
+        models: [user],
+        externals: [scoreExt] as const,
+        onExternalEvent: async () => {},
+        pool: [db],
+      }),
+    );
     fookie.run();
 
     const badDeleteFilter = await httpPost(port, "/left/id/delete", {
@@ -841,14 +851,16 @@ describe("branch coverage", () => {
       }),
     });
 
-    const fookie = trackApp(app({
-      listen: String(port),
-      database: "postgres://mock",
-      models: [refParent, refChild, cacheUser],
-      externals: [scoreExt] as const,
-      onExternalEvent: async () => {},
-      pool: [db],
-    }));
+    const fookie = trackApp(
+      app({
+        listen: String(port),
+        database: "postgres://mock",
+        models: [refParent, refChild, cacheUser],
+        externals: [scoreExt] as const,
+        onExternalEvent: async () => {},
+        pool: [db],
+      }),
+    );
 
     const parentCreated = await fookie.create(refParent, { email: "ref@p.com" });
     if (parentCreated.signal === "done") {
@@ -915,10 +927,14 @@ describe("branch coverage", () => {
       return;
     }
     const table = "cache_user";
-    const row = db.rows.get(table)?.get(created.id);
-    if (row) {
-      delete row.is_deleted;
-      row.ghost_col = "extra";
+    const rowTable = db.rows.get(table);
+    if (rowTable !== undefined) {
+      const row = rowTable.get(created.id);
+      if (row !== undefined) {
+        const { is_deleted, ...withoutDeleted } = row;
+        void is_deleted;
+        rowTable.set(created.id, { ...withoutDeleted, ghost_col: "extra" });
+      }
     }
     const fookie2 = app({
       listen: String(port + 1),

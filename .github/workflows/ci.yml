@@ -4,17 +4,235 @@ on:
   push:
     branches: [main, master]
   pull_request:
+  workflow_dispatch:
+
+# Least privilege by default. Jobs that need more raise it themselves.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION_PRIMARY: "24"
 
 jobs:
-  test:
+  static:
+    name: static analysis
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "22"
+          node-version: ${{ env.NODE_VERSION_PRIMARY }}
           cache: npm
       - run: npm ci
-      - run: npm run typecheck
-      - run: npm run build
-      - run: npm run test:coverage
+
+      # Each check is its own step so a red X points at one cause.
+      - name: lint (src + tests)
+        run: npm run lint
+      - name: format
+        run: npm run format:check
+      - name: typecheck (src, must be clean)
+        run: npm run typecheck
+      - name: typecheck (src + tests + example, ratchet)
+        run: npm run typecheck:all
+      - name: build
+        run: npm run build
+      - name: published package contains only dist
+        run: |
+          npm pack --dry-run --json > "$RUNNER_TEMP/pack.json"
+          node -e "
+            const files = JSON.parse(require('fs').readFileSync(process.env.RUNNER_TEMP + '/pack.json','utf8'))[0].files.map(f => f.path);
+            const stray = files.filter(f => f !== 'package.json' && f !== 'README.md' && f !== 'LICENSE' && f.startsWith('dist/') === false);
+            if (stray.length > 0) { console.error('unexpected files in package tarball:', stray); process.exit(1); }
+            console.log(files.length + ' files, all under dist/');
+          "
+
+  test:
+    name: test (node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["22", "24"]
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: fookie_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      # Without this the entire postgres suite silently skips itself.
+      FOOKIE_TEST_DATABASE: postgres://postgres:postgres@localhost:5432/fookie_test
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+
+      # If the service container were unreachable the postgres suite would just
+      # skip itself and the run would look green. Fail loudly instead.
+      - name: prove postgres is reachable
+        run: |
+          node -e '
+            const pg = require("pg");
+            const pool = new pg.Pool({ connectionString: process.env.FOOKIE_TEST_DATABASE });
+            pool
+              .query("select version()")
+              .then((r) => { console.log(r.rows[0].version); return pool.end(); })
+              .catch((e) => { console.error(e.message); process.exit(1); });
+          '
+
+      - name: run tests with coverage
+        run: |
+          mkdir -p coverage
+          npm run test:ci
+
+      # Reporting runs even when tests fail — a red run is exactly when you want the report.
+      - name: coverage summary
+        if: always()
+        run: npm run coverage:summary -- "node ${{ matrix.node }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: upload coverage + junit
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: reports-node-${{ matrix.node }}
+          path: |
+            coverage/lcov.info
+            coverage/junit.xml
+          retention-days: 30
+          if-no-files-found: error
+
+      # Gate last, so the artifacts and summary above always exist.
+      - name: coverage gate
+        if: always()
+        run: npm run coverage:gate
+
+  coverage-comment:
+    name: coverage comment
+    runs-on: ubuntu-latest
+    needs: test
+    if: always() && github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION_PRIMARY }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: reports-node-${{ env.NODE_VERSION_PRIMARY }}
+          path: coverage
+        continue-on-error: true
+
+      - name: post or update the coverage comment
+        # Fork PRs get a read-only token; never fail the run over a comment.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          test -f coverage/lcov.info || { echo "no coverage artifact to report"; exit 0; }
+          marker='<!-- fookie-coverage-report -->'
+          {
+            echo "$marker"
+            node scripts/coverage-summary.mjs coverage/lcov.info "node ${NODE_VERSION_PRIMARY}"
+          } > comment.md
+          existing=$(gh api "repos/$REPO/issues/$PR/comments" --paginate \
+            --jq "[.[] | select(.body | startswith(\"$marker\")) | .id] | first")
+          if [ -n "$existing" ] && [ "$existing" != "null" ]; then
+            gh api -X PATCH "repos/$REPO/issues/comments/$existing" -F body=@comment.md
+            echo "updated comment $existing"
+          else
+            gh api -X POST "repos/$REPO/issues/$PR/comments" -F body=@comment.md
+            echo "created comment"
+          fi
+
+  invariants:
+    name: house invariants
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: no module grows past 600 lines
+        env:
+          # Decompose these, then delete them from this list. Never add to it.
+          KNOWN_DEBT: "src/app.ts src/engine/flow.ts"
+        run: |
+          status=0
+          for f in $(find src -name '*.ts' | sort); do
+            n=$(wc -l < "$f")
+            case " $KNOWN_DEBT " in
+              *" $f "*)
+                echo "debt  $f ($n lines, exempt until decomposed)"
+                continue
+                ;;
+            esac
+            if [ "$n" -gt 600 ]; then
+              echo "over  $f ($n lines > 600)"
+              status=1
+            fi
+          done
+          test "$status" -eq 0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION_PRIMARY }}
+
+      # Catches dead modules and broken relative import specifiers.
+      - name: module graph is connected
+        run: npm run check:graph
+
+      - name: report module sizes
+        if: always()
+        run: |
+          {
+            echo "### Module sizes"
+            echo ''
+            echo '| module | lines |'
+            echo '| --- | --- |'
+            find src -name '*.ts' -exec sh -c 'echo "| \`$1\` | $(wc -l < "$1") |"' _ {} \; | sort -t'|' -k3 -rn
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  dependency-review:
+    name: dependency review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure
+
+  audit:
+    name: npm audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION_PRIMARY }}
+          cache: npm
+      - run: npm ci
+      - name: audit production dependencies
+        run: npm audit --omit=dev --audit-level=high

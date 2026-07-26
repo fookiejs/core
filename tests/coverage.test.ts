@@ -1,6 +1,19 @@
 import { afterEach, beforeEach, describe, it, mock } from "node:test";
 import assert from "node:assert/strict";
-import { app, Model, External, Types, Done, Running, Failed, flows, models, OutboxPending, OutboxFailed, OutboxCompleted } from "../src/index.ts";
+import {
+  Done,
+  External,
+  Failed,
+  Model,
+  OutboxCompleted,
+  OutboxFailed,
+  OutboxPending,
+  Running,
+  Types,
+  app,
+  flows,
+  models,
+} from "../src/index.ts";
 import { MockDb, httpPost, httpRaw, trackApp, shutdownLiveApps } from "./mock-db.ts";
 
 let nextPort = 42000;
@@ -11,6 +24,7 @@ const scoreExt = External({
   output: { score: Types.int },
   attempts: 1,
   backoff: "fixed",
+  timeoutMs: 30_000,
 });
 
 describe("coverage", () => {
@@ -240,7 +254,9 @@ describe("coverage", () => {
       flow: flows({
         async create(flow) {
           const ext = await flow.external(scoreExt, { amount: 10 });
-          if (ext.signal === "done") return Done;
+          if (ext.signal === "done") {
+            return Done;
+          }
           return ext.signal;
         },
         async list() {
@@ -307,14 +323,16 @@ describe("coverage", () => {
         delete: async () => Done,
       }),
     });
-    const fookie = trackApp(app({
-      listen: String(port),
-      database: "postgres://mock",
-      models: [user],
-      externals: [scoreExt] as const,
-      onExternalEvent: async () => {},
-      pool: [db],
-    }));
+    const fookie = trackApp(
+      app({
+        listen: String(port),
+        database: "postgres://mock",
+        models: [user],
+        externals: [scoreExt] as const,
+        onExternalEvent: async () => {},
+        pool: [db],
+      }),
+    );
     fookie.run();
     const created = await httpPost(port, "/httpuser/create", {
       body: { email: "h@u.com", name: "H" },

@@ -23,6 +23,7 @@ const fraud = External({
   },
   attempts: 3,
   backoff: "exponential",
+  timeoutMs: 30_000,
 });
 
 const notify = External({
@@ -36,6 +37,7 @@ const notify = External({
   },
   attempts: 3,
   backoff: "fixed",
+  timeoutMs: 30_000,
 });
 
 const user = Model({

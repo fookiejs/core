@@ -1,0 +1,1016 @@
+import { z } from "zod";
+import http from "node:http";
+import { SpanStatusCode } from "@opentelemetry/api";
+import { executeRun, resolveModelByName } from "./engine/flow.ts";
+import type { CreateResult, FlowRun } from "./engine/flow.ts";
+import { uuidV7 } from "./engine/ids.ts";
+import {
+  emitExternalHandler,
+  outboxCompleted,
+  outboxFailed,
+  outboxPending,
+  resolveExternalByName,
+  outboxDeadLettered,
+  outboxRescheduled,
+} from "./engine/outbox.ts";
+import type { OutboxEntry } from "./engine/outbox.ts";
+import type { RunStateRow } from "./pg/store.ts";
+import type { PendingEventQueue, PendingWriteQueue, Runtime } from "./engine/runtime.ts";
+import {
+  DatabaseError,
+  ModelFieldError,
+  NotFoundError,
+  PgEncodeError,
+  ValidationError,
+} from "./errors.ts";
+import { FailureClass, backoffDelayMs } from "./external.ts";
+import type { ExternalDef, ExternalEventOf } from "./external.ts";
+import type { FilterInput } from "./filter/schema.ts";
+import { httpErrorPayload, httpStatusForFookieError, listenPort, sendJson } from "./http.ts";
+import { routeHttp } from "./http-router.ts";
+import { isModelEntity } from "./model.ts";
+import type {
+  EntityFieldsOf,
+  InferCreateBody,
+  ModelDef,
+  ModelEntity,
+  ModelFieldsInput,
+  UpdateBody,
+} from "./model.ts";
+import { Observability, runBufferLimit } from "./observability.ts";
+import type { LogEntry, LogFieldValue, MetricEntry, ObsScope, SpanEntry } from "./observability.ts";
+import { dbErrorBoxText, dbErrorMessageForLog } from "./pg/encode.ts";
+import type { DbErrorBox } from "./pg/encode.ts";
+import { requireInjectedPool, wrapOwnedPool } from "./pg/pool.ts";
+import type { InjectablePool } from "./pg/pool.ts";
+import { PostgresStore } from "./pg/store.ts";
+import { Done, Failed, Phase, Running } from "./signal.ts";
+import type { Signal } from "./signal.ts";
+import { appendItem, catchValidation, firstPresent, mapLookup } from "./slot.ts";
+import { entityRecordFromPlain, entityRecordFromUpdateBody } from "./values.ts";
+import type { EntityRecord, JsonValue } from "./values.ts";
+
+export function models(items: readonly ModelDef<ModelFieldsInput>[]): ModelDef<ModelFieldsInput>[] {
+  let registered: readonly ModelDef<ModelFieldsInput>[] = [];
+  for (const modelDef of items) {
+    if (z.string().min(1).safeParse(modelDef.name).success === false) {
+      throw ModelFieldError.create("model name required");
+    }
+    registered = appendItem(registered, modelDef);
+  }
+  return registered.slice();
+}
+
+export type RegisteredModel = ModelDef<ModelFieldsInput>;
+
+export type AppConfig<E extends readonly ExternalDef[] = readonly ExternalDef[]> = {
+  listen: string;
+  database: string;
+  models: readonly RegisteredModel[];
+  externals: E;
+  onExternalEvent: (event: ExternalEventOf<E[number]>) => Promise<void>;
+  pool: readonly InjectablePool[];
+};
+
+export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
+  private readonly listen: string;
+  private readonly registeredModels: readonly RegisteredModel[];
+  private readonly externals: E;
+  private readonly onExternalEvent: (event: ExternalEventOf<E[number]>) => Promise<void>;
+  private readonly pool: InjectablePool;
+  private readonly ownsPool: boolean;
+  private readonly store: PostgresStore;
+  private readonly runs = new Map<string, FlowRun<ModelFieldsInput>>();
+  private readonly outbox = new Map<string, OutboxEntry>();
+  private readonly entities = new Map<string, EntityRecord>();
+  private readonly obs = new Observability();
+  private readonly listResultsBox: { rows: EntityRecord[] } = { rows: [] };
+  private readonly pendingExternalEvents: PendingEventQueue = { events: [] };
+  private readonly pendingEntityWrites: PendingWriteQueue = { rows: [] };
+  private readonly dbReadyBox: { ready: boolean } = { ready: false };
+  private readonly dbErrorBox: { messages: readonly string[] } = { messages: [] };
+  private readonly serverBox: { servers: readonly http.Server[] } = { servers: [] };
+
+  private constructor(config: AppConfig<E>) {
+    this.listen = config.listen;
+    this.registeredModels = config.models;
+    this.externals = config.externals;
+    this.onExternalEvent = config.onExternalEvent;
+    if (config.pool.length > 0) {
+      this.ownsPool = false;
+      this.pool = requireInjectedPool(config.pool);
+    } else {
+      this.ownsPool = true;
+      this.pool = wrapOwnedPool(config.database);
+    }
+    this.store = PostgresStore.create(this.pool, [
+      (message) => {
+        if (z.string().safeParse(message).success === false) {
+          this.dbErrorBox.messages = [];
+          return;
+        }
+        if (message.length < 1) {
+          this.dbErrorBox.messages = [];
+          return;
+        }
+        this.dbErrorBox.messages = [message];
+      },
+    ]);
+  }
+
+  static create<const E extends readonly ExternalDef[]>(config: AppConfig<E>): App<E> {
+    if (z.string().safeParse(config.listen).success === false) {
+      throw ValidationError.create("app listen required");
+    }
+    if (z.string().safeParse(config.database).success === false) {
+      throw ValidationError.create("app database required");
+    }
+    if (config.models.length < 1) {
+      throw ValidationError.create("app models required");
+    }
+    return new App(config);
+  }
+
+  private reportAppError(
+    operation: string,
+    message: string,
+    fields: Record<string, LogFieldValue>,
+  ): void {
+    const errorId = uuidV7();
+    this.obs.error(
+      {
+        traceId: errorId,
+        model: "app",
+        entityId: errorId,
+        operation,
+      },
+      message,
+      fields,
+    );
+  }
+
+  async stop(): Promise<boolean> {
+    let ok = true;
+    if (this.serverBox.servers.length > 0) {
+      const server = firstPresent(this.serverBox.servers, "http server required");
+      try {
+        await new Promise<void>((resolve, reject) => {
+          server.close((err) => {
+            if (err instanceof Error) {
+              reject(err);
+              return;
+            }
+            if (z.instanceof(Error).safeParse(err).success === true) {
+              reject(err);
+              return;
+            }
+            resolve();
+          });
+        });
+      } catch (err) {
+        this.reportAppError("stop", "server stop failed", {
+          reason: dbErrorMessageForLog(err, "database unavailable"),
+        });
+        ok = false;
+      }
+      this.serverBox.servers = [];
+    }
+    if (this.ownsPool) {
+      for (const closePool of this.pool.end) {
+        try {
+          await closePool();
+        } catch (err) {
+          this.reportAppError("stop", "pool stop failed", {
+            reason: dbErrorMessageForLog(err, "database unavailable"),
+          });
+          ok = false;
+        }
+      }
+    }
+    return ok;
+  }
+
+  private finalizeRun(runId: string, run: FlowRun<ModelFieldsInput>, signal: Signal): void {
+    run.signal = signal;
+    if (signal === Failed) {
+      this.runs.delete(runId);
+    }
+    if (this.runs.size <= runBufferLimit) {
+      return;
+    }
+    for (const [id, entry] of this.runs) {
+      if (id !== runId && entry.signal !== Running) {
+        this.runs.delete(id);
+        if (this.runs.size <= runBufferLimit) {
+          return;
+        }
+      }
+    }
+  }
+
+  run(): boolean {
+    if (this.serverBox.servers.length > 0) {
+      return true;
+    }
+    const portHits = listenPort(this.listen);
+    if (portHits.length < 1) {
+      return false;
+    }
+    const port = firstPresent(portHits, "listen port required");
+    const server = http.createServer((req, res) => {
+      this.handleHttp(req, res).catch((err) => {
+        const status = httpStatusForFookieError(err);
+        if (
+          status === 500 &&
+          !(
+            err instanceof DatabaseError ||
+            err instanceof PgEncodeError ||
+            err instanceof ValidationError ||
+            err instanceof ModelFieldError ||
+            err instanceof NotFoundError
+          )
+        ) {
+          this.reportAppError("handleHttp", "internal error", {
+            reason: dbErrorMessageForLog(err, "internal error"),
+          });
+        } else if (status === 500) {
+          this.reportAppError("handleHttp", "internal error", {
+            reason: dbErrorMessageForLog(err, "database unavailable"),
+          });
+        }
+        if (res.headersSent === false) {
+          sendJson(res, status, httpErrorPayload(err));
+        }
+      });
+    });
+    server.once("error", (err) => {
+      const reason = dbErrorMessageForLog(err, "database unavailable");
+      this.reportAppError("listen", "server listen failed", {
+        reason,
+      });
+      if (this.serverBox.servers.length > 0 && this.serverBox.servers[0] === server) {
+        this.serverBox.servers = [];
+      }
+    });
+    server.listen(port);
+    this.serverBox.servers = [server];
+    return true;
+  }
+
+  create<D extends ModelFieldsInput>(
+    model: ModelDef<D>,
+    body: InferCreateBody<D>,
+  ): Promise<CreateResult<ModelEntity<D>>> {
+    const runId = uuidV7();
+    const entityId = uuidV7();
+    const run: FlowRun<D> = {
+      id: runId,
+      model,
+      operation: "create",
+      entityId,
+      body: [entityRecordFromPlain(body)],
+      filter: [],
+      entity: [],
+      created: [],
+      results: [],
+      signal: Running,
+    };
+    this.runs.set(runId, run);
+    return executeRun(this.runtimeFor(runId, model, entityId, "create"), run).then(
+      (signal): CreateResult<ModelEntity<D>> => {
+        this.finalizeRun(runId, run, signal);
+        if (signal === Done) {
+          for (const created of run.created) {
+            if (isModelEntity(model, created) === false) {
+              return { signal: Failed };
+            }
+            return {
+              signal: Done,
+              id: entityId,
+              entity: created,
+            };
+          }
+        }
+        if (signal === Running) {
+          return { signal: Running, runId };
+        }
+        return { signal: Failed };
+      },
+    );
+  }
+
+  list<D extends ModelFieldsInput>(model: ModelDef<D>, filter: FilterInput): Promise<Signal> {
+    const runId = uuidV7();
+    const run: FlowRun<D> = {
+      id: runId,
+      model,
+      operation: "list",
+      entityId: runId,
+      body: [],
+      filter: [filter],
+      entity: [],
+      created: [],
+      results: [],
+      signal: Running,
+    };
+    this.runs.set(runId, run);
+    return executeRun(this.runtimeFor(runId, model, runId, "list"), run).then((signal) => {
+      if (z.string().min(1).safeParse(runId).success === false) {
+        throw ValidationError.create("list run id required");
+      }
+      if (Array.isArray(run.results) === false) {
+        throw ValidationError.create("list results required");
+      }
+      this.finalizeRun(runId, run, signal);
+      this.publishListResults(signal, run.results);
+      return signal;
+    });
+  }
+
+  update<D extends ModelFieldsInput>(
+    model: ModelDef<D>,
+    input: { id: string; body: UpdateBody<EntityFieldsOf<D>>; filter: FilterInput },
+  ): Promise<Signal> {
+    const runId = uuidV7();
+    const run: FlowRun<D> = {
+      id: runId,
+      model,
+      operation: "update",
+      entityId: input.id,
+      body: [entityRecordFromUpdateBody(input.body)],
+      filter: [input.filter],
+      entity: [],
+      created: [],
+      results: [],
+      signal: Running,
+    };
+    this.runs.set(runId, run);
+    return executeRun(this.runtimeFor(runId, model, input.id, "update"), run).then((signal) => {
+      if (z.string().min(1).safeParse(runId).success === false) {
+        throw ValidationError.create("update run id required");
+      }
+      if (z.string().min(1).safeParse(input.id).success === false) {
+        throw ValidationError.create("update entity id required");
+      }
+      this.finalizeRun(runId, run, signal);
+      return signal;
+    });
+  }
+
+  delete<D extends ModelFieldsInput>(
+    model: ModelDef<D>,
+    input: { id: string; filter: FilterInput },
+  ): Promise<Signal> {
+    const runId = uuidV7();
+    const run: FlowRun<D> = {
+      id: runId,
+      model,
+      operation: "delete",
+      entityId: input.id,
+      body: [],
+      filter: [input.filter],
+      entity: [],
+      created: [],
+      results: [],
+      signal: Running,
+    };
+    this.runs.set(runId, run);
+    return executeRun(this.runtimeFor(runId, model, input.id, "delete"), run).then((signal) => {
+      if (z.string().min(1).safeParse(runId).success === false) {
+        throw ValidationError.create("delete run id required");
+      }
+      if (z.string().min(1).safeParse(input.id).success === false) {
+        throw ValidationError.create("delete entity id required");
+      }
+      this.finalizeRun(runId, run, signal);
+      return signal;
+    });
+  }
+
+  resume(runId: string): Promise<Signal> {
+    const runHits = mapLookup(this.runs, runId);
+    if (runHits.length < 1) {
+      return Promise.resolve(Failed);
+    }
+    const run = firstPresent(runHits, "run required");
+    if (run.signal !== Running) {
+      return Promise.resolve(run.signal);
+    }
+    return executeRun(this.runtimeFor(runId, run.model, run.entityId, run.operation), run).then(
+      (signal) => {
+        if (z.string().min(1).safeParse(runId).success === false) {
+          throw ValidationError.create("resume run id required");
+        }
+        if (run.signal !== Running && run.signal !== Done && run.signal !== Failed) {
+          throw ValidationError.create("resume signal invalid");
+        }
+        this.finalizeRun(runId, run, signal);
+        return signal;
+      },
+    );
+  }
+
+  async setExternalResult(externalResult: {
+    externalId: string;
+    output: JsonValue;
+  }): Promise<boolean> {
+    const outboxHits = mapLookup(this.outbox, externalResult.externalId);
+    if (outboxHits.length < 1) {
+      return false;
+    }
+    {
+      const outboxRow = firstPresent(outboxHits, "outbox entry required");
+      if (outboxRow.status === "completed") {
+        return true;
+      }
+      if (outboxRow.status === "failed") {
+        return false;
+      }
+      const runs = mapLookup(this.runs, outboxRow.runId);
+      const resolvedModels = resolveModelByName(this.registeredModels, outboxRow.model);
+      let scopeModel = outboxRow.model;
+      for (const hit of resolvedModels) {
+        scopeModel = hit.name;
+      }
+      if (resolvedModels.length < 1) {
+        for (const run of runs) {
+          scopeModel = run.model.name;
+        }
+      }
+      let scopeOperation = "external";
+      for (const run of runs) {
+        scopeOperation = run.operation;
+      }
+      const scope: ObsScope = {
+        traceId: outboxRow.runId,
+        model: scopeModel,
+        entityId: outboxRow.entityId,
+        operation: scopeOperation,
+      };
+      const extHits = resolveExternalByName(this.externals, outboxRow.name);
+      if (extHits.length < 1) {
+        this.obs.error(scope, "external.result_rejected", {
+          reason: "unknown external",
+          name: outboxRow.name,
+          externalId: outboxRow.externalId,
+        });
+        this.obs.count(scope, "external.failed");
+        this.obs.info(scope, "external.failed", {
+          externalId: outboxRow.externalId,
+          attempt: outboxRow.attempt,
+        });
+        const unknownFailed = await this.recordOutbox(outboxFailed(outboxRow));
+        if (unknownFailed === false) {
+          return false;
+        }
+        let unknownResumeModel: readonly ModelDef<ModelFieldsInput>[] = [];
+        for (const resolvedModel of resolvedModels) {
+          unknownResumeModel = [resolvedModel];
+        }
+        for (const runningRun of runs) {
+          unknownResumeModel = [runningRun.model];
+        }
+        if (unknownResumeModel.length < 1) {
+          return false;
+        }
+        this.obs.info(scope, "flow.resumed", { runId: outboxRow.runId });
+        const unknownResumed = await this.resume(outboxRow.runId);
+        if (unknownResumed === Failed) {
+          this.obs.error(scope, "flow.resume_failed", { runId: outboxRow.runId });
+        }
+        return false;
+      }
+      const ext = firstPresent(extHits, "external required");
+      const spanAttributes = { externalName: outboxRow.name, externalId: outboxRow.externalId };
+      return this.obs.runSpan(scope, "external.result", spanAttributes, async (span) => {
+        const validatedHits = catchValidation(() => ext.validateOutput(externalResult.output));
+        if (validatedHits.length < 1) {
+          if (outboxRow.attempt < ext.attempts) {
+            const nextAttempt = outboxRow.attempt + 1;
+            this.obs.count(scope, "external.retry");
+            this.obs.info(scope, "external.retry", {
+              externalId: outboxRow.externalId,
+              attempt: nextAttempt,
+            });
+            const dueAt = new Date(Date.now() + backoffDelayMs(ext.backoff, nextAttempt));
+            const recorded = await this.recordOutbox(
+              outboxRescheduled(outboxRow, nextAttempt, dueAt.toISOString()),
+            );
+            if (recorded === false) {
+              span.setStatus({ code: SpanStatusCode.ERROR, message: "database unavailable" });
+              return false;
+            }
+            const emitted = await emitExternalHandler(
+              this.onExternalEvent,
+              ext,
+              outboxRow.externalId,
+              outboxRow.input,
+            );
+            if (emitted !== "emitted") {
+              this.obs.error(scope, "external.emit_skipped", {
+                reason: emitted === "handler_error" ? "handler error" : "invalid input",
+                name: outboxRow.name,
+                externalId: outboxRow.externalId,
+              });
+              const skippedFailed = await this.recordOutbox(
+                outboxFailed(outboxPending(outboxRow, nextAttempt)),
+              );
+              if (skippedFailed === false) {
+                span.setStatus({ code: SpanStatusCode.ERROR, message: "database unavailable" });
+                return false;
+              }
+              this.obs.count(scope, "external.failed");
+              this.obs.info(scope, "external.failed", {
+                externalId: outboxRow.externalId,
+                attempt: nextAttempt,
+              });
+              let skipResumeModel: readonly ModelDef<ModelFieldsInput>[] = [];
+              for (const resolvedModel of resolvedModels) {
+                skipResumeModel = [resolvedModel];
+              }
+              for (const runningRun of runs) {
+                skipResumeModel = [runningRun.model];
+              }
+              if (skipResumeModel.length < 1) {
+                return false;
+              }
+              this.obs.info(scope, "flow.resumed", { runId: outboxRow.runId });
+              const skipResumed = await this.resume(outboxRow.runId);
+              if (skipResumed === Failed) {
+                this.obs.error(scope, "flow.resume_failed", { runId: outboxRow.runId });
+              }
+              return false;
+            }
+            return false;
+          }
+          this.obs.count(scope, "external.failed");
+          this.obs.info(scope, "external.failed", {
+            externalId: outboxRow.externalId,
+            attempt: outboxRow.attempt,
+          });
+          span.setStatus({ code: SpanStatusCode.ERROR, message: "external output invalid" });
+          const failedRecorded = await this.recordOutbox(outboxFailed(outboxRow));
+          if (failedRecorded === false) {
+            span.setStatus({ code: SpanStatusCode.ERROR, message: "database unavailable" });
+            return false;
+          }
+          let failResumeModel: readonly ModelDef<ModelFieldsInput>[] = [];
+          for (const resolvedModel of resolvedModels) {
+            failResumeModel = [resolvedModel];
+          }
+          for (const runningRun of runs) {
+            failResumeModel = [runningRun.model];
+          }
+          if (failResumeModel.length < 1) {
+            return false;
+          }
+          this.obs.info(scope, "flow.resumed", { runId: outboxRow.runId });
+          const failResumed = await this.resume(outboxRow.runId);
+          if (failResumed === Failed) {
+            this.obs.error(scope, "flow.resume_failed", { runId: outboxRow.runId });
+          }
+          return false;
+        }
+        const validated = firstPresent(validatedHits, "validated body required");
+        this.obs.count(scope, "external.completed");
+        this.obs.info(scope, "external.completed", { externalId: outboxRow.externalId });
+        const completedRecorded = await this.recordOutbox(outboxCompleted(outboxRow, validated));
+        if (completedRecorded === false) {
+          span.setStatus({ code: SpanStatusCode.ERROR, message: "database unavailable" });
+          return false;
+        }
+        let resumeModel: readonly ModelDef<ModelFieldsInput>[] = [];
+        for (const resolvedModel of resolvedModels) {
+          resumeModel = [resolvedModel];
+        }
+        for (const runningRun of runs) {
+          resumeModel = [runningRun.model];
+        }
+        if (resumeModel.length < 1) {
+          return true;
+        }
+        this.obs.info(scope, "flow.resumed", { runId: outboxRow.runId });
+        const resumed = await this.resume(outboxRow.runId);
+        if (resumed === Failed) {
+          this.obs.error(scope, "flow.resume_failed", { runId: outboxRow.runId });
+        }
+        return true;
+      });
+    }
+  }
+
+  async patchOutbox(externalId: string, output: EntityRecord): Promise<boolean> {
+    const outboxHits = mapLookup(this.outbox, externalId);
+    if (outboxHits.length < 1) {
+      return false;
+    }
+    const outboxEntry = firstPresent(outboxHits, "outbox entry required");
+    if (outboxEntry.status === "completed") {
+      return true;
+    }
+    if (outboxEntry.status === "failed") {
+      return false;
+    }
+    const extHits = resolveExternalByName(this.externals, outboxEntry.name);
+    if (extHits.length < 1) {
+      return false;
+    }
+    const ext = firstPresent(extHits, "external required");
+    const validatedHits = catchValidation(() => ext.validateOutput(output));
+    if (validatedHits.length < 1) {
+      return false;
+    }
+    const validated = firstPresent(validatedHits, "validated body required");
+    return await this.recordOutbox(outboxCompleted(outboxEntry, validated));
+  }
+
+  private runBodyOf(bodies: readonly EntityRecord[]): EntityRecord {
+    if (Array.isArray(bodies) === false) {
+      return {};
+    }
+    for (const body of bodies) {
+      if (z.looseObject({}).safeParse(body).success === false) {
+        return {};
+      }
+      return body;
+    }
+    return {};
+  }
+
+  private rootScope(): ObsScope {
+    const dispatcherId = "dispatcher";
+    if (z.string().min(1).safeParse(dispatcherId).success === false) {
+      throw ValidationError.create("dispatcher scope required");
+    }
+    return {
+      traceId: dispatcherId,
+      model: dispatcherId,
+      entityId: dispatcherId,
+      operation: "dispatch",
+    };
+  }
+
+  private dueAtMs(outboxRow: OutboxEntry): readonly number[] {
+    for (const iso of outboxRow.nextAttemptAt) {
+      const parsed = Date.parse(iso);
+      if (Number.isFinite(parsed) === true) {
+        return [parsed];
+      }
+    }
+    return [];
+  }
+
+  private async deadLetter(outboxRow: OutboxEntry, reason: string): Promise<boolean> {
+    const scope = this.rootScope();
+    const recorded = await this.recordOutbox(outboxDeadLettered(outboxRow, reason));
+    if (recorded === false) {
+      return false;
+    }
+    this.obs.count(scope, "external.dead_letter");
+    this.obs.error(scope, "external.dead_letter", {
+      externalId: outboxRow.externalId,
+      externalName: outboxRow.name,
+      runId: outboxRow.runId,
+      reason,
+    });
+    await this.markRunStuck(outboxRow.runId, reason);
+    return true;
+  }
+
+  private async markRunStuck(runId: string, reason: string): Promise<boolean> {
+    const scope = this.rootScope();
+    if (z.string().min(1).safeParse(runId).success === false) {
+      return false;
+    }
+    this.obs.count(scope, "saga.stuck");
+    this.obs.error(scope, "saga.stuck", { runId, reason });
+    for (const run of mapLookup(this.runs, runId)) {
+      const saved = await this.store.saveRunState({
+        runId,
+        model: run.model.name,
+        entityId: run.entityId,
+        operation: run.operation,
+        body: this.runBodyOf(run.body),
+        filterJson: JSON.stringify(run.filter),
+        phase: Phase.Stuck,
+        pivotExternalId: [],
+        error: [reason],
+      });
+      return saved;
+    }
+    return false;
+  }
+
+  async tick(): Promise<number> {
+    const scope = this.rootScope();
+    const dbOk = await this.awaitDb();
+    if (dbOk === false) {
+      return 0;
+    }
+    const nowMs = Date.now();
+    let dispatched = 0;
+    const dueRows = Array.from(this.outbox.values());
+    for (const outboxRow of dueRows) {
+      if (outboxRow.status !== "pending") {
+        continue;
+      }
+      const dueHits = this.dueAtMs(outboxRow);
+      if (dueHits.length < 1) {
+        continue;
+      }
+      const due = firstPresent(dueHits, "due timestamp required");
+      if (due > nowMs) {
+        continue;
+      }
+      const extHits = resolveExternalByName(this.externals, outboxRow.name);
+      if (extHits.length < 1) {
+        await this.deadLetter(outboxRow, "unknown external");
+        continue;
+      }
+      const ext = firstPresent(extHits, "external required");
+      if (outboxRow.attempt >= ext.attempts) {
+        await this.deadLetter(outboxRow, "attempts exhausted");
+        continue;
+      }
+      const nextAttempt = outboxRow.attempt + 1;
+      const delay = backoffDelayMs(ext.backoff, nextAttempt);
+      const rescheduled = outboxRescheduled(
+        outboxRow,
+        nextAttempt,
+        new Date(nowMs + delay).toISOString(),
+      );
+      const recorded = await this.recordOutbox(rescheduled);
+      if (recorded === false) {
+        continue;
+      }
+      this.obs.count(scope, "external.retry");
+      this.obs.info(scope, "external.retry", {
+        externalId: outboxRow.externalId,
+        externalName: outboxRow.name,
+        attempt: nextAttempt,
+      });
+      await emitExternalHandler(this.onExternalEvent, ext, outboxRow.externalId, outboxRow.input);
+      dispatched += 1;
+    }
+    return dispatched;
+  }
+
+  async setExternalFailure(failure: {
+    externalId: string;
+    reason: string;
+    failure: FailureClass;
+  }): Promise<boolean> {
+    const scope = this.rootScope();
+    if (z.string().min(1).safeParse(failure.externalId).success === false) {
+      return false;
+    }
+    if (z.string().min(1).safeParse(failure.reason).success === false) {
+      return false;
+    }
+    const dbOk = await this.awaitDb();
+    if (dbOk === false) {
+      return false;
+    }
+    for (const outboxRow of mapLookup(this.outbox, failure.externalId)) {
+      if (outboxRow.status !== "pending") {
+        return false;
+      }
+      const extHits = resolveExternalByName(this.externals, outboxRow.name);
+      if (extHits.length < 1) {
+        return await this.deadLetter(outboxRow, failure.reason);
+      }
+      const ext = firstPresent(extHits, "external required");
+      const budgetLeft = outboxRow.attempt < ext.attempts;
+      if (failure.failure === FailureClass.Transient && budgetLeft === true) {
+        const nextAttempt = outboxRow.attempt + 1;
+        const dueAt = new Date(Date.now() + backoffDelayMs(ext.backoff, nextAttempt));
+        this.obs.count(scope, "external.transient_failure");
+        this.obs.info(scope, "external.transient_failure", {
+          externalId: outboxRow.externalId,
+          attempt: nextAttempt,
+          reason: failure.reason,
+        });
+        return await this.recordOutbox(
+          outboxRescheduled(outboxRow, nextAttempt, dueAt.toISOString()),
+        );
+      }
+      this.obs.count(scope, "external.permanent_failure");
+      return await this.deadLetter(outboxRow, failure.reason);
+    }
+    return false;
+  }
+
+  async retryExternal(externalId: string): Promise<boolean> {
+    if (z.string().min(1).safeParse(externalId).success === false) {
+      return false;
+    }
+    const dbOk = await this.awaitDb();
+    if (dbOk === false) {
+      return false;
+    }
+    for (const outboxRow of mapLookup(this.outbox, externalId)) {
+      if (outboxRow.status !== "dead_letter") {
+        return false;
+      }
+      this.obs.count(this.rootScope(), "external.retry_requested");
+      return await this.recordOutbox(
+        outboxRescheduled(outboxRow, 1, new Date(Date.now()).toISOString()),
+      );
+    }
+    return false;
+  }
+
+  deadLetters(): OutboxEntry[] {
+    let rows: OutboxEntry[] = [];
+    for (const outboxRow of this.outbox.values()) {
+      if (outboxRow.status === "dead_letter") {
+        rows = rows.concat([outboxRow]);
+      }
+    }
+    return rows;
+  }
+
+  async sagaRun(runId: string): Promise<readonly RunStateRow[]> {
+    if (z.string().min(1).safeParse(runId).success === false) {
+      return [];
+    }
+    const dbOk = await this.awaitDb();
+    if (dbOk === false) {
+      return [];
+    }
+    return await this.store.loadRunState(runId);
+  }
+
+  logs(): LogEntry[] {
+    if (Array.isArray(this.obs.buffers.logs) === false) {
+      throw ValidationError.create("log buffer required");
+    }
+    const copied = this.obs.buffers.logs.slice();
+    if (Array.isArray(copied) === false) {
+      throw ValidationError.create("log copy required");
+    }
+    return copied;
+  }
+
+  metrics(): MetricEntry[] {
+    if (Array.isArray(this.obs.buffers.metrics) === false) {
+      throw ValidationError.create("metric buffer required");
+    }
+    const copied = this.obs.buffers.metrics.slice();
+    if (Array.isArray(copied) === false) {
+      throw ValidationError.create("metric copy required");
+    }
+    return copied;
+  }
+
+  spans(): SpanEntry[] {
+    if (Array.isArray(this.obs.buffers.spans) === false) {
+      throw ValidationError.create("span buffer required");
+    }
+    const copied = this.obs.buffers.spans.slice();
+    if (Array.isArray(copied) === false) {
+      throw ValidationError.create("span copy required");
+    }
+    return copied;
+  }
+
+  listResults(): EntityRecord[] {
+    if (Array.isArray(this.listResultsBox.rows) === false) {
+      throw ValidationError.create("list results required");
+    }
+    const copied = this.listResultsBox.rows.slice();
+    if (Array.isArray(copied) === false) {
+      throw ValidationError.create("list results copy required");
+    }
+    return copied;
+  }
+
+  private publishListResults(signal: Signal, rows: readonly EntityRecord[]): void {
+    if (Array.isArray(rows) === false) {
+      throw ValidationError.create("list rows required");
+    }
+    if (signal === Done) {
+      this.listResultsBox.rows = rows.slice();
+      return;
+    }
+    if (signal === Failed) {
+      this.listResultsBox.rows = [];
+    }
+  }
+
+  private async recordOutbox(outboxRow: OutboxEntry): Promise<boolean> {
+    const previous = mapLookup(this.outbox, outboxRow.externalId);
+    this.outbox.set(outboxRow.externalId, outboxRow);
+    const ok = await this.store.saveOutboxEntry(outboxRow);
+    if (ok === false) {
+      if (previous.length < 1) {
+        this.outbox.delete(outboxRow.externalId);
+      } else {
+        for (const prior of previous) {
+          this.outbox.set(outboxRow.externalId, prior);
+        }
+      }
+      return false;
+    }
+    return true;
+  }
+
+  private runtimeFor(
+    traceId: string,
+    model: ModelDef<ModelFieldsInput>,
+    entityId: string,
+    operation: string,
+  ): Runtime<E> {
+    return {
+      traceId,
+      model,
+      entityId,
+      operation,
+      obs: this.obs,
+      outbox: this.outbox,
+      onExternalEvent: this.onExternalEvent,
+      models: this.registeredModels,
+      externals: this.externals,
+      entities: this.entities,
+      pool: this.pool,
+      store: this.store,
+      listResults: this.listResultsBox.rows,
+      pendingExternalEvents: this.pendingExternalEvents,
+      pendingEntityWrites: this.pendingEntityWrites,
+      nestedSteps: { steps: 0 },
+      reportDbError: (message: string) => {
+        if (z.string().safeParse(message).success === false) {
+          this.dbErrorBox.messages = [];
+          return;
+        }
+        if (message.length < 1) {
+          this.dbErrorBox.messages = [];
+          return;
+        }
+        this.dbErrorBox.messages = [message];
+      },
+      clearDbError: () => {
+        if (Array.isArray(this.dbErrorBox.messages) === false) {
+          this.dbErrorBox.messages = [];
+          return;
+        }
+        if (this.dbErrorBox.messages.length > 0) {
+          this.dbErrorBox.messages = [];
+        }
+      },
+      dbLastError: () => this.dbErrorBox.messages,
+      awaitDb: () => this.awaitDb(),
+      resume: (runId) => this.resume(runId),
+    };
+  }
+
+  private async awaitDb(): Promise<boolean> {
+    if (this.dbReadyBox.ready === true) {
+      return true;
+    }
+    const errorBox: DbErrorBox = { message: "database unavailable" };
+    const tablesOk = await this.store.ensureAllTables(this.registeredModels, errorBox);
+    if (tablesOk === false) {
+      this.dbErrorBox.messages = [dbErrorBoxText(errorBox)];
+      return false;
+    }
+    const outboxOk = await this.store.loadOutbox(this.outbox, errorBox);
+    if (outboxOk === false) {
+      this.dbErrorBox.messages = [dbErrorBoxText(errorBox)];
+      return false;
+    }
+    this.dbReadyBox.ready = true;
+    return true;
+  }
+
+  private async handleHttp(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+    return await routeHttp(
+      {
+        registeredModels: this.registeredModels,
+        runs: this.runs,
+        runtimeFor: (traceId, model, entityId, operation) =>
+          this.runtimeFor(traceId, model, entityId, operation),
+        finalizeRun: (runId, run, signal) => this.finalizeRun(runId, run, signal),
+        setExternalResult: (input) => this.setExternalResult(input),
+        publishListResults: (signal, rows) => this.publishListResults(signal, rows),
+      },
+      req,
+      res,
+    );
+  }
+}
+
+export type AppInstance = App;
+
+export function app<const E extends readonly ExternalDef[]>(config: AppConfig<E>): App<E> {
+  if (z.looseObject({}).safeParse(config).success === false) {
+    throw ValidationError.create("app config required");
+  }
+  if (Array.isArray(config.models) === false) {
+    throw ValidationError.create("app models required");
+  }
+  if (config.models.length < 1) {
+    throw ValidationError.create("app models required");
+  }
+  return App.create(config);
+}

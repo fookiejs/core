@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
-  app,
-  Model,
-  External,
-  Types,
   Done,
-  Running,
+  External,
   Failed,
+  Model,
+  Running,
+  Types,
+  app,
   flows,
   type ExternalEventOf,
   type ExternalOutputOf,
@@ -22,6 +22,7 @@ const fraud = External({
   output: { score: Types.int },
   attempts: 3,
   backoff: "exponential",
+  timeoutMs: 30_000,
 });
 
 const notify = External({
@@ -30,6 +31,7 @@ const notify = External({
   output: { sent: Types.bool },
   attempts: 3,
   backoff: "fixed",
+  timeoutMs: 30_000,
 });
 
 const user = Model({
@@ -167,7 +169,13 @@ type ExternalEvent = ExternalEventOf<(typeof externals)[number]>;
 
 function readEntityId(json: Record<string, unknown>): string {
   const entity = json.entity;
-  if (entity && typeof entity === "object" && !Array.isArray(entity) && "id" in entity) {
+  if (
+    entity !== undefined &&
+    entity !== null &&
+    typeof entity === "object" &&
+    Array.isArray(entity) === false &&
+    "id" in entity
+  ) {
     const id = entity.id;
     if (typeof id === "string") {
       return id;
@@ -414,16 +422,18 @@ describe("order flow integration", () => {
   it("serves order http api mirroring example models", async () => {
     const port = nextPort;
     nextPort += 10;
-    const fookie = trackApp(app({
-      listen: String(port),
-      database: "postgres://mock",
-      models: [user, merchant, orderLog, order],
-      externals,
-      onExternalEvent: async (event) => {
-        trackEvent(event);
-      },
-      pool: [db],
-    }));
+    const fookie = trackApp(
+      app({
+        listen: String(port),
+        database: "postgres://mock",
+        models: [user, merchant, orderLog, order],
+        externals,
+        onExternalEvent: async (event) => {
+          trackEvent(event);
+        },
+        pool: [db],
+      }),
+    );
     fookie.run();
 
     const userRes = await httpPost(port, "/user/create", {

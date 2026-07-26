@@ -36,12 +36,12 @@ docker compose up -d
 
 ## Scripts
 
-| Script | Description |
-|--------|-------------|
-| `npm test` | Run tests (node:test) |
-| `npm run test:coverage` | Coverage (99%+ lines) |
-| `npm run build` | Compile to `dist/` |
-| `npm run example` | Run `example.ts` against local `src` |
+| Script                  | Description                          |
+| ----------------------- | ------------------------------------ |
+| `npm test`              | Run tests (node:test)                |
+| `npm run test:coverage` | Coverage (99%+ lines)                |
+| `npm run build`         | Compile to `dist/`                   |
+| `npm run example`       | Run `example.ts` against local `src` |
 
 ## PostgreSQL integration test
 

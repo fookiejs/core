@@ -1,6 +1,17 @@
 import { beforeEach, describe, it, mock } from "node:test";
 import assert from "node:assert/strict";
-import { app, Done, Failed, External, flows, Model, Types, OutboxPending, OutboxFailed, OutboxCompleted } from "../src/index.ts";
+import {
+  Done,
+  External,
+  Failed,
+  Model,
+  OutboxCompleted,
+  OutboxFailed,
+  OutboxPending,
+  Types,
+  app,
+  flows,
+} from "../src/index.ts";
 import { MockDb } from "./mock-db.ts";
 
 const retryExt = External({
@@ -9,6 +20,7 @@ const retryExt = External({
   output: { score: Types.int },
   attempts: 2,
   backoff: "exponential",
+  timeoutMs: 30_000,
 });
 
 describe("saga edge behaviour", () => {
@@ -97,7 +109,10 @@ describe("saga edge behaviour", () => {
     const created = await fookie.create(user, { email: "s@x.com" });
     assert.equal(created.signal, "done");
 
-    const retried = await fookie.setExternalResult({ externalId: "stale", output: { score: "bad" } });
+    const retried = await fookie.setExternalResult({
+      externalId: "stale",
+      output: { score: "bad" },
+    });
     assert.equal(retried, false);
     assert.equal(dispatched, 0);
   });

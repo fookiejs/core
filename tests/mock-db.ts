@@ -2,6 +2,24 @@ import http from "node:http";
 import net from "node:net";
 import type { App, InjectablePool } from "../src/index.ts";
 
+function nullIfAbsent(raw: unknown): string | null {
+  if (raw === undefined || raw === null) {
+    return null;
+  }
+  const text = String(raw);
+  if (text.length === 0 || text === "__fookie_absent__") {
+    return null;
+  }
+  return text;
+}
+
+function outboxOutput(raw: unknown): Row[string] {
+  if (raw === undefined || raw === null) {
+    return null;
+  }
+  return JSON.parse(String(raw));
+}
+
 export type Row = Record<string, string | number | boolean | null>;
 
 export class MockDb implements InjectablePool {
@@ -39,10 +57,11 @@ export class MockDb implements InjectablePool {
         throw new Error("create");
       }
       const match = sql.match(/CREATE TABLE IF NOT EXISTS (?:public\.)?(\w+)/);
-      if (match?.[1]) {
-        this.tables.add(match[1]);
-        if (!this.rows.has(match[1])) {
-          this.rows.set(match[1], new Map());
+      const table = match === null ? "" : (match[1] ?? "");
+      if (table.length > 0) {
+        this.tables.add(table);
+        if (this.rows.has(table) === false) {
+          this.rows.set(table, new Map());
         }
       }
       return { rows: [], rowCount: 0 };
@@ -61,30 +80,26 @@ export class MockDb implements InjectablePool {
         throw new Error("outbox");
       }
       const externalId = String(params?.[0] ?? "");
-      if (sql.includes("NULL::jsonb")) {
-        this.outbox.set(externalId, {
-          external_id: externalId,
-          name: String(params?.[1] ?? ""),
-          status: String(params?.[2] ?? ""),
-          input: JSON.parse(String(params?.[3] ?? "{}")),
-          output: null,
-          entity_id: String(params?.[4] ?? ""),
-          model: String(params?.[5] ?? ""),
-          run_id: String(params?.[6] ?? ""),
-          attempt: typeof params?.[7] === "number" ? params[7] : 1,
-        });
-        return { rows: [], rowCount: 1 };
-      }
+      // The pending variant writes a literal NULL for output, so every param after
+      // it shifts down by one. Keep this aligned with saveOutboxEntry in pg/store.ts.
+      const shift = sql.includes("NULL::jsonb") ? 1 : 0;
+      const attemptRaw = params?.[8 - shift];
+      const stepIndexRaw = params?.[9 - shift];
       this.outbox.set(externalId, {
         external_id: externalId,
         name: String(params?.[1] ?? ""),
         status: String(params?.[2] ?? ""),
         input: JSON.parse(String(params?.[3] ?? "{}")),
-        output: params?.[4] ? JSON.parse(String(params?.[4])) : null,
-        entity_id: String(params?.[5] ?? ""),
-        model: String(params?.[6] ?? ""),
-        run_id: String(params?.[7] ?? ""),
-        attempt: typeof params?.[8] === "number" ? params[8] : 1,
+        output: shift === 1 ? null : outboxOutput(params?.[4]),
+        entity_id: String(params?.[5 - shift] ?? ""),
+        model: String(params?.[6 - shift] ?? ""),
+        run_id: String(params?.[7 - shift] ?? ""),
+        attempt: typeof attemptRaw === "number" ? attemptRaw : 1,
+        step_index: typeof stepIndexRaw === "number" ? stepIndexRaw : 0,
+        step: String(params?.[10 - shift] ?? "compensatable"),
+        next_attempt_at: nullIfAbsent(params?.[11 - shift]),
+        error: nullIfAbsent(params?.[12 - shift]),
+        compensation_of: nullIfAbsent(params?.[13 - shift]),
       });
       return { rows: [], rowCount: 1 };
     }

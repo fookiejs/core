@@ -106,21 +106,21 @@ Developer tam isim yazmaz. Framework `{model}.{name}` yapar.
 
 ### Otomatik metrikler (developer yazmaz)
 
-| Metrik | Ne zaman |
-|--------|----------|
-| `{model}.operation.started` | flow başladı |
-| `{model}.operation.completed` | `Done` |
-| `{model}.operation.failed` | `Failed` |
-| `{model}.operation.suspended` | `Running` |
-| `{model}.operation.duration` | histogram, ms |
-| `{model}.external.dispatched` | outbox'a yazıldı |
-| `{model}.external.completed` | `setExternalResult` |
-| `{model}.external.failed` | external fail |
-| `{model}.external.retry` | retry attempt |
-| `{model}.nested.create` | nested `flow.create` (persist ok) |
-| `{model}.nested.update` | nested `flow.update` (persist ok) |
-| `{model}.nested.delete` | nested `flow.delete` (persist ok) |
-| `{model}.nested.list` | nested `flow.list` (query ok) |
+| Metrik                        | Ne zaman                          |
+| ----------------------------- | --------------------------------- |
+| `{model}.operation.started`   | flow başladı                      |
+| `{model}.operation.completed` | `Done`                            |
+| `{model}.operation.failed`    | `Failed`                          |
+| `{model}.operation.suspended` | `Running`                         |
+| `{model}.operation.duration`  | histogram, ms                     |
+| `{model}.external.dispatched` | outbox'a yazıldı                  |
+| `{model}.external.completed`  | `setExternalResult`               |
+| `{model}.external.failed`     | external fail                     |
+| `{model}.external.retry`      | retry attempt                     |
+| `{model}.nested.create`       | nested `flow.create` (persist ok) |
+| `{model}.nested.update`       | nested `flow.update` (persist ok) |
+| `{model}.nested.delete`       | nested `flow.delete` (persist ok) |
+| `{model}.nested.list`         | nested `flow.list` (query ok)     |
 
 ### Semantic metrikler (developer yazar, kısa isim)
 
@@ -136,11 +136,11 @@ Framework bunları `order.created`, `order.validation_failed` yapar.
 
 ## Saklama
 
-| Kanal | Nereye | Format |
-|-------|--------|--------|
-| Trace | OTLP / OpenTelemetry | span + attribute |
-| Log | stdout / OTLP | structured JSON |
-| Metric | OTLP / Prometheus | counter + histogram |
+| Kanal  | Nereye               | Format              |
+| ------ | -------------------- | ------------------- |
+| Trace  | OTLP / OpenTelemetry | span + attribute    |
+| Log    | stdout / OTLP        | structured JSON     |
+| Metric | OTLP / Prometheus    | counter + histogram |
 
 Framework tüm span/counter/histogram'ları `@opentelemetry/api` üzerinden üretir. Uygulama tarafında herhangi bir OTel SDK/exporter register edildiğinde telemetri otomatik oraya akar; SDK yoksa çağrılar no-op'tur. Developer exporter'ı env veya SDK kurulumuyla seçer, framework koduna dokunmaz.
 

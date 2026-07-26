@@ -1,0 +1,100 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build and verify without publishing"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: publish to npm
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      contents: read
+      # Required for npm provenance attestation.
+      id-token: write
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: fookie_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      FOOKIE_TEST_DATABASE: postgres://postgres:postgres@localhost:5432/fookie_test
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24"
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - run: npm ci
+
+      # A tag never publishes something that would not have passed CI.
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run typecheck
+      - run: npm run typecheck:all
+      - run: npm run build
+      - name: test
+        run: |
+          mkdir -p coverage
+          npm run test:ci
+
+      - name: tag must match package version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg=$(node -p "require('./package.json').version")
+          echo "tag=$tag package=$pkg"
+          test "$tag" = "$pkg"
+
+      # npm rejects a duplicate version anyway; failing here gives a readable
+      # reason instead of a publish error, and never clobbers a live release.
+      - name: version is not already on npm
+        run: |
+          pkg=$(node -p "require('./package.json').version")
+          name=$(node -p "require('./package.json').name")
+          published=$(npm view "$name" versions --json 2>/dev/null || echo '[]')
+          echo "$published" | node -e "
+            let raw = '';
+            process.stdin.on('data', (d) => { raw += d; });
+            process.stdin.on('end', () => {
+              const parsed = JSON.parse(raw || '[]');
+              const versions = Array.isArray(parsed) ? parsed : [parsed];
+              const want = process.argv[1];
+              if (versions.includes(want)) {
+                console.error(want + ' is already published — bump the version first');
+                process.exit(1);
+              }
+              console.log(want + ' is not published yet (latest known: ' + (versions.at(-1) ?? 'none') + ')');
+            });
+          " "$pkg"
+
+      - name: publish
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: dry run
+        if: startsWith(github.ref, 'refs/tags/v') == false
+        run: npm publish --dry-run --access public

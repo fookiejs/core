@@ -1,6 +1,19 @@
 import { afterEach, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { app, Model, External, Types, Done, Running, Failed, flows, models, OutboxPending, OutboxFailed, OutboxCompleted } from "../src/index.ts";
+import {
+  Done,
+  External,
+  Failed,
+  Model,
+  OutboxCompleted,
+  OutboxFailed,
+  OutboxPending,
+  Running,
+  Types,
+  app,
+  flows,
+  models,
+} from "../src/index.ts";
 import { MockDb, httpPost, httpGet, trackApp, shutdownLiveApps } from "./mock-db.ts";
 
 let nextPort = 41000;
@@ -11,6 +24,7 @@ const scoreExt = External({
   output: { score: Types.int },
   attempts: 3,
   backoff: "exponential",
+  timeoutMs: 30_000,
 });
 
 const notifyExt = External({
@@ -19,6 +33,7 @@ const notifyExt = External({
   output: { sent: Types.bool },
   attempts: 3,
   backoff: "fixed",
+  timeoutMs: 30_000,
 });
 
 function buildUserModel(flow: ReturnType<typeof flows>) {

@@ -1,6 +1,6 @@
 import { beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { app, Model, External, Types, Done, Running, flows } from "../src/index.ts";
+import { Done, External, Model, Running, Types, app, flows } from "../src/index.ts";
 import { MockDb } from "./mock-db.ts";
 
 const scoreExt = External({
@@ -9,6 +9,7 @@ const scoreExt = External({
   output: { score: Types.int },
   attempts: 2,
   backoff: "fixed",
+  timeoutMs: 30_000,
 });
 
 describe("observability and external retry", () => {
@@ -24,7 +25,9 @@ describe("observability and external retry", () => {
       fields: { email: Types.email },
       flow: flows({
         async create(flow) {
-          const result = await flow.external(scoreExt, { amount: flow.body.email.length });
+          const result = await flow.external(scoreExt, {
+            amount: flow.body.email.length,
+          });
           if (result.signal === Running) {
             return Running;
           }
