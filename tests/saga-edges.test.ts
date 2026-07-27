@@ -10,7 +10,6 @@ import {
   OutboxPending,
   Types,
   app,
-  flows,
 } from "../src/index.ts";
 import { MockDb } from "./mock-db.ts";
 
@@ -34,7 +33,7 @@ describe("saga edge behaviour", () => {
     const user = Model({
       name: "ExpoUser",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create(flow) {
           const result = await flow.external(retryExt, { amount: 5 });
           return result.signal === "done" ? Done : result.signal;
@@ -42,7 +41,7 @@ describe("saga edge behaviour", () => {
         list: async () => Done,
         update: async () => Done,
         delete: async () => Done,
-      }),
+      },
     });
 
     let dispatched = 0;
@@ -74,12 +73,12 @@ describe("saga edge behaviour", () => {
     const user = Model({
       name: "StaleInput",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         create: async () => Done,
         list: async () => Done,
         update: async () => Done,
         delete: async () => Done,
-      }),
+      },
     });
 
     db.outbox.set("stale", {
@@ -121,18 +120,18 @@ describe("saga edge behaviour", () => {
     const child = Model({
       name: "GoneChild",
       fields: { title: Types.string },
-      flow: flows({
+      flow: {
         create: async () => Done,
         list: async () => Done,
         update: async () => Done,
         delete: async () => Done,
-      }),
+      },
     });
 
     const parent = Model({
       name: "GoneParent",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         create: async () => Done,
         list: async () => Done,
         async update(flow) {
@@ -150,7 +149,7 @@ describe("saga edge behaviour", () => {
           });
           return missing.signal === "failed" ? Failed : Done;
         },
-      }),
+      },
     });
 
     const fookie = app({
@@ -175,20 +174,20 @@ describe("saga edge behaviour", () => {
     const child = Model({
       name: "ThrowChild",
       fields: { title: Types.string },
-      flow: flows({
+      flow: {
         async create() {
           throw new Error("boom");
         },
         list: async () => Done,
         update: async () => Done,
         delete: async () => Done,
-      }),
+      },
     });
 
     const parent = Model({
       name: "ThrowParent",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create(flow) {
           const nested = await flow.create(child, { title: "t" });
           return nested.signal === "done" ? Done : Failed;
@@ -196,7 +195,7 @@ describe("saga edge behaviour", () => {
         list: async () => Done,
         update: async () => Done,
         delete: async () => Done,
-      }),
+      },
     });
 
     const fookie = app({
@@ -216,7 +215,7 @@ describe("saga edge behaviour", () => {
     const user = Model({
       name: "Chatty",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create(flow) {
           for (let i = 0; i < 10_001; i += 1) {
             flow.log("chatter", { seq: i });
@@ -226,7 +225,7 @@ describe("saga edge behaviour", () => {
         list: async () => Done,
         update: async () => Done,
         delete: async () => Done,
-      }),
+      },
     });
 
     const fookie = app({

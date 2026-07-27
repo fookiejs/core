@@ -11,7 +11,6 @@ import {
   Running,
   Types,
   app,
-  flows,
   type CreateResult,
 } from "../src/index.ts";
 import { MockDb, httpPost, httpRaw, trackApp, shutdownLiveApps } from "./mock-db.ts";
@@ -45,7 +44,7 @@ describe("branch coverage", () => {
     const buyer = Model({
       name: "Buyer",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -58,7 +57,7 @@ describe("branch coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const order = Model({
@@ -70,7 +69,7 @@ describe("branch coverage", () => {
         meta: Types.jsonb,
         status: Types.enum("a", "b"),
       },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -89,7 +88,7 @@ describe("branch coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const fookie = app({
@@ -147,7 +146,7 @@ describe("branch coverage", () => {
         title: Types.string,
         owner: Types.relation({ name: "Parent" }),
       },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -160,13 +159,13 @@ describe("branch coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const owner = Model({
       name: "Owner",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create(flow) {
           const ext = await flow.external(scoreExt, { amount: 20 });
           if (ext.signal === "done") {
@@ -183,13 +182,13 @@ describe("branch coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const parent = Model({
       name: "Parent",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create(flow) {
           const nested = await flow.create(child, { title: "t", owner: flow.id });
           if (nested.signal === "done" && "entity" in nested) {
@@ -224,7 +223,7 @@ describe("branch coverage", () => {
           });
           return deleted.signal;
         },
-      }),
+      },
     });
 
     const fookie = app({
@@ -300,7 +299,7 @@ describe("branch coverage", () => {
     const user = Model({
       name: "Hydrate",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -313,7 +312,7 @@ describe("branch coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const fookie = app({
@@ -352,7 +351,7 @@ describe("branch coverage", () => {
     const user = Model({
       name: "Edge",
       fields: { email: Types.email, loc: Types.coordinate },
-      flow: flows({
+      flow: {
         async create() {
           return Running;
         },
@@ -365,7 +364,7 @@ describe("branch coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const fookie = trackApp(
@@ -416,7 +415,7 @@ describe("branch coverage", () => {
     const user = Model({
       name: "ResumeUser",
       fields: { email: Types.email, loc: Types.coordinate },
-      flow: flows({
+      flow: {
         async create(flow) {
           const ext = await flow.external(scoreExt, { amount: 15 });
           if (ext.signal === "done") {
@@ -433,7 +432,7 @@ describe("branch coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const events: string[] = [];
@@ -469,7 +468,7 @@ describe("branch coverage", () => {
     const user = Model({
       name: "DbFail",
       fields: { email: Types.email.unique(), data: Types.json },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -482,7 +481,7 @@ describe("branch coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     db.mode = "fail-select";
@@ -526,7 +525,7 @@ describe("branch coverage", () => {
     const user = Model({
       name: "JsonUser",
       fields: { email: Types.email, data: Types.json },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -539,7 +538,7 @@ describe("branch coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const fookie = app({
@@ -560,7 +559,7 @@ describe("branch coverage", () => {
     const parent = Model({
       name: "BadParent",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create(flow) {
           const nested = await flow.create({ name: "Missing" }, { email: "x" });
           return nested.signal;
@@ -574,7 +573,7 @@ describe("branch coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const f2 = app({
@@ -592,7 +591,7 @@ describe("branch coverage", () => {
     const user = Model({
       name: "Left",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -605,7 +604,7 @@ describe("branch coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const fookie = trackApp(
@@ -654,7 +653,7 @@ describe("branch coverage", () => {
     const extUser = Model({
       name: "OutboxFail",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create(flow) {
           const ext = await flow.external(scoreExt, { amount: 5 });
           return ext.signal;
@@ -668,7 +667,7 @@ describe("branch coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
     const f2 = app({
       listen: String(port + 1),
@@ -683,7 +682,7 @@ describe("branch coverage", () => {
     const parent = Model({
       name: "NestFail",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create(flow) {
           return (await flow.update({ name: "Ghost" }, { id: "x", body: {}, filter: {} })).signal;
         },
@@ -696,7 +695,7 @@ describe("branch coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
     const f3 = app({
       listen: String(port + 2),
@@ -714,7 +713,7 @@ describe("branch coverage", () => {
     const child = Model({
       name: "PersistFail",
       fields: { title: Types.string },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -727,12 +726,12 @@ describe("branch coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
     const parent2 = Model({
       name: "PersistParent",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create(flow) {
           return (await flow.create(child, { title: "x" })).signal;
         },
@@ -745,7 +744,7 @@ describe("branch coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
     const f4 = app({
       listen: String(port + 3),
@@ -780,7 +779,7 @@ describe("branch coverage", () => {
         title: Types.string,
         owner: { name: "RefParent" },
       },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -793,13 +792,13 @@ describe("branch coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const refParent = Model({
       name: "RefParent",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create(flow) {
           const nested = await flow.create(refChild, { title: "bound" });
           return nested.signal;
@@ -829,13 +828,13 @@ describe("branch coverage", () => {
         async delete(flow) {
           return (await flow.delete(refChild, { id: "x", filter: { title: { eq: 1 } } })).signal;
         },
-      }),
+      },
     });
 
     const cacheUser = Model({
       name: "CacheUser",
       fields: { email: Types.email, loc: Types.coordinate, meta: Types.jsonb },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -848,7 +847,7 @@ describe("branch coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const fookie = trackApp(
@@ -870,7 +869,7 @@ describe("branch coverage", () => {
     const extChild = Model({
       name: "ExtChild",
       fields: { title: Types.string, owner: { name: "RefParent" } },
-      flow: flows({
+      flow: {
         async create(flow) {
           const ext = await flow.external(scoreExt, { amount: 4 });
           return ext.signal;
@@ -884,13 +883,13 @@ describe("branch coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const extParent = Model({
       name: "ExtParent",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create(flow) {
           return (await flow.create(extChild, { title: "ext" })).signal;
         },
@@ -903,7 +902,7 @@ describe("branch coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const fookieExt = app({

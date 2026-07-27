@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { Types, models, Model, flows, Done } from "../src/index.ts";
+import { Types, models, Model, Done } from "../src/index.ts";
 
 describe("types and helpers", () => {
   it("exposes postgres-aligned scalar types", () => {
@@ -35,7 +35,7 @@ describe("types and helpers", () => {
     const a = Model({
       name: "A",
       fields: { title: Types.string },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -48,12 +48,12 @@ describe("types and helpers", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
     const b = Model({
       name: "B",
       fields: { title: Types.string },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -66,7 +66,7 @@ describe("types and helpers", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
     const list = models([a, b]);
     assert.equal(list.length, 2);

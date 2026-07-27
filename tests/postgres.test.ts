@@ -1,7 +1,7 @@
 import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import pg from "pg";
-import { Done, External, Model, Types, app, flows } from "../src/index.ts";
+import { Done, External, Model, Types, app } from "../src/index.ts";
 
 const databaseUrl = process.env.FOOKIE_TEST_DATABASE ?? "";
 
@@ -29,7 +29,7 @@ describe("postgres integration", { skip: databaseUrl.length === 0 }, () => {
     const user = Model({
       name: "PgUser",
       fields: { email: Types.email.unique(), name: Types.string.index() },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -42,7 +42,7 @@ describe("postgres integration", { skip: databaseUrl.length === 0 }, () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const fookie = app({
@@ -73,7 +73,7 @@ describe("postgres integration", { skip: databaseUrl.length === 0 }, () => {
     const place = Model({
       name: "PgPlace",
       fields: { title: Types.string, loc: Types.coordinate },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -86,7 +86,7 @@ describe("postgres integration", { skip: databaseUrl.length === 0 }, () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const fookie = app({

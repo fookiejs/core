@@ -12,7 +12,6 @@ import {
   Running,
   Types,
   app,
-  flows,
 } from "../src/index.ts";
 import {
   MockDb,
@@ -74,7 +73,7 @@ describe("final coverage", () => {
     const user = Model({
       name: "Ghost",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create(flow) {
           const ext = await flow.external(scoreExt, { amount: 12 });
           if (ext.signal === "done") {
@@ -91,7 +90,7 @@ describe("final coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const events: string[] = [];
@@ -143,7 +142,7 @@ describe("final coverage", () => {
     const parent = Model({
       name: "Parent",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -156,7 +155,7 @@ describe("final coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const child = Model({
@@ -165,7 +164,7 @@ describe("final coverage", () => {
         title: Types.string,
         parent: Types.relation({ name: "Parent" }),
       },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -178,13 +177,13 @@ describe("final coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const wrapper = Model({
       name: "Wrapper",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create(flow) {
           const nested = await flow.create(child, {
             title: "t",
@@ -201,7 +200,7 @@ describe("final coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const fookie = app({
@@ -224,7 +223,7 @@ describe("final coverage", () => {
     const failParent = Model({
       name: "FailParent",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create(flow) {
           return (await flow.create(child, { title: "fail", parent: flow.id })).signal;
         },
@@ -237,7 +236,7 @@ describe("final coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
     const f2 = app({
       listen: String(port + 1),
@@ -253,7 +252,7 @@ describe("final coverage", () => {
     const coord = Model({
       name: "Coord",
       fields: { email: Types.email, loc: Types.coordinate },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -266,7 +265,7 @@ describe("final coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
     const f3 = app({
       listen: String(port + 2),
@@ -303,7 +302,7 @@ describe("final coverage", () => {
     const user = Model({
       name: "Bootstrap",
       fields: { email: Types.email.unique() },
-      flow: flows({
+      flow: {
         async create() {
           throw new Error("boom");
         },
@@ -316,7 +315,7 @@ describe("final coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     db.failOnSql = "fookie_outbox";
@@ -347,7 +346,7 @@ describe("final coverage", () => {
     const user = Model({
       name: "HttpFinal",
       fields: { email: Types.email, n: Types.integer, note: Types.json },
-      flow: flows({
+      flow: {
         async create() {
           return Failed;
         },
@@ -360,7 +359,7 @@ describe("final coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const fookie = trackApp(
@@ -417,7 +416,7 @@ describe("final coverage", () => {
         active: Types.bool,
         pt: Types.point,
       },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -430,7 +429,7 @@ describe("final coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const fookie = app({
@@ -481,7 +480,7 @@ describe("final coverage", () => {
     const parent = Model({
       name: "BadNest",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create(flow) {
           return (await flow.create(child, { title: 1 })).signal;
         },
@@ -494,12 +493,12 @@ describe("final coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
     const child = Model({
       name: "BadChild",
       fields: { title: Types.string },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -512,7 +511,7 @@ describe("final coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
     const f2 = app({
       listen: String(port + 1),
@@ -531,7 +530,7 @@ describe("final coverage", () => {
     const parent = Model({
       name: "Parent",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -544,7 +543,7 @@ describe("final coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const child = Model({
@@ -553,7 +552,7 @@ describe("final coverage", () => {
         title: Types.string,
         parent: Types.relation({ name: "Parent" }),
       },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -566,13 +565,13 @@ describe("final coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const wrapper = Model({
       name: "Wrap",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create(flow) {
           return (await flow.create(child, { title: "bind", parent: flow.id })).signal;
         },
@@ -606,13 +605,13 @@ describe("final coverage", () => {
           db.mode = "ok";
           return deleted.signal;
         },
-      }),
+      },
     });
 
     const extUser = Model({
       name: "ExtRun",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create(flow) {
           const ext = await flow.external(scoreExt, { amount: 3 });
           return ext.signal === "done" ? Done : ext.signal;
@@ -626,7 +625,7 @@ describe("final coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const fookie = app({
@@ -665,7 +664,7 @@ describe("final coverage", () => {
     const httpModel = Model({
       name: "HttpLeft",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -678,7 +677,7 @@ describe("final coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
     const f3 = trackApp(
       app({
@@ -713,7 +712,7 @@ describe("final coverage", () => {
     const jsonUser = Model({
       name: "JsonCoord",
       fields: { email: Types.email, data: Types.jsonb },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -727,7 +726,7 @@ describe("final coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const fookie = trackApp(

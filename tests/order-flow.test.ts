@@ -8,7 +8,6 @@ import {
   Running,
   Types,
   app,
-  flows,
   type ExternalEventOf,
   type ExternalOutputOf,
 } from "../src/index.ts";
@@ -40,7 +39,7 @@ const user = Model({
     email: Types.email.unique(),
     name: Types.string.index(),
   },
-  flow: flows({
+  flow: {
     async create() {
       return Done;
     },
@@ -53,7 +52,7 @@ const user = Model({
     async delete() {
       return Done;
     },
-  }),
+  },
 });
 
 const merchant = Model({
@@ -62,7 +61,7 @@ const merchant = Model({
     site: Types.url,
     rating: Types.float.min(0).max(5),
   },
-  flow: flows({
+  flow: {
     async create() {
       return Done;
     },
@@ -75,7 +74,7 @@ const merchant = Model({
     async delete() {
       return Done;
     },
-  }),
+  },
 });
 
 const order = Model({
@@ -87,7 +86,7 @@ const order = Model({
     score: Types.int,
     status: Types.enum("draft", "confirmed", "shipped"),
   },
-  flow: flows({
+  flow: {
     async create(flow) {
       flow.metric.increment("created");
       const result = await flow.external(fraud, { amount: flow.body.amount });
@@ -138,7 +137,7 @@ const order = Model({
       flow.metric.increment("deleted");
       return Done;
     },
-  }),
+  },
 });
 
 const orderLog = Model({
@@ -147,7 +146,7 @@ const orderLog = Model({
     order,
     message: Types.string,
   },
-  flow: flows({
+  flow: {
     async create() {
       return Done;
     },
@@ -160,7 +159,7 @@ const orderLog = Model({
     async delete() {
       return Done;
     },
-  }),
+  },
 });
 
 const externals = [fraud, notify] as const;

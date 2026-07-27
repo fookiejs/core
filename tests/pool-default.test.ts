@@ -44,7 +44,7 @@ describe("default pg pool", () => {
     const user = Model({
       name: "PoolDefault",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -57,7 +57,7 @@ describe("default pg pool", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     app({
@@ -76,12 +76,12 @@ describe("default pg pool", () => {
     const user = Model({
       name: "PoolStop",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         create: async () => Done,
         list: async () => Done,
         update: async () => Done,
         delete: async () => Done,
-      }),
+      },
     });
 
     const fookie = app({

@@ -9,7 +9,6 @@ import {
   OutboxPending,
   Types,
   app,
-  flows,
 } from "../src/index.ts";
 import { MockDb, httpPost, httpSocketDrop, trackApp, shutdownLiveApps } from "./mock-db.ts";
 
@@ -42,7 +41,7 @@ describe("filter and http branches", () => {
     const buyer = Model({
       name: "Buyer",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -55,7 +54,7 @@ describe("filter and http branches", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const full = Model({
@@ -70,7 +69,7 @@ describe("filter and http branches", () => {
         blob: Types.bytea,
         shape: Types.line,
       },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -121,7 +120,7 @@ describe("filter and http branches", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const fookie = app({
@@ -161,7 +160,7 @@ describe("filter and http branches", () => {
     const user = Model({
       name: "HttpFilter",
       fields: { email: Types.email, score: Types.int, meta: Types.jsonb },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -174,7 +173,7 @@ describe("filter and http branches", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const fookie = trackApp(
@@ -220,7 +219,7 @@ describe("filter and http branches", () => {
         active: Types.bool,
         point: Types.coordinate,
       },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -233,7 +232,7 @@ describe("filter and http branches", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     db.outbox.set("mix", {
@@ -300,7 +299,7 @@ describe("filter and http branches", () => {
     const user = Model({
       name: "ExtHttp",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create(flow) {
           const ext = await flow.external(scoreExt, { amount: 5 });
           return ext.signal;
@@ -314,7 +313,7 @@ describe("filter and http branches", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const events: { externalId: string }[] = [];
@@ -351,7 +350,7 @@ describe("filter and http branches", () => {
     const user = Model({
       name: "GhostResume",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -364,7 +363,7 @@ describe("filter and http branches", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     db.outbox.set("ghost2", {
@@ -399,7 +398,7 @@ describe("filter and http branches", () => {
     const failUser = Model({
       name: "HttpFail",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create() {
           return Failed;
         },
@@ -412,13 +411,13 @@ describe("filter and http branches", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const known = Model({
       name: "Known",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -431,7 +430,7 @@ describe("filter and http branches", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const fookie = trackApp(

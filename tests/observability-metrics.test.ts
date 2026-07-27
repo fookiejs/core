@@ -1,6 +1,6 @@
 import { beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { Done, External, Model, Running, Types, app, flows } from "../src/index.ts";
+import { Done, External, Model, Running, Types, app } from "../src/index.ts";
 import { MockDb } from "./mock-db.ts";
 
 const scoreExt = External({
@@ -23,7 +23,7 @@ describe("observability and external retry", () => {
     const user = Model({
       name: "MetricUser",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create(flow) {
           const result = await flow.external(scoreExt, {
             amount: flow.body.email.length,
@@ -42,7 +42,7 @@ describe("observability and external retry", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     let dispatched = 0;
@@ -75,7 +75,7 @@ describe("observability and external retry", () => {
     const user = Model({
       name: "RetryUser",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create(flow) {
           const result = await flow.external(scoreExt, { amount: 5 });
           if (result.signal === Running) {
@@ -95,7 +95,7 @@ describe("observability and external retry", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     let dispatchCount = 0;
@@ -136,7 +136,7 @@ describe("observability and external retry", () => {
     const user = Model({
       name: "RollbackUser",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create() {
           return Failed;
         },
@@ -149,7 +149,7 @@ describe("observability and external retry", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const fookie = app({

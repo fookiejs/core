@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
-import { Done, External, Model, Types, app, flows } from "../src/index.ts";
+import { Done, External, Model, Types, app } from "../src/index.ts";
 import {
   MockDb,
   httpPost,
@@ -42,7 +42,7 @@ describe("http edge routes", () => {
     const user = Model({
       name: "EdgeRoute",
       fields: { email: Types.email, loc: Types.coordinate },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -55,7 +55,7 @@ describe("http edge routes", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const fookie = trackApp(
@@ -96,7 +96,7 @@ describe("http edge routes", () => {
     const user = Model({
       name: "FilterEdge",
       fields: { email: Types.email, score: Types.int },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -109,7 +109,7 @@ describe("http edge routes", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const fookie = trackApp(
@@ -150,7 +150,7 @@ describe("http edge routes", () => {
     const user = Model({
       name: "Mutate",
       fields: { email: Types.email, loc: Types.coordinate },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -163,7 +163,7 @@ describe("http edge routes", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const fookie = trackApp(
@@ -230,7 +230,7 @@ describe("http edge routes", () => {
     const user = Model({
       name: "ParseEdge",
       fields: { email: Types.email, score: Types.int },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -243,7 +243,7 @@ describe("http edge routes", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const fookie = trackApp(
@@ -289,7 +289,7 @@ describe("http edge routes", () => {
     const user = Model({
       name: "FilterOps",
       fields: { email: Types.email, loc: Types.coordinate },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -302,7 +302,7 @@ describe("http edge routes", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const fookie = trackApp(

@@ -11,7 +11,6 @@ import {
   Running,
   Types,
   app,
-  flows,
   models,
 } from "../src/index.ts";
 import { MockDb, httpPost, httpGet, trackApp, shutdownLiveApps } from "./mock-db.ts";
@@ -77,22 +76,20 @@ describe("fookie core", () => {
   }
 
   it("creates entity with done signal", async () => {
-    const user = buildUserModel(
-      flows({
-        async create() {
-          return Done;
-        },
-        async list() {
-          return Done;
-        },
-        async update() {
-          return Done;
-        },
-        async delete() {
-          return Done;
-        },
-      }),
-    );
+    const user = buildUserModel({
+      async create() {
+        return Done;
+      },
+      async list() {
+        return Done;
+      },
+      async update() {
+        return Done;
+      },
+      async delete() {
+        return Done;
+      },
+    });
     const fookie = app({
       listen: String(port),
       database: "postgres://mock",
@@ -116,22 +113,20 @@ describe("fookie core", () => {
   });
 
   it("returns failed on invalid create body", async () => {
-    const user = buildUserModel(
-      flows({
-        async create() {
-          return Done;
-        },
-        async list() {
-          return Done;
-        },
-        async update() {
-          return Done;
-        },
-        async delete() {
-          return Done;
-        },
-      }),
-    );
+    const user = buildUserModel({
+      async create() {
+        return Done;
+      },
+      async list() {
+        return Done;
+      },
+      async update() {
+        return Done;
+      },
+      async delete() {
+        return Done;
+      },
+    });
     const fookie = createApp(user.flow);
     const result = await fookie.create(user, {
       email: "not-email",
@@ -145,26 +140,24 @@ describe("fookie core", () => {
 
   it("runs external flow and resumes with setExternalResult", async () => {
     const events: string[] = [];
-    const user = buildUserModel(
-      flows({
-        async create(flow) {
-          const ext = await flow.external(scoreExt, { amount: 50 });
-          if (ext.signal === "done") {
-            return Done;
-          }
-          return ext.signal;
-        },
-        async list() {
+    const user = buildUserModel({
+      async create(flow) {
+        const ext = await flow.external(scoreExt, { amount: 50 });
+        if (ext.signal === "done") {
           return Done;
-        },
-        async update() {
-          return Done;
-        },
-        async delete() {
-          return Done;
-        },
-      }),
-    );
+        }
+        return ext.signal;
+      },
+      async list() {
+        return Done;
+      },
+      async update() {
+        return Done;
+      },
+      async delete() {
+        return Done;
+      },
+    });
     const fookie = app({
       listen: String(port),
       database: "postgres://mock",
@@ -193,25 +186,23 @@ describe("fookie core", () => {
   });
 
   it("lists updates and deletes entities", async () => {
-    const user = buildUserModel(
-      flows({
-        async create() {
-          return Done;
-        },
-        async list(flow) {
-          flow.log("listed", { email: { eq: "l@t.com" } });
-          flow.metric.increment("listed");
-          await flow.trace("t", async () => true);
-          return Done;
-        },
-        async update() {
-          return Done;
-        },
-        async delete() {
-          return Done;
-        },
-      }),
-    );
+    const user = buildUserModel({
+      async create() {
+        return Done;
+      },
+      async list(flow) {
+        flow.log("listed", { email: { eq: "l@t.com" } });
+        flow.metric.increment("listed");
+        await flow.trace("t", async () => true);
+        return Done;
+      },
+      async update() {
+        return Done;
+      },
+      async delete() {
+        return Done;
+      },
+    });
     const fookie = app({
       listen: String(port),
       database: "postgres://mock",
@@ -257,7 +248,7 @@ describe("fookie core", () => {
         title: Types.string,
         author: Types.relation({ name: "User" }),
       },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -270,38 +261,36 @@ describe("fookie core", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
-    const user = buildUserModel(
-      flows({
-        async create(flow) {
-          const nested = await flow.create(child, { title: "Hello", author: flow.id });
-          if (nested.signal === "done" && "entity" in nested) {
-            return Done;
-          }
-          return Failed;
-        },
-        async list(flow) {
-          const nested = await flow.list(child, { title: { eq: "Hello" } });
-          return nested.signal;
-        },
-        async update(flow) {
-          const nested = await flow.update(child, {
-            id: "00000000-0000-7000-8000-000000000001",
-            body: { title: "Hi" },
-            filter: {},
-          });
-          return nested.signal;
-        },
-        async delete(flow) {
-          const nested = await flow.delete(child, {
-            id: "00000000-0000-7000-8000-000000000001",
-            filter: {},
-          });
-          return nested.signal;
-        },
-      }),
-    );
+    const user = buildUserModel({
+      async create(flow) {
+        const nested = await flow.create(child, { title: "Hello", author: flow.id });
+        if (nested.signal === "done" && "entity" in nested) {
+          return Done;
+        }
+        return Failed;
+      },
+      async list(flow) {
+        const nested = await flow.list(child, { title: { eq: "Hello" } });
+        return nested.signal;
+      },
+      async update(flow) {
+        const nested = await flow.update(child, {
+          id: "00000000-0000-7000-8000-000000000001",
+          body: { title: "Hi" },
+          filter: {},
+        });
+        return nested.signal;
+      },
+      async delete(flow) {
+        const nested = await flow.delete(child, {
+          id: "00000000-0000-7000-8000-000000000001",
+          filter: {},
+        });
+        return nested.signal;
+      },
+    });
     const fookie = app({
       listen: String(port),
       database: "postgres://mock",
@@ -322,22 +311,20 @@ describe("fookie core", () => {
   });
 
   it("serves http api", async () => {
-    const user = buildUserModel(
-      flows({
-        async create() {
-          return Done;
-        },
-        async list() {
-          return Done;
-        },
-        async update() {
-          return Done;
-        },
-        async delete() {
-          return Done;
-        },
-      }),
-    );
+    const user = buildUserModel({
+      async create() {
+        return Done;
+      },
+      async list() {
+        return Done;
+      },
+      async update() {
+        return Done;
+      },
+      async delete() {
+        return Done;
+      },
+    });
     const fookie = trackApp(
       app({
         listen: String(port),
@@ -364,14 +351,12 @@ describe("fookie core", () => {
   });
 
   it("stops the http server and owned pool", async () => {
-    const user = buildUserModel(
-      flows({
-        create: async () => Done,
-        list: async () => Done,
-        update: async () => Done,
-        delete: async () => Done,
-      }),
-    );
+    const user = buildUserModel({
+      create: async () => Done,
+      list: async () => Done,
+      update: async () => Done,
+      delete: async () => Done,
+    });
     const fookie = trackApp(
       app({
         listen: String(port),
@@ -391,22 +376,20 @@ describe("fookie core", () => {
   });
 
   it("rolls back failed mutations", async () => {
-    const user = buildUserModel(
-      flows({
-        async create() {
-          return Done;
-        },
-        async list() {
-          return Done;
-        },
-        async update() {
-          return Done;
-        },
-        async delete() {
-          return Done;
-        },
-      }),
-    );
+    const user = buildUserModel({
+      async create() {
+        return Done;
+      },
+      async list() {
+        return Done;
+      },
+      async update() {
+        return Done;
+      },
+      async delete() {
+        return Done;
+      },
+    });
     db.mode = "fail-upsert";
     const fookie = app({
       listen: String(port),
@@ -438,22 +421,20 @@ describe("fookie core", () => {
       run_id: "run",
       attempt: 1,
     });
-    const user = buildUserModel(
-      flows({
-        async create() {
-          return Done;
-        },
-        async list() {
-          return Done;
-        },
-        async update() {
-          return Done;
-        },
-        async delete() {
-          return Done;
-        },
-      }),
-    );
+    const user = buildUserModel({
+      async create() {
+        return Done;
+      },
+      async list() {
+        return Done;
+      },
+      async update() {
+        return Done;
+      },
+      async delete() {
+        return Done;
+      },
+    });
     const fookie = app({
       listen: String(port),
       database: "postgres://mock",
@@ -470,22 +451,20 @@ describe("fookie core", () => {
   it("exercises filter operators and types", async () => {
     assert.ok(Types.varchar(10).kind.includes("varchar"));
     assert.equal(Types.enum("a", "b").kind, "enum");
-    const user = buildUserModel(
-      flows({
-        async create() {
-          return Failed;
-        },
-        async list() {
-          return Running;
-        },
-        async update() {
-          return Running;
-        },
-        async delete() {
-          return Failed;
-        },
-      }),
-    );
+    const user = buildUserModel({
+      async create() {
+        return Failed;
+      },
+      async list() {
+        return Running;
+      },
+      async update() {
+        return Running;
+      },
+      async delete() {
+        return Failed;
+      },
+    });
     const fookie = app({
       listen: String(port),
       database: "postgres://mock",

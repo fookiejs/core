@@ -11,7 +11,6 @@ import {
   Running,
   Types,
   app,
-  flows,
   models,
 } from "../src/index.ts";
 import { MockDb, httpPost, httpRaw, trackApp, shutdownLiveApps } from "./mock-db.ts";
@@ -110,7 +109,7 @@ describe("coverage", () => {
         ur: Types.url,
         en: Types.enum("x", "y"),
       },
-      flow: flows({
+      flow: {
         async create() {
           return Done;
         },
@@ -140,38 +139,38 @@ describe("coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
 
     const m2 = Model({
       name: "M2",
       fields: { x: Types.string },
-      flow: flows({
+      flow: {
         create: async () => Done,
         list: async () => Done,
         update: async () => Done,
         delete: async () => Done,
-      }),
+      },
     });
     const m3 = Model({
       name: "M3",
       fields: { x: Types.string },
-      flow: flows({
+      flow: {
         create: async () => Done,
         list: async () => Done,
         update: async () => Done,
         delete: async () => Done,
-      }),
+      },
     });
     const m4 = Model({
       name: "M4",
       fields: { x: Types.string },
-      flow: flows({
+      flow: {
         create: async () => Done,
         list: async () => Done,
         update: async () => Done,
         delete: async () => Done,
-      }),
+      },
     });
 
     const fookie = app({
@@ -232,7 +231,7 @@ describe("coverage", () => {
     const userBad = Model({
       name: "ExtUserBad",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create(flow) {
           const bad = await flow.external(scoreExt, { amount: -1 });
           return bad.signal === "failed" ? Failed : Done;
@@ -246,12 +245,12 @@ describe("coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
     const user = Model({
       name: "ExtUser",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create(flow) {
           const ext = await flow.external(scoreExt, { amount: 10 });
           if (ext.signal === "done") {
@@ -268,7 +267,7 @@ describe("coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
     const fookie = app({
       listen: String(port),
@@ -316,12 +315,12 @@ describe("coverage", () => {
     const user = Model({
       name: "HttpUser",
       fields: { email: Types.email, name: Types.string },
-      flow: flows({
+      flow: {
         create: async () => Done,
         list: async () => Done,
         update: async () => Done,
         delete: async () => Done,
-      }),
+      },
     });
     const fookie = trackApp(
       app({
@@ -388,12 +387,12 @@ describe("coverage", () => {
     const user = Model({
       name: "FailUser",
       fields: { email: Types.email.unique() },
-      flow: flows({
+      flow: {
         create: async () => Done,
         list: async () => Done,
         update: async () => Done,
         delete: async () => Done,
-      }),
+      },
     });
     db.mode = "fail-create-table";
     const stdoutSpy = mock.method(process.stdout, "write", () => true);
@@ -471,17 +470,17 @@ describe("coverage", () => {
     const child = Model({
       name: "Child",
       fields: { t: Types.string },
-      flow: flows({
+      flow: {
         create: async () => Running,
         list: async () => Running,
         update: async () => Running,
         delete: async () => Running,
-      }),
+      },
     });
     const user = Model({
       name: "Parent",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create(flow) {
           const missing = await flow.create({ name: "Missing" }, { t: "x" });
           if (missing.signal === "failed") {
@@ -507,7 +506,7 @@ describe("coverage", () => {
             await flow.delete(child, { id: "00000000-0000-7000-8000-000000000001", filter: {} })
           ).signal;
         },
-      }),
+      },
     });
     const fookie = app({
       listen: String(port),
@@ -527,7 +526,7 @@ describe("coverage", () => {
     const user = Model({
       name: "HistUser",
       fields: { email: Types.email },
-      flow: flows({
+      flow: {
         async create(flow) {
           flow.metric.histogram("latency", 42);
           return Done;
@@ -541,7 +540,7 @@ describe("coverage", () => {
         async delete() {
           return Done;
         },
-      }),
+      },
     });
     const fookie = app({
       listen: String(port),

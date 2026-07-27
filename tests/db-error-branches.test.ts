@@ -1,16 +1,16 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { app, Failed, flows, Model, Types, type InjectablePool } from "../src/index.ts";
+import { app, Failed, Model, Types, type InjectablePool } from "../src/index.ts";
 
 const user = Model({
   name: "ErrUser",
   fields: { email: Types.email },
-  flow: flows({
+  flow: {
     create: async () => "done",
     list: async () => "done",
     update: async () => "done",
     delete: async () => "done",
-  }),
+  },
 });
 
 function throwingPool(error: unknown): InjectablePool {
