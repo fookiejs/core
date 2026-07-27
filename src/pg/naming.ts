@@ -56,6 +56,28 @@ export function columnNameFor(fieldKey: string): string {
   return column;
 }
 
+export function relationTargetOf(field: FieldValue): readonly string[] {
+  if (isRelationField(field)) {
+    const refName = z.string().min(1).safeParse(field.name);
+    if (refName.success === false) {
+      return [];
+    }
+    return [refName.data];
+  }
+  const declared = z.string().min(1).safeParse(field.kind);
+  if (declared.success === false) {
+    return [];
+  }
+  if (declared.data.startsWith("relation:") === false) {
+    return [];
+  }
+  const target = declared.data.slice("relation:".length);
+  if (target.length < 1) {
+    return [];
+  }
+  return [target];
+}
+
 export function pgColumnType(field: FieldValue): string {
   if (isRelationField(field)) {
     return "UUID";

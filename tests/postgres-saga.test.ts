@@ -300,3 +300,119 @@ describe("postgres saga schema", { skip: databaseUrl.length === 0 }, () => {
     await fookie.stop();
   });
 });
+
+const note = Model({
+  name: "PgFkNote",
+  fields: { title: z.string(), owner: Types.relation({ name: "PgFkParent" }) },
+  flow: {
+    async create() {
+      return Done;
+    },
+    async list() {
+      return Done;
+    },
+    async update() {
+      return Done;
+    },
+    async delete() {
+      return Done;
+    },
+  },
+});
+
+const fkParent = Model({
+  name: "PgFkParent",
+  fields: { email: z.string().email() },
+  flow: {
+    async create(flow) {
+      const child = await flow.create(note, { title: "n", owner: flow.id });
+      return child.signal;
+    },
+    async list() {
+      return Done;
+    },
+    async update() {
+      return Done;
+    },
+    async delete() {
+      return Done;
+    },
+  },
+});
+
+describe("postgres foreign keys", { skip: databaseUrl.length === 0 }, () => {
+  let pool: pg.Pool;
+
+  before(() => {
+    pool = new pg.Pool({ connectionString: databaseUrl });
+  });
+
+  after(async () => {
+    await pool.end();
+  });
+
+  function boot() {
+    return app({
+      listen: "0",
+      database: databaseUrl,
+      models: [fkParent, note],
+      externals: [] as const,
+      onExternalEvent: async () => {},
+      pool: [
+        {
+          query: (sql: string, params?: unknown[]) => pool.query(sql, params),
+          connect: () => pool.connect(),
+          end: [],
+        },
+      ],
+    });
+  }
+
+  it("declares a deferrable restrict constraint for every relation", async () => {
+    const fookie = boot();
+    await fookie.list(note, {});
+
+    const found = await pool.query(
+      `SELECT c.conname, c.condeferrable, c.condeferred, c.confdeltype
+         FROM pg_constraint c
+         JOIN pg_class t ON t.oid = c.conrelid
+        WHERE t.relname = 'pg_fk_note' AND c.contype = 'f'`,
+    );
+    assert.equal(found.rowCount, 1);
+    for (const row of found.rows) {
+      assert.equal(String(row.conname), "pg_fk_note_owner_fk");
+      assert.equal(row.condeferrable, true, "must be DEFERRABLE");
+      assert.equal(row.condeferred, true, "must be INITIALLY DEFERRED");
+      assert.equal(String(row.confdeltype), "r", "must be ON DELETE RESTRICT");
+    }
+    await fookie.stop();
+  });
+
+  it("lets a nested create write the child before the parent", async () => {
+    const fookie = boot();
+    const created = await fookie.create(fkParent, { email: `fk-${Date.now()}@example.com` });
+    assert.equal(created.signal, "done");
+
+    const child = await pool.query("SELECT owner FROM public.pg_fk_note WHERE owner = $1", [
+      created.id,
+    ]);
+    assert.equal(child.rowCount, 1, "the child points at a parent that really exists");
+    await fookie.stop();
+  });
+
+  it("refuses an orphan id", async () => {
+    const fookie = boot();
+    await fookie.list(note, {});
+    let rejected = "";
+    try {
+      await pool.query(
+        "INSERT INTO public.pg_fk_note (id, owner, title, created_at, updated_at, is_deleted) VALUES ($1, $2, 'x', NOW(), NOW(), false)",
+        ["00000000-0000-7000-8000-000000000123", "00000000-0000-7000-8000-000000000999"],
+      );
+    } catch (err) {
+      rejected = String(err);
+    }
+    assert.match(rejected, /foreign key/i);
+    await fookie.stop();
+  });
+});

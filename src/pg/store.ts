@@ -19,6 +19,7 @@ import {
   columnNameFor,
   outboxTableName,
   pgColumnType,
+  relationTargetOf,
   runTableName,
   tableNameFor,
   toCamelCase,
@@ -143,6 +144,12 @@ export class PostgresStore {
         return false;
       }
     }
+    for (const model of models) {
+      const linked = await this.ensureModelForeignKeys(model, errorBox);
+      if (linked === false) {
+        return false;
+      }
+    }
     return this.ensureOutboxTable(errorBox);
   }
 
@@ -193,6 +200,36 @@ export class PostgresStore {
         if (alterField.meta.index && alterField.meta.unique === false) {
           await this.db.query(
             `CREATE INDEX IF NOT EXISTS ${table}_${col}_idx ON ${qualified} (${col})`,
+          );
+        }
+      }
+      return true;
+    } catch (err) {
+      captureDbError(err, errorBox);
+      return false;
+    }
+  }
+
+  private async ensureModelForeignKeys(
+    model: ModelDef<ModelFieldsInput>,
+    errorBox: DbErrorBox,
+  ): Promise<boolean> {
+    const table = tableNameFor(model.name);
+    const qualified = `public.${table}`;
+    try {
+      for (const [key, field] of Object.entries(model.fields)) {
+        for (const targetModel of relationTargetOf(field)) {
+          const col = columnNameFor(key);
+          const target = tableNameFor(targetModel);
+          const name = `${table}_${col}_fk`;
+          await this.db.query(
+            `DO $$ BEGIN
+    ALTER TABLE ${qualified} ADD CONSTRAINT ${name}
+      FOREIGN KEY (${col}) REFERENCES public.${target} (id)
+      ON DELETE RESTRICT DEFERRABLE INITIALLY DEFERRED;
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  WHEN undefined_table THEN NULL;
+  END $$;`,
           );
         }
       }
