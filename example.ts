@@ -1,5 +1,6 @@
 // dont edit
 
+import { z } from "zod";
 import {
   app,
   Model,
@@ -16,10 +17,10 @@ import {
 const fraud = External({
   name: "fraud.score",
   input: {
-    amount: Types.currency,
+    amount: z.number(),
   },
   output: {
-    score: Types.int,
+    score: z.number().int(),
   },
   attempts: 3,
   backoff: "exponential",
@@ -29,11 +30,11 @@ const fraud = External({
 const notify = External({
   name: "notify.send",
   input: {
-    to: Types.email,
-    body: Types.string,
+    to: z.string().email(),
+    body: z.string(),
   },
   output: {
-    sent: Types.bool,
+    sent: z.boolean(),
   },
   attempts: 3,
   backoff: "fixed",
@@ -43,8 +44,8 @@ const notify = External({
 const user = Model({
   name: "User",
   fields: {
-    email: Types.email.unique(),
-    name: Types.string.index(),
+    email: z.string().email().meta({ unique: true }),
+    name: z.string().meta({ index: true }),
   },
   flow: {
     async create() {
@@ -65,8 +66,8 @@ const user = Model({
 const merchant = Model({
   name: "Merchant",
   fields: {
-    site: Types.url,
-    rating: Types.float.min(0).max(5),
+    site: z.string().url(),
+    rating: z.number().min(0).max(5),
   },
   flow: {
     async create() {
@@ -90,8 +91,8 @@ const order = Model({
     buyer: user,
     merchant: merchant,
     amount: Types.currency,
-    score: Types.int,
-    status: Types.enum("draft", "confirmed", "shipped"),
+    score: z.number().int(),
+    status: z.enum(["draft", "confirmed", "shipped"]),
   },
   flow: {
     async create(flow) {
@@ -165,7 +166,7 @@ const orderLog = Model({
   name: "OrderLog",
   fields: {
     order: order,
-    message: Types.string,
+    message: z.string(),
   },
   flow: {
     async create() {

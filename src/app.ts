@@ -37,7 +37,13 @@ import type {
   ModelFieldsInput,
   UpdateBody,
 } from "./model.ts";
-import { Observability, dispatchIntervalMs, runBufferLimit } from "./observability.ts";
+import {
+  Observability,
+  dispatchIntervalMs,
+  pruneIntervalMs,
+  retentionMs,
+  runBufferLimit,
+} from "./observability.ts";
 import type { LogEntry, LogFieldValue, MetricEntry, ObsScope, SpanEntry } from "./observability.ts";
 import { dbErrorBoxText, dbErrorMessageForLog } from "./pg/encode.ts";
 import type { DbErrorBox } from "./pg/encode.ts";
@@ -90,9 +96,14 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
   private readonly dbReadyBox: { ready: boolean } = { ready: false };
   private readonly dbErrorBox: { messages: readonly string[] } = { messages: [] };
   private readonly serverBox: { servers: readonly http.Server[] } = { servers: [] };
-  private readonly dispatcherBox: { timers: readonly NodeJS.Timeout[]; running: boolean } = {
+  private readonly dispatcherBox: {
+    timers: readonly NodeJS.Timeout[];
+    running: boolean;
+    prunedAtMs: number;
+  } = {
     timers: [],
     running: false,
+    prunedAtMs: 0,
   };
 
   private constructor(config: AppConfig<E>) {
@@ -678,6 +689,45 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
     };
   }
 
+  private async pruneIfDue(nowMs: number): Promise<number> {
+    if (nowMs - this.dispatcherBox.prunedAtMs < pruneIntervalMs) {
+      return 0;
+    }
+    this.dispatcherBox.prunedAtMs = nowMs;
+    const cutoff = new Date(nowMs - retentionMs).toISOString();
+    const removed = await this.store.pruneSettledRuns(cutoff);
+    for (const runId of removed) {
+      for (const [externalId, outboxRow] of this.outbox) {
+        if (outboxRow.runId === runId) {
+          this.outbox.delete(externalId);
+        }
+      }
+      this.runs.delete(runId);
+    }
+    if (removed.length > 0) {
+      this.obs.count(this.rootScope(), "saga.pruned");
+      this.obs.info(this.rootScope(), "saga.pruned", { runs: removed.length });
+    }
+    return removed.length;
+  }
+
+  private timedOut(outboxRow: OutboxEntry, timeoutMs: number, nowMs: number): boolean {
+    if (Number.isFinite(timeoutMs) === false) {
+      return false;
+    }
+    if (timeoutMs < 1) {
+      return false;
+    }
+    for (const iso of outboxRow.dispatchedAt) {
+      const sentAt = Date.parse(iso);
+      if (Number.isFinite(sentAt) === false) {
+        return false;
+      }
+      return nowMs - sentAt > timeoutMs;
+    }
+    return false;
+  }
+
   private dueAtMs(outboxRow: OutboxEntry): readonly number[] {
     for (const iso of outboxRow.nextAttemptAt) {
       const parsed = Date.parse(iso);
@@ -782,6 +832,7 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       return 0;
     }
     const nowMs = Date.now();
+    await this.pruneIfDue(nowMs);
     let dispatched = 0;
     const dueRows = Array.from(this.outbox.values());
     for (const outboxRow of dueRows) {
@@ -802,8 +853,18 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
         continue;
       }
       const ext = firstPresent(extHits, "external required");
+      const expired = this.timedOut(outboxRow, ext.timeoutMs, nowMs);
+      if (expired === true) {
+        this.obs.count(scope, "external.timed_out");
+        this.obs.error(scope, "external.timed_out", {
+          externalId: outboxRow.externalId,
+          externalName: outboxRow.name,
+          timeoutMs: ext.timeoutMs,
+        });
+      }
       if (outboxRow.attempt >= ext.attempts) {
-        await this.deadLetter(outboxRow, "attempts exhausted");
+        const reason = expired === true ? "timed out" : "attempts exhausted";
+        await this.deadLetter(outboxRow, reason);
         continue;
       }
       const nextAttempt = outboxRow.attempt + 1;

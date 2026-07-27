@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { beforeEach, describe, it, mock } from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -8,15 +9,14 @@ import {
   OutboxCompleted,
   OutboxFailed,
   OutboxPending,
-  Types,
   app,
 } from "../src/index.ts";
 import { MockDb } from "./mock-db.ts";
 
 const retryExt = External({
   name: "retry.score",
-  input: { amount: Types.currency },
-  output: { score: Types.int },
+  input: { amount: z.number().finite().nonnegative() },
+  output: { score: z.number().int() },
   attempts: 2,
   backoff: "exponential",
   timeoutMs: 30_000,
@@ -32,7 +32,7 @@ describe("saga edge behaviour", () => {
   it("retries with exponential backoff on invalid external output", async () => {
     const user = Model({
       name: "ExpoUser",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create(flow) {
           const result = await flow.external(retryExt, { amount: 5 });
@@ -72,7 +72,7 @@ describe("saga edge behaviour", () => {
   it("skips re-dispatch when the stored outbox input no longer validates", async () => {
     const user = Model({
       name: "StaleInput",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         create: async () => Done,
         list: async () => Done,
@@ -119,7 +119,7 @@ describe("saga edge behaviour", () => {
   it("fails nested update and delete on a missing child", async () => {
     const child = Model({
       name: "GoneChild",
-      fields: { title: Types.string },
+      fields: { title: z.string() },
       flow: {
         create: async () => Done,
         list: async () => Done,
@@ -130,7 +130,7 @@ describe("saga edge behaviour", () => {
 
     const parent = Model({
       name: "GoneParent",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         create: async () => Done,
         list: async () => Done,
@@ -173,7 +173,7 @@ describe("saga edge behaviour", () => {
   it("rolls back the saga when a nested flow throws", async () => {
     const child = Model({
       name: "ThrowChild",
-      fields: { title: Types.string },
+      fields: { title: z.string() },
       flow: {
         async create() {
           throw new Error("boom");
@@ -186,7 +186,7 @@ describe("saga edge behaviour", () => {
 
     const parent = Model({
       name: "ThrowParent",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create(flow) {
           const nested = await flow.create(child, { title: "t" });
@@ -214,7 +214,7 @@ describe("saga edge behaviour", () => {
   it("caps observability buffers at the retention limit", async () => {
     const user = Model({
       name: "Chatty",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create(flow) {
           for (let i = 0; i < 10_001; i += 1) {

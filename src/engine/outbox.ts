@@ -22,7 +22,7 @@ import type {
   OutboxPendingStatus,
 } from "../signal.ts";
 import { appendItem, catchValidation, firstPresent, mapLookup } from "../slot.ts";
-import type { ScalarTypeDef } from "../types/type.ts";
+import type { ScalarSchema } from "../types/type.ts";
 import type { EntityRecord } from "../values.ts";
 
 export type OutboxSaga = {
@@ -31,11 +31,12 @@ export type OutboxSaga = {
   nextAttemptAt: readonly string[];
   error: readonly string[];
   compensationOf: readonly string[];
+  dispatchedAt: readonly string[];
 };
 
 export type OutboxEntry<
-  I extends Record<string, ScalarTypeDef> = Record<string, ScalarTypeDef>,
-  O extends Record<string, ScalarTypeDef> = Record<string, ScalarTypeDef>,
+  I extends Record<string, ScalarSchema> = Record<string, ScalarSchema>,
+  O extends Record<string, ScalarSchema> = Record<string, ScalarSchema>,
 > = {
   externalId: string;
   name: string;
@@ -47,7 +48,7 @@ export type OutboxEntry<
 } & OutboxSaga &
   OutboxStatusPayloadKinds<O>[keyof OutboxStatusPayloadKinds<O>];
 
-export type OutboxStatusPayloadKinds<O extends Record<string, ScalarTypeDef>> = {
+export type OutboxStatusPayloadKinds<O extends Record<string, ScalarSchema>> = {
   pending: { status: OutboxPendingStatus };
   failed: { status: OutboxFailedStatus };
   blocked: { status: OutboxBlockedStatus };
@@ -62,6 +63,7 @@ export function sagaOf(outboxRow: OutboxEntry): OutboxSaga {
     nextAttemptAt: outboxRow.nextAttemptAt,
     error: outboxRow.error,
     compensationOf: outboxRow.compensationOf,
+    dispatchedAt: outboxRow.dispatchedAt,
   };
 }
 
@@ -198,8 +200,8 @@ export function resolveExternalByName<E extends readonly ExternalDef[]>(
 }
 
 export async function runExternal<
-  I extends Record<string, ScalarTypeDef>,
-  O extends Record<string, ScalarTypeDef>,
+  I extends Record<string, ScalarSchema>,
+  O extends Record<string, ScalarSchema>,
 >(
   rt: Runtime,
   ext: ExternalDef<I, O>,
@@ -283,6 +285,7 @@ export async function runExternal<
             nextAttemptAt: [new Date(Date.now()).toISOString()],
             error: [],
             compensationOf: [],
+            dispatchedAt: [new Date(Date.now()).toISOString()],
           },
         );
         rt.outbox.set(id, pending);
@@ -333,6 +336,7 @@ export function outboxPendingEntry(identity: OutboxIdentity, saga: OutboxSaga): 
     nextAttemptAt: saga.nextAttemptAt,
     error: saga.error,
     compensationOf: saga.compensationOf,
+    dispatchedAt: saga.dispatchedAt,
     status: "pending",
   };
 }
@@ -373,6 +377,7 @@ export function outboxRescheduled(
       nextAttemptAt: [nextAttemptAt],
       error: outboxRow.error,
       compensationOf: outboxRow.compensationOf,
+      dispatchedAt: [new Date(Date.now()).toISOString()],
     },
   );
 }
@@ -391,6 +396,7 @@ export function outboxFailed(outboxRow: OutboxEntry): OutboxEntry {
     nextAttemptAt: outboxRow.nextAttemptAt,
     error: outboxRow.error,
     compensationOf: outboxRow.compensationOf,
+    dispatchedAt: outboxRow.dispatchedAt,
     status: "failed",
   };
 }
@@ -409,6 +415,7 @@ export function outboxDeadLettered(outboxRow: OutboxEntry, reason: string): Outb
     nextAttemptAt: [],
     error: [reason],
     compensationOf: outboxRow.compensationOf,
+    dispatchedAt: outboxRow.dispatchedAt,
     status: "dead_letter",
   };
 }
@@ -427,6 +434,7 @@ export function outboxCompleted(outboxRow: OutboxEntry, output: EntityRecord): O
     nextAttemptAt: [],
     error: outboxRow.error,
     compensationOf: outboxRow.compensationOf,
+    dispatchedAt: outboxRow.dispatchedAt,
     status: "completed",
     output,
   };

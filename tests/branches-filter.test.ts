@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -16,8 +17,8 @@ let nextPort = 46000;
 
 const scoreExt = External({
   name: "fraud.score",
-  input: { amount: Types.currency },
-  output: { score: Types.int },
+  input: { amount: z.number().finite().nonnegative() },
+  output: { score: z.number().int() },
   attempts: 1,
   backoff: "fixed",
   timeoutMs: 30_000,
@@ -40,7 +41,7 @@ describe("filter and http branches", () => {
   it("exercises disabled runtime filter ops per field group", async () => {
     const buyer = Model({
       name: "Buyer",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create() {
           return Done;
@@ -60,10 +61,10 @@ describe("filter and http branches", () => {
     const full = Model({
       name: "FullFilter",
       fields: {
-        email: Types.email,
-        score: Types.int,
+        email: z.string().email(),
+        score: z.number().int(),
         buyer,
-        active: Types.bool,
+        active: z.boolean(),
         point: Types.coordinate,
         meta: Types.jsonb,
         blob: Types.bytea,
@@ -159,7 +160,7 @@ describe("filter and http branches", () => {
   it("rejects http filters carrying invalid operators", async () => {
     const user = Model({
       name: "HttpFilter",
-      fields: { email: Types.email, score: Types.int, meta: Types.jsonb },
+      fields: { email: z.string().email(), score: z.number().int(), meta: Types.jsonb },
       flow: {
         async create() {
           return Done;
@@ -214,9 +215,9 @@ describe("filter and http branches", () => {
     const user = Model({
       name: "PgParse",
       fields: {
-        email: Types.email,
-        score: Types.int,
-        active: Types.bool,
+        email: z.string().email(),
+        score: z.number().int(),
+        active: z.boolean(),
         point: Types.coordinate,
       },
       flow: {
@@ -298,7 +299,7 @@ describe("filter and http branches", () => {
   it("covers http external success and request abort", async () => {
     const user = Model({
       name: "ExtHttp",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create(flow) {
           const ext = await flow.external(scoreExt, { amount: 5 });
@@ -349,7 +350,7 @@ describe("filter and http branches", () => {
   it("resolves external resume model by name when run is missing", async () => {
     const user = Model({
       name: "GhostResume",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create() {
           return Done;
@@ -397,7 +398,7 @@ describe("filter and http branches", () => {
   it("returns failed from http create and skips resume for unknown model", async () => {
     const failUser = Model({
       name: "HttpFail",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create() {
           return Failed;
@@ -416,7 +417,7 @@ describe("filter and http branches", () => {
 
     const known = Model({
       name: "Known",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create() {
           return Done;

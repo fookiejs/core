@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { Done, External, Failed, Model, Running, Types, app } from "../src/index.ts";
@@ -5,8 +6,8 @@ import { MockDb } from "./mock-db.ts";
 
 const score = External({
   name: "idem.score",
-  input: { amount: Types.currency },
-  output: { score: Types.int },
+  input: { amount: z.number().finite().nonnegative() },
+  output: { score: z.number().int() },
   attempts: 3,
   backoff: "fixed",
   timeoutMs: 30_000,
@@ -14,8 +15,8 @@ const score = External({
 
 const notify = External({
   name: "idem.notify",
-  input: { to: Types.email },
-  output: { sent: Types.bool },
+  input: { to: z.string().email() },
+  output: { sent: z.boolean() },
   attempts: 3,
   backoff: "fixed",
   timeoutMs: 30_000,
@@ -23,7 +24,7 @@ const notify = External({
 
 const child = Model({
   name: "IdemChild",
-  fields: { message: Types.string },
+  fields: { message: z.string() },
   flow: {
     async create() {
       return Done;
@@ -44,7 +45,7 @@ const parentBox: { nestedCalls: number } = { nestedCalls: 0 };
 
 const parent = Model({
   name: "IdemParent",
-  fields: { amount: Types.currency, score: Types.int },
+  fields: { amount: Types.currency, score: z.number().int() },
   flow: {
     async create(flow) {
       const scored = await flow.external(score, { amount: flow.body.amount });

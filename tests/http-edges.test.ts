@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
@@ -16,8 +17,8 @@ let nextPort = 47000;
 
 const scoreExt = External({
   name: "fraud.score",
-  input: { amount: Types.currency },
-  output: { score: Types.int },
+  input: { amount: z.number().finite().nonnegative() },
+  output: { score: z.number().int() },
   attempts: 1,
   backoff: "fixed",
   timeoutMs: 30_000,
@@ -41,7 +42,7 @@ describe("http edge routes", () => {
   it("covers 404 paths and external payload branches", async () => {
     const user = Model({
       name: "EdgeRoute",
-      fields: { email: Types.email, loc: Types.coordinate },
+      fields: { email: z.string().email(), loc: Types.coordinate },
       flow: {
         async create() {
           return Done;
@@ -95,7 +96,7 @@ describe("http edge routes", () => {
   it("covers filter operator parsing branches over http", async () => {
     const user = Model({
       name: "FilterEdge",
-      fields: { email: Types.email, score: Types.int },
+      fields: { email: z.string().email(), score: z.number().int() },
       flow: {
         async create() {
           return Done;
@@ -149,7 +150,7 @@ describe("http edge routes", () => {
   it("covers http update delete and invalid bodies", async () => {
     const user = Model({
       name: "Mutate",
-      fields: { email: Types.email, loc: Types.coordinate },
+      fields: { email: z.string().email(), loc: Types.coordinate },
       flow: {
         async create() {
           return Done;
@@ -229,7 +230,7 @@ describe("http edge routes", () => {
   it("covers filter field parsing and request payload filtering", async () => {
     const user = Model({
       name: "ParseEdge",
-      fields: { email: Types.email, score: Types.int },
+      fields: { email: z.string().email(), score: z.number().int() },
       flow: {
         async create() {
           return Done;
@@ -288,7 +289,7 @@ describe("http edge routes", () => {
   it("covers extended http filter operators", async () => {
     const user = Model({
       name: "FilterOps",
-      fields: { email: Types.email, loc: Types.coordinate },
+      fields: { email: z.string().email(), loc: Types.coordinate },
       flow: {
         async create() {
           return Done;

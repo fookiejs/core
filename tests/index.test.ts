@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -19,8 +20,8 @@ let nextPort = 41000;
 
 const scoreExt = External({
   name: "fraud.score",
-  input: { amount: Types.currency },
-  output: { score: Types.int },
+  input: { amount: z.number().finite().nonnegative() },
+  output: { score: z.number().int() },
   attempts: 3,
   backoff: "exponential",
   timeoutMs: 30_000,
@@ -28,8 +29,8 @@ const scoreExt = External({
 
 const notifyExt = External({
   name: "notify.send",
-  input: { to: Types.email, body: Types.string },
-  output: { sent: Types.bool },
+  input: { to: z.string().email(), body: z.string() },
+  output: { sent: z.boolean() },
   attempts: 3,
   backoff: "fixed",
   timeoutMs: 30_000,
@@ -39,9 +40,9 @@ function buildUserModel(flow: ReturnType<typeof flows>) {
   return Model({
     name: "User",
     fields: {
-      email: Types.email.unique(),
-      name: Types.string.index(),
-      score: Types.int.min(0).max(100),
+      email: z.string().email().meta({ unique: true }),
+      name: z.string().meta({ index: true }),
+      score: z.number().int().min(0).max(100),
       location: Types.coordinate,
       meta: Types.jsonb,
     },
@@ -245,7 +246,7 @@ describe("fookie core", () => {
     const child = Model({
       name: "Post",
       fields: {
-        title: Types.string,
+        title: z.string(),
         author: Types.relation({ name: "User" }),
       },
       flow: {

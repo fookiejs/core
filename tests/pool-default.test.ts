@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { describe, it, mock } from "node:test";
 import assert from "node:assert/strict";
 
@@ -37,13 +38,13 @@ mock.module("pg", {
   },
 });
 
-const { app, Model, Types, Done } = await import("../src/index.ts");
+const { app, Model, Done } = await import("../src/index.ts");
 
 describe("default pg pool", () => {
   it("uses pg.Pool when pool config is omitted", () => {
     const user = Model({
       name: "PoolDefault",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create() {
           return Done;
@@ -75,7 +76,7 @@ describe("default pg pool", () => {
   it("ends the default pool on stop", async () => {
     const user = Model({
       name: "PoolStop",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         create: async () => Done,
         list: async () => Done,

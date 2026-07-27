@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import pg from "pg";
@@ -7,8 +8,8 @@ const databaseUrl = process.env.FOOKIE_TEST_DATABASE ?? "";
 
 const scoreExt = External({
   name: "fraud.score",
-  input: { amount: Types.currency },
-  output: { score: Types.int },
+  input: { amount: z.number().finite().nonnegative() },
+  output: { score: z.number().int() },
   attempts: 1,
   backoff: "fixed",
   timeoutMs: 30_000,
@@ -28,7 +29,10 @@ describe("postgres integration", { skip: databaseUrl.length === 0 }, () => {
   it("persists create and list against real postgres", async () => {
     const user = Model({
       name: "PgUser",
-      fields: { email: Types.email.unique(), name: Types.string.index() },
+      fields: {
+        email: z.string().email().meta({ unique: true }),
+        name: z.string().meta({ index: true }),
+      },
       flow: {
         async create() {
           return Done;
@@ -72,7 +76,7 @@ describe("postgres integration", { skip: databaseUrl.length === 0 }, () => {
   it("filters coordinates with near against real postgres", async () => {
     const place = Model({
       name: "PgPlace",
-      fields: { title: Types.string, loc: Types.coordinate },
+      fields: { title: z.string(), loc: Types.coordinate },
       flow: {
         async create() {
           return Done;

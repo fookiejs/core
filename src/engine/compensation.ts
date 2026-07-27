@@ -7,7 +7,7 @@ import type { Runtime } from "./runtime.ts";
 import type { ExternalDef, InferExternalInputFrom } from "../external.ts";
 import { obsScope } from "../observability.ts";
 import { appendItem, catchValidation, firstPresent, mapLookup } from "../slot.ts";
-import type { ScalarTypeDef } from "../types/type.ts";
+import type { ScalarSchema } from "../types/type.ts";
 import type { EntityRecord } from "../values.ts";
 
 export function runRows(rt: Runtime, runId: string): readonly OutboxEntry[] {
@@ -48,7 +48,7 @@ function compensationTargets(rt: Runtime, runId: string): readonly OutboxEntry[]
 function validatedUndoInput(
   undo: ExternalDef,
   context: EntityRecord,
-): readonly InferExternalInputFrom<Record<string, ScalarTypeDef>>[] {
+): readonly InferExternalInputFrom<Record<string, ScalarSchema>>[] {
   if (z.looseObject({}).safeParse(context).success === false) {
     return [];
   }
@@ -127,6 +127,7 @@ export async function compensateRun(rt: Runtime, runId: string): Promise<number>
         nextAttemptAt: [new Date(Date.now()).toISOString()],
         error: [],
         compensationOf: [forward.externalId],
+        dispatchedAt: [new Date(Date.now()).toISOString()],
       },
     );
     rt.outbox.set(undoId, pending);

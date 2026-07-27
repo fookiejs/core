@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -17,8 +18,8 @@ let nextPort = 45000;
 
 const fraud = External({
   name: "fraud.score",
-  input: { amount: Types.currency },
-  output: { score: Types.int },
+  input: { amount: z.number().finite().nonnegative() },
+  output: { score: z.number().int() },
   attempts: 3,
   backoff: "exponential",
   timeoutMs: 30_000,
@@ -26,8 +27,8 @@ const fraud = External({
 
 const notify = External({
   name: "notify.send",
-  input: { to: Types.email, body: Types.string },
-  output: { sent: Types.bool },
+  input: { to: z.string().email(), body: z.string() },
+  output: { sent: z.boolean() },
   attempts: 3,
   backoff: "fixed",
   timeoutMs: 30_000,
@@ -36,8 +37,8 @@ const notify = External({
 const user = Model({
   name: "User",
   fields: {
-    email: Types.email.unique(),
-    name: Types.string.index(),
+    email: z.string().email().meta({ unique: true }),
+    name: z.string().meta({ index: true }),
   },
   flow: {
     async create() {
@@ -58,8 +59,8 @@ const user = Model({
 const merchant = Model({
   name: "Merchant",
   fields: {
-    site: Types.url,
-    rating: Types.float.min(0).max(5),
+    site: z.string().url(),
+    rating: z.number().min(0).max(5),
   },
   flow: {
     async create() {
@@ -83,8 +84,8 @@ const order = Model({
     buyer: user,
     merchant: merchant,
     amount: Types.currency,
-    score: Types.int,
-    status: Types.enum("draft", "confirmed", "shipped"),
+    score: z.number().int(),
+    status: z.enum(["draft", "confirmed", "shipped"]),
   },
   flow: {
     async create(flow) {
@@ -144,7 +145,7 @@ const orderLog = Model({
   name: "OrderLog",
   fields: {
     order,
-    message: Types.string,
+    message: z.string(),
   },
   flow: {
     async create() {

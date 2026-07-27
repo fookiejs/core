@@ -1,19 +1,18 @@
 import { z } from "zod";
 import { ValidationError } from "./errors.ts";
-import type { InferTypeDef } from "./model.ts";
-import type { ScalarSchema, ScalarTypeDef } from "./types/type.ts";
+import type { ScalarSchema } from "./types/type.ts";
 import { isEntityValue } from "./values.ts";
 import type { EntityRecord, JsonValue } from "./values.ts";
 
-export type InferExternalInputFrom<I extends Record<string, ScalarTypeDef>> = {
-  [K in keyof I]: InferTypeDef<I[K]>;
+export type InferExternalInputFrom<I extends Record<string, ScalarSchema>> = {
+  [K in keyof I]: z.infer<I[K]>;
 };
 
-export type InferExternalOutputFrom<O extends Record<string, ScalarTypeDef>> = {
-  [K in keyof O]: InferTypeDef<O[K]>;
+export type InferExternalOutputFrom<O extends Record<string, ScalarSchema>> = {
+  [K in keyof O]: z.infer<O[K]>;
 };
 
-export function parseExternalInput<I extends Record<string, ScalarTypeDef>>(
+export function parseExternalInput<I extends Record<string, ScalarSchema>>(
   fields: I,
   inputJson: JsonValue,
 ): InferExternalInputFrom<I> {
@@ -26,7 +25,7 @@ export function parseExternalInput<I extends Record<string, ScalarTypeDef>>(
   return inputJson;
 }
 
-export function isExternalInput<I extends Record<string, ScalarTypeDef>>(
+export function isExternalInput<I extends Record<string, ScalarSchema>>(
   fields: I,
   inputJson: JsonValue,
 ): inputJson is InferExternalInputFrom<I> {
@@ -42,7 +41,7 @@ export function isExternalInput<I extends Record<string, ScalarTypeDef>>(
   return true;
 }
 
-export function parseExternalOutput<O extends Record<string, ScalarTypeDef>>(
+export function parseExternalOutput<O extends Record<string, ScalarSchema>>(
   fields: O,
   outputJson: JsonValue,
 ): InferExternalOutputFrom<O> {
@@ -55,7 +54,7 @@ export function parseExternalOutput<O extends Record<string, ScalarTypeDef>>(
   return outputJson;
 }
 
-export function isExternalOutput<O extends Record<string, ScalarTypeDef>>(
+export function isExternalOutput<O extends Record<string, ScalarSchema>>(
   fields: O,
   outputJson: JsonValue,
 ): outputJson is InferExternalOutputFrom<O> {
@@ -94,8 +93,8 @@ export function isFailureClass(failureValue: string): failureValue is FailureCla
 }
 
 export type ExternalCoreConfig<
-  I extends Record<string, ScalarTypeDef> = Record<string, ScalarTypeDef>,
-  O extends Record<string, ScalarTypeDef> = Record<string, ScalarTypeDef>,
+  I extends Record<string, ScalarSchema> = Record<string, ScalarSchema>,
+  O extends Record<string, ScalarSchema> = Record<string, ScalarSchema>,
 > = {
   name: string;
   input: I;
@@ -106,48 +105,48 @@ export type ExternalCoreConfig<
 };
 
 export type ExternalValidators<
-  I extends Record<string, ScalarTypeDef> = Record<string, ScalarTypeDef>,
-  O extends Record<string, ScalarTypeDef> = Record<string, ScalarTypeDef>,
+  I extends Record<string, ScalarSchema> = Record<string, ScalarSchema>,
+  O extends Record<string, ScalarSchema> = Record<string, ScalarSchema>,
 > = {
   validateInput(value: JsonValue): InferExternalInputFrom<I>;
   validateOutput(value: JsonValue): InferExternalOutputFrom<O>;
 };
 
 export type PlainExternalDef<
-  I extends Record<string, ScalarTypeDef> = Record<string, ScalarTypeDef>,
-  O extends Record<string, ScalarTypeDef> = Record<string, ScalarTypeDef>,
+  I extends Record<string, ScalarSchema> = Record<string, ScalarSchema>,
+  O extends Record<string, ScalarSchema> = Record<string, ScalarSchema>,
 > = ExternalCoreConfig<I, O> & ExternalValidators<I, O> & { compensate: readonly never[] };
 
 export type CompensatedExternalDef<
-  I extends Record<string, ScalarTypeDef> = Record<string, ScalarTypeDef>,
-  O extends Record<string, ScalarTypeDef> = Record<string, ScalarTypeDef>,
+  I extends Record<string, ScalarSchema> = Record<string, ScalarSchema>,
+  O extends Record<string, ScalarSchema> = Record<string, ScalarSchema>,
 > = ExternalCoreConfig<I, O> &
   ExternalValidators<I, O> & { compensate: readonly [PlainExternalDef] };
 
 export type ExternalConfigKinds<
-  I extends Record<string, ScalarTypeDef> = Record<string, ScalarTypeDef>,
-  O extends Record<string, ScalarTypeDef> = Record<string, ScalarTypeDef>,
+  I extends Record<string, ScalarSchema> = Record<string, ScalarSchema>,
+  O extends Record<string, ScalarSchema> = Record<string, ScalarSchema>,
 > = {
   plain: ExternalCoreConfig<I, O>;
   compensated: ExternalCoreConfig<I, O> & { compensate: PlainExternalDef };
 };
 
 export type ExternalConfig<
-  I extends Record<string, ScalarTypeDef> = Record<string, ScalarTypeDef>,
-  O extends Record<string, ScalarTypeDef> = Record<string, ScalarTypeDef>,
+  I extends Record<string, ScalarSchema> = Record<string, ScalarSchema>,
+  O extends Record<string, ScalarSchema> = Record<string, ScalarSchema>,
 > = ExternalConfigKinds<I, O>[keyof ExternalConfigKinds<I, O>];
 
 export type ExternalDefKinds<
-  I extends Record<string, ScalarTypeDef> = Record<string, ScalarTypeDef>,
-  O extends Record<string, ScalarTypeDef> = Record<string, ScalarTypeDef>,
+  I extends Record<string, ScalarSchema> = Record<string, ScalarSchema>,
+  O extends Record<string, ScalarSchema> = Record<string, ScalarSchema>,
 > = {
   plain: PlainExternalDef<I, O>;
   compensated: CompensatedExternalDef<I, O>;
 };
 
 export type ExternalDef<
-  I extends Record<string, ScalarTypeDef> = Record<string, ScalarTypeDef>,
-  O extends Record<string, ScalarTypeDef> = Record<string, ScalarTypeDef>,
+  I extends Record<string, ScalarSchema> = Record<string, ScalarSchema>,
+  O extends Record<string, ScalarSchema> = Record<string, ScalarSchema>,
 > = ExternalDefKinds<I, O>[keyof ExternalDefKinds<I, O>];
 
 function normalizedAttempts(attempts: number): number {
@@ -181,16 +180,16 @@ function normalizedTimeoutMs(timeoutMs: number): number {
 }
 
 export function External<
-  const I extends Record<string, ScalarTypeDef>,
-  const O extends Record<string, ScalarTypeDef>,
+  const I extends Record<string, ScalarSchema>,
+  const O extends Record<string, ScalarSchema>,
 >(config: ExternalConfigKinds<I, O>["compensated"]): CompensatedExternalDef<I, O>;
 export function External<
-  const I extends Record<string, ScalarTypeDef>,
-  const O extends Record<string, ScalarTypeDef>,
+  const I extends Record<string, ScalarSchema>,
+  const O extends Record<string, ScalarSchema>,
 >(config: ExternalConfigKinds<I, O>["plain"]): PlainExternalDef<I, O>;
 export function External<
-  const I extends Record<string, ScalarTypeDef>,
-  const O extends Record<string, ScalarTypeDef>,
+  const I extends Record<string, ScalarSchema>,
+  const O extends Record<string, ScalarSchema>,
 >(config: ExternalConfig<I, O>): ExternalDef<I, O> {
   const attempts = normalizedAttempts(config.attempts);
   const backoff = normalizedBackoff(config.backoff);
@@ -269,7 +268,7 @@ export function backoffDelayMs(backoff: ExternalBackoff, attempt: number): numbe
   return delay;
 }
 
-function externalFieldsSchema<I extends Record<string, ScalarTypeDef>>(fields: I) {
+function externalFieldsSchema<I extends Record<string, ScalarSchema>>(fields: I) {
   if (z.looseObject({}).safeParse(fields).success === false) {
     throw ValidationError.create("external fields required");
   }
@@ -278,7 +277,7 @@ function externalFieldsSchema<I extends Record<string, ScalarTypeDef>>(fields: I
     if (z.string().min(1).safeParse(key).success === false) {
       throw ValidationError.create("external field key required");
     }
-    shape[key] = field.schema;
+    shape[key] = field;
   }
   return z.object(shape);
 }

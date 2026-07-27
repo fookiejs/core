@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -19,8 +20,8 @@ let nextPort = 43000;
 
 const scoreExt = External({
   name: "fraud.score",
-  input: { amount: Types.currency },
-  output: { score: Types.int },
+  input: { amount: z.number().finite().nonnegative() },
+  output: { score: z.number().int() },
   attempts: 1,
   backoff: "fixed",
   timeoutMs: 30_000,
@@ -43,7 +44,7 @@ describe("branch coverage", () => {
   it("covers relation models, filter branches, and pg parsing", async () => {
     const buyer = Model({
       name: "Buyer",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create() {
           return Done;
@@ -64,10 +65,10 @@ describe("branch coverage", () => {
       name: "Order",
       fields: {
         buyer,
-        amount: Types.float,
+        amount: z.number(),
         point: Types.coordinate,
         meta: Types.jsonb,
-        status: Types.enum("a", "b"),
+        status: z.enum(["a", "b"]),
       },
       flow: {
         async create() {
@@ -143,7 +144,7 @@ describe("branch coverage", () => {
     const child = Model({
       name: "Note",
       fields: {
-        title: Types.string,
+        title: z.string(),
         owner: Types.relation({ name: "Parent" }),
       },
       flow: {
@@ -164,7 +165,7 @@ describe("branch coverage", () => {
 
     const owner = Model({
       name: "Owner",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create(flow) {
           const ext = await flow.external(scoreExt, { amount: 20 });
@@ -187,7 +188,7 @@ describe("branch coverage", () => {
 
     const parent = Model({
       name: "Parent",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create(flow) {
           const nested = await flow.create(child, { title: "t", owner: flow.id });
@@ -298,7 +299,7 @@ describe("branch coverage", () => {
 
     const user = Model({
       name: "Hydrate",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create() {
           return Done;
@@ -350,7 +351,7 @@ describe("branch coverage", () => {
   it("covers http edge cases and mutation signals", async () => {
     const user = Model({
       name: "Edge",
-      fields: { email: Types.email, loc: Types.coordinate },
+      fields: { email: z.string().email(), loc: Types.coordinate },
       flow: {
         async create() {
           return Running;
@@ -414,7 +415,7 @@ describe("branch coverage", () => {
   it("covers failed external resume and update coordinate body", async () => {
     const user = Model({
       name: "ResumeUser",
-      fields: { email: Types.email, loc: Types.coordinate },
+      fields: { email: z.string().email(), loc: Types.coordinate },
       flow: {
         async create(flow) {
           const ext = await flow.external(scoreExt, { amount: 15 });
@@ -467,7 +468,7 @@ describe("branch coverage", () => {
   it("covers db failure paths and transaction rollback errors", async () => {
     const user = Model({
       name: "DbFail",
-      fields: { email: Types.email.unique(), data: Types.json },
+      fields: { email: z.string().email().meta({ unique: true }), data: Types.json },
       flow: {
         async create() {
           return Done;
@@ -524,7 +525,7 @@ describe("branch coverage", () => {
   it("rejects invalid json field and invalid nested create", async () => {
     const user = Model({
       name: "JsonUser",
-      fields: { email: Types.email, data: Types.json },
+      fields: { email: z.string().email(), data: Types.json },
       flow: {
         async create() {
           return Done;
@@ -558,7 +559,7 @@ describe("branch coverage", () => {
 
     const parent = Model({
       name: "BadParent",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create(flow) {
           const nested = await flow.create({ name: "Missing" }, { email: "x" });
@@ -590,7 +591,7 @@ describe("branch coverage", () => {
   it("covers remaining http, outbox, and nested failure paths", async () => {
     const user = Model({
       name: "Left",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create() {
           return Done;
@@ -652,7 +653,7 @@ describe("branch coverage", () => {
     db.mode = "fail-outbox-save";
     const extUser = Model({
       name: "OutboxFail",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create(flow) {
           const ext = await flow.external(scoreExt, { amount: 5 });
@@ -681,7 +682,7 @@ describe("branch coverage", () => {
 
     const parent = Model({
       name: "NestFail",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create(flow) {
           return (await flow.update({ name: "Ghost" }, { id: "x", body: {}, filter: {} })).signal;
@@ -712,7 +713,7 @@ describe("branch coverage", () => {
     db.mode = "fail-upsert";
     const child = Model({
       name: "PersistFail",
-      fields: { title: Types.string },
+      fields: { title: z.string() },
       flow: {
         async create() {
           return Done;
@@ -730,7 +731,7 @@ describe("branch coverage", () => {
     });
     const parent2 = Model({
       name: "PersistParent",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create(flow) {
           return (await flow.create(child, { title: "x" })).signal;
@@ -776,7 +777,7 @@ describe("branch coverage", () => {
     const refChild = Model({
       name: "RefChild",
       fields: {
-        title: Types.string,
+        title: z.string(),
         owner: { name: "RefParent" },
       },
       flow: {
@@ -797,7 +798,7 @@ describe("branch coverage", () => {
 
     const refParent = Model({
       name: "RefParent",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create(flow) {
           const nested = await flow.create(refChild, { title: "bound" });
@@ -833,7 +834,7 @@ describe("branch coverage", () => {
 
     const cacheUser = Model({
       name: "CacheUser",
-      fields: { email: Types.email, loc: Types.coordinate, meta: Types.jsonb },
+      fields: { email: z.string().email(), loc: Types.coordinate, meta: Types.jsonb },
       flow: {
         async create() {
           return Done;
@@ -868,7 +869,7 @@ describe("branch coverage", () => {
     }
     const extChild = Model({
       name: "ExtChild",
-      fields: { title: Types.string, owner: { name: "RefParent" } },
+      fields: { title: z.string(), owner: { name: "RefParent" } },
       flow: {
         async create(flow) {
           const ext = await flow.external(scoreExt, { amount: 4 });
@@ -888,7 +889,7 @@ describe("branch coverage", () => {
 
     const extParent = Model({
       name: "ExtParent",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create(flow) {
           return (await flow.create(extChild, { title: "ext" })).signal;

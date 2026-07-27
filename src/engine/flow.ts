@@ -36,7 +36,7 @@ import { Done, Failed, Running } from "../signal.ts";
 import type { Signal } from "../signal.ts";
 import { catchValidation, firstPresent, textOrFallback } from "../slot.ts";
 import type { PgParam, PgRow } from "../pg/encode.ts";
-import type { ScalarTypeDef } from "../types/type.ts";
+import type { ScalarSchema } from "../types/type.ts";
 import { entityRecordFromPlain, entityValueAt, mergeEntityRecords } from "../values.ts";
 import type { EntityRecord } from "../values.ts";
 
@@ -90,7 +90,7 @@ export type FlowPgOps = {
 };
 
 export type FlowExternalOps = {
-  external<I extends Record<string, ScalarTypeDef>, O extends Record<string, ScalarTypeDef>>(
+  external<I extends Record<string, ScalarSchema>, O extends Record<string, ScalarSchema>>(
     ext: ExternalDef<I, O>,
     input: InferExternalInputFrom<I>,
   ): Promise<ExternalResult<InferExternalOutputFrom<O>>>;

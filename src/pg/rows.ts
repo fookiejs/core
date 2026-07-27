@@ -26,7 +26,7 @@ export function outboxAttempt(raw: HostValue): readonly number[] {
 }
 
 export const outboxColumns =
-  "external_id, name, status, input, output, entity_id, model, run_id, attempt, step_index, step, next_attempt_at, error, compensation_of";
+  "external_id, name, status, input, output, entity_id, model, run_id, attempt, step_index, step, next_attempt_at, error, compensation_of, dispatched_at";
 
 export const runColumns =
   "run_id, model, entity_id, operation, body, filter, saga_phase, pivot_external_id, error";
@@ -100,6 +100,7 @@ function sagaFromRow(row: pg.QueryResultRow): OutboxSaga {
     nextAttemptAt: optionalTimestamp(row.next_attempt_at),
     error: optionalText(row.error),
     compensationOf: optionalText(row.compensation_of),
+    dispatchedAt: optionalTimestamp(row.dispatched_at),
   };
 }
 
@@ -165,6 +166,7 @@ export function outboxEntryFromRow(row: pg.QueryResultRow): readonly OutboxEntry
           nextAttemptAt: saga.nextAttemptAt,
           error: saga.error,
           compensationOf: saga.compensationOf,
+          dispatchedAt: saga.dispatchedAt,
           status,
         },
       ];
@@ -188,6 +190,7 @@ export function outboxEntryFromRow(row: pg.QueryResultRow): readonly OutboxEntry
         nextAttemptAt: saga.nextAttemptAt,
         error: saga.error,
         compensationOf: saga.compensationOf,
+        dispatchedAt: saga.dispatchedAt,
         status: "completed",
         output,
       },

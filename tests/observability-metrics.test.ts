@@ -1,12 +1,13 @@
+import { z } from "zod";
 import { beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { Done, External, Model, Running, Types, app } from "../src/index.ts";
+import { Done, External, Failed, Model, Running, app } from "../src/index.ts";
 import { MockDb } from "./mock-db.ts";
 
 const scoreExt = External({
   name: "fraud.score",
-  input: { amount: Types.currency },
-  output: { score: Types.int },
+  input: { amount: z.number().finite().nonnegative() },
+  output: { score: z.number().int() },
   attempts: 2,
   backoff: "fixed",
   timeoutMs: 30_000,
@@ -22,7 +23,7 @@ describe("observability and external retry", () => {
   it("records framework operation and external metrics", async () => {
     const user = Model({
       name: "MetricUser",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create(flow) {
           const result = await flow.external(scoreExt, {
@@ -74,7 +75,7 @@ describe("observability and external retry", () => {
   it("retries external on invalid output before failing", async () => {
     const user = Model({
       name: "RetryUser",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create(flow) {
           const result = await flow.external(scoreExt, { amount: 5 });
@@ -135,7 +136,7 @@ describe("observability and external retry", () => {
   it("records operation.failed on transaction rollback", async () => {
     const user = Model({
       name: "RollbackUser",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create() {
           return Failed;

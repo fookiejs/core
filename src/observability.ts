@@ -49,6 +49,10 @@ export const observabilityBufferLimit = 10_000;
 
 export const dispatchIntervalMs = 5_000;
 
+export const pruneIntervalMs = 3_600_000;
+
+export const retentionMs = 30 * 24 * 3_600_000;
+
 export const runBufferLimit = 10_000;
 
 export function pushBounded<T>(buffer: readonly T[], bufferItem: T): T[] {

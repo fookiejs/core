@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -17,8 +18,8 @@ type Seen = { id: string; name: string };
 
 const releaseStock = External({
   name: "sf.release",
-  input: { sku: Types.string, holdId: Types.string },
-  output: { released: Types.bool },
+  input: { sku: z.string(), holdId: z.string() },
+  output: { released: z.boolean() },
   attempts: 8,
   backoff: "exponential",
   timeoutMs: 10_000,
@@ -26,8 +27,8 @@ const releaseStock = External({
 
 const reserveStock = External({
   name: "sf.reserve",
-  input: { sku: Types.string },
-  output: { holdId: Types.string },
+  input: { sku: z.string() },
+  output: { holdId: z.string() },
   attempts: 3,
   backoff: "exponential",
   timeoutMs: 10_000,
@@ -36,8 +37,8 @@ const reserveStock = External({
 
 const riskCheck = External({
   name: "sf.risk",
-  input: { amount: Types.currency },
-  output: { score: Types.int },
+  input: { amount: z.number().finite().nonnegative() },
+  output: { score: z.number().int() },
   attempts: 3,
   backoff: "fixed",
   timeoutMs: 5_000,
@@ -45,8 +46,8 @@ const riskCheck = External({
 
 const receipt = External({
   name: "sf.receipt",
-  input: { to: Types.email },
-  output: { sent: Types.bool },
+  input: { to: z.string().email() },
+  output: { sent: z.boolean() },
   attempts: 4,
   backoff: "fixed",
   timeoutMs: 5_000,
@@ -55,7 +56,7 @@ const receipt = External({
 function orderModel(name: string, rejectAt: number) {
   return Model({
     name,
-    fields: { amount: Types.currency, sku: Types.string, score: Types.int },
+    fields: { amount: Types.currency, sku: z.string(), score: z.number().int() },
     flow: {
       async create(flow) {
         const held = await flow.external(reserveStock, { sku: flow.body.sku });
@@ -179,7 +180,7 @@ describe("saga step identity", () => {
   it("gives two identical external calls distinct outbox rows", async () => {
     const twice = Model({
       name: "SfTwice",
-      fields: { to: Types.email },
+      fields: { to: z.string().email() },
       flow: {
         async create(flow) {
           const first = await flow.external(receipt, { to: flow.body.to });
@@ -229,7 +230,7 @@ describe("saga step identity", () => {
 describe("dispatcher and failure reporting", () => {
   const mailOnly = Model({
     name: "SfMail",
-    fields: { to: Types.email },
+    fields: { to: z.string().email() },
     flow: {
       async create(flow) {
         const sent = await flow.external(receipt, { to: flow.body.to });
@@ -363,7 +364,7 @@ describe("crash recovery", () => {
 
     const unrelated = Model({
       name: "SfUnrelated",
-      fields: { note: Types.string },
+      fields: { note: z.string() },
       flow: {
         async create() {
           return Done;
@@ -392,7 +393,7 @@ describe("crash recovery", () => {
 describe("create result and http surface", () => {
   const plain = Model({
     name: "SfPlain",
-    fields: { note: Types.string },
+    fields: { note: z.string() },
     flow: {
       async create() {
         return Done;
@@ -426,7 +427,7 @@ describe("create result and http surface", () => {
     const fookie = bootApp(db, seen, [
       Model({
         name: "SfHttp",
-        fields: { to: Types.email },
+        fields: { to: z.string().email() },
         flow: {
           async create(flow) {
             const sent = await flow.external(receipt, { to: flow.body.to });
@@ -485,7 +486,7 @@ describe("flow.pg", () => {
     const seen: Seen[] = [];
     const reporter = Model({
       name: "SfReport",
-      fields: { label: Types.string },
+      fields: { label: z.string() },
       flow: {
         async create(flow) {
           await flow.pg.query(

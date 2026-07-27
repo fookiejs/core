@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
@@ -27,8 +28,8 @@ let nextPort = 44000;
 
 const scoreExt = External({
   name: "fraud.score",
-  input: { amount: Types.currency },
-  output: { score: Types.int },
+  input: { amount: z.number().finite().nonnegative() },
+  output: { score: z.number().int() },
   attempts: 1,
   backoff: "fixed",
   timeoutMs: 30_000,
@@ -72,7 +73,7 @@ describe("final coverage", () => {
   it("covers external invalid completed output and ghost resume", async () => {
     const user = Model({
       name: "Ghost",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create(flow) {
           const ext = await flow.external(scoreExt, { amount: 12 });
@@ -145,7 +146,7 @@ describe("final coverage", () => {
   it("covers model ref binding, persist failures, and mutation validation", async () => {
     const parent = Model({
       name: "Parent",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create() {
           return Done;
@@ -165,7 +166,7 @@ describe("final coverage", () => {
     const child = Model({
       name: "Child",
       fields: {
-        title: Types.string,
+        title: z.string(),
         parent: Types.relation({ name: "Parent" }),
       },
       flow: {
@@ -186,7 +187,7 @@ describe("final coverage", () => {
 
     const wrapper = Model({
       name: "Wrapper",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create(flow) {
           const nested = await flow.create(child, {
@@ -226,7 +227,7 @@ describe("final coverage", () => {
     db.mode = "fail-upsert";
     const failParent = Model({
       name: "FailParent",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create(flow) {
           return (await flow.create(child, { title: "fail", parent: flow.id })).signal;
@@ -255,7 +256,7 @@ describe("final coverage", () => {
     db.mode = "ok";
     const coord = Model({
       name: "Coord",
-      fields: { email: Types.email, loc: Types.coordinate },
+      fields: { email: z.string().email(), loc: Types.coordinate },
       flow: {
         async create() {
           return Done;
@@ -305,7 +306,7 @@ describe("final coverage", () => {
   it("covers transaction rollback failure and db bootstrap errors", async () => {
     const user = Model({
       name: "Bootstrap",
-      fields: { email: Types.email.unique() },
+      fields: { email: z.string().email().meta({ unique: true }) },
       flow: {
         async create() {
           throw new Error("boom");
@@ -349,7 +350,7 @@ describe("final coverage", () => {
   it("covers http create failed, path edge cases, and filter parsing", async () => {
     const user = Model({
       name: "HttpFinal",
-      fields: { email: Types.email, n: Types.integer, note: Types.json },
+      fields: { email: z.string().email(), n: z.number().int(), note: Types.json },
       flow: {
         async create() {
           return Failed;
@@ -415,9 +416,9 @@ describe("final coverage", () => {
     const user = Model({
       name: "PgParse",
       fields: {
-        email: Types.email,
-        n: Types.integer,
-        active: Types.bool,
+        email: z.string().email(),
+        n: z.number().int(),
+        active: z.boolean(),
         pt: Types.point,
       },
       flow: {
@@ -483,7 +484,7 @@ describe("final coverage", () => {
 
     const parent = Model({
       name: "BadNest",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create(flow) {
           return (await flow.create(child, { title: 1 })).signal;
@@ -501,7 +502,7 @@ describe("final coverage", () => {
     });
     const child = Model({
       name: "BadChild",
-      fields: { title: Types.string },
+      fields: { title: z.string() },
       flow: {
         async create() {
           return Done;
@@ -536,7 +537,7 @@ describe("final coverage", () => {
   it("covers remaining runtime and http branches", async () => {
     const parent = Model({
       name: "Parent",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create() {
           return Done;
@@ -556,7 +557,7 @@ describe("final coverage", () => {
     const child = Model({
       name: "Child",
       fields: {
-        title: Types.string,
+        title: z.string(),
         parent: Types.relation({ name: "Parent" }),
       },
       flow: {
@@ -577,7 +578,7 @@ describe("final coverage", () => {
 
     const wrapper = Model({
       name: "Wrap",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create(flow) {
           return (await flow.create(child, { title: "bind", parent: flow.id })).signal;
@@ -617,7 +618,7 @@ describe("final coverage", () => {
 
     const extUser = Model({
       name: "ExtRun",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create(flow) {
           const ext = await flow.external(scoreExt, { amount: 3 });
@@ -670,7 +671,7 @@ describe("final coverage", () => {
 
     const httpModel = Model({
       name: "HttpLeft",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create() {
           return Done;
@@ -718,7 +719,7 @@ describe("final coverage", () => {
   it("covers http request error and json coordinate upsert", async () => {
     const jsonUser = Model({
       name: "JsonCoord",
-      fields: { email: Types.email, data: Types.jsonb },
+      fields: { email: z.string().email(), data: Types.jsonb },
       flow: {
         async create() {
           return Done;

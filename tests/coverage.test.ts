@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { afterEach, beforeEach, describe, it, mock } from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -19,8 +20,8 @@ let nextPort = 42000;
 
 const scoreExt = External({
   name: "fraud.score",
-  input: { amount: Types.currency },
-  output: { score: Types.int },
+  input: { amount: z.number().finite().nonnegative() },
+  output: { score: z.number().int() },
   attempts: 1,
   backoff: "fixed",
   timeoutMs: 30_000,
@@ -43,7 +44,7 @@ describe("coverage", () => {
   it("covers types builders and filter ops", async () => {
     assert.equal(Types.smallint.unique().index().min(0).max(1).kind, "smallint");
     assert.equal(Types.bigint.unique().index().kind, "bigint");
-    assert.equal(Types.integer.unique().index().kind, "integer");
+    assert.equal(Types.int.unique().index().kind, "integer");
     assert.equal(Types.real.unique().index().kind, "real");
     assert.equal(Types.doublePrecision.unique().index().kind, "doublePrecision");
     assert.equal(Types.serial.unique().index().kind, "serial");
@@ -81,15 +82,15 @@ describe("coverage", () => {
         n: Types.smallint,
         bi: Types.bigint,
         nu: Types.numeric,
-        r: Types.real,
-        dp: Types.doublePrecision,
+        r: z.number(),
+        dp: z.number(),
         se: Types.serial,
         bs: Types.bigserial,
-        s: Types.string,
-        vc: Types.varchar(10),
-        ch: Types.char(2),
-        bo: Types.bool,
-        u: Types.uuid,
+        s: z.string(),
+        vc: z.string().max(10),
+        ch: z.string().length(2),
+        bo: z.boolean(),
+        u: z.uuid(),
         da: Types.date,
         ti: Types.time,
         tt: Types.timetz,
@@ -105,9 +106,9 @@ describe("coverage", () => {
         mo: Types.money,
         pt: Types.point,
         ln: Types.line,
-        em: Types.email,
-        ur: Types.url,
-        en: Types.enum("x", "y"),
+        em: z.string().email(),
+        ur: z.string().url(),
+        en: z.enum(["x", "y"]),
       },
       flow: {
         async create() {
@@ -144,7 +145,7 @@ describe("coverage", () => {
 
     const m2 = Model({
       name: "M2",
-      fields: { x: Types.string },
+      fields: { x: z.string() },
       flow: {
         create: async () => Done,
         list: async () => Done,
@@ -154,7 +155,7 @@ describe("coverage", () => {
     });
     const m3 = Model({
       name: "M3",
-      fields: { x: Types.string },
+      fields: { x: z.string() },
       flow: {
         create: async () => Done,
         list: async () => Done,
@@ -164,7 +165,7 @@ describe("coverage", () => {
     });
     const m4 = Model({
       name: "M4",
-      fields: { x: Types.string },
+      fields: { x: z.string() },
       flow: {
         create: async () => Done,
         list: async () => Done,
@@ -230,7 +231,7 @@ describe("coverage", () => {
   it("covers external branches and failures", async () => {
     const userBad = Model({
       name: "ExtUserBad",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create(flow) {
           const bad = await flow.external(scoreExt, { amount: -1 });
@@ -249,7 +250,7 @@ describe("coverage", () => {
     });
     const user = Model({
       name: "ExtUser",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create(flow) {
           const ext = await flow.external(scoreExt, { amount: 10 });
@@ -314,7 +315,7 @@ describe("coverage", () => {
   it("covers http mutations and errors", async () => {
     const user = Model({
       name: "HttpUser",
-      fields: { email: Types.email, name: Types.string },
+      fields: { email: z.string().email(), name: z.string() },
       flow: {
         create: async () => Done,
         list: async () => Done,
@@ -386,7 +387,7 @@ describe("coverage", () => {
   it("covers db and transaction failure paths", async () => {
     const user = Model({
       name: "FailUser",
-      fields: { email: Types.email.unique() },
+      fields: { email: z.string().email().meta({ unique: true }) },
       flow: {
         create: async () => Done,
         list: async () => Done,
@@ -469,7 +470,7 @@ describe("coverage", () => {
   it("covers nested failures and running signals", async () => {
     const child = Model({
       name: "Child",
-      fields: { t: Types.string },
+      fields: { t: z.string() },
       flow: {
         create: async () => Running,
         list: async () => Running,
@@ -479,7 +480,7 @@ describe("coverage", () => {
     });
     const user = Model({
       name: "Parent",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create(flow) {
           const missing = await flow.create({ name: "Missing" }, { t: "x" });
@@ -525,7 +526,7 @@ describe("coverage", () => {
   it("covers histogram and resume", async () => {
     const user = Model({
       name: "HistUser",
-      fields: { email: Types.email },
+      fields: { email: z.string().email() },
       flow: {
         async create(flow) {
           flow.metric.histogram("latency", 42);

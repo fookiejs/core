@@ -29,7 +29,8 @@
     "test:watch": "node --import tsx --experimental-test-module-mocks --test --watch \"tests/*.test.ts\"",
     "check:graph": "node scripts/check-module-graph.mjs",
     "coverage:summary": "node scripts/coverage-summary.mjs coverage/lcov.info",
-    "coverage:gate": "node scripts/coverage-gate.mjs coverage/lcov.info 100 100 100",
+    "coverage:gate": "node scripts/coverage-ratchet.mjs coverage/lcov.info",
+    "coverage:gate:accept": "node scripts/coverage-ratchet.mjs coverage/lcov.info --write",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

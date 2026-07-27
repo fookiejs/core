@@ -73,6 +73,22 @@ export class MockDb implements InjectablePool {
     if (sql.startsWith("ALTER TABLE")) {
       return { rows: [], rowCount: 0 };
     }
+    if (sql.startsWith("DELETE FROM")) {
+      const runId = String(params?.[0] ?? "");
+      if (sql.includes("fookie_outbox")) {
+        for (const [key, row] of [...this.outbox]) {
+          if (row.run_id === runId) {
+            this.outbox.delete(key);
+          }
+        }
+        return { rows: [], rowCount: 0 };
+      }
+      if (sql.includes("fookie_run")) {
+        this.runs.delete(runId);
+        return { rows: [], rowCount: 0 };
+      }
+      return { rows: [], rowCount: 0 };
+    }
     if (
       sql.includes("fookie_outbox") === false &&
       sql.includes("fookie_run") &&
@@ -86,8 +102,18 @@ export class MockDb implements InjectablePool {
         }
         return { rows: [row], rowCount: 1 };
       }
-      const all = [...this.runs.values()];
-      return { rows: all, rowCount: all.length };
+      // Each phase filter is matched explicitly. A query this mock does not
+      // recognise returns nothing rather than every row, so an unhandled
+      // shape can never look like a successful match.
+      const phases = sql.match(/saga_phase IN \(([^)]+)\)/);
+      if (phases === null) {
+        return { rows: [], rowCount: 0 };
+      }
+      const wanted = (phases[1] ?? "").split(",").map((part) => part.trim().replace(/'/g, ""));
+      const matched = [...this.runs.values()].filter((row) =>
+        wanted.includes(String(row.saga_phase ?? "")),
+      );
+      return { rows: matched, rowCount: matched.length };
     }
     if (
       sql.includes("fookie_outbox") === false &&
@@ -136,6 +162,7 @@ export class MockDb implements InjectablePool {
         next_attempt_at: nullIfAbsent(params?.[11 - shift]),
         error: nullIfAbsent(params?.[12 - shift]),
         compensation_of: nullIfAbsent(params?.[13 - shift]),
+        dispatched_at: nullIfAbsent(params?.[14 - shift]),
       });
       return { rows: [], rowCount: 1 };
     }

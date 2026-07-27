@@ -216,7 +216,8 @@ export class PostgresStore {
     step TEXT NOT NULL DEFAULT 'compensatable',
     next_attempt_at TIMESTAMPTZ,
     error TEXT,
-    compensation_of TEXT
+    compensation_of TEXT,
+    dispatched_at TIMESTAMPTZ
   )`;
     try {
       await this.db.query(sql);
@@ -235,6 +236,9 @@ export class PostgresStore {
       await this.db.query(`ALTER TABLE ${outboxTableName} ADD COLUMN IF NOT EXISTS error TEXT`);
       await this.db.query(
         `ALTER TABLE ${outboxTableName} ADD COLUMN IF NOT EXISTS compensation_of TEXT`,
+      );
+      await this.db.query(
+        `ALTER TABLE ${outboxTableName} ADD COLUMN IF NOT EXISTS dispatched_at TIMESTAMPTZ`,
       );
       await this.db.query(
         `CREATE INDEX IF NOT EXISTS fookie_outbox_due_idx ON ${outboxTableName} (status, next_attempt_at)`,
@@ -364,14 +368,15 @@ export class PostgresStore {
 
   async saveOutboxEntry(outboxRow: OutboxEntry): Promise<boolean> {
     const conflict =
-      "ON CONFLICT (external_id) DO UPDATE SET name = EXCLUDED.name, status = EXCLUDED.status, input = EXCLUDED.input, output = EXCLUDED.output, entity_id = EXCLUDED.entity_id, model = EXCLUDED.model, run_id = EXCLUDED.run_id, attempt = EXCLUDED.attempt, step_index = EXCLUDED.step_index, step = EXCLUDED.step, next_attempt_at = EXCLUDED.next_attempt_at, error = EXCLUDED.error, compensation_of = EXCLUDED.compensation_of";
+      "ON CONFLICT (external_id) DO UPDATE SET name = EXCLUDED.name, status = EXCLUDED.status, input = EXCLUDED.input, output = EXCLUDED.output, entity_id = EXCLUDED.entity_id, model = EXCLUDED.model, run_id = EXCLUDED.run_id, attempt = EXCLUDED.attempt, step_index = EXCLUDED.step_index, step = EXCLUDED.step, next_attempt_at = EXCLUDED.next_attempt_at, error = EXCLUDED.error, compensation_of = EXCLUDED.compensation_of, dispatched_at = EXCLUDED.dispatched_at";
     const nextAttemptAt = firstTextOrAbsent(outboxRow.nextAttemptAt);
     const errorText = firstTextOrAbsent(outboxRow.error);
     const compensationOf = firstTextOrAbsent(outboxRow.compensationOf);
+    const dispatchedAt = firstTextOrAbsent(outboxRow.dispatchedAt);
     try {
       if (outboxRow.status === "completed") {
-        const sql = `INSERT INTO ${outboxTableName} (external_id, name, status, input, output, entity_id, model, run_id, attempt, step_index, step, next_attempt_at, error, compensation_of)
-    VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6, $7, $8, $9, $10, $11, NULLIF($12, '__fookie_absent__')::timestamptz, NULLIF($13, '__fookie_absent__'), NULLIF($14, '__fookie_absent__'))
+        const sql = `INSERT INTO ${outboxTableName} (external_id, name, status, input, output, entity_id, model, run_id, attempt, step_index, step, next_attempt_at, error, compensation_of, dispatched_at)
+    VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6, $7, $8, $9, $10, $11, NULLIF($12, '__fookie_absent__')::timestamptz, NULLIF($13, '__fookie_absent__'), NULLIF($14, '__fookie_absent__'), NULLIF($15, '__fookie_absent__')::timestamptz)
     ${conflict}`;
         await this.db.query(sql, [
           outboxRow.externalId,
@@ -388,11 +393,12 @@ export class PostgresStore {
           nextAttemptAt,
           errorText,
           compensationOf,
+          dispatchedAt,
         ]);
         return true;
       }
-      const sql = `INSERT INTO ${outboxTableName} (external_id, name, status, input, output, entity_id, model, run_id, attempt, step_index, step, next_attempt_at, error, compensation_of)
-    VALUES ($1, $2, $3, $4::jsonb, NULL::jsonb, $5, $6, $7, $8, $9, $10, NULLIF($11, '__fookie_absent__')::timestamptz, NULLIF($12, '__fookie_absent__'), NULLIF($13, '__fookie_absent__'))
+      const sql = `INSERT INTO ${outboxTableName} (external_id, name, status, input, output, entity_id, model, run_id, attempt, step_index, step, next_attempt_at, error, compensation_of, dispatched_at)
+    VALUES ($1, $2, $3, $4::jsonb, NULL::jsonb, $5, $6, $7, $8, $9, $10, NULLIF($11, '__fookie_absent__')::timestamptz, NULLIF($12, '__fookie_absent__'), NULLIF($13, '__fookie_absent__'), NULLIF($14, '__fookie_absent__')::timestamptz)
     ${conflict}`;
       await this.db.query(sql, [
         outboxRow.externalId,
@@ -408,6 +414,7 @@ export class PostgresStore {
         nextAttemptAt,
         errorText,
         compensationOf,
+        dispatchedAt,
       ]);
       return true;
     } catch (err) {
@@ -432,6 +439,33 @@ export class PostgresStore {
     } catch (err) {
       captureDbError(err, errorBox);
       return false;
+    }
+  }
+
+  async pruneSettledRuns(cutoffIso: string): Promise<readonly string[]> {
+    const findSql = `SELECT run_id FROM ${runTableName}
+    WHERE saga_phase IN ('completed', 'compensated') AND updated_at < $1::timestamptz
+    LIMIT 500`;
+    try {
+      const found = await this.db.query(findSql, [cutoffIso]);
+      let runIds: readonly string[] = [];
+      for (const row of found.rows) {
+        const parsed = z.string().min(1).safeParse(row.run_id);
+        if (parsed.success === true) {
+          runIds = appendItem(runIds, parsed.data);
+        }
+      }
+      if (runIds.length < 1) {
+        return [];
+      }
+      for (const runId of runIds) {
+        await this.db.query(`DELETE FROM ${outboxTableName} WHERE run_id = $1`, [runId]);
+        await this.db.query(`DELETE FROM ${runTableName} WHERE run_id = $1`, [runId]);
+      }
+      return runIds;
+    } catch (err) {
+      this.failQuery(err);
+      return [];
     }
   }
 

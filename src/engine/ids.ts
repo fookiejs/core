@@ -4,7 +4,7 @@ import type { NestedStepCursor } from "./runtime.ts";
 import { ValidationError } from "../errors.ts";
 import type { InferExternalInputFrom } from "../external.ts";
 import { appendItem } from "../slot.ts";
-import type { ScalarTypeDef } from "../types/type.ts";
+import type { ScalarSchema } from "../types/type.ts";
 import { isEntityValue } from "../values.ts";
 import type { EntityRecord, EntityValue } from "../values.ts";
 
@@ -100,7 +100,7 @@ export function compensationStepId(forwardExternalId: string, name: string): str
   return `${forwardExternalId}:undo:${name}`;
 }
 
-export function inputFingerprint<I extends Record<string, ScalarTypeDef>>(
+export function inputFingerprint<I extends Record<string, ScalarSchema>>(
   input: InferExternalInputFrom<I>,
 ): string {
   const record: EntityRecord = input;
