@@ -425,32 +425,6 @@ export type ModelDef<D extends ModelFieldsInput> = {
   validateDeleteFilter: (filter: JsonValue) => FilterInput;
 };
 
-export function flows<D extends ModelFieldsInput>(handlers: FlowHandlers<D>): FlowHandlers<D> {
-  const handlerShape = z.instanceof(Function);
-  const createHandler = handlers.create;
-  const listHandler = handlers.list;
-  const updateHandler = handlers.update;
-  const deleteHandler = handlers.delete;
-  if (handlerShape.safeParse(createHandler).success === false) {
-    throw ValidationError.create("flow create handler required");
-  }
-  if (handlerShape.safeParse(listHandler).success === false) {
-    throw ValidationError.create("flow list handler required");
-  }
-  if (handlerShape.safeParse(updateHandler).success === false) {
-    throw ValidationError.create("flow update handler required");
-  }
-  if (handlerShape.safeParse(deleteHandler).success === false) {
-    throw ValidationError.create("flow delete handler required");
-  }
-  return {
-    create: createHandler,
-    list: listHandler,
-    update: updateHandler,
-    delete: deleteHandler,
-  };
-}
-
 export function isZodFieldValue(
   candidate: ModelFieldKinds[keyof ModelFieldKinds],
 ): candidate is z.ZodType<Scalar> {

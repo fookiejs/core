@@ -35,7 +35,7 @@ export type {
 } from "./external.ts";
 export type { FilterFor, FilterView } from "./filter/ops.ts";
 export type { FilterFieldInput, FilterInput } from "./filter/schema.ts";
-export { Model, flows } from "./model.ts";
+export { Model } from "./model.ts";
 export type {
   EntityOf,
   FieldsMap,

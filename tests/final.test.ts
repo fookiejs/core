@@ -108,8 +108,8 @@ describe("final coverage", () => {
       return;
     }
     const externalId = events[0] ?? "";
-    assert.equal(await fookie.patchOutbox(externalId, { score: "bad" }), false);
-    assert.equal(await fookie.patchOutbox(externalId, { score: 3 }), true);
+    assert.equal(await fookie.setExternalResult({ externalId, output: { score: "bad" } }), false);
+    assert.equal(await fookie.setExternalResult({ externalId, output: { score: 3 } }), true);
     assert.equal(await fookie.resume(pending.runId), "done");
 
     db.outbox.set("ghost", {
@@ -523,7 +523,10 @@ describe("final coverage", () => {
     });
     await f2.create(parent, { email: "b@n.com" });
 
-    assert.equal(await fookie.patchOutbox("missing", { score: 1 }), false);
+    assert.equal(
+      await fookie.setExternalResult({ externalId: "missing", output: { score: 1 } }),
+      false,
+    );
   });
 
   it("covers remaining runtime and http branches", async () => {

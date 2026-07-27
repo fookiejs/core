@@ -652,31 +652,6 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
     }
   }
 
-  async patchOutbox(externalId: string, output: EntityRecord): Promise<boolean> {
-    const outboxHits = mapLookup(this.outbox, externalId);
-    if (outboxHits.length < 1) {
-      return false;
-    }
-    const outboxEntry = firstPresent(outboxHits, "outbox entry required");
-    if (outboxEntry.status === "completed") {
-      return true;
-    }
-    if (outboxEntry.status === "failed") {
-      return false;
-    }
-    const extHits = resolveExternalByName(this.externals, outboxEntry.name);
-    if (extHits.length < 1) {
-      return false;
-    }
-    const ext = firstPresent(extHits, "external required");
-    const validatedHits = catchValidation(() => ext.validateOutput(output));
-    if (validatedHits.length < 1) {
-      return false;
-    }
-    const validated = firstPresent(validatedHits, "validated body required");
-    return await this.recordOutbox(outboxCompleted(outboxEntry, validated));
-  }
-
   private runBodyOf(bodies: readonly EntityRecord[]): EntityRecord {
     if (Array.isArray(bodies) === false) {
       return {};
