@@ -3,6 +3,7 @@ export type { AppConfig, AppInstance } from "./app.ts";
 export type {
   CreateFlow,
   CreateResult,
+  MutationResult,
   DeleteFlow,
   FlowExternalOps,
   FlowPgOps,

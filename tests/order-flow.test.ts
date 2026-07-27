@@ -402,7 +402,7 @@ describe("order flow integration", () => {
       body: { status: "draft" },
       filter: { status: { eq: "confirmed" } },
     });
-    assert.equal(updateSignal, "done");
+    assert.equal(updateSignal.signal, "done");
     assert.equal(
       fookie.metrics().some((m) => m.name === "order.updated"),
       true,
@@ -412,7 +412,7 @@ describe("order flow integration", () => {
       id: row.id,
       filter: { status: { eq: "draft" } },
     });
-    assert.equal(deleteSignal, "done");
+    assert.equal(deleteSignal.signal, "done");
     assert.equal(
       fookie.metrics().some((m) => m.name === "order.deleted"),
       true,

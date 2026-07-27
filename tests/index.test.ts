@@ -231,12 +231,12 @@ describe("fookie core", () => {
       body: { name: "Listed" },
       filter: { email: { eq: "l@t.com" } },
     });
-    assert.equal(updateSignal, "done");
+    assert.equal(updateSignal.signal, "done");
     const deleteSignal = await fookie.delete(user, {
       id: created.id,
       filter: { email: { eq: "l@t.com" } },
     });
-    assert.equal(deleteSignal, "done");
+    assert.equal(deleteSignal.signal, "done");
     assert.ok(fookie.logs().length > 0);
     assert.ok(fookie.metrics().length > 0);
     assert.ok(fookie.spans().length > 0);

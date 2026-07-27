@@ -293,14 +293,17 @@ describe("final coverage", () => {
     }
 
     assert.equal(
-      await fookie.update(parent, { id: "x", body: { email: "not-email" }, filter: {} }),
+      (await fookie.update(parent, { id: "x", body: { email: "not-email" }, filter: {} })).signal,
       "failed",
     );
     assert.equal(
-      await fookie.update(parent, { id: "x", body: {}, filter: { email: { eq: 1 } } }),
+      (await fookie.update(parent, { id: "x", body: {}, filter: { email: { eq: 1 } } })).signal,
       "failed",
     );
-    assert.equal(await fookie.delete(parent, { id: "x", filter: { email: { eq: 1 } } }), "failed");
+    assert.equal(
+      (await fookie.delete(parent, { id: "x", filter: { email: { eq: 1 } } })).signal,
+      "failed",
+    );
   });
 
   it("covers transaction rollback failure and db bootstrap errors", async () => {
@@ -712,7 +715,7 @@ describe("final coverage", () => {
       body: { email: "n@e.com" },
       filter: {},
     });
-    assert.equal(miss, "failed");
+    assert.equal(miss.signal, "failed");
     db.mode = "ok";
   });
 

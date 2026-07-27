@@ -73,6 +73,30 @@ export type CreateResultKinds<E extends EntityRecord> = {
 
 export type CreateResult<E extends EntityRecord> = CreateResultKinds<E>[keyof CreateResultKinds<E>];
 
+export type MutationResultKinds = {
+  running: { signal: "running"; id: string; runId: string };
+  failed: { signal: "failed"; id: string; runId: string };
+  done: { signal: "done"; id: string; runId: string };
+};
+
+export type MutationResult = MutationResultKinds[keyof MutationResultKinds];
+
+export function mutationResult(signal: Signal, id: string, runId: string): MutationResult {
+  if (z.string().min(1).safeParse(id).success === false) {
+    throw ValidationError.create("mutation entity id required");
+  }
+  if (z.string().min(1).safeParse(runId).success === false) {
+    throw ValidationError.create("mutation run id required");
+  }
+  if (signal === Running) {
+    return { signal: Running, id, runId };
+  }
+  if (signal === Failed) {
+    return { signal: Failed, id, runId };
+  }
+  return { signal: Done, id, runId };
+}
+
 export type FlowModelOps = {
   create(target: ModelRef, body: EntityRecord): Promise<NestedResult>;
   list(target: ModelRef, filter: FilterInput): Promise<NestedResult>;
@@ -106,7 +130,8 @@ export type CreateFlow<F extends FieldsMap> = {
 
 export type ListFlow<F extends FieldsMap> = FlowObs &
   FlowModelOps &
-  FlowPgOps & {
+  FlowPgOps &
+  FlowExternalOps & {
     filter: FilterView<F>;
   };
 
@@ -252,6 +277,7 @@ export function createFlowOf<F extends FieldsMap>(
 export function listFlowOf<F extends FieldsMap>(
   filter: FilterView<F>,
   ops: FlowObs & FlowModelOps,
+  external: FlowExternalOps,
   pgOps: FlowPgOps,
 ): ListFlow<F> {
   const flowOps = flowOpsOf(ops);
@@ -265,6 +291,7 @@ export function listFlowOf<F extends FieldsMap>(
     list: flowOps.list,
     update: flowOps.update,
     delete: flowOps.delete,
+    external: external.external,
   };
 }
 
@@ -273,6 +300,7 @@ export function updateFlowOf<F extends FieldsMap>(
   body: EntityRecord,
   filter: FilterView<F>,
   ops: FlowObs & FlowModelOps,
+  external: FlowExternalOps,
   pgOps: FlowPgOps,
 ): UpdateFlow<F> {
   const flowOps = flowOpsOf(ops);
@@ -288,6 +316,7 @@ export function updateFlowOf<F extends FieldsMap>(
     list: flowOps.list,
     update: flowOps.update,
     delete: flowOps.delete,
+    external: external.external,
   };
 }
 
@@ -295,6 +324,7 @@ export function deleteFlowOf<F extends FieldsMap>(
   id: string,
   filter: FilterView<F>,
   ops: FlowObs & FlowModelOps,
+  external: FlowExternalOps,
   pgOps: FlowPgOps,
 ): DeleteFlow<F> {
   const flowOps = flowOpsOf(ops);
@@ -309,6 +339,7 @@ export function deleteFlowOf<F extends FieldsMap>(
     list: flowOps.list,
     update: flowOps.update,
     delete: flowOps.delete,
+    external: external.external,
   };
 }
 
@@ -485,7 +516,12 @@ export async function runNestedList(
   const localRt = scopedRuntime(rt, model, parentEntityId, "list");
   const obs = createObservability(localRt);
   const ops = createFlowModelOps(localRt, parent, parentEntityId, obs);
-  const flow = listFlowOf(createFilter(model.fields, filterState), ops, flowPgOpsOf(localRt));
+  const flow = listFlowOf(
+    createFilter(model.fields, filterState),
+    ops,
+    flowExternalOpsOf(localRt),
+    flowPgOpsOf(localRt),
+  );
 
   const signal = await localRt.obs.runSpan(
     obsScope(localRt),
@@ -548,6 +584,7 @@ export async function runNestedUpdate<D extends ModelFieldsInput>(
     updateBody,
     createFilter(model.fields, filterState),
     ops,
+    flowExternalOpsOf(localRt),
     flowPgOpsOf(localRt),
   );
 
@@ -618,6 +655,7 @@ export async function runNestedDelete(
     input.id,
     createFilter(model.fields, filterState),
     ops,
+    flowExternalOpsOf(localRt),
     flowPgOpsOf(localRt),
   );
 
@@ -712,6 +750,7 @@ export async function executeRunMutation<D extends ModelFieldsInput>(
       updateBody,
       createFilter(run.model.fields, filterState),
       ops,
+      flowExternalOpsOf(localRt),
       flowPgOpsOf(localRt),
     );
     let existing: EntityRecord;
@@ -765,6 +804,7 @@ export async function executeRunMutation<D extends ModelFieldsInput>(
     run.entityId,
     createFilter(run.model.fields, filterState),
     ops,
+    flowExternalOpsOf(localRt),
     flowPgOpsOf(localRt),
   );
   let existing: EntityRecord;
@@ -862,6 +902,7 @@ export async function executeRun<D extends ModelFieldsInput>(
       const flow = listFlowOf<EntityFieldsOf<D>>(
         createFilter(run.model.fields, filterState),
         ops,
+        flowExternalOpsOf(localRt),
         flowPgOpsOf(localRt),
       );
       signal = await run.model.flow.list(flow);

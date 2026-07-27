@@ -1,6 +1,6 @@
 import { z } from "zod";
 import http from "node:http";
-import { executeRun, resolveModelByName } from "./engine/flow.ts";
+import { executeRun, mutationResult, resolveModelByName } from "./engine/flow.ts";
 import type { FlowRun } from "./engine/flow.ts";
 import { uuidV7 } from "./engine/ids.ts";
 import { isFailureClass } from "./external.ts";
@@ -288,7 +288,7 @@ export async function routeHttp(
     ports.runs.set(runId, run);
     const signal = await executeRun(ports.runtimeFor(runId, model, entityId, "update"), run);
     ports.finalizeRun(runId, run, signal);
-    sendJson(res, 200, { signal });
+    sendJson(res, 200, mutationResult(signal, entityId, runId));
     return;
   }
   if (mutation === "delete") {
@@ -314,6 +314,6 @@ export async function routeHttp(
     ports.runs.set(runId, run);
     const signal = await executeRun(ports.runtimeFor(runId, model, entityId, "delete"), run);
     ports.finalizeRun(runId, run, signal);
-    sendJson(res, 200, { signal });
+    sendJson(res, 200, mutationResult(signal, entityId, runId));
   }
 }

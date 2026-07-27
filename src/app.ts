@@ -1,8 +1,8 @@
 import { z } from "zod";
 import http from "node:http";
 import { SpanStatusCode } from "@opentelemetry/api";
-import { executeRun, isFlowOperation, resolveModelByName } from "./engine/flow.ts";
-import type { CreateResult, FlowRun } from "./engine/flow.ts";
+import { executeRun, isFlowOperation, mutationResult, resolveModelByName } from "./engine/flow.ts";
+import type { CreateResult, FlowRun, MutationResult } from "./engine/flow.ts";
 import { uuidV7 } from "./engine/ids.ts";
 import {
   emitExternalHandler,
@@ -386,10 +386,27 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
     });
   }
 
+  private async settleMutation(
+    runId: string,
+    run: FlowRun<ModelFieldsInput>,
+    signal: Signal,
+    entityId: string,
+  ): Promise<MutationResult> {
+    if (z.string().min(1).safeParse(runId).success === false) {
+      throw ValidationError.create("mutation run id required");
+    }
+    if (z.string().min(1).safeParse(entityId).success === false) {
+      throw ValidationError.create("mutation entity id required");
+    }
+    this.finalizeRun(runId, run, signal);
+    await this.saveRunPhase(runId, run, signal);
+    return mutationResult(signal, entityId, runId);
+  }
+
   update<D extends ModelFieldsInput>(
     model: ModelDef<D>,
     input: { id: string; body: UpdateBody<EntityFieldsOf<D>>; filter: FilterInput },
-  ): Promise<Signal> {
+  ): Promise<MutationResult> {
     const runId = uuidV7();
     const run: FlowRun<D> = {
       id: runId,
@@ -404,22 +421,15 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       signal: Running,
     };
     this.runs.set(runId, run);
-    return executeRun(this.runtimeFor(runId, model, input.id, "update"), run).then((signal) => {
-      if (z.string().min(1).safeParse(runId).success === false) {
-        throw ValidationError.create("update run id required");
-      }
-      if (z.string().min(1).safeParse(input.id).success === false) {
-        throw ValidationError.create("update entity id required");
-      }
-      this.finalizeRun(runId, run, signal);
-      return signal;
-    });
+    return executeRun(this.runtimeFor(runId, model, input.id, "update"), run).then((signal) =>
+      this.settleMutation(runId, run, signal, input.id),
+    );
   }
 
   delete<D extends ModelFieldsInput>(
     model: ModelDef<D>,
     input: { id: string; filter: FilterInput },
-  ): Promise<Signal> {
+  ): Promise<MutationResult> {
     const runId = uuidV7();
     const run: FlowRun<D> = {
       id: runId,
@@ -434,16 +444,9 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       signal: Running,
     };
     this.runs.set(runId, run);
-    return executeRun(this.runtimeFor(runId, model, input.id, "delete"), run).then((signal) => {
-      if (z.string().min(1).safeParse(runId).success === false) {
-        throw ValidationError.create("delete run id required");
-      }
-      if (z.string().min(1).safeParse(input.id).success === false) {
-        throw ValidationError.create("delete entity id required");
-      }
-      this.finalizeRun(runId, run, signal);
-      return signal;
-    });
+    return executeRun(this.runtimeFor(runId, model, input.id, "delete"), run).then((signal) =>
+      this.settleMutation(runId, run, signal, input.id),
+    );
   }
 
   resume(runId: string): Promise<Signal> {

@@ -252,14 +252,20 @@ describe("branch coverage", () => {
     }
     await fookie.list(parent, {});
     assert.equal(
-      await fookie.update(parent, { id: parentCreated.id, body: {}, filter: {} }),
+      (await fookie.update(parent, { id: parentCreated.id, body: {}, filter: {} })).signal,
       "done",
     );
-    assert.equal(await fookie.delete(parent, { id: parentCreated.id, filter: {} }), "done");
+    assert.equal(
+      (await fookie.delete(parent, { id: parentCreated.id, filter: {} })).signal,
+      "done",
+    );
 
     const missingId = "00000000-0000-7000-8000-000000000099";
-    assert.equal(await fookie.update(parent, { id: missingId, body: {}, filter: {} }), "failed");
-    assert.equal(await fookie.delete(parent, { id: missingId, filter: {} }), "failed");
+    assert.equal(
+      (await fookie.update(parent, { id: missingId, body: {}, filter: {} })).signal,
+      "failed",
+    );
+    assert.equal((await fookie.delete(parent, { id: missingId, filter: {} })).signal, "failed");
   });
 
   it("covers outbox hydration and invalid rows", async () => {
@@ -951,11 +957,13 @@ describe("branch coverage", () => {
     });
 
     assert.equal(
-      await fookie.update(cacheUser, {
-        id: created.id,
-        body: { email: "not-an-email" },
-        filter: { email: { eq: "cache@y.com" } },
-      }),
+      (
+        await fookie.update(cacheUser, {
+          id: created.id,
+          body: { email: "not-an-email" },
+          filter: { email: { eq: "cache@y.com" } },
+        })
+      ).signal,
       "failed",
     );
 

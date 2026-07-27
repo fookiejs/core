@@ -166,8 +166,11 @@ describe("saga edge behaviour", () => {
     if (created.signal !== "done") {
       return;
     }
-    assert.equal(await fookie.update(parent, { id: created.id, body: {}, filter: {} }), "failed");
-    assert.equal(await fookie.delete(parent, { id: created.id, filter: {} }), "failed");
+    assert.equal(
+      (await fookie.update(parent, { id: created.id, body: {}, filter: {} })).signal,
+      "failed",
+    );
+    assert.equal((await fookie.delete(parent, { id: created.id, filter: {} })).signal, "failed");
   });
 
   it("rolls back the saga when a nested flow throws", async () => {
