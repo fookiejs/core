@@ -1,17 +1,7 @@
 import { z } from "zod";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import {
-  app,
-  Model,
-  External,
-  Types,
-  Done,
-  Running,
-  Failed,
-  FailureClass,
-  Phase,
-} from "../src/index.ts";
+import { app, Model, External, Done, Running, Failed, FailureClass, Phase } from "../src/index.ts";
 import { MockDb, httpPost } from "./mock-db.ts";
 
 type Seen = { id: string; name: string };
@@ -56,7 +46,7 @@ const receipt = External({
 function orderModel(name: string, rejectAt: number) {
   return Model({
     name,
-    fields: { amount: Types.currency, sku: z.string(), score: z.number().int() },
+    fields: { amount: z.number().finite().nonnegative(), sku: z.string(), score: z.number().int() },
     flow: {
       async create(flow) {
         const held = await flow.external(reserveStock, { sku: flow.body.sku });
@@ -298,6 +288,38 @@ describe("dispatcher and failure reporting", () => {
     assert.equal(row?.status, "dead_letter", "permanent skips the remaining budget");
     assert.equal(row?.error, "template missing", "the reason is persisted");
     assert.equal(fookie.deadLetters().length, 1, "operators can list dead letters");
+    await fookie.stop();
+  });
+
+  it("a permanent failure compensates the steps that already completed", async () => {
+    const db = new MockDb();
+    const seen: Seen[] = [];
+    const fookie = bootApp(db, seen, [acceptOrder]);
+    const created = await fookie.create(acceptOrder, { amount: 50, sku: "SKU-9", score: 0 });
+    assert.equal(created.signal, Running);
+    if (created.signal !== Running) {
+      throw new Error("the flow must suspend on reserveStock");
+    }
+
+    const held = seen[0];
+    assert.equal(held?.name, "sf.reserve");
+    await fookie.setExternalResult({ externalId: held?.id ?? "", output: { holdId: "HOLD-1" } });
+
+    const risk = seen[1];
+    assert.equal(risk?.name, "sf.risk", "the flow advanced to the second step");
+    await fookie.setExternalFailure({
+      externalId: risk?.id ?? "",
+      reason: "scoring offline",
+      failure: FailureClass.Permanent,
+    });
+
+    const undo = [...db.outbox.values()].filter((row) => row.compensation_of !== null);
+    assert.equal(undo.length, 1, "the completed reservation is being released");
+    assert.equal(undo[0]?.name, "sf.release");
+    assert.equal(undo[0]?.status, "pending");
+
+    const runRow = db.runs.get(created.runId);
+    assert.equal(runRow?.saga_phase, "compensating", "the run is undoing, not stuck");
     await fookie.stop();
   });
 

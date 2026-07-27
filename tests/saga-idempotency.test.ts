@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { Done, External, Failed, Model, Running, Types, app } from "../src/index.ts";
+import { Done, External, Failed, Model, Running, app } from "../src/index.ts";
 import { MockDb } from "./mock-db.ts";
 
 const score = External({
@@ -45,7 +45,7 @@ const parentBox: { nestedCalls: number } = { nestedCalls: 0 };
 
 const parent = Model({
   name: "IdemParent",
-  fields: { amount: Types.currency, score: z.number().int() },
+  fields: { amount: z.number().finite().nonnegative(), score: z.number().int() },
   flow: {
     async create(flow) {
       const scored = await flow.external(score, { amount: flow.body.amount });

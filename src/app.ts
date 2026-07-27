@@ -1,6 +1,7 @@
 import { z } from "zod";
 import http from "node:http";
 import { SpanStatusCode } from "@opentelemetry/api";
+import { compensateRun } from "./engine/compensation.ts";
 import { executeRun, isFlowOperation, mutationResult, resolveModelByName } from "./engine/flow.ts";
 import type { CreateResult, FlowRun, MutationResult } from "./engine/flow.ts";
 import { uuidV7 } from "./engine/ids.ts";
@@ -754,8 +755,44 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       runId: outboxRow.runId,
       reason,
     });
+    const undone = await this.compensateDeadLettered(outboxRow.runId);
+    if (undone > 0) {
+      await this.saveRunPhaseValue(outboxRow.runId, Phase.Compensating, reason);
+      return true;
+    }
     await this.markRunStuck(outboxRow.runId, reason);
     return true;
+  }
+
+  private async compensateDeadLettered(runId: string): Promise<number> {
+    if (z.string().min(1).safeParse(runId).success === false) {
+      return 0;
+    }
+    for (const run of mapLookup(this.runs, runId)) {
+      const rt = this.runtimeFor(runId, run.model, run.entityId, run.operation);
+      return await compensateRun(rt, runId);
+    }
+    return 0;
+  }
+
+  private async saveRunPhaseValue(runId: string, phase: Phase, reason: string): Promise<boolean> {
+    if (z.string().min(1).safeParse(runId).success === false) {
+      return false;
+    }
+    for (const run of mapLookup(this.runs, runId)) {
+      return await this.store.saveRunState({
+        runId,
+        model: run.model.name,
+        entityId: run.entityId,
+        operation: run.operation,
+        body: this.runBodyOf(run.body),
+        filterJson: JSON.stringify(run.filter),
+        phase,
+        pivotExternalId: [],
+        error: [reason],
+      });
+    }
+    return false;
   }
 
   private phaseForSignal(runId: string, signal: Signal): Phase {

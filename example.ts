@@ -5,7 +5,6 @@ import {
   app,
   Model,
   External,
-  Types,
   Done,
   Running,
   Failed,
@@ -90,7 +89,7 @@ const order = Model({
   fields: {
     buyer: user,
     merchant: merchant,
-    amount: Types.currency,
+    amount: z.number().finite().nonnegative(),
     score: z.number().int(),
     status: z.enum(["draft", "confirmed", "shipped"]),
   },
