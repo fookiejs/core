@@ -6,12 +6,17 @@ import type { FilterInput } from "./filter/schema.ts";
 import type { Signal } from "./signal.ts";
 import { appendItem } from "./slot.ts";
 import { Types } from "./types/catalog.ts";
+import { fieldFromZod } from "./types/from-zod.ts";
 import { uuidSchema } from "./types/pg-literals.ts";
+import { defaultMeta } from "./types/type.ts";
 import type {
   CoordinateTypeDef,
+  NumericType,
   NumericTypeDef,
+  PlainType,
   PlainTypeDef,
   ScalarSchema,
+  Scalar,
   ScalarTypeDef,
   TypeDef,
 } from "./types/type.ts";
@@ -22,7 +27,7 @@ import {
   isPlainRecord,
   jsonWireSchema,
 } from "./values.ts";
-import type { Coordinate, EntityRecord, JsonValue } from "./values.ts";
+import type { Coordinate, EntityRecord, FilterGroup, JsonValue } from "./values.ts";
 
 export type ModelRef = {
   name: string;
@@ -42,6 +47,7 @@ export type FieldsMap = {
 
 export type ModelFieldKinds = {
   scalar: ScalarTypeDef;
+  zod: z.ZodType<Scalar>;
   ref: ModelRef;
 };
 
@@ -193,8 +199,19 @@ export type SystemFieldsMap = {
   isDeleted: TypeDef<boolean>;
 };
 
+export type NormalizedZodField<V extends z.ZodType<Scalar>> =
+  z.infer<V> extends number
+    ? NumericType
+    : z.infer<V> extends boolean
+      ? PlainType<boolean, "boolean">
+      : PlainType<string, FilterGroup>;
+
 export type NormalizeModelFields<F extends ModelFieldsInput> = {
-  [K in keyof F]: F[K] extends ScalarTypeDef ? F[K] : ModelRef;
+  [K in keyof F]: F[K] extends ScalarTypeDef
+    ? F[K]
+    : F[K] extends z.ZodType<Scalar>
+      ? NormalizedZodField<F[K]>
+      : ModelRef;
 };
 
 export type EntityFieldsOf<D extends ModelFieldsInput> = NormalizeModelFields<D> & SystemFieldsMap;
@@ -368,13 +385,15 @@ export function entityStoreKey(modelName: string, entityId: string): string {
   return key;
 }
 
-export type InferFromField<V extends FieldValue> = V extends ScalarTypeDef
+export type InferFromField<V> = V extends ScalarTypeDef
   ? InferTypeDef<V>
-  : V extends ModelDef<ModelFieldsInput>
-    ? string
-    : V extends ModelRef
+  : V extends z.ZodType<Scalar>
+    ? z.infer<V>
+    : V extends ModelDef<ModelFieldsInput>
       ? string
-      : never;
+      : V extends ModelRef
+        ? string
+        : never;
 
 export type InferFields<F extends FieldsMap> = {
   [K in keyof F]: InferFromField<F[K]>;
@@ -432,12 +451,37 @@ export function flows<D extends ModelFieldsInput>(handlers: FlowHandlers<D>): Fl
   };
 }
 
+export function isZodFieldValue(
+  candidate: ModelFieldKinds[keyof ModelFieldKinds],
+): candidate is z.ZodType<Scalar> {
+  const asZod = z.instanceof(z.ZodType).safeParse(candidate);
+  if (asZod.success === false) {
+    return false;
+  }
+  if (z.looseObject({}).safeParse(candidate).success === false) {
+    return false;
+  }
+  return true;
+}
+
+export function normalizedFields(fields: ModelFieldsInput): FieldsMap {
+  const normalized: Record<string, FieldValue> = {};
+  for (const [key, value] of Object.entries(fields)) {
+    if (isZodFieldValue(value) === true) {
+      normalized[key] = fieldFromZod(value, defaultMeta());
+      continue;
+    }
+    normalized[key] = value;
+  }
+  return normalized;
+}
+
 export function Model<const F extends ModelFieldsInput>(config: {
   name: string;
   fields: ModelFieldsInput & F;
   flow: FlowHandlers<F>;
 }): ModelDef<F> {
-  const domainFields = domainFieldsFrom(config.fields);
+  const domainFields = domainFieldsFrom(normalizedFields(config.fields));
   const entityFields = mergeFieldsMaps(domainFields, systemFieldDefs);
 
   const updateSchema = partialFieldsSchema(domainFields);

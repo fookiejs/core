@@ -3,6 +3,8 @@ import http from "node:http";
 import { executeRun, resolveModelByName } from "./engine/flow.ts";
 import type { FlowRun } from "./engine/flow.ts";
 import { uuidV7 } from "./engine/ids.ts";
+import { isFailureClass } from "./external.ts";
+import type { FailureClass } from "./external.ts";
 import type { Runtime } from "./engine/runtime.ts";
 import {
   filterFromPayload,
@@ -34,6 +36,11 @@ export type RouterPorts = {
   ): Runtime;
   finalizeRun(runId: string, run: FlowRun<ModelFieldsInput>, signal: Signal): void;
   setExternalResult(input: { externalId: string; output: JsonValue }): Promise<boolean>;
+  setExternalFailure(input: {
+    externalId: string;
+    reason: string;
+    failure: FailureClass;
+  }): Promise<boolean>;
   publishListResults(signal: Signal, rows: readonly EntityRecord[]): void;
 };
 
@@ -94,6 +101,42 @@ export async function routeHttp(
     sendJson(res, 400, { error: "invalid output" });
     return;
   }
+  if (routeHeadHits[0] === "external" && routeNextHits[0] === "failure") {
+    if (parts.length !== 2) {
+      sendJson(res, 404, { error: "not found" });
+      return;
+    }
+    const failureIdParsed = z.string().min(1).safeParse(payload.externalId);
+    if (failureIdParsed.success === false) {
+      sendJson(res, 400, { error: "invalid externalId" });
+      return;
+    }
+    const reasonParsed = z.string().min(1).safeParse(payload.reason);
+    if (reasonParsed.success === false) {
+      sendJson(res, 400, { error: "invalid reason" });
+      return;
+    }
+    const classParsed = z.string().min(1).safeParse(payload.failure);
+    if (classParsed.success === false) {
+      sendJson(res, 400, { error: "invalid failure class" });
+      return;
+    }
+    if (isFailureClass(classParsed.data) === false) {
+      sendJson(res, 400, { error: "invalid failure class" });
+      return;
+    }
+    const recorded = await ports.setExternalFailure({
+      externalId: failureIdParsed.data,
+      reason: reasonParsed.data,
+      failure: classParsed.data,
+    });
+    if (recorded === true) {
+      sendJson(res, 200, { signal: Done });
+      return;
+    }
+    sendJson(res, 400, { error: "external failure rejected" });
+    return;
+  }
   if (parts.length < 2) {
     sendJson(res, 404, { error: "not found" });
     return;
@@ -148,15 +191,15 @@ export async function routeHttp(
     ports.finalizeRun(runId, run, signal);
     if (signal === Done) {
       for (const created of run.created) {
-        sendJson(res, 200, { signal: Done, id: entityId, entity: created });
+        sendJson(res, 200, { signal: Done, id: entityId, runId, entity: created });
         return;
       }
     }
     if (signal === Running) {
-      sendJson(res, 200, { signal: Running, runId });
+      sendJson(res, 200, { signal: Running, id: entityId, runId });
       return;
     }
-    sendJson(res, 200, { signal: Failed });
+    sendJson(res, 200, { signal: Failed, id: entityId, runId });
     return;
   }
   if (action === "list") {

@@ -65,16 +65,6 @@ export function sagaOf(outboxRow: OutboxEntry): OutboxSaga {
   };
 }
 
-export function defaultSaga(): OutboxSaga {
-  return {
-    stepIndex: 0,
-    undoable: false,
-    nextAttemptAt: [],
-    error: [],
-    compensationOf: [],
-  };
-}
-
 export type EmitExternalResultKinds = {
   emitted: "emitted";
   invalid_input: "invalid_input";
@@ -420,24 +410,6 @@ export function outboxDeadLettered(outboxRow: OutboxEntry, reason: string): Outb
     error: [reason],
     compensationOf: outboxRow.compensationOf,
     status: "dead_letter",
-  };
-}
-
-export function outboxBlocked(outboxRow: OutboxEntry): OutboxEntry {
-  return {
-    externalId: outboxRow.externalId,
-    name: outboxRow.name,
-    entityId: outboxRow.entityId,
-    model: outboxRow.model,
-    runId: outboxRow.runId,
-    input: outboxRow.input,
-    attempt: outboxRow.attempt,
-    stepIndex: outboxRow.stepIndex,
-    undoable: outboxRow.undoable,
-    nextAttemptAt: [],
-    error: outboxRow.error,
-    compensationOf: outboxRow.compensationOf,
-    status: "blocked",
   };
 }
 

@@ -435,44 +435,6 @@ export class PostgresStore {
     }
   }
 
-  async loadRunOutbox(runId: string): Promise<readonly OutboxEntry[]> {
-    const sql = `SELECT ${outboxColumns} FROM ${outboxTableName} WHERE run_id = $1 ORDER BY step_index ASC`;
-    try {
-      const queryResult = await this.db.query(sql, [runId]);
-      let rows: readonly OutboxEntry[] = [];
-      for (const row of queryResult.rows) {
-        for (const outboxRow of outboxEntryFromRow(row)) {
-          rows = appendItem(rows, outboxRow);
-        }
-      }
-      return rows;
-    } catch (err) {
-      this.failQuery(err);
-      return [];
-    }
-  }
-
-  async claimDueOutbox(nowIso: string, limit: number): Promise<readonly OutboxEntry[]> {
-    const sql = `SELECT ${outboxColumns} FROM ${outboxTableName}
-    WHERE status = 'pending' AND next_attempt_at IS NOT NULL AND next_attempt_at <= $1::timestamptz
-    ORDER BY next_attempt_at ASC
-    LIMIT $2
-    FOR UPDATE SKIP LOCKED`;
-    try {
-      const queryResult = await this.db.query(sql, [nowIso, limit]);
-      let rows: readonly OutboxEntry[] = [];
-      for (const row of queryResult.rows) {
-        for (const outboxRow of outboxEntryFromRow(row)) {
-          rows = appendItem(rows, outboxRow);
-        }
-      }
-      return rows;
-    } catch (err) {
-      this.failQuery(err);
-      return [];
-    }
-  }
-
   async saveRunState(runState: RunStateRow): Promise<boolean> {
     const sql = `INSERT INTO ${runTableName} (run_id, model, entity_id, operation, body, filter, saga_phase, pivot_external_id, error, updated_at)
     VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, NULLIF($8, '__fookie_absent__'), NULLIF($9, '__fookie_absent__'), NOW())

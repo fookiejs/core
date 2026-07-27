@@ -26,6 +26,7 @@ export class MockDb implements InjectablePool {
   tables = new Set<string>();
   rows = new Map<string, Map<string, Row>>();
   outbox = new Map<string, Row>();
+  runs = new Map<string, Row>();
   mode = "ok";
   failOnSql = "";
   failRollback = false;
@@ -71,6 +72,41 @@ export class MockDb implements InjectablePool {
     }
     if (sql.startsWith("ALTER TABLE")) {
       return { rows: [], rowCount: 0 };
+    }
+    if (
+      sql.includes("fookie_outbox") === false &&
+      sql.includes("fookie_run") &&
+      sql.startsWith("SELECT")
+    ) {
+      if (sql.includes("WHERE run_id = $1")) {
+        const runId = String(params?.[0] ?? "");
+        const row = this.runs.get(runId);
+        if (row === undefined) {
+          return { rows: [], rowCount: 0 };
+        }
+        return { rows: [row], rowCount: 1 };
+      }
+      const all = [...this.runs.values()];
+      return { rows: all, rowCount: all.length };
+    }
+    if (
+      sql.includes("fookie_outbox") === false &&
+      sql.includes("fookie_run") &&
+      sql.startsWith("INSERT")
+    ) {
+      const runId = String(params?.[0] ?? "");
+      this.runs.set(runId, {
+        run_id: runId,
+        model: String(params?.[1] ?? ""),
+        entity_id: String(params?.[2] ?? ""),
+        operation: String(params?.[3] ?? ""),
+        body: JSON.parse(String(params?.[4] ?? "{}")),
+        filter: String(params?.[5] ?? "[]"),
+        saga_phase: String(params?.[6] ?? "forward"),
+        pivot_external_id: nullIfAbsent(params?.[7]),
+        error: nullIfAbsent(params?.[8]),
+      });
+      return { rows: [], rowCount: 1 };
     }
     if (sql.includes("fookie_outbox") && sql.startsWith("SELECT")) {
       return { rows: [...this.outbox.values()], rowCount: this.outbox.size };

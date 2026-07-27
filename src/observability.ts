@@ -47,6 +47,8 @@ export type SpanEntry = {
 
 export const observabilityBufferLimit = 10_000;
 
+export const dispatchIntervalMs = 5_000;
+
 export const runBufferLimit = 10_000;
 
 export function pushBounded<T>(buffer: readonly T[], bufferItem: T): T[] {

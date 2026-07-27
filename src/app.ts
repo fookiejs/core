@@ -1,7 +1,7 @@
 import { z } from "zod";
 import http from "node:http";
 import { SpanStatusCode } from "@opentelemetry/api";
-import { executeRun, resolveModelByName } from "./engine/flow.ts";
+import { executeRun, isFlowOperation, resolveModelByName } from "./engine/flow.ts";
 import type { CreateResult, FlowRun } from "./engine/flow.ts";
 import { uuidV7 } from "./engine/ids.ts";
 import {
@@ -37,7 +37,7 @@ import type {
   ModelFieldsInput,
   UpdateBody,
 } from "./model.ts";
-import { Observability, runBufferLimit } from "./observability.ts";
+import { Observability, dispatchIntervalMs, runBufferLimit } from "./observability.ts";
 import type { LogEntry, LogFieldValue, MetricEntry, ObsScope, SpanEntry } from "./observability.ts";
 import { dbErrorBoxText, dbErrorMessageForLog } from "./pg/encode.ts";
 import type { DbErrorBox } from "./pg/encode.ts";
@@ -90,6 +90,10 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
   private readonly dbReadyBox: { ready: boolean } = { ready: false };
   private readonly dbErrorBox: { messages: readonly string[] } = { messages: [] };
   private readonly serverBox: { servers: readonly http.Server[] } = { servers: [] };
+  private readonly dispatcherBox: { timers: readonly NodeJS.Timeout[]; running: boolean } = {
+    timers: [],
+    running: false,
+  };
 
   private constructor(config: AppConfig<E>) {
     this.listen = config.listen;
@@ -151,6 +155,7 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
 
   async stop(): Promise<boolean> {
     let ok = true;
+    this.stopDispatcher();
     if (this.serverBox.servers.length > 0) {
       const server = firstPresent(this.serverBox.servers, "http server required");
       try {
@@ -254,6 +259,47 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
     });
     server.listen(port);
     this.serverBox.servers = [server];
+    this.startDispatcher();
+    return true;
+  }
+
+  private startDispatcher(): boolean {
+    if (this.dispatcherBox.timers.length > 0) {
+      return true;
+    }
+    const timer = setInterval(() => this.runDispatchTick(), dispatchIntervalMs);
+    timer.unref();
+    this.dispatcherBox.timers = [timer];
+    return true;
+  }
+
+  private async runDispatchTick(): Promise<boolean> {
+    if (this.dispatcherBox.running === true) {
+      return false;
+    }
+    this.dispatcherBox.running = true;
+    try {
+      await this.tick();
+      return true;
+    } catch (err) {
+      this.reportAppError("dispatch", "dispatcher tick failed", {
+        reason: dbErrorMessageForLog(err, "dispatcher tick failed"),
+      });
+      return false;
+    } finally {
+      this.dispatcherBox.running = false;
+    }
+  }
+
+  private stopDispatcher(): boolean {
+    if (this.dispatcherBox.timers.length < 1) {
+      return true;
+    }
+    for (const timer of this.dispatcherBox.timers) {
+      clearInterval(timer);
+    }
+    this.dispatcherBox.timers = [];
+    this.dispatcherBox.running = false;
     return true;
   }
 
@@ -277,24 +323,26 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
     };
     this.runs.set(runId, run);
     return executeRun(this.runtimeFor(runId, model, entityId, "create"), run).then(
-      (signal): CreateResult<ModelEntity<D>> => {
+      async (signal): Promise<CreateResult<ModelEntity<D>>> => {
         this.finalizeRun(runId, run, signal);
+        await this.saveRunPhase(runId, run, signal);
         if (signal === Done) {
           for (const created of run.created) {
             if (isModelEntity(model, created) === false) {
-              return { signal: Failed };
+              return { signal: Failed, id: entityId, runId };
             }
             return {
               signal: Done,
               id: entityId,
+              runId,
               entity: created,
             };
           }
         }
         if (signal === Running) {
-          return { signal: Running, runId };
+          return { signal: Running, id: entityId, runId };
         }
-        return { signal: Failed };
+        return { signal: Failed, id: entityId, runId };
       },
     );
   }
@@ -397,7 +445,7 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       return Promise.resolve(run.signal);
     }
     return executeRun(this.runtimeFor(runId, run.model, run.entityId, run.operation), run).then(
-      (signal) => {
+      async (signal) => {
         if (z.string().min(1).safeParse(runId).success === false) {
           throw ValidationError.create("resume run id required");
         }
@@ -405,6 +453,7 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
           throw ValidationError.create("resume signal invalid");
         }
         this.finalizeRun(runId, run, signal);
+        await this.saveRunPhase(runId, run, signal);
         return signal;
       },
     );
@@ -414,6 +463,10 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
     externalId: string;
     output: JsonValue;
   }): Promise<boolean> {
+    const hydrated = await this.awaitDb();
+    if (hydrated === false) {
+      return false;
+    }
     const outboxHits = mapLookup(this.outbox, externalResult.externalId);
     if (outboxHits.length < 1) {
       return false;
@@ -675,6 +728,52 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
     });
     await this.markRunStuck(outboxRow.runId, reason);
     return true;
+  }
+
+  private phaseForSignal(runId: string, signal: Signal): Phase {
+    if (signal === Done) {
+      return Phase.Completed;
+    }
+    if (signal === Running) {
+      return Phase.Forward;
+    }
+    let undoing = false;
+    for (const outboxRow of this.outbox.values()) {
+      if (outboxRow.runId !== runId) {
+        continue;
+      }
+      if (outboxRow.compensationOf.length > 0 && outboxRow.status === "pending") {
+        undoing = true;
+      }
+    }
+    if (undoing === true) {
+      return Phase.Compensating;
+    }
+    return Phase.Compensated;
+  }
+
+  private async saveRunPhase(
+    runId: string,
+    run: FlowRun<ModelFieldsInput>,
+    signal: Signal,
+  ): Promise<boolean> {
+    if (z.string().min(1).safeParse(runId).success === false) {
+      return false;
+    }
+    if (run.operation === "list") {
+      return false;
+    }
+    return await this.store.saveRunState({
+      runId,
+      model: run.model.name,
+      entityId: run.entityId,
+      operation: run.operation,
+      body: this.runBodyOf(run.body),
+      filterJson: JSON.stringify(run.filter),
+      phase: this.phaseForSignal(runId, signal),
+      pivotExternalId: [],
+      error: [],
+    });
   }
 
   private async markRunStuck(runId: string, reason: string): Promise<boolean> {
@@ -980,7 +1079,86 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       return false;
     }
     this.dbReadyBox.ready = true;
+    await this.recoverRuns();
     return true;
+  }
+
+  private restoredFilter(
+    filterJson: string,
+    model: ModelDef<ModelFieldsInput>,
+  ): readonly FilterInput[] {
+    const parsedHits = catchValidation(() => {
+      const raw: JsonValue = JSON.parse(filterJson);
+      if (Array.isArray(raw) === false) {
+        throw ValidationError.create("run filter invalid");
+      }
+      let restored: readonly FilterInput[] = [];
+      for (const filterEntry of raw) {
+        restored = appendItem(restored, model.validateListFilter(filterEntry));
+      }
+      return restored;
+    });
+    for (const restored of parsedHits) {
+      return restored;
+    }
+    return [];
+  }
+
+  private async recoverRuns(): Promise<number> {
+    const scope = this.rootScope();
+    const rows = await this.store.loadResumableRuns(runBufferLimit);
+    let restored = 0;
+    for (const runState of rows) {
+      if (this.runs.has(runState.runId) === true) {
+        continue;
+      }
+      const modelHits = resolveModelByName(this.registeredModels, runState.model);
+      if (modelHits.length < 1) {
+        this.obs.count(scope, "saga.recovery_model_missing");
+        this.obs.error(scope, "saga.recovery_model_missing", {
+          runId: runState.runId,
+          model: runState.model,
+        });
+        await this.store.saveRunState({
+          runId: runState.runId,
+          model: runState.model,
+          entityId: runState.entityId,
+          operation: runState.operation,
+          body: runState.body,
+          filterJson: runState.filterJson,
+          phase: Phase.Stuck,
+          pivotExternalId: [],
+          error: ["model no longer registered"],
+        });
+        continue;
+      }
+      const model = firstPresent(modelHits, "recovered model required");
+      if (isFlowOperation(runState.operation) === false) {
+        this.obs.error(scope, "saga.recovery_operation_invalid", {
+          runId: runState.runId,
+          operation: runState.operation,
+        });
+        continue;
+      }
+      this.runs.set(runState.runId, {
+        id: runState.runId,
+        model,
+        operation: runState.operation,
+        entityId: runState.entityId,
+        body: [runState.body],
+        filter: this.restoredFilter(runState.filterJson, model),
+        entity: [],
+        created: [],
+        results: [],
+        signal: Running,
+      });
+      restored += 1;
+    }
+    if (restored > 0) {
+      this.obs.count(scope, "saga.recovered");
+      this.obs.info(scope, "saga.recovered", { runs: restored });
+    }
+    return restored;
   }
 
   private async handleHttp(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
@@ -992,6 +1170,7 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
           this.runtimeFor(traceId, model, entityId, operation),
         finalizeRun: (runId, run, signal) => this.finalizeRun(runId, run, signal),
         setExternalResult: (input) => this.setExternalResult(input),
+        setExternalFailure: (input) => this.setExternalFailure(input),
         publishListResults: (signal, rows) => this.publishListResults(signal, rows),
       },
       req,

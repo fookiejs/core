@@ -77,6 +77,8 @@ export type {
 } from "./signal.ts";
 export { Types } from "./types/catalog.ts";
 export { NumericType, PlainType } from "./types/type.ts";
+export { fieldFromZod, zodFieldShape } from "./types/from-zod.ts";
+export type { ZodFieldShape } from "./types/from-zod.ts";
 export type { NumericTypeDef, ScalarTypeDef, TypeDef } from "./types/type.ts";
 export type {
   Coordinate,

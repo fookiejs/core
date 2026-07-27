@@ -66,9 +66,9 @@ export type SystemEntity = {
 };
 
 export type CreateResultKinds<E extends EntityRecord> = {
-  running: { signal: "running"; runId: string };
-  failed: { signal: "failed" };
-  done: { signal: "done"; id: string; entity: E };
+  running: { signal: "running"; id: string; runId: string };
+  failed: { signal: "failed"; id: string; runId: string };
+  done: { signal: "done"; id: string; runId: string; entity: E };
 };
 
 export type CreateResult<E extends EntityRecord> = CreateResultKinds<E>[keyof CreateResultKinds<E>];
@@ -320,6 +320,22 @@ export type FlowOperationKinds = {
 };
 
 export type FlowOperation = FlowOperationKinds[keyof FlowOperationKinds];
+
+export function isFlowOperation(operationText: string): operationText is FlowOperation {
+  if (operationText === "create") {
+    return true;
+  }
+  if (operationText === "list") {
+    return true;
+  }
+  if (operationText === "update") {
+    return true;
+  }
+  if (operationText === "delete") {
+    return true;
+  }
+  return false;
+}
 
 export type FlowRun<D extends ModelFieldsInput = ModelFieldsInput> = {
   id: string;
