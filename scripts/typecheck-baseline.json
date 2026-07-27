@@ -1,15 +1,15 @@
 {
-  "total": 163,
+  "total": 115,
   "files": {
     "example.ts": 8,
-    "tests/branches-filter.test.ts": 52,
-    "tests/branches.test.ts": 20,
-    "tests/coverage.test.ts": 18,
-    "tests/final.test.ts": 14,
-    "tests/index.test.ts": 19,
-    "tests/observability-metrics.test.ts": 4,
-    "tests/order-flow.test.ts": 22,
-    "tests/postgres.test.ts": 3,
+    "tests/branches-filter.test.ts": 44,
+    "tests/branches.test.ts": 14,
+    "tests/coverage.test.ts": 12,
+    "tests/final.test.ts": 9,
+    "tests/index.test.ts": 12,
+    "tests/observability-metrics.test.ts": 3,
+    "tests/order-flow.test.ts": 8,
+    "tests/postgres.test.ts": 2,
     "tests/saga-edges.test.ts": 3
   }
 }

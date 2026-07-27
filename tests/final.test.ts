@@ -109,8 +109,12 @@ describe("final coverage", () => {
     }
     const externalId = events[0] ?? "";
     assert.equal(await fookie.setExternalResult({ externalId, output: { score: "bad" } }), false);
-    assert.equal(await fookie.setExternalResult({ externalId, output: { score: 3 } }), true);
-    assert.equal(await fookie.resume(pending.runId), "done");
+    assert.equal(
+      await fookie.setExternalResult({ externalId, output: { score: 3 } }),
+      false,
+      "attempts is 1, so the invalid output already closed the row as failed",
+    );
+    assert.equal(await fookie.resume(pending.runId), "failed");
 
     db.outbox.set("ghost", {
       external_id: "ghost",

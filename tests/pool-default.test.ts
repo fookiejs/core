@@ -37,7 +37,7 @@ mock.module("pg", {
   },
 });
 
-const { app, Model, Types, flows, Done } = await import("../src/index.ts");
+const { app, Model, Types, Done } = await import("../src/index.ts");
 
 describe("default pg pool", () => {
   it("uses pg.Pool when pool config is omitted", () => {
