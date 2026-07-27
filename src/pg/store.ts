@@ -179,16 +179,18 @@ export class PostgresStore {
           alterSql = `ALTER TABLE ${qualified} ADD COLUMN IF NOT EXISTS ${col} ${type} NOT NULL DEFAULT NOW()`;
         }
         await this.db.query(alterSql);
-        if (isRelationField(alterField) === false && alterField.meta.unique) {
+        if (isRelationField(alterField)) {
+          await this.db.query(
+            `CREATE INDEX IF NOT EXISTS ${table}_${col}_idx ON ${qualified} (${col})`,
+          );
+          continue;
+        }
+        if (alterField.meta.unique) {
           await this.db.query(
             `CREATE UNIQUE INDEX IF NOT EXISTS ${table}_${col}_uidx ON ${qualified} (${col})`,
           );
         }
-        if (
-          isRelationField(alterField) === false &&
-          alterField.meta.index &&
-          alterField.meta.unique === false
-        ) {
+        if (alterField.meta.index && alterField.meta.unique === false) {
           await this.db.query(
             `CREATE INDEX IF NOT EXISTS ${table}_${col}_idx ON ${qualified} (${col})`,
           );

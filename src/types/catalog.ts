@@ -23,7 +23,7 @@ import {
   uuidSchema,
   xmlSchema,
 } from "./pg-literals.ts";
-import { NumericType, PlainType } from "./type.ts";
+import { NumericType, PlainType, typeMeta } from "./type.ts";
 
 export const Types = {
   smallint: NumericType.create(z.number().int().min(-32768).max(32767), "smallint"),
@@ -134,7 +134,8 @@ export const Types = {
       throw ModelFieldError.create("relation model name required");
     }
     const kind = `relation:${model.name}`;
-    const relationType = PlainType.create(uuidSchema, kind, "uuid");
+    const relationMeta = typeMeta(false, true, -1, -1);
+    const relationType = PlainType.create(uuidSchema, kind, "uuid", relationMeta);
     return relationType;
   },
 };
