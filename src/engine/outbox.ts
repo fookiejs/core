@@ -15,7 +15,6 @@ import type {
 import { obsScope } from "../observability.ts";
 import { Done, Failed, Running } from "../signal.ts";
 import type {
-  OutboxBlockedStatus,
   OutboxCompletedStatus,
   OutboxDeadLetterStatus,
   OutboxFailedStatus,
@@ -51,7 +50,6 @@ export type OutboxEntry<
 export type OutboxStatusPayloadKinds<O extends Record<string, ScalarSchema>> = {
   pending: { status: OutboxPendingStatus };
   failed: { status: OutboxFailedStatus };
-  blocked: { status: OutboxBlockedStatus };
   deadLetter: { status: OutboxDeadLetterStatus };
   completed: { status: OutboxCompletedStatus; output: InferExternalOutputFrom<O> };
 };

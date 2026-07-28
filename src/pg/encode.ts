@@ -3,13 +3,7 @@ import pg from "pg";
 import { DatabaseError, ModelFieldError, PgEncodeError } from "../errors.ts";
 import { filterGroupOf } from "../filter/schema.ts";
 import type { ModelDef, ModelFieldsInput } from "../model.ts";
-import {
-  OutboxBlocked,
-  OutboxCompleted,
-  OutboxDeadLetter,
-  OutboxFailed,
-  OutboxPending,
-} from "../signal.ts";
+import { OutboxCompleted, OutboxDeadLetter, OutboxFailed, OutboxPending } from "../signal.ts";
 import type { OutboxStatus } from "../signal.ts";
 import { appendItem } from "../slot.ts";
 import { byteaSchema, coordinateSchema, geometricValueSchema } from "../types/pg-literals.ts";
@@ -337,9 +331,6 @@ export function isOutboxStatus(statusText: string): statusText is OutboxStatus {
     return true;
   }
   if (statusText === OutboxCompleted) {
-    return true;
-  }
-  if (statusText === OutboxBlocked) {
     return true;
   }
   if (statusText === OutboxDeadLetter) {

@@ -55,7 +55,6 @@ export type { RunStateRow } from "./pg/store.ts";
 export {
   Done,
   Failed,
-  OutboxBlocked,
   OutboxCompleted,
   OutboxDeadLetter,
   OutboxFailed,
@@ -67,7 +66,6 @@ export {
 export type {
   DoneSignal,
   FailedSignal,
-  OutboxBlockedStatus,
   OutboxCompletedStatus,
   OutboxDeadLetterStatus,
   OutboxFailedStatus,
