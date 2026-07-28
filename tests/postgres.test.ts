@@ -66,9 +66,9 @@ describe("postgres integration", { skip: databaseUrl.length === 0 }, () => {
     }
 
     const listed = await fookie.list(user, { email: { eq: email } });
-    assert.equal(listed, "done");
+    assert.equal(listed.signal, "done");
     assert.equal(
-      fookie.listResults().some((row) => row.email === email),
+      listed.results.some((row) => row.email === email),
       true,
     );
   });
@@ -107,16 +107,16 @@ describe("postgres integration", { skip: databaseUrl.length === 0 }, () => {
     assert.equal(created.signal, "done");
 
     const nearHit = await fookie.list(place, { loc: { near: [29.0005, 41.0005, 1] } });
-    assert.equal(nearHit, "done");
+    assert.equal(nearHit.signal, "done");
     assert.equal(
-      fookie.listResults().some((row) => row.title === title),
+      nearHit.results.some((row) => row.title === title),
       true,
     );
 
     const nearMiss = await fookie.list(place, { loc: { near: [50, 50, 1] } });
-    assert.equal(nearMiss, "done");
+    assert.equal(nearMiss.signal, "done");
     assert.equal(
-      fookie.listResults().some((row) => row.title === title),
+      nearMiss.results.some((row) => row.title === title),
       false,
     );
   });

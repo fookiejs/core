@@ -73,6 +73,12 @@ export type CreateResultKinds<E extends EntityRecord> = {
 
 export type CreateResult<E extends EntityRecord> = CreateResultKinds<E>[keyof CreateResultKinds<E>];
 
+export type ListResult<E extends EntityRecord> = {
+  signal: Signal;
+  runId: string;
+  results: readonly E[];
+};
+
 export type MutationResultKinds = {
   running: { signal: "running"; id: string; runId: string };
   failed: { signal: "failed"; id: string; runId: string };

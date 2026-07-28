@@ -416,3 +416,53 @@ describe("postgres foreign keys", { skip: databaseUrl.length === 0 }, () => {
     await fookie.stop();
   });
 });
+
+describe("postgres concurrent lists", { skip: databaseUrl.length === 0 }, () => {
+  let pool: pg.Pool;
+
+  before(() => {
+    pool = new pg.Pool({ connectionString: databaseUrl });
+  });
+
+  after(async () => {
+    await pool.end();
+  });
+
+  it("gives each concurrent caller only its own rows", async () => {
+    const fookie = app({
+      listen: "0",
+      database: databaseUrl,
+      models: [owner],
+      externals: [] as const,
+      onExternalEvent: async () => {},
+      pool: [
+        {
+          query: (sql: string, params?: unknown[]) => pool.query(sql, params),
+          connect: () => pool.connect(),
+          end: [],
+        },
+      ],
+    });
+
+    const stamp = Date.now();
+    const left = `conc-a-${stamp}@example.com`;
+    const right = `conc-b-${stamp}@example.com`;
+    assert.equal((await fookie.create(owner, { email: left })).signal, "done");
+    assert.equal((await fookie.create(owner, { email: right })).signal, "done");
+
+    const [first, second] = await Promise.all([
+      fookie.list(owner, { email: { eq: left } }),
+      fookie.list(owner, { email: { eq: right } }),
+    ]);
+
+    assert.deepEqual(
+      (first?.results ?? []).map((row) => row.email),
+      [left],
+    );
+    assert.deepEqual(
+      (second?.results ?? []).map((row) => row.email),
+      [right],
+    );
+    await fookie.stop();
+  });
+});

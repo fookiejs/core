@@ -56,7 +56,6 @@ export type Runtime<E extends readonly ExternalDef[] = readonly ExternalDef[]> =
   reportDbError: (message: string) => void;
   clearDbError: () => void;
   dbLastError: () => readonly string[];
-  listResults: EntityRecord[];
   pendingExternalEvents: PendingEventQueue;
   pendingEntityWrites: PendingWriteQueue;
   nestedSteps: NestedStepCursor;
@@ -114,7 +113,6 @@ export function transactionRuntime(rt: Runtime, client: PgClient): Runtime {
     reportDbError: rt.reportDbError,
     clearDbError: rt.clearDbError,
     dbLastError: rt.dbLastError,
-    listResults: rt.listResults,
     pendingEntityWrites: { rows: [] },
     pendingExternalEvents: { events: [] },
     nestedSteps: rt.nestedSteps,
@@ -234,7 +232,6 @@ export function runtimeOf(
     reportDbError: rt.reportDbError,
     clearDbError: rt.clearDbError,
     dbLastError: rt.dbLastError,
-    listResults: rt.listResults,
     pendingExternalEvents: rt.pendingExternalEvents,
     pendingEntityWrites: rt.pendingEntityWrites,
     nestedSteps: rt.nestedSteps,

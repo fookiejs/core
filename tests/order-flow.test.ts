@@ -255,8 +255,8 @@ describe("order flow integration", () => {
     if (signal !== "done") {
       return false;
     }
-    await fookie.list(order, { status: { eq: "confirmed" } });
-    const rows = fookie.listResults();
+    const listed = await fookie.list(order, { status: { eq: "confirmed" } });
+    const rows = listed.results;
     return rows.length > 0 ? rows[0] : false;
   }
 
@@ -309,9 +309,9 @@ describe("order flow integration", () => {
     assert.equal(done, "done");
 
     const results = await fookie.list(order, { status: { eq: "confirmed" }, amount: { gt: 0 } });
-    assert.equal(results, "done");
-    assert.ok(fookie.listResults().length > 0);
-    const row = fookie.listResults()[0];
+    assert.equal(results.signal, "done");
+    assert.ok(results.results.length > 0);
+    const row = results.results[0];
     assert.equal(row?.status, "confirmed");
     assert.equal(row?.score, 42);
     assert.equal(typeof row?.createdAt, "string");
@@ -321,8 +321,8 @@ describe("order flow integration", () => {
       true,
     );
 
-    await fookie.list(orderLog, {});
-    assert.ok(fookie.listResults().length > 0);
+    const logged = await fookie.list(orderLog, {});
+    assert.ok(logged.results.length > 0);
 
     assert.equal(
       capturedEvents.some((e) => e.name === "fraud.score"),
@@ -495,8 +495,8 @@ describe("order flow integration", () => {
     });
     assert.equal(deleteRes.json.signal, "done");
 
-    await fookie.list(orderLog, {});
-    assert.ok(fookie.listResults().length > 0);
+    const logged = await fookie.list(orderLog, {});
+    assert.ok(logged.results.length > 0);
 
     const extRes = await httpPost(port, "/external/result", {
       externalId: "missing",
@@ -575,8 +575,8 @@ describe("order flow integration", () => {
       return;
     }
 
-    await fookie.list(orderLog, {});
-    const logs = fookie.listResults();
+    const logRun = await fookie.list(orderLog, {});
+    const logs = logRun.results;
     assert.ok(logs.length > 0);
     const log = logs[0];
     assert.equal(log?.message, "sipariş onaylandı");

@@ -182,8 +182,8 @@ describe("fookie core", () => {
     const ok = await fookie.setExternalResult({ externalId, output: { score: 99 } });
     assert.equal(ok, true);
     const list = await fookie.list(user, { email: { eq: "c@d.com" } });
-    assert.equal(list, "done");
-    assert.ok(fookie.listResults().length > 0);
+    assert.equal(list.signal, "done");
+    assert.ok(list.results.length > 0);
   });
 
   it("lists updates and deletes entities", async () => {
@@ -221,8 +221,8 @@ describe("fookie core", () => {
     });
     assert.equal(created.signal, "done");
     const listSignal = await fookie.list(user, { email: { eq: "l@t.com" } });
-    assert.equal(listSignal, "done");
-    assert.ok(fookie.listResults().length > 0);
+    assert.equal(listSignal.signal, "done");
+    assert.ok(listSignal.results.length > 0);
     if (created.signal !== "done") {
       return;
     }

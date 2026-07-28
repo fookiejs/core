@@ -3,7 +3,7 @@ import http from "node:http";
 import { SpanStatusCode } from "@opentelemetry/api";
 import { compensateRun } from "./engine/compensation.ts";
 import { executeRun, isFlowOperation, mutationResult, resolveModelByName } from "./engine/flow.ts";
-import type { CreateResult, FlowRun, MutationResult } from "./engine/flow.ts";
+import type { CreateResult, FlowRun, ListResult, MutationResult } from "./engine/flow.ts";
 import { uuidV7 } from "./engine/ids.ts";
 import {
   emitExternalHandler,
@@ -91,7 +91,6 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
   private readonly outbox = new Map<string, OutboxEntry>();
   private readonly entities = new Map<string, EntityRecord>();
   private readonly obs = new Observability();
-  private readonly listResultsBox: { rows: EntityRecord[] } = { rows: [] };
   private readonly pendingExternalEvents: PendingEventQueue = { events: [] };
   private readonly pendingEntityWrites: PendingWriteQueue = { rows: [] };
   private readonly dbReadyBox: { ready: boolean } = { ready: false };
@@ -359,7 +358,10 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
     );
   }
 
-  list<D extends ModelFieldsInput>(model: ModelDef<D>, filter: FilterInput): Promise<Signal> {
+  list<D extends ModelFieldsInput>(
+    model: ModelDef<D>,
+    filter: FilterInput,
+  ): Promise<ListResult<EntityRecord>> {
     const runId = uuidV7();
     const run: FlowRun<D> = {
       id: runId,
@@ -382,8 +384,7 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
         throw ValidationError.create("list results required");
       }
       this.finalizeRun(runId, run, signal);
-      this.publishListResults(signal, run.results);
-      return signal;
+      return { signal, runId, results: run.results.slice() };
     });
   }
 
@@ -1016,6 +1017,16 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
     return await this.store.loadRunState(runId);
   }
 
+  models(): readonly RegisteredModel[] {
+    if (Array.isArray(this.registeredModels) === false) {
+      throw ValidationError.create("registered models required");
+    }
+    if (this.registeredModels.length < 1) {
+      throw ValidationError.create("registered models required");
+    }
+    return this.registeredModels.slice();
+  }
+
   logs(): LogEntry[] {
     if (Array.isArray(this.obs.buffers.logs) === false) {
       throw ValidationError.create("log buffer required");
@@ -1047,30 +1058,6 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       throw ValidationError.create("span copy required");
     }
     return copied;
-  }
-
-  listResults(): EntityRecord[] {
-    if (Array.isArray(this.listResultsBox.rows) === false) {
-      throw ValidationError.create("list results required");
-    }
-    const copied = this.listResultsBox.rows.slice();
-    if (Array.isArray(copied) === false) {
-      throw ValidationError.create("list results copy required");
-    }
-    return copied;
-  }
-
-  private publishListResults(signal: Signal, rows: readonly EntityRecord[]): void {
-    if (Array.isArray(rows) === false) {
-      throw ValidationError.create("list rows required");
-    }
-    if (signal === Done) {
-      this.listResultsBox.rows = rows.slice();
-      return;
-    }
-    if (signal === Failed) {
-      this.listResultsBox.rows = [];
-    }
   }
 
   private async recordOutbox(outboxRow: OutboxEntry): Promise<boolean> {
@@ -1109,7 +1096,6 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       entities: this.entities,
       pool: this.pool,
       store: this.store,
-      listResults: this.listResultsBox.rows,
       pendingExternalEvents: this.pendingExternalEvents,
       pendingEntityWrites: this.pendingEntityWrites,
       nestedSteps: { steps: 0 },
@@ -1247,7 +1233,6 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
         finalizeRun: (runId, run, signal) => this.finalizeRun(runId, run, signal),
         setExternalResult: (input) => this.setExternalResult(input),
         setExternalFailure: (input) => this.setExternalFailure(input),
-        publishListResults: (signal, rows) => this.publishListResults(signal, rows),
       },
       req,
       res,

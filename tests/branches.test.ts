@@ -330,7 +330,7 @@ describe("branch coverage", () => {
       onExternalEvent: async () => {},
       pool: [db],
     });
-    assert.equal(await fookie.list(user, {}), "done");
+    assert.equal((await fookie.list(user, {})).signal, "done");
 
     db.outbox.clear();
     db.outbox.set("bad1", {
@@ -351,7 +351,7 @@ describe("branch coverage", () => {
       onExternalEvent: async () => {},
       pool: [db],
     });
-    assert.equal(await poisoned.list(user, {}), "failed");
+    assert.equal((await poisoned.list(user, {})).signal, "failed");
   });
 
   it("covers http edge cases and mutation signals", async () => {
@@ -976,7 +976,7 @@ describe("branch coverage", () => {
     const badList = await httpPost(port, "/cacheuser/list", { filter: { email: { eq: 1 } } });
     assert.equal(badList.status, 400);
 
-    assert.equal(await fookie.list(cacheUser, { email: { eq: 1 } }), "failed");
+    assert.equal((await fookie.list(cacheUser, { email: { eq: 1 } })).signal, "failed");
 
     db.mode = "fail-upsert";
     await fookie.delete(cacheUser, { id: created.id, filter: { email: { eq: "cache@y.com" } } });

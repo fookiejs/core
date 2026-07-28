@@ -21,7 +21,7 @@ import { catchValidation, firstPresent } from "./slot.ts";
 import { uuidSchema } from "./types/pg-literals.ts";
 import { Done, Failed, Running } from "./signal.ts";
 import type { Signal } from "./signal.ts";
-import type { EntityRecord, JsonValue } from "./values.ts";
+import type { JsonValue } from "./values.ts";
 
 export type RegisteredModel = ModelDef<ModelFieldsInput>;
 
@@ -41,7 +41,6 @@ export type RouterPorts = {
     reason: string;
     failure: FailureClass;
   }): Promise<boolean>;
-  publishListResults(signal: Signal, rows: readonly EntityRecord[]): void;
 };
 
 export async function routeHttp(
@@ -229,8 +228,7 @@ export async function routeHttp(
     ports.runs.set(runId, run);
     const signal = await executeRun(ports.runtimeFor(runId, model, runId, "list"), run);
     ports.finalizeRun(runId, run, signal);
-    ports.publishListResults(signal, run.results);
-    sendJson(res, 200, { signal, results: run.results });
+    sendJson(res, 200, { signal, runId, results: run.results });
     return;
   }
   if (parts.length !== 3) {
