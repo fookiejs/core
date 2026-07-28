@@ -1017,16 +1017,6 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
     return await this.store.loadRunState(runId);
   }
 
-  models(): readonly RegisteredModel[] {
-    if (Array.isArray(this.registeredModels) === false) {
-      throw ValidationError.create("registered models required");
-    }
-    if (this.registeredModels.length < 1) {
-      throw ValidationError.create("registered models required");
-    }
-    return this.registeredModels.slice();
-  }
-
   logs(): LogEntry[] {
     if (Array.isArray(this.obs.buffers.logs) === false) {
       throw ValidationError.create("log buffer required");
