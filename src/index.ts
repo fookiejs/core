@@ -60,6 +60,7 @@ export type {
   InferFields,
   ModelDef,
   ModelEntity,
+  ModelFieldsInput,
   ModelRef,
   UpdateBody,
 } from "./model.ts";
