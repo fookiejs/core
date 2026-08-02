@@ -55,6 +55,12 @@ export const retentionMs = 30 * 24 * 3_600_000;
 
 export const runBufferLimit = 10_000;
 
+export const lockTimeoutMs = 3_000;
+
+export const snapshotStatementTimeoutMs = 10_000;
+
+export const snapshotIdleTimeoutMs = 15_000;
+
 export function pushBounded<T>(buffer: readonly T[], bufferItem: T): T[] {
   if (Array.isArray(buffer) === false) {
     throw ValidationError.create("observability buffer required");

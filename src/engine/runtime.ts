@@ -5,7 +5,7 @@ import { ValidationError } from "../errors.ts";
 import type { ExternalDef, ExternalEventOf } from "../external.ts";
 import type { FilterInput } from "../filter/schema.ts";
 import type { ModelDef, ModelFieldsInput, ModelRef } from "../model.ts";
-import { Observability } from "../observability.ts";
+import { Observability, lockTimeoutMs } from "../observability.ts";
 import { dbErrorMessageForLog } from "../pg/encode.ts";
 import type { InjectablePool, PgClient } from "../pg/pool.ts";
 import { PostgresStore } from "../pg/store.ts";
@@ -135,6 +135,7 @@ export async function withWriteTransaction(
   let signal: Signal = Failed;
   try {
     await client.query("BEGIN");
+    await client.query(`SET LOCAL lock_timeout = ${lockTimeoutMs}`);
     signal = await run(txRt);
     if (signal === Failed) {
       clearPendingWork(txRt);

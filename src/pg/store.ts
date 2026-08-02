@@ -108,6 +108,24 @@ export function pageSqlFor(
   return { sql: tail, params };
 }
 
+export type LockModeKinds = {
+  write: "write";
+};
+
+export type LockMode = LockModeKinds[keyof LockModeKinds];
+
+const noLockSql = " ";
+
+export function lockSqlFor(lock: readonly LockMode[]): string {
+  for (const mode of lock) {
+    if (mode !== "write") {
+      throw ModelFieldError.create("unknown lock mode");
+    }
+    return " FOR NO KEY UPDATE";
+  }
+  return noLockSql.trimEnd();
+}
+
 export type StoreDbErrorHandler = (message: string) => void;
 
 export class PostgresStore {
@@ -382,9 +400,13 @@ export class PostgresStore {
     }
   }
 
-  async loadEntity(model: ModelDef<ModelFieldsInput>, entityId: string): Promise<EntityRecord> {
+  async loadEntity(
+    model: ModelDef<ModelFieldsInput>,
+    entityId: string,
+    lock: readonly LockMode[] = [],
+  ): Promise<EntityRecord> {
     const table = `public.${tableNameFor(model.name)}`;
-    const sql = `SELECT * FROM ${table} WHERE id = $1 AND is_deleted = false`;
+    const sql = `SELECT * FROM ${table} WHERE id = $1 AND is_deleted = false${lockSqlFor(lock)}`;
     try {
       const queryResult = await this.db.query(sql, [entityId]);
       const rows = firstQueryRow(queryResult.rows);
@@ -617,9 +639,11 @@ export async function getEntity(
   rt: Runtime,
   model: ModelDef<ModelFieldsInput>,
   entityId: string,
+  lock: readonly LockMode[] = [],
 ): Promise<EntityRecord> {
   const key = entityStoreKey(model.name, entityId);
-  for (const cached of mapLookup(rt.entities, key)) {
+  const cacheable = lock.length === 0;
+  for (const cached of cacheable ? mapLookup(rt.entities, key) : []) {
     if (cached.id !== entityId) {
       rt.entities.delete(key);
     } else {
@@ -634,7 +658,7 @@ export async function getEntity(
     }
   }
   try {
-    const fromDb = await rt.store.loadEntity(model, entityId);
+    const fromDb = await rt.store.loadEntity(model, entityId, lock);
     rt.entities.set(key, fromDb);
     return fromDb;
   } catch (err) {

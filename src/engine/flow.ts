@@ -785,7 +785,7 @@ export async function executeRunMutation<D extends ModelFieldsInput>(
     );
     let existing: EntityRecord;
     try {
-      existing = await getEntity(rt, run.model, run.entityId);
+      existing = await getEntity(rt, run.model, run.entityId, ["write"]);
     } catch {
       return Failed;
     }
@@ -839,7 +839,7 @@ export async function executeRunMutation<D extends ModelFieldsInput>(
   );
   let existing: EntityRecord;
   try {
-    existing = await getEntity(rt, run.model, run.entityId);
+    existing = await getEntity(rt, run.model, run.entityId, ["write"]);
   } catch {
     return Failed;
   }
