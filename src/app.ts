@@ -45,6 +45,8 @@ import type {
 import {
   Observability,
   dispatchIntervalMs,
+  snapshotIdleTimeoutMs,
+  snapshotStatementTimeoutMs,
   pruneIntervalMs,
   retentionMs,
   runBufferLimit,
@@ -55,6 +57,7 @@ import type { DbErrorBox, PgParam, PgRow } from "./pg/encode.ts";
 import { requireInjectedPool, wrapOwnedPool } from "./pg/pool.ts";
 import type { InjectablePool } from "./pg/pool.ts";
 import { PostgresStore } from "./pg/store.ts";
+import type { ReadScope } from "./read-scope.ts";
 import { Done, Failed, Phase, Running } from "./signal.ts";
 import type { Signal } from "./signal.ts";
 import { appendItem, catchValidation, firstPresent, mapLookup } from "./slot.ts";
@@ -368,6 +371,21 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
     filter: FilterInput,
     page: ListPage = emptyListPage(),
   ): Promise<ListResult<EntityRecord>> {
+    if (z.string().min(1).safeParse(model.name).success === false) {
+      throw ValidationError.create("list model required");
+    }
+    if (Array.isArray(page.order) === false) {
+      throw ValidationError.create("list page order required");
+    }
+    return this.listWith([], model, filter, page);
+  }
+
+  private listWith<D extends ModelFieldsInput>(
+    pinned: readonly PostgresStore[],
+    model: ModelDef<D>,
+    filter: FilterInput,
+    page: ListPage,
+  ): Promise<ListResult<EntityRecord>> {
     const runId = uuidV7();
     const run: FlowRun<D> = {
       id: runId,
@@ -383,7 +401,8 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       signal: Running,
     };
     this.runs.set(runId, run);
-    return executeRun(this.runtimeFor(runId, model, runId, "list"), run).then((signal) => {
+    const rt = this.runtimeFor(runId, model, runId, "list", pinned);
+    return executeRun(rt, run).then((signal) => {
       if (z.string().min(1).safeParse(runId).success === false) {
         throw ValidationError.create("list run id required");
       }
@@ -1119,11 +1138,54 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
     return true;
   }
 
+  async withReadSnapshot<T>(run: (scope: ReadScope) => Promise<T>): Promise<T> {
+    await this.awaitDb();
+    const client = await this.pool.connect();
+    const pinned = this.store.withClient(client);
+    let opened = false;
+    try {
+      await client.query("BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY");
+      opened = true;
+      await client.query(`SET LOCAL statement_timeout = ${snapshotStatementTimeoutMs}`);
+      await client.query(
+        `SET LOCAL idle_in_transaction_session_timeout = ${snapshotIdleTimeoutMs}`,
+      );
+      const scope: ReadScope = {
+        list: (model, filter, page = emptyListPage()) =>
+          this.listWith([pinned], model, filter, page),
+        sql: (statement, params) => pinned.selectRows(statement, params),
+      };
+      return await run(scope);
+    } finally {
+      if (opened === true) {
+        try {
+          await client.query("COMMIT");
+        } catch (err) {
+          this.reportAppError("snapshot", "snapshot commit failed", {
+            reason: dbErrorMessageForLog(err, "database unavailable"),
+          });
+        }
+      }
+      client.release();
+    }
+  }
+
+  private storeOf(pinned: readonly PostgresStore[]): PostgresStore {
+    if (Array.isArray(pinned) === false) {
+      throw ValidationError.create("pinned store required");
+    }
+    for (const store of pinned) {
+      return store;
+    }
+    return this.store;
+  }
+
   private runtimeFor(
     traceId: string,
     model: ModelDef<ModelFieldsInput>,
     entityId: string,
     operation: string,
+    pinned: readonly PostgresStore[] = [],
   ): Runtime<E> {
     return {
       traceId,
@@ -1137,7 +1199,7 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       externals: this.externals,
       entities: this.entities,
       pool: this.pool,
-      store: this.store,
+      store: this.storeOf(pinned),
       pendingExternalEvents: this.pendingExternalEvents,
       pendingEntityWrites: this.pendingEntityWrites,
       nestedSteps: { steps: 0 },

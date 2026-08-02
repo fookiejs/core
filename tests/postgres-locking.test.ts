@@ -86,4 +86,40 @@ describe("postgres row locking", { skip: databaseUrl.length === 0 }, () => {
     await writer.stop();
     await second.stop();
   });
+
+  it("keeps one snapshot across every read in the scope", async () => {
+    const reader = boot();
+    const created = await reader.create(counter, { alpha: 7, beta: 7 });
+    assert.equal(created.signal, "done");
+    if (created.signal !== "done") {
+      throw new Error("counter create must succeed");
+    }
+
+    const seen = await reader.withReadSnapshot(async (scope) => {
+      const before = await scope.list(counter, { id: { eq: created.id } });
+
+      const outside = new pg.Pool({ connectionString: databaseUrl });
+      await outside.query("UPDATE public.lock_counter SET alpha = 99 WHERE id = $1", [created.id]);
+      await outside.end();
+
+      const after = await scope.list(counter, { id: { eq: created.id } });
+      return { before: before.results, after: after.results };
+    });
+
+    for (const row of seen.before) {
+      assert.equal(row.alpha, 7);
+    }
+    for (const row of seen.after) {
+      assert.equal(row.alpha, 7, "a write committed mid-query must stay invisible");
+    }
+
+    const settled = await pool.query("SELECT alpha FROM public.lock_counter WHERE id = $1", [
+      created.id,
+    ]);
+    for (const row of settled.rows) {
+      assert.equal(Number(row.alpha), 99, "the outside write really did commit");
+    }
+
+    await reader.stop();
+  });
 });
