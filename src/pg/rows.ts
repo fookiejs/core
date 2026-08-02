@@ -29,7 +29,7 @@ export const outboxColumns =
   "external_id, name, status, input, output, entity_id, model, run_id, attempt, step_index, step, next_attempt_at, error, compensation_of, dispatched_at";
 
 export const runColumns =
-  "run_id, model, entity_id, operation, body, filter, saga_phase, pivot_external_id, error";
+  "run_id, model, entity_id, operation, body, filter, saga_phase, pivot_external_id, error, updated_at";
 
 export type RunStateRow = {
   runId: string;
@@ -41,7 +41,10 @@ export type RunStateRow = {
   phase: Phase;
   pivotExternalId: readonly string[];
   error: readonly string[];
+  updatedAt: readonly string[];
 };
+
+export type RunStateWrite = Omit<RunStateRow, "updatedAt">;
 
 export const AbsentText = "__fookie_absent__";
 
@@ -125,6 +128,7 @@ export function runStateFromRow(row: pg.QueryResultRow): readonly RunStateRow[] 
         phase: phaseText,
         pivotExternalId: optionalText(row.pivot_external_id),
         error: optionalText(row.error),
+        updatedAt: optionalTimestamp(row.updated_at),
       },
     ];
   } catch {

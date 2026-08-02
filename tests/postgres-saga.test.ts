@@ -2,7 +2,16 @@ import { z } from "zod";
 import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import pg from "pg";
-import { Done, External, FailureClass, Model, Types, app } from "../src/index.ts";
+import {
+  Done,
+  External,
+  FailureClass,
+  Model,
+  OutboxDeadLetter,
+  Phase,
+  Types,
+  app,
+} from "../src/index.ts";
 
 const databaseUrl = process.env.FOOKIE_TEST_DATABASE ?? "";
 
@@ -463,6 +472,80 @@ describe("postgres concurrent lists", { skip: databaseUrl.length === 0 }, () => 
       (second?.results ?? []).map((row) => row.email),
       [right],
     );
+    await fookie.stop();
+  });
+});
+
+describe("postgres run and outbox listings", { skip: databaseUrl.length === 0 }, () => {
+  let pool: pg.Pool;
+
+  before(() => {
+    pool = new pg.Pool({ connectionString: databaseUrl });
+  });
+
+  after(async () => {
+    await pool.end();
+  });
+
+  it("lists runs by phase and their outbox steps", async () => {
+    const fookie = app({
+      listen: "0",
+      database: databaseUrl,
+      models: [owner, order],
+      externals: [charge, settle, refund] as const,
+      onExternalEvent: async () => {},
+      pool: [
+        {
+          query: (sql: string, params?: unknown[]) => pool.query(sql, params),
+          connect: () => pool.connect(),
+          end: [],
+        },
+      ],
+    });
+
+    const buyer = await fookie.create(owner, { email: `list-${Date.now()}@example.com` });
+    assert.equal(buyer.signal, "done");
+    if (buyer.signal !== "done") {
+      throw new Error("buyer create must succeed");
+    }
+    const created = await fookie.create(order, { amount: 3, sku: "SKU-L", buyer: buyer.id });
+    assert.equal(created.signal, "running");
+
+    const forward = await fookie.runList({ phase: [Phase.Forward], limit: 50, offset: 0 });
+    const mine = forward.filter((row) => row.runId === created.runId);
+    assert.equal(mine.length, 1, "the suspended run is listed under forward");
+    for (const row of mine) {
+      assert.equal(row.phase, Phase.Forward);
+      assert.equal(row.updatedAt.length, 1, "updated_at round-trips");
+    }
+
+    const settled = await fookie.runList({ phase: [Phase.Completed], limit: 50, offset: 0 });
+    assert.equal(
+      settled.some((row) => row.runId === created.runId),
+      false,
+      "the phase filter really filters",
+    );
+
+    const steps = await fookie.outboxList({
+      status: [],
+      runId: [created.runId],
+      limit: 50,
+      offset: 0,
+    });
+    assert.equal(steps.length, 1);
+    for (const step of steps) {
+      assert.equal(step.runId, created.runId);
+      assert.equal(step.name, "pgsaga.charge");
+    }
+
+    const none = await fookie.outboxList({
+      status: [OutboxDeadLetter],
+      runId: [created.runId],
+      limit: 50,
+      offset: 0,
+    });
+    assert.equal(none.length, 0, "the status filter really filters");
+
     await fookie.stop();
   });
 });

@@ -64,6 +64,7 @@ import type { DbErrorBox, PgParam, PgRow } from "./pg/encode.ts";
 import { requireInjectedPool, wrapOwnedPool } from "./pg/pool.ts";
 import type { InjectablePool } from "./pg/pool.ts";
 import { PostgresStore } from "./pg/store.ts";
+import type { OutboxQuery, RunQuery } from "./pg/store.ts";
 import type { ReadScope } from "./read-scope.ts";
 import type { OperationEvent, OperationListener, OperationSubscription } from "./settled.ts";
 import { Done, Failed, Phase, Running } from "./signal.ts";
@@ -1118,6 +1119,28 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
     }
     await this.awaitDb();
     return await this.store.selectRows(statement, params);
+  }
+
+  async runList(query: RunQuery): Promise<readonly RunStateRow[]> {
+    if (Array.isArray(query.phase) === false) {
+      throw ValidationError.create("run query phase required");
+    }
+    if (Number.isInteger(query.limit) === false) {
+      throw ValidationError.create("run query limit required");
+    }
+    await this.awaitDb();
+    return await this.store.queryRuns(query);
+  }
+
+  async outboxList(query: OutboxQuery): Promise<readonly OutboxEntry[]> {
+    if (Array.isArray(query.status) === false) {
+      throw ValidationError.create("outbox query status required");
+    }
+    if (Array.isArray(query.runId) === false) {
+      throw ValidationError.create("outbox query run id required");
+    }
+    await this.awaitDb();
+    return await this.store.queryOutbox(query);
   }
 
   onOperationSettled(listener: OperationListener): OperationSubscription {

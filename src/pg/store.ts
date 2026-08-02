@@ -25,6 +25,7 @@ import {
   tableNameFor,
   toCamelCase,
 } from "./naming.ts";
+import type { OutboxStatus, Phase } from "../signal.ts";
 import type { PgQueryable } from "./pool.ts";
 import {
   firstTextOrAbsent,
@@ -33,7 +34,7 @@ import {
   runColumns,
   runStateFromRow,
 } from "./rows.ts";
-import type { RunStateRow } from "./rows.ts";
+import type { RunStateRow, RunStateWrite } from "./rows.ts";
 import { UpsertSql } from "./upsert.ts";
 import { WhereSql } from "./where.ts";
 import { appendItem, firstFilterGroup, mapLookup } from "../slot.ts";
@@ -124,6 +125,53 @@ export function lockSqlFor(lock: readonly LockMode[]): string {
     return " FOR NO KEY UPDATE";
   }
   return noLockSql.trimEnd();
+}
+
+export type RunQuery = {
+  phase: readonly Phase[];
+  limit: number;
+  offset: number;
+};
+
+export type OutboxQuery = {
+  status: readonly OutboxStatus[];
+  runId: readonly string[];
+  limit: number;
+  offset: number;
+};
+
+type BoundList = {
+  sql: string;
+  params: readonly PgParam[];
+};
+
+export function boundInList(
+  column: string,
+  values: readonly string[],
+  startIndex: number,
+): BoundList {
+  if (values.length === 0) {
+    return { sql: "TRUE", params: [] };
+  }
+  let slots: readonly string[] = [];
+  let params: readonly PgParam[] = [];
+  let index = startIndex;
+  for (const listed of values) {
+    slots = appendItem(slots, `$${index}`);
+    params = appendItem(params, listed);
+    index += 1;
+  }
+  return { sql: `${column} IN (${slots.join(", ")})`, params };
+}
+
+export function pageBound(bound: number): number {
+  if (Number.isInteger(bound) === false) {
+    throw ModelFieldError.create("listing bound must be an integer");
+  }
+  if (bound < 0) {
+    throw ModelFieldError.create("listing bound must not be negative");
+  }
+  return bound;
 }
 
 export type StoreDbErrorHandler = (message: string) => void;
@@ -575,7 +623,50 @@ export class PostgresStore {
     }
   }
 
-  async saveRunState(runState: RunStateRow): Promise<boolean> {
+  async queryRuns(query: RunQuery): Promise<readonly RunStateRow[]> {
+    const built = boundInList("saga_phase", query.phase, 1);
+    const limitIndex = built.params.length + 1;
+    const sql = `SELECT ${runColumns} FROM ${runTableName} WHERE ${built.sql} ORDER BY updated_at DESC, run_id ASC LIMIT $${limitIndex} OFFSET $${limitIndex + 1}`;
+    const bound = built.params.concat([pageBound(query.limit), pageBound(query.offset)]);
+    try {
+      const queryResult = await this.db.query(sql, bound.slice());
+      let rows: readonly RunStateRow[] = [];
+      for (const row of queryResult.rows) {
+        for (const state of runStateFromRow(row)) {
+          rows = appendItem(rows, state);
+        }
+      }
+      return rows;
+    } catch (err) {
+      this.failQuery(err);
+      throw DatabaseError.create(dbErrorMessageForLog(err, "database unavailable"));
+    }
+  }
+
+  async queryOutbox(query: OutboxQuery): Promise<readonly OutboxEntry[]> {
+    const byStatus = boundInList("status", query.status, 1);
+    const byRun = boundInList("run_id", query.runId, byStatus.params.length + 1);
+    const limitIndex = byStatus.params.length + byRun.params.length + 1;
+    const sql = `SELECT ${outboxColumns} FROM ${outboxTableName} WHERE ${byStatus.sql} AND ${byRun.sql} ORDER BY run_id ASC, step_index ASC LIMIT $${limitIndex} OFFSET $${limitIndex + 1}`;
+    const bound = byStatus.params
+      .concat(byRun.params)
+      .concat([pageBound(query.limit), pageBound(query.offset)]);
+    try {
+      const queryResult = await this.db.query(sql, bound.slice());
+      let rows: readonly OutboxEntry[] = [];
+      for (const row of queryResult.rows) {
+        for (const outboxRow of outboxEntryFromRow(row)) {
+          rows = appendItem(rows, outboxRow);
+        }
+      }
+      return rows;
+    } catch (err) {
+      this.failQuery(err);
+      throw DatabaseError.create(dbErrorMessageForLog(err, "database unavailable"));
+    }
+  }
+
+  async saveRunState(runState: RunStateWrite): Promise<boolean> {
     const sql = `INSERT INTO ${runTableName} (run_id, model, entity_id, operation, body, filter, saga_phase, pivot_external_id, error, updated_at)
     VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, NULLIF($8, '__fookie_absent__'), NULLIF($9, '__fookie_absent__'), NOW())
     ON CONFLICT (run_id) DO UPDATE SET model = EXCLUDED.model, entity_id = EXCLUDED.entity_id, operation = EXCLUDED.operation, body = EXCLUDED.body, filter = EXCLUDED.filter, saga_phase = EXCLUDED.saga_phase, pivot_external_id = EXCLUDED.pivot_external_id, error = EXCLUDED.error, updated_at = NOW()`;

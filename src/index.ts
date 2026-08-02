@@ -82,7 +82,7 @@ export {
 } from "./pg/naming.ts";
 export { appendItem, catchValidation, firstPresent, mapLookup, textOrFallback } from "./slot.ts";
 export type { InjectablePool } from "./pg/pool.ts";
-export type { LockMode, RunStateRow } from "./pg/store.ts";
+export type { LockMode, OutboxQuery, RunQuery, RunStateRow } from "./pg/store.ts";
 export type { ReadScope } from "./read-scope.ts";
 export {
   Done,
