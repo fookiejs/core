@@ -21,8 +21,6 @@ if (run.error !== undefined) {
 const output = `${run.stdout ?? ""}${run.stderr ?? ""}`;
 const errorLines = output.split(/\r?\n/).filter((line) => / error TS\d+: /.test(line));
 
-// A clean exit code with no parsed errors is trustworthy; a failing exit code with none
-// parsed means tsc broke in a way this script did not understand. Never report success then.
 if (run.status !== 0 && errorLines.length === 0) {
   process.stderr.write(`tsc exited ${run.status} but produced no parsable errors:\n${output}\n`);
   process.exit(2);

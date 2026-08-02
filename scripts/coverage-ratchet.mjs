@@ -3,13 +3,6 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 const LCOV = process.argv[2] ?? "coverage/lcov.info";
 const BASELINE = new URL("./coverage-baseline.json", import.meta.url);
 
-// The measurement itself is not deterministic. Running the identical tree four
-// times gave 92.65, 92.72, 91.31, 92.73 percent lines with 92/92 passing every
-// time -- V8 attributes a whole file's coverage inconsistently, and the swing
-// landed entirely in src/filter/match.ts (157 vs 289 uncovered lines). A 0.5
-// tolerance sits under that noise floor, so the gate fired on nothing. This is
-// set above the measured spread: it still catches a real slide, and no longer
-// reports one that is not there. Re-measure before tightening it.
 const TOLERANCE = 2;
 
 if (existsSync(LCOV) === false) {

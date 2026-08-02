@@ -60,8 +60,6 @@ describe("concurrent list calls", () => {
     assert.equal(beta?.signal, "done");
     assert.notEqual(alpha?.runId, beta?.runId, "each call is its own run");
 
-    // The mock ignores WHERE, so row-level filtering is asserted in the postgres
-    // suite. What matters here is that the two callers do not share a buffer.
     assert.notEqual(alpha?.results, beta?.results, "each call owns its array");
     assert.ok((alpha?.results ?? []).length > 0);
     assert.ok((beta?.results ?? []).length > 0);

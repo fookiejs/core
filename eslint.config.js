@@ -1,10 +1,6 @@
 import fookie from "@fookiejs/eslint-plugin";
 import tsParser from "@typescript-eslint/parser";
 
-// Rules that exist to shape the framework's own source but fight the grain of tests:
-// test bodies are short arrow callbacks, they legitimately construct absent values, and
-// node:test's describe/it return promises that are intentionally never awaited.
-// Everything else — the JS-gotcha half of the plugin — stays on for tests.
 const relaxedForTests = {
   "fookie/no-async-without-await": "off",
   "fookie/min-function-lines": "off",
@@ -30,8 +26,6 @@ const relaxedForTests = {
 
 export default [
   {
-    // scripts/ is CI tooling, not shipped code: plain .mjs with no tsconfig project,
-    // so the plugin's type-aware rules cannot run there.
     ignores: [
       "dist/**",
       "node_modules/**",

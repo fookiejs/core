@@ -102,9 +102,6 @@ export class MockDb implements InjectablePool {
         }
         return { rows: [row], rowCount: 1 };
       }
-      // Each phase filter is matched explicitly. A query this mock does not
-      // recognise returns nothing rather than every row, so an unhandled
-      // shape can never look like a successful match.
       const phases = sql.match(/saga_phase IN \(([^)]+)\)/);
       if (phases === null) {
         return { rows: [], rowCount: 0 };
@@ -142,8 +139,6 @@ export class MockDb implements InjectablePool {
         throw new Error("outbox");
       }
       const externalId = String(params?.[0] ?? "");
-      // The pending variant writes a literal NULL for output, so every param after
-      // it shifts down by one. Keep this aligned with saveOutboxEntry in pg/store.ts.
       const shift = sql.includes("NULL::jsonb") ? 1 : 0;
       const attemptRaw = params?.[8 - shift];
       const stepIndexRaw = params?.[9 - shift];
