@@ -490,3 +490,32 @@ export function copyFilterState(source: FilterInput): FilterState {
   }
   return next;
 }
+
+export type OrderDirectionKinds = {
+  asc: "asc";
+  desc: "desc";
+};
+
+export type OrderDirection = OrderDirectionKinds[keyof OrderDirectionKinds];
+
+export type OrderTerm = {
+  field: string;
+  direction: OrderDirection;
+};
+
+export type ListPage = {
+  limit: readonly number[];
+  offset: readonly number[];
+  order: readonly OrderTerm[];
+};
+
+export function emptyListPage(): ListPage {
+  const page: ListPage = { limit: [], offset: [], order: [] };
+  if (page.limit.length > 0) {
+    throw ValidationError.create("empty page must carry no limit");
+  }
+  if (page.offset.length > 0) {
+    throw ValidationError.create("empty page must carry no offset");
+  }
+  return page;
+}

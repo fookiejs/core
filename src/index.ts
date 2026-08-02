@@ -1,4 +1,6 @@
 export { App, app, models } from "./app.ts";
+export { externalSummaryOf, modelSummaryOf } from "./catalog.ts";
+export type { ExternalSummary, FieldSummary, ModelSummary } from "./catalog.ts";
 export type { AppConfig, AppInstance } from "./app.ts";
 export type {
   CreateFlow,
@@ -35,11 +37,22 @@ export type {
   ExternalOutputOf,
   PlainExternalDef,
 } from "./external.ts";
-export type { FilterFor, FilterView } from "./filter/ops.ts";
+export { emptyListPage, filterOpsConfigByGroup, filterOpsConfigForGroup } from "./filter/ops.ts";
+export type {
+  FilterFor,
+  FilterOpsConfig,
+  FilterState,
+  FilterView,
+  ListPage,
+  OrderDirection,
+  OrderTerm,
+} from "./filter/ops.ts";
+export { filterGroupOf } from "./filter/schema.ts";
 export type { FilterFieldInput, FilterInput } from "./filter/schema.ts";
-export { Model } from "./model.ts";
+export { Model, isModelRef, isRelationField, isSystemFieldKey } from "./model.ts";
 export type {
   EntityOf,
+  FieldValue,
   FieldsMap,
   FlowHandlers,
   InferCreateBody,
@@ -50,7 +63,17 @@ export type {
   ModelRef,
   UpdateBody,
 } from "./model.ts";
+export type { LogEntry, MetricEntry, ObsScope, SpanEntry } from "./observability.ts";
+export type { OutboxEntry } from "./engine/outbox.ts";
 export type { PgParam, PgRow } from "./pg/encode.ts";
+export {
+  columnNameFor,
+  relationTargetOf,
+  tableNameFor,
+  toCamelCase,
+  toSnakeCase,
+} from "./pg/naming.ts";
+export { appendItem, catchValidation, firstPresent, mapLookup, textOrFallback } from "./slot.ts";
 export type { InjectablePool } from "./pg/pool.ts";
 export type { RunStateRow } from "./pg/store.ts";
 export {

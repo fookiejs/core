@@ -8,8 +8,8 @@ import type { Runtime } from "./runtime.ts";
 import { DatabaseError, ModelFieldError, PgEncodeError, ValidationError } from "../errors.ts";
 import type { ExternalDef, InferExternalInputFrom, InferExternalOutputFrom } from "../external.ts";
 import { entityMatchesFilter } from "../filter/match.ts";
-import { assignFilterOp, copyFilterState, createFilter } from "../filter/ops.ts";
-import type { FilterState, FilterView } from "../filter/ops.ts";
+import { assignFilterOp, copyFilterState, createFilter, emptyListPage } from "../filter/ops.ts";
+import type { FilterState, FilterView, ListPage } from "../filter/ops.ts";
 import type { FilterInput } from "../filter/schema.ts";
 import {
   createdEntity,
@@ -385,8 +385,19 @@ export type FlowRun<D extends ModelFieldsInput = ModelFieldsInput> = {
   entity: readonly EntityRecord[];
   created: readonly EntityRecord[];
   results: EntityRecord[];
+  page: readonly ListPage[];
   signal: Signal;
 };
+
+function listPageOf(pages: readonly ListPage[]): ListPage {
+  for (const page of pages) {
+    if (Array.isArray(page.order) === false) {
+      throw ValidationError.create("list page order required");
+    }
+    return page;
+  }
+  return emptyListPage();
+}
 
 function relatesToParent(fieldValue: FieldValue, parentName: string): boolean {
   if (z.string().min(1).safeParse(parentName).success === false) {
@@ -934,7 +945,7 @@ export async function executeRun<D extends ModelFieldsInput>(
       }
       if (signal === Done) {
         try {
-          const rows = await rt.store.queryEntities(run.model, filterState);
+          const rows = await rt.store.queryEntities(run.model, filterState, listPageOf(run.page));
           run.results = rows;
         } catch (err) {
           rt.obs.measure(scope, "operation.duration", Date.now() - startedAt);

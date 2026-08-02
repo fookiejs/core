@@ -1,6 +1,8 @@
 import { z } from "zod";
 import http from "node:http";
 import { SpanStatusCode } from "@opentelemetry/api";
+import { externalSummaryOf, modelSummaryOf } from "./catalog.ts";
+import type { ExternalSummary, ModelSummary } from "./catalog.ts";
 import { compensateRun } from "./engine/compensation.ts";
 import { executeRun, isFlowOperation, mutationResult, resolveModelByName } from "./engine/flow.ts";
 import type { CreateResult, FlowRun, ListResult, MutationResult } from "./engine/flow.ts";
@@ -26,6 +28,8 @@ import {
 } from "./errors.ts";
 import { FailureClass, backoffDelayMs } from "./external.ts";
 import type { ExternalDef, ExternalEventOf } from "./external.ts";
+import { emptyListPage } from "./filter/ops.ts";
+import type { ListPage } from "./filter/ops.ts";
 import type { FilterInput } from "./filter/schema.ts";
 import { httpErrorPayload, httpStatusForFookieError, listenPort, sendJson } from "./http.ts";
 import { routeHttp } from "./http-router.ts";
@@ -47,7 +51,7 @@ import {
 } from "./observability.ts";
 import type { LogEntry, LogFieldValue, MetricEntry, ObsScope, SpanEntry } from "./observability.ts";
 import { dbErrorBoxText, dbErrorMessageForLog } from "./pg/encode.ts";
-import type { DbErrorBox } from "./pg/encode.ts";
+import type { DbErrorBox, PgParam, PgRow } from "./pg/encode.ts";
 import { requireInjectedPool, wrapOwnedPool } from "./pg/pool.ts";
 import type { InjectablePool } from "./pg/pool.ts";
 import { PostgresStore } from "./pg/store.ts";
@@ -330,6 +334,7 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       entity: [],
       created: [],
       results: [],
+      page: [],
       signal: Running,
     };
     this.runs.set(runId, run);
@@ -361,6 +366,7 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
   list<D extends ModelFieldsInput>(
     model: ModelDef<D>,
     filter: FilterInput,
+    page: ListPage = emptyListPage(),
   ): Promise<ListResult<EntityRecord>> {
     const runId = uuidV7();
     const run: FlowRun<D> = {
@@ -373,6 +379,7 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       entity: [],
       created: [],
       results: [],
+      page: [page],
       signal: Running,
     };
     this.runs.set(runId, run);
@@ -420,6 +427,7 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       entity: [],
       created: [],
       results: [],
+      page: [],
       signal: Running,
     };
     this.runs.set(runId, run);
@@ -443,6 +451,7 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       entity: [],
       created: [],
       results: [],
+      page: [],
       signal: Running,
     };
     this.runs.set(runId, run);
@@ -1017,6 +1026,49 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
     return await this.store.loadRunState(runId);
   }
 
+  catalog(): readonly ModelSummary[] {
+    if (this.registeredModels.length < 1) {
+      throw ValidationError.create("registered models required");
+    }
+    let summaries: readonly ModelSummary[] = [];
+    for (const model of this.registeredModels) {
+      summaries = appendItem(summaries, modelSummaryOf(model));
+    }
+    return summaries;
+  }
+
+  externalCatalog(): readonly ExternalSummary[] {
+    if (Array.isArray(this.externals) === false) {
+      throw ValidationError.create("registered externals required");
+    }
+    let summaries: readonly ExternalSummary[] = [];
+    for (const external of this.externals) {
+      summaries = appendItem(summaries, externalSummaryOf(external));
+    }
+    return summaries;
+  }
+
+  models(): readonly RegisteredModel[] {
+    if (this.registeredModels.length < 1) {
+      throw ValidationError.create("registered models required");
+    }
+    if (Array.isArray(this.registeredModels) === false) {
+      throw ValidationError.create("registered models required");
+    }
+    return this.registeredModels.slice();
+  }
+
+  async sql(statement: string, params: readonly PgParam[]): Promise<readonly PgRow[]> {
+    if (z.string().min(1).safeParse(statement).success === false) {
+      throw ValidationError.create("sql statement required");
+    }
+    if (Array.isArray(params) === false) {
+      throw ValidationError.create("sql params required");
+    }
+    await this.awaitDb();
+    return await this.store.selectRows(statement, params);
+  }
+
   logs(): LogEntry[] {
     if (Array.isArray(this.obs.buffers.logs) === false) {
       throw ValidationError.create("log buffer required");
@@ -1202,6 +1254,7 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
         entity: [],
         created: [],
         results: [],
+        page: [],
         signal: Running,
       });
       restored += 1;

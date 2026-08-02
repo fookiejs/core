@@ -183,6 +183,7 @@ export async function routeHttp(
       entity: [],
       created: [],
       results: [],
+      page: [],
       signal: Running,
     };
     ports.runs.set(runId, run);
@@ -223,6 +224,7 @@ export async function routeHttp(
       entity: [],
       created: [],
       results: [],
+      page: [],
       signal: Running,
     };
     ports.runs.set(runId, run);
@@ -281,6 +283,7 @@ export async function routeHttp(
       entity: [],
       created: [],
       results: [],
+      page: [],
       signal: Running,
     };
     ports.runs.set(runId, run);
@@ -307,6 +310,7 @@ export async function routeHttp(
       entity: [],
       created: [],
       results: [],
+      page: [],
       signal: Running,
     };
     ports.runs.set(runId, run);

@@ -3,7 +3,8 @@ import { logDatabaseFailure } from "../engine/flow.ts";
 import type { OutboxEntry } from "../engine/outbox.ts";
 import type { Runtime } from "../engine/runtime.ts";
 import { DatabaseError, ModelFieldError, NotFoundError, PgEncodeError } from "../errors.ts";
-import type { FilterState } from "../filter/ops.ts";
+import { emptyListPage } from "../filter/ops.ts";
+import type { FilterState, ListPage } from "../filter/ops.ts";
 import { entityStoreKey, isRelationField, isSystemFieldKey } from "../model.ts";
 import type { ModelDef, ModelFieldsInput } from "../model.ts";
 import {
@@ -64,6 +65,47 @@ export function rowToEntity(
     }
   }
   return entity;
+}
+
+type PageSql = {
+  sql: string;
+  params: readonly PgParam[];
+};
+
+export function pageSqlFor(
+  model: ModelDef<ModelFieldsInput>,
+  page: ListPage,
+  startIndex: number,
+): PageSql {
+  let clauses: readonly string[] = [];
+  for (const term of page.order) {
+    if (Object.keys(model.fields).includes(term.field) === false) {
+      throw ModelFieldError.create("order field unknown");
+    }
+    const direction = term.direction === "desc" ? "DESC" : "ASC";
+    clauses = appendItem(clauses, `${columnNameFor(term.field)} ${direction}`);
+  }
+  clauses = appendItem(clauses, "id ASC");
+  let tail = ` ORDER BY ${clauses.join(", ")}`;
+  let params: readonly PgParam[] = [];
+  let index = startIndex;
+  for (const limit of page.limit) {
+    if (Number.isInteger(limit) === false || limit < 0) {
+      throw ModelFieldError.create("list limit must be a non-negative integer");
+    }
+    tail = `${tail} LIMIT $${index}`;
+    params = appendItem(params, limit);
+    index += 1;
+  }
+  for (const offset of page.offset) {
+    if (Number.isInteger(offset) === false || offset < 0) {
+      throw ModelFieldError.create("list offset must be a non-negative integer");
+    }
+    tail = `${tail} OFFSET $${index}`;
+    params = appendItem(params, offset);
+    index += 1;
+  }
+  return { sql: tail, params };
 }
 
 export type StoreDbErrorHandler = (message: string) => void;
@@ -377,12 +419,15 @@ export class PostgresStore {
   async queryEntities(
     model: ModelDef<ModelFieldsInput>,
     filter: FilterState,
+    page: ListPage = emptyListPage(),
   ): Promise<EntityRecord[]> {
     const where = WhereSql.fromFilter(model, filter);
     const table = `public.${tableNameFor(model.name)}`;
-    const sql = `SELECT * FROM ${table} WHERE ${where.sql}`;
+    const tail = pageSqlFor(model, page, where.params.length + 1);
+    const sql = `SELECT * FROM ${table} WHERE ${where.sql}${tail.sql}`;
+    const bound = where.params.concat(tail.params);
     try {
-      const queryResult = await this.db.query(sql, where.params.slice());
+      const queryResult = await this.db.query(sql, bound.slice());
       let entities: readonly EntityRecord[] = [];
       for (const row of queryResult.rows) {
         try {
