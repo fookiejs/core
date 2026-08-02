@@ -51,13 +51,21 @@ import {
   retentionMs,
   runBufferLimit,
 } from "./observability.ts";
-import type { LogEntry, LogFieldValue, MetricEntry, ObsScope, SpanEntry } from "./observability.ts";
+import type {
+  LogEntry,
+  LogFieldValue,
+  MetricEntry,
+  ObsScope,
+  ObservabilityPage,
+  SpanEntry,
+} from "./observability.ts";
 import { dbErrorBoxText, dbErrorMessageForLog } from "./pg/encode.ts";
 import type { DbErrorBox, PgParam, PgRow } from "./pg/encode.ts";
 import { requireInjectedPool, wrapOwnedPool } from "./pg/pool.ts";
 import type { InjectablePool } from "./pg/pool.ts";
 import { PostgresStore } from "./pg/store.ts";
 import type { ReadScope } from "./read-scope.ts";
+import type { OperationEvent, OperationListener, OperationSubscription } from "./settled.ts";
 import { Done, Failed, Phase, Running } from "./signal.ts";
 import type { Signal } from "./signal.ts";
 import { appendItem, catchValidation, firstPresent, mapLookup } from "./slot.ts";
@@ -98,6 +106,9 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
   private readonly outbox = new Map<string, OutboxEntry>();
   private readonly entities = new Map<string, EntityRecord>();
   private readonly obs = new Observability();
+  private readonly listenerBox: { listeners: readonly OperationListener[] } = {
+    listeners: [],
+  };
   private readonly pendingExternalEvents: PendingEventQueue = { events: [] };
   private readonly pendingEntityWrites: PendingWriteQueue = { rows: [] };
   private readonly dbReadyBox: { ready: boolean } = { ready: false };
@@ -165,6 +176,7 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
         model: "app",
         entityId: errorId,
         operation,
+        parent: [],
       },
       message,
       fields,
@@ -341,29 +353,36 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       signal: Running,
     };
     this.runs.set(runId, run);
-    return executeRun(this.runtimeFor(runId, model, entityId, "create"), run).then(
-      async (signal): Promise<CreateResult<ModelEntity<D>>> => {
-        this.finalizeRun(runId, run, signal);
-        await this.saveRunPhase(runId, run, signal);
-        if (signal === Done) {
-          for (const created of run.created) {
-            if (isModelEntity(model, created) === false) {
-              return { signal: Failed, id: entityId, runId };
-            }
-            return {
-              signal: Done,
-              id: entityId,
-              runId,
-              entity: created,
-            };
+    const createRt = this.runtimeFor(runId, model, entityId, "create");
+    return executeRun(createRt, run).then(async (signal): Promise<CreateResult<ModelEntity<D>>> => {
+      this.finalizeRun(runId, run, signal);
+      await this.saveRunPhase(runId, run, signal);
+      this.publishSettled({
+        model: model.name,
+        operation: "create",
+        id: entityId,
+        runId,
+        signal,
+        rooms: createRt.rooms.names,
+      });
+      if (signal === Done) {
+        for (const created of run.created) {
+          if (isModelEntity(model, created) === false) {
+            return { signal: Failed, id: entityId, runId };
           }
+          return {
+            signal: Done,
+            id: entityId,
+            runId,
+            entity: created,
+          };
         }
-        if (signal === Running) {
-          return { signal: Running, id: entityId, runId };
-        }
-        return { signal: Failed, id: entityId, runId };
-      },
-    );
+      }
+      if (signal === Running) {
+        return { signal: Running, id: entityId, runId };
+      }
+      return { signal: Failed, id: entityId, runId };
+    });
   }
 
   list<D extends ModelFieldsInput>(
@@ -419,6 +438,7 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
     run: FlowRun<ModelFieldsInput>,
     signal: Signal,
     entityId: string,
+    rooms: readonly string[] = [],
   ): Promise<MutationResult> {
     if (z.string().min(1).safeParse(runId).success === false) {
       throw ValidationError.create("mutation run id required");
@@ -428,6 +448,14 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
     }
     this.finalizeRun(runId, run, signal);
     await this.saveRunPhase(runId, run, signal);
+    this.publishSettled({
+      model: run.model.name,
+      operation: run.operation,
+      id: entityId,
+      runId,
+      signal,
+      rooms,
+    });
     return mutationResult(signal, entityId, runId);
   }
 
@@ -450,8 +478,9 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       signal: Running,
     };
     this.runs.set(runId, run);
-    return executeRun(this.runtimeFor(runId, model, input.id, "update"), run).then((signal) =>
-      this.settleMutation(runId, run, signal, input.id),
+    const mutationRt = this.runtimeFor(runId, model, input.id, "update");
+    return executeRun(mutationRt, run).then((signal) =>
+      this.settleMutation(runId, run, signal, input.id, mutationRt.rooms.names),
     );
   }
 
@@ -474,8 +503,9 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       signal: Running,
     };
     this.runs.set(runId, run);
-    return executeRun(this.runtimeFor(runId, model, input.id, "delete"), run).then((signal) =>
-      this.settleMutation(runId, run, signal, input.id),
+    const mutationRt = this.runtimeFor(runId, model, input.id, "delete");
+    return executeRun(mutationRt, run).then((signal) =>
+      this.settleMutation(runId, run, signal, input.id, mutationRt.rooms.names),
     );
   }
 
@@ -543,6 +573,7 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
         model: scopeModel,
         entityId: outboxRow.entityId,
         operation: scopeOperation,
+        parent: [],
       };
       const extHits = resolveExternalByName(this.externals, outboxRow.name);
       if (extHits.length < 1) {
@@ -719,6 +750,7 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       model: dispatcherId,
       entityId: dispatcherId,
       operation: "dispatch",
+      parent: [],
     };
   }
 
@@ -1088,6 +1120,75 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
     return await this.store.selectRows(statement, params);
   }
 
+  onOperationSettled(listener: OperationListener): OperationSubscription {
+    if (z.instanceof(Function).safeParse(listener).success === false) {
+      throw ValidationError.create("operation listener required");
+    }
+    this.listenerBox.listeners = appendItem(this.listenerBox.listeners, listener);
+    return {
+      stop: () => {
+        if (Array.isArray(this.listenerBox.listeners) === false) {
+          throw ValidationError.create("operation listeners required");
+        }
+        const before = this.listenerBox.listeners.length;
+        this.listenerBox.listeners = this.listenerBox.listeners.filter(
+          (registered) => registered !== listener,
+        );
+        return this.listenerBox.listeners.length < before;
+      },
+    };
+  }
+
+  private publishSettled(event: OperationEvent): void {
+    if (z.string().min(1).safeParse(event.model).success === false) {
+      throw ValidationError.create("settled event model required");
+    }
+    for (const listener of this.listenerBox.listeners) {
+      try {
+        listener(event);
+      } catch (err) {
+        this.reportAppError("settled", "operation listener failed", {
+          reason: dbErrorMessageForLog(err, "listener failed"),
+          model: event.model,
+        });
+      }
+    }
+  }
+
+  observability(since: number): ObservabilityPage {
+    if (Number.isInteger(since) === false || since < 0) {
+      throw ValidationError.create("observability cursor must be a non-negative integer");
+    }
+    const logs = this.obs.buffers.logs.filter((logEntry) => logEntry.seq > since);
+    const metrics = this.obs.buffers.metrics.filter((metricEntry) => metricEntry.seq > since);
+    const spans = this.obs.buffers.spans.filter((spanEntry) => spanEntry.seq > since);
+    let nextSeq = since;
+    let oldestSeq = 0;
+    for (const seq of this.bufferSeqs()) {
+      if (seq > nextSeq) {
+        nextSeq = seq;
+      }
+      if (oldestSeq === 0 || seq < oldestSeq) {
+        oldestSeq = seq;
+      }
+    }
+    return { logs, metrics, spans, nextSeq, oldestSeq };
+  }
+
+  private bufferSeqs(): readonly number[] {
+    let seqs: readonly number[] = [];
+    for (const logEntry of this.obs.buffers.logs) {
+      seqs = appendItem(seqs, logEntry.seq);
+    }
+    for (const metricEntry of this.obs.buffers.metrics) {
+      seqs = appendItem(seqs, metricEntry.seq);
+    }
+    for (const spanEntry of this.obs.buffers.spans) {
+      seqs = appendItem(seqs, spanEntry.seq);
+    }
+    return seqs;
+  }
+
   logs(): LogEntry[] {
     if (Array.isArray(this.obs.buffers.logs) === false) {
       throw ValidationError.create("log buffer required");
@@ -1192,6 +1293,8 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       model,
       entityId,
       operation,
+      parent: [],
+      rooms: { names: [] },
       obs: this.obs,
       outbox: this.outbox,
       onExternalEvent: this.onExternalEvent,

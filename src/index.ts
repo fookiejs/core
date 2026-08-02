@@ -63,7 +63,14 @@ export type {
   ModelRef,
   UpdateBody,
 } from "./model.ts";
-export type { LogEntry, MetricEntry, ObsScope, SpanEntry } from "./observability.ts";
+export type {
+  LogEntry,
+  MetricEntry,
+  ObsScope,
+  ObservabilityPage,
+  SpanEntry,
+} from "./observability.ts";
+export type { OperationEvent, OperationListener, OperationSubscription } from "./settled.ts";
 export type { OutboxEntry } from "./engine/outbox.ts";
 export type { PgParam, PgRow } from "./pg/encode.ts";
 export {

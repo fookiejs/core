@@ -38,11 +38,22 @@ export type NestedStepCursor = {
   steps: number;
 };
 
+export type RoomBox = {
+  names: readonly string[];
+};
+
+export type RuntimeParent = {
+  model: string;
+  entityId: string;
+};
+
 export type Runtime<E extends readonly ExternalDef[] = readonly ExternalDef[]> = {
   traceId: string;
   model: ModelDef<ModelFieldsInput>;
   entityId: string;
   operation: string;
+  parent: readonly RuntimeParent[];
+  rooms: RoomBox;
   obs: Observability;
   outbox: Map<string, OutboxEntry>;
   onExternalEvent: (event: ExternalEventOf<E[number]>) => Promise<void>;
@@ -100,6 +111,8 @@ export function transactionRuntime(rt: Runtime, client: PgClient): Runtime {
     model: rt.model,
     entityId: rt.entityId,
     operation: rt.operation,
+    parent: rt.parent,
+    rooms: rt.rooms,
     obs: rt.obs,
     outbox: rt.outbox,
     onExternalEvent: rt.onExternalEvent,
@@ -214,12 +227,15 @@ export function runtimeOf(
   entityId: string,
   operation: string,
   store: PostgresStore,
+  parent: readonly RuntimeParent[] = [],
 ): Runtime {
   return {
     traceId: rt.traceId,
     model,
     entityId,
     operation,
+    parent,
+    rooms: rt.rooms,
     obs: rt.obs,
     outbox: rt.outbox,
     onExternalEvent: rt.onExternalEvent,
@@ -239,6 +255,20 @@ export function runtimeOf(
   };
 }
 
+function descentParent(
+  rt: Runtime,
+  model: ModelDef<ModelFieldsInput>,
+  entityId: string,
+): readonly RuntimeParent[] {
+  if (rt.model.name === model.name && rt.entityId === entityId) {
+    return rt.parent;
+  }
+  if (z.string().min(1).safeParse(rt.entityId).success === false) {
+    return rt.parent;
+  }
+  return [{ model: rt.model.name, entityId: rt.entityId }];
+}
+
 export function scopedRuntime(
   rt: Runtime,
   model: ModelDef<ModelFieldsInput>,
@@ -251,6 +281,13 @@ export function scopedRuntime(
   if (z.string().min(1).safeParse(operation).success === false) {
     throw ValidationError.create("scoped runtime operation required");
   }
-  const next = runtimeOf(rt, model, entityId, operation, rt.store);
+  const next = runtimeOf(
+    rt,
+    model,
+    entityId,
+    operation,
+    rt.store,
+    descentParent(rt, model, entityId),
+  );
   return next;
 }

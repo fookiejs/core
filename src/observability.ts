@@ -17,6 +17,7 @@ export type LogFieldValueKinds = {
 export type LogFieldValue = LogFieldValueKinds[keyof LogFieldValueKinds];
 
 export type LogEntry = {
+  seq: number;
   level: string;
   message: string;
   traceId: string;
@@ -28,21 +29,35 @@ export type LogEntry = {
 };
 
 export type MetricEntry = {
+  seq: number;
   name: string;
   value: number;
   traceId: string;
   model: string;
+  entityId: string;
   timestamp: string;
 };
 
 export type SpanEntry = {
+  seq: number;
   name: string;
   traceId: string;
   model: string;
   entityId: string;
   operation: string;
+  parentModel: readonly string[];
+  parentEntityId: readonly string[];
+  attributes: Record<string, string>;
   startedAt: string;
   endedAt: string;
+};
+
+export type ObservabilityPage = {
+  logs: readonly LogEntry[];
+  metrics: readonly MetricEntry[];
+  spans: readonly SpanEntry[];
+  nextSeq: number;
+  oldestSeq: number;
 };
 
 export const observabilityBufferLimit = 10_000;
@@ -80,15 +95,73 @@ export type ObsBuffers = {
   spans: readonly SpanEntry[];
 };
 
+export type ObsScopeParent = {
+  model: string;
+  entityId: string;
+};
+
 export type ObsScope = {
   traceId: string;
   model: string;
   entityId: string;
   operation: string;
+  parent: readonly ObsScopeParent[];
 };
+
+function parentModelOf(scope: ObsScope): readonly string[] {
+  if (Array.isArray(scope.parent) === false) {
+    throw ValidationError.create("obs scope parent required");
+  }
+  let names: readonly string[] = [];
+  for (const parent of scope.parent) {
+    if (z.string().min(1).safeParse(parent.model).success === false) {
+      continue;
+    }
+    names = appendItem(names, parent.model);
+  }
+  return names;
+}
+
+function parentEntityIdOf(scope: ObsScope): readonly string[] {
+  if (Array.isArray(scope.parent) === false) {
+    throw ValidationError.create("obs scope parent required");
+  }
+  let ids: readonly string[] = [];
+  for (const parent of scope.parent) {
+    if (z.string().min(1).safeParse(parent.entityId).success === false) {
+      continue;
+    }
+    ids = appendItem(ids, parent.entityId);
+  }
+  return ids;
+}
+
+function textAttributesOf(attributes: Attributes): Record<string, string> {
+  const plain: Record<string, string> = {};
+  for (const [key, value] of Object.entries(attributes)) {
+    if (z.string().min(1).safeParse(key).success === false) {
+      continue;
+    }
+    plain[key] = String(value);
+  }
+  return plain;
+}
 
 export class Observability {
   readonly buffers: ObsBuffers = { logs: [], metrics: [], spans: [] };
+  private readonly seqBox: { next: number } = { next: 1 };
+
+  private nextSeq(): number {
+    if (Number.isInteger(this.seqBox.next) === false) {
+      throw ValidationError.create("observability sequence corrupted");
+    }
+    if (this.seqBox.next < 1) {
+      throw ValidationError.create("observability sequence corrupted");
+    }
+    const assigned = this.seqBox.next;
+    this.seqBox.next += 1;
+    return assigned;
+  }
   private readonly tracer = trace.getTracer("fookie");
   private readonly meter = otelMetrics.getMeter("fookie");
   private readonly counters = new Map<string, Counter>();
@@ -96,6 +169,7 @@ export class Observability {
 
   info(scope: ObsScope, message: string, fields: Record<string, LogFieldValue>): void {
     const logEntry: LogEntry = {
+      seq: this.nextSeq(),
       level: "info",
       message,
       traceId: scope.traceId,
@@ -111,6 +185,7 @@ export class Observability {
 
   error(scope: ObsScope, message: string, fields: Record<string, LogFieldValue>): void {
     const logEntry: LogEntry = {
+      seq: this.nextSeq(),
       level: "error",
       message,
       traceId: scope.traceId,
@@ -173,11 +248,15 @@ export class Observability {
       } finally {
         span.end();
         this.buffers.spans = pushBounded(this.buffers.spans, {
+          seq: this.nextSeq(),
           name,
           traceId: scope.traceId,
           model: scope.model,
           entityId: scope.entityId,
           operation: scope.operation,
+          parentModel: parentModelOf(scope),
+          parentEntityId: parentEntityIdOf(scope),
+          attributes: textAttributesOf(spanAttributes),
           startedAt,
           endedAt: isoNow(),
         });
@@ -187,6 +266,8 @@ export class Observability {
 
   private record(scope: ObsScope, name: string, metricAmount: number): void {
     this.buffers.metrics = pushBounded(this.buffers.metrics, {
+      seq: this.nextSeq(),
+      entityId: scope.entityId,
       name: `${scope.model.toLowerCase()}.${name}`,
       value: metricAmount,
       traceId: scope.traceId,
@@ -232,6 +313,7 @@ export function obsScope(rt: Runtime): ObsScope {
     model: rt.model.name,
     entityId: rt.entityId,
     operation: rt.operation,
+    parent: rt.parent,
   };
 }
 

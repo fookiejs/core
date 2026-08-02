@@ -4,7 +4,7 @@ import { nestedEntityId } from "./ids.ts";
 import { compensateRun } from "./compensation.ts";
 import { flushPendingExternalEvents, runExternal } from "./outbox.ts";
 import { requireModel, resolveModel, scopedRuntime, withWriteTransaction } from "./runtime.ts";
-import type { Runtime } from "./runtime.ts";
+import type { RoomBox, Runtime } from "./runtime.ts";
 import { DatabaseError, ModelFieldError, PgEncodeError, ValidationError } from "../errors.ts";
 import type { ExternalDef, InferExternalInputFrom, InferExternalOutputFrom } from "../external.ts";
 import { entityMatchesFilter } from "../filter/match.ts";
@@ -35,7 +35,7 @@ import { relationTargetOf } from "../pg/naming.ts";
 import { getEntity, persistEntity } from "../pg/store.ts";
 import { Done, Failed, Running } from "../signal.ts";
 import type { Signal } from "../signal.ts";
-import { catchValidation, firstPresent, textOrFallback } from "../slot.ts";
+import { appendItem, catchValidation, firstPresent, textOrFallback } from "../slot.ts";
 import type { PgParam, PgRow } from "../pg/encode.ts";
 import type { ScalarSchema } from "../types/type.ts";
 import { entityRecordFromPlain, entityValueAt, mergeEntityRecords } from "../values.ts";
@@ -114,6 +114,25 @@ export type FlowModelOps = {
   delete(target: ModelRef, input: { id: string; filter: FilterInput }): Promise<NestedResult>;
 };
 
+export type FlowRoomOps = {
+  room(name: string): boolean;
+};
+
+export function flowRoomOpsOf(rooms: RoomBox): FlowRoomOps {
+  return {
+    room(name) {
+      if (z.string().min(1).safeParse(name).success === false) {
+        throw ValidationError.create("room name required");
+      }
+      if (rooms.names.includes(name)) {
+        return false;
+      }
+      rooms.names = appendItem(rooms.names, name);
+      return true;
+    },
+  };
+}
+
 export type FlowPgOps = {
   pg: {
     query(sql: string, params: readonly PgParam[]): Promise<readonly PgRow[]>;
@@ -133,11 +152,13 @@ export type CreateFlow<F extends FieldsMap> = {
 } & FlowObs &
   FlowModelOps &
   FlowPgOps &
+  FlowRoomOps &
   FlowExternalOps;
 
 export type ListFlow<F extends FieldsMap> = FlowObs &
   FlowModelOps &
   FlowPgOps &
+  FlowRoomOps &
   FlowExternalOps & {
     filter: FilterView<F>;
   };
@@ -263,6 +284,7 @@ export function createFlowOf<F extends FieldsMap>(
   body: WritableBody<F>,
   ops: FlowObs & FlowModelOps,
   external: FlowExternalOps,
+  rooms: FlowRoomOps,
   pgOps: FlowPgOps,
 ): CreateFlow<F> {
   const flowOps = flowOpsOf(ops);
@@ -278,6 +300,7 @@ export function createFlowOf<F extends FieldsMap>(
     update: flowOps.update,
     delete: flowOps.delete,
     external: external.external,
+    room: rooms.room,
   };
 }
 
@@ -285,6 +308,7 @@ export function listFlowOf<F extends FieldsMap>(
   filter: FilterView<F>,
   ops: FlowObs & FlowModelOps,
   external: FlowExternalOps,
+  rooms: FlowRoomOps,
   pgOps: FlowPgOps,
 ): ListFlow<F> {
   const flowOps = flowOpsOf(ops);
@@ -299,6 +323,7 @@ export function listFlowOf<F extends FieldsMap>(
     update: flowOps.update,
     delete: flowOps.delete,
     external: external.external,
+    room: rooms.room,
   };
 }
 
@@ -308,6 +333,7 @@ export function updateFlowOf<F extends FieldsMap>(
   filter: FilterView<F>,
   ops: FlowObs & FlowModelOps,
   external: FlowExternalOps,
+  rooms: FlowRoomOps,
   pgOps: FlowPgOps,
 ): UpdateFlow<F> {
   const flowOps = flowOpsOf(ops);
@@ -324,6 +350,7 @@ export function updateFlowOf<F extends FieldsMap>(
     update: flowOps.update,
     delete: flowOps.delete,
     external: external.external,
+    room: rooms.room,
   };
 }
 
@@ -332,6 +359,7 @@ export function deleteFlowOf<F extends FieldsMap>(
   filter: FilterView<F>,
   ops: FlowObs & FlowModelOps,
   external: FlowExternalOps,
+  rooms: FlowRoomOps,
   pgOps: FlowPgOps,
 ): DeleteFlow<F> {
   const flowOps = flowOpsOf(ops);
@@ -347,6 +375,7 @@ export function deleteFlowOf<F extends FieldsMap>(
     update: flowOps.update,
     delete: flowOps.delete,
     external: external.external,
+    room: rooms.room,
   };
 }
 
@@ -494,6 +523,7 @@ export async function runCreate<D extends ModelFieldsInput>(
     flowBody,
     ops,
     flowExternalOpsOf(localRt),
+    flowRoomOpsOf(localRt.rooms),
     flowPgOpsOf(localRt),
   );
 
@@ -550,6 +580,7 @@ export async function runNestedList(
     createFilter(model.fields, filterState),
     ops,
     flowExternalOpsOf(localRt),
+    flowRoomOpsOf(localRt.rooms),
     flowPgOpsOf(localRt),
   );
 
@@ -615,6 +646,7 @@ export async function runNestedUpdate<D extends ModelFieldsInput>(
     createFilter(model.fields, filterState),
     ops,
     flowExternalOpsOf(localRt),
+    flowRoomOpsOf(localRt.rooms),
     flowPgOpsOf(localRt),
   );
 
@@ -686,6 +718,7 @@ export async function runNestedDelete(
     createFilter(model.fields, filterState),
     ops,
     flowExternalOpsOf(localRt),
+    flowRoomOpsOf(localRt.rooms),
     flowPgOpsOf(localRt),
   );
 
@@ -736,6 +769,7 @@ export async function executeRunMutation<D extends ModelFieldsInput>(
       createBody,
       ops,
       flowExternalOpsOf(localRt),
+      flowRoomOpsOf(localRt.rooms),
       flowPgOpsOf(localRt),
     );
 
@@ -781,6 +815,7 @@ export async function executeRunMutation<D extends ModelFieldsInput>(
       createFilter(run.model.fields, filterState),
       ops,
       flowExternalOpsOf(localRt),
+      flowRoomOpsOf(localRt.rooms),
       flowPgOpsOf(localRt),
     );
     let existing: EntityRecord;
@@ -835,6 +870,7 @@ export async function executeRunMutation<D extends ModelFieldsInput>(
     createFilter(run.model.fields, filterState),
     ops,
     flowExternalOpsOf(localRt),
+    flowRoomOpsOf(localRt.rooms),
     flowPgOpsOf(localRt),
   );
   let existing: EntityRecord;
@@ -933,6 +969,7 @@ export async function executeRun<D extends ModelFieldsInput>(
         createFilter(run.model.fields, filterState),
         ops,
         flowExternalOpsOf(localRt),
+        flowRoomOpsOf(localRt.rooms),
         flowPgOpsOf(localRt),
       );
       signal = await run.model.flow.list(flow);
