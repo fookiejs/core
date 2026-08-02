@@ -51,6 +51,7 @@ export { filterGroupOf } from "./filter/schema.ts";
 export type { FilterFieldInput, FilterInput } from "./filter/schema.ts";
 export { Model, isModelRef, isRelationField, isSystemFieldKey } from "./model.ts";
 export type {
+  EntityFieldsOf,
   EntityOf,
   FieldValue,
   FieldsMap,
