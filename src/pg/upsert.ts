@@ -3,7 +3,7 @@ import { DatabaseError, ModelFieldError } from "../errors.ts";
 import type { ModelDef, ModelFieldsInput } from "../model.ts";
 import { entityValueToPg, fieldGroupFor } from "./encode.ts";
 import type { PgParam } from "./encode.ts";
-import { columnNameFor, tableNameFor } from "./naming.ts";
+import { quotedColumnFor, quotedTableFor } from "./naming.ts";
 import { appendItem, firstFilterGroup } from "../slot.ts";
 import { entityValueAt } from "../values.ts";
 import type { EntityRecord } from "../values.ts";
@@ -35,7 +35,7 @@ export class UpsertSql {
         throw ModelFieldError.create(`unknown field ${key}`);
       }
       const group = firstFilterGroup(groups);
-      const col = columnNameFor(key);
+      const col = quotedColumnFor(key);
       columns = appendItem(columns, col);
       placeholders = appendItem(placeholders, `$${index}`);
       if (col !== "id") {
@@ -50,7 +50,7 @@ export class UpsertSql {
       }
       index += 1;
     }
-    const table = `public.${tableNameFor(model.name)}`;
+    const table = quotedTableFor(model.name);
     return new UpsertSql(
       `INSERT INTO ${table} (${columns.join(", ")}) VALUES (${placeholders.join(", ")}) ON CONFLICT (id) DO UPDATE SET ${updates.join(", ")}`,
       values,

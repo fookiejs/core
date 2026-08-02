@@ -6,7 +6,7 @@ import type { FilterState } from "../filter/ops.ts";
 import type { ModelDef, ModelFieldsInput } from "../model.ts";
 import { entityValueToPg, fieldGroupFor } from "./encode.ts";
 import type { PgParam } from "./encode.ts";
-import { columnNameFor } from "./naming.ts";
+import { quotedColumnFor } from "./naming.ts";
 import { appendItem, firstFilterGroup } from "../slot.ts";
 import { isEntityValue, jsonWireSchema } from "../values.ts";
 import type { EntityValue, FilterGroup } from "../values.ts";
@@ -93,7 +93,7 @@ export class WhereSql {
       if (filterClauseUnsupported(group, clause) === true) {
         throw ModelFieldError.create(`unsupported filter on ${key}`);
       }
-      const col = columnNameFor(key);
+      const col = quotedColumnFor(key);
       if ("eq" in clause) {
         const eqParsed = jsonWireSchema.safeParse(clause.eq);
         if (eqParsed.success === false || isEntityValue(eqParsed.data) === false) {

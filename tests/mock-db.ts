@@ -35,7 +35,8 @@ export class MockDb implements InjectablePool {
   queries: string[] = [];
   end: readonly (() => Promise<void>)[] = [];
 
-  async query(sql: string, params?: unknown[]) {
+  async query(rawSql: string, params?: unknown[]) {
+    const sql = rawSql.replace(/"([a-z_][a-z0-9_]*)"/g, "$1");
     this.queries.push(sql);
     if (this.mode === "fail-query") {
       throw new Error("query");

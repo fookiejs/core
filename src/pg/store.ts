@@ -21,6 +21,9 @@ import {
   columnNameFor,
   outboxTableName,
   pgColumnType,
+  quoteIdent,
+  quotedColumnFor,
+  quotedTableFor,
   relationTargetOf,
   runTableName,
   tableNameFor,
@@ -85,7 +88,7 @@ export function pageSqlFor(
       throw ModelFieldError.create("order field unknown");
     }
     const direction = term.direction === "desc" ? "DESC" : "ASC";
-    clauses = appendItem(clauses, `${columnNameFor(term.field)} ${direction}`);
+    clauses = appendItem(clauses, `${quotedColumnFor(term.field)} ${direction}`);
   }
   clauses = appendItem(clauses, "id ASC");
   let tail = ` ORDER BY ${clauses.join(", ")}`;
@@ -294,10 +297,10 @@ export class PostgresStore {
     errorBox: DbErrorBox,
   ): Promise<boolean> {
     const table = tableNameFor(model.name);
-    const qualified = `public.${table}`;
+    const qualified = quotedTableFor(model.name);
     let columns: readonly string[] = [];
     for (const [key, field] of Object.entries(model.fields)) {
-      const col = columnNameFor(key);
+      const col = quotedColumnFor(key);
       const type = pgColumnType(field);
       if (key === "isDeleted") {
         columns = appendItem(columns, `${col} ${type} NOT NULL DEFAULT false`);
@@ -313,7 +316,9 @@ export class PostgresStore {
     try {
       await this.db.query(sql);
       for (const [alterKey, alterField] of Object.entries(model.fields)) {
-        const col = columnNameFor(alterKey);
+        const col = quotedColumnFor(alterKey);
+        const indexName = quoteIdent(`${table}_${columnNameFor(alterKey)}_idx`);
+        const uniqueName = quoteIdent(`${table}_${columnNameFor(alterKey)}_uidx`);
         const type = pgColumnType(alterField);
         let alterSql = `ALTER TABLE ${qualified} ADD COLUMN IF NOT EXISTS ${col} ${type}`;
         if (alterKey === "isDeleted") {
@@ -323,20 +328,16 @@ export class PostgresStore {
         }
         await this.db.query(alterSql);
         if (isRelationField(alterField)) {
-          await this.db.query(
-            `CREATE INDEX IF NOT EXISTS ${table}_${col}_idx ON ${qualified} (${col})`,
-          );
+          await this.db.query(`CREATE INDEX IF NOT EXISTS ${indexName} ON ${qualified} (${col})`);
           continue;
         }
         if (alterField.meta.unique) {
           await this.db.query(
-            `CREATE UNIQUE INDEX IF NOT EXISTS ${table}_${col}_uidx ON ${qualified} (${col})`,
+            `CREATE UNIQUE INDEX IF NOT EXISTS ${uniqueName} ON ${qualified} (${col})`,
           );
         }
         if (alterField.meta.index && alterField.meta.unique === false) {
-          await this.db.query(
-            `CREATE INDEX IF NOT EXISTS ${table}_${col}_idx ON ${qualified} (${col})`,
-          );
+          await this.db.query(`CREATE INDEX IF NOT EXISTS ${indexName} ON ${qualified} (${col})`);
         }
       }
       return true;
@@ -351,17 +352,17 @@ export class PostgresStore {
     errorBox: DbErrorBox,
   ): Promise<boolean> {
     const table = tableNameFor(model.name);
-    const qualified = `public.${table}`;
+    const qualified = quotedTableFor(model.name);
     try {
       for (const [key, field] of Object.entries(model.fields)) {
         for (const targetModel of relationTargetOf(field)) {
-          const col = columnNameFor(key);
-          const target = tableNameFor(targetModel);
-          const name = `${table}_${col}_fk`;
+          const col = quotedColumnFor(key);
+          const target = quotedTableFor(targetModel);
+          const name = quoteIdent(`${table}_${columnNameFor(key)}_fk`);
           await this.db.query(
             `DO $$ BEGIN
     ALTER TABLE ${qualified} ADD CONSTRAINT ${name}
-      FOREIGN KEY (${col}) REFERENCES public.${target} (id)
+      FOREIGN KEY (${col}) REFERENCES ${target} (id)
       ON DELETE RESTRICT DEFERRABLE INITIALLY DEFERRED;
   EXCEPTION WHEN duplicate_object THEN NULL;
   WHEN undefined_table THEN NULL;
@@ -481,7 +482,7 @@ export class PostgresStore {
     entityId: string,
     lock: readonly LockMode[] = [],
   ): Promise<EntityRecord> {
-    const table = `public.${tableNameFor(model.name)}`;
+    const table = quotedTableFor(model.name);
     const sql = `SELECT * FROM ${table} WHERE id = $1 AND is_deleted = false${lockSqlFor(lock)}`;
     try {
       const queryResult = await this.db.query(sql, [entityId]);
@@ -520,7 +521,7 @@ export class PostgresStore {
     page: ListPage = emptyListPage(),
   ): Promise<EntityRecord[]> {
     const where = WhereSql.fromFilter(model, filter);
-    const table = `public.${tableNameFor(model.name)}`;
+    const table = quotedTableFor(model.name);
     const tail = pageSqlFor(model, page, where.params.length + 1);
     const sql = `SELECT * FROM ${table} WHERE ${where.sql}${tail.sql}`;
     const bound = where.params.concat(tail.params);

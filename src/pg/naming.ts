@@ -56,6 +56,47 @@ export function columnNameFor(fieldKey: string): string {
   return column;
 }
 
+export const maxIdentifierLength = 63;
+
+export function quoteIdent(name: string): string {
+  const parsed = z
+    .string()
+    .min(1)
+    .regex(/^[a-z_][a-z0-9_]*$/)
+    .safeParse(name);
+  if (parsed.success === false) {
+    throw ModelFieldError.create("identifier must be lower snake case");
+  }
+  if (parsed.data.length > maxIdentifierLength) {
+    throw ModelFieldError.create("identifier is longer than postgres allows");
+  }
+  return `"${parsed.data}"`;
+}
+
+export function quotedTableFor(modelName: string): string {
+  const bare = tableNameFor(modelName);
+  const table = quoteIdent(bare);
+  if (table.length < 3) {
+    throw ModelFieldError.create("quoted table name required");
+  }
+  if (table.includes(bare) === false) {
+    throw ModelFieldError.create("quoting must preserve the table name");
+  }
+  return `public.${table}`;
+}
+
+export function quotedColumnFor(fieldKey: string): string {
+  const bare = columnNameFor(fieldKey);
+  const column = quoteIdent(bare);
+  if (column.length < 3) {
+    throw ModelFieldError.create("quoted column name required");
+  }
+  if (column.includes(bare) === false) {
+    throw ModelFieldError.create("quoting must preserve the column name");
+  }
+  return column;
+}
+
 export function relationTargetOf(field: FieldValue): readonly string[] {
   if (isRelationField(field)) {
     const refName = z.string().min(1).safeParse(field.name);
