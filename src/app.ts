@@ -47,6 +47,7 @@ import {
   dispatchIntervalMs,
   snapshotIdleTimeoutMs,
   snapshotStatementTimeoutMs,
+  ddlLockTimeoutMs,
   pruneIntervalMs,
   retentionMs,
   runBufferLimit,
@@ -62,7 +63,7 @@ import type {
 import { dbErrorBoxText, dbErrorMessageForLog } from "./pg/encode.ts";
 import type { DbErrorBox, PgParam, PgRow } from "./pg/encode.ts";
 import { requireInjectedPool, wrapOwnedPool } from "./pg/pool.ts";
-import type { InjectablePool } from "./pg/pool.ts";
+import type { InjectablePool, PgClient } from "./pg/pool.ts";
 import { PostgresStore } from "./pg/store.ts";
 import type { OutboxQuery, RunQuery } from "./pg/store.ts";
 import type { ReadScope } from "./read-scope.ts";
@@ -133,6 +134,7 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
   private readonly pendingExternalEvents: PendingEventQueue = { events: [] };
   private readonly pendingEntityWrites: PendingWriteQueue = { rows: [] };
   private readonly dbReadyBox: { ready: boolean } = { ready: false };
+  private readonly dbSyncBox: { pending: readonly Promise<boolean>[] } = { pending: [] };
   private readonly dbErrorBox: { messages: readonly string[] } = { messages: [] };
   private readonly serverBox: { servers: readonly http.Server[] } = { servers: [] };
   private readonly dispatcherBox: {
@@ -311,6 +313,7 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
     server.listen(port);
     this.serverBox.servers = [server];
     this.startDispatcher();
+    this.ready().catch(() => false);
     return true;
   }
 
@@ -1375,23 +1378,71 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
     };
   }
 
+  private async syncSchema(): Promise<boolean> {
+    const errorBox: DbErrorBox = { message: "database unavailable" };
+    let client: PgClient;
+    try {
+      client = await this.pool.connect();
+    } catch (err) {
+      this.dbErrorBox.messages = [dbErrorMessageForLog(err, "database unavailable")];
+      return false;
+    }
+    try {
+      const pinned = this.store.withClient(client);
+      await pinned.applyDdlLockTimeout(ddlLockTimeoutMs);
+      const tablesOk = await pinned.ensureAllTables(this.registeredModels, errorBox);
+      if (tablesOk === false) {
+        this.dbErrorBox.messages = [dbErrorBoxText(errorBox)];
+        return false;
+      }
+      const outboxOk = await pinned.loadOutbox(this.outbox, errorBox);
+      if (outboxOk === false) {
+        this.dbErrorBox.messages = [dbErrorBoxText(errorBox)];
+        return false;
+      }
+    } finally {
+      client.release();
+    }
+    this.dbReadyBox.ready = true;
+    await this.recoverRuns();
+    return true;
+  }
+
+  ready(): Promise<boolean> {
+    if (this.dbReadyBox.ready === true) {
+      return Promise.resolve(true);
+    }
+    for (const inFlight of this.dbSyncBox.pending) {
+      return inFlight;
+    }
+    const started = this.syncSchema().finally(() => this.forgetSyncAttempt());
+    this.dbSyncBox.pending = [started];
+    return started;
+  }
+
+  private forgetSyncAttempt(): boolean {
+    if (Array.isArray(this.dbSyncBox.pending) === false) {
+      this.dbSyncBox.pending = [];
+      return false;
+    }
+    if (this.dbSyncBox.pending.length < 1) {
+      return false;
+    }
+    this.dbSyncBox.pending = [];
+    return true;
+  }
+
   private async awaitDb(): Promise<boolean> {
     if (this.dbReadyBox.ready === true) {
       return true;
     }
-    const errorBox: DbErrorBox = { message: "database unavailable" };
-    const tablesOk = await this.store.ensureAllTables(this.registeredModels, errorBox);
-    if (tablesOk === false) {
-      this.dbErrorBox.messages = [dbErrorBoxText(errorBox)];
+    const synced = await this.ready();
+    if (synced === false) {
       return false;
     }
-    const outboxOk = await this.store.loadOutbox(this.outbox, errorBox);
-    if (outboxOk === false) {
-      this.dbErrorBox.messages = [dbErrorBoxText(errorBox)];
-      return false;
+    if (this.dbReadyBox.ready === false) {
+      throw DatabaseError.create("schema sync reported ready without finishing");
     }
-    this.dbReadyBox.ready = true;
-    await this.recoverRuns();
     return true;
   }
 

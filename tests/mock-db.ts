@@ -30,6 +30,7 @@ export class MockDb implements InjectablePool {
   mode = "ok";
   failOnSql = "";
   failCode = "";
+  ddlDelayMs = 0;
   failBudget = -1;
   failRollback = false;
   queries: string[] = [];
@@ -67,6 +68,9 @@ export class MockDb implements InjectablePool {
     }
     if (sql === "COMMIT" || sql === "ROLLBACK") {
       return { rows: [], rowCount: 0 };
+    }
+    if (sql.startsWith("CREATE TABLE") && this.ddlDelayMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, this.ddlDelayMs));
     }
     if (sql.startsWith("CREATE TABLE")) {
       if (this.mode === "fail-create-table") {

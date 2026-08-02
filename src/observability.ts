@@ -72,6 +72,8 @@ export const runBufferLimit = 10_000;
 
 export const lockTimeoutMs = 3_000;
 
+export const ddlLockTimeoutMs = 5_000;
+
 export const maxWriteAttempts = 3;
 
 export const writeRetryBackoffMs = 25;

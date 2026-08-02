@@ -273,6 +273,21 @@ export class PostgresStore {
     }
   }
 
+  async applyDdlLockTimeout(timeoutMs: number): Promise<boolean> {
+    if (Number.isInteger(timeoutMs) === false) {
+      throw DatabaseError.create("ddl lock timeout must be an integer");
+    }
+    if (timeoutMs < 1) {
+      throw DatabaseError.create("ddl lock timeout must be positive");
+    }
+    try {
+      await this.db.query(`SET lock_timeout = ${timeoutMs}`);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async ensureAllTables(
     models: ReadonlyArray<ModelDef<ModelFieldsInput>>,
     errorBox: DbErrorBox,
