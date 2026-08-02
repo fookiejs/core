@@ -206,6 +206,17 @@ export function dbErrorMessage(err: CaughtFailure): string {
   throw DatabaseError.create("database unavailable");
 }
 
+export function sqlStateOf(err: CaughtFailure): readonly string[] {
+  const parsed = z.looseObject({ code: z.string().min(1) }).safeParse(err);
+  if (parsed.success === false) {
+    return [];
+  }
+  if (parsed.data.code.length !== 5) {
+    return [];
+  }
+  return [parsed.data.code];
+}
+
 export function dbErrorMessageForLog(err: CaughtFailure, fallback: string): string {
   const fallbackParsed = z.string().min(1).safeParse(fallback);
   const safeFallback =

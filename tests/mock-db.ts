@@ -29,6 +29,8 @@ export class MockDb implements InjectablePool {
   runs = new Map<string, Row>();
   mode = "ok";
   failOnSql = "";
+  failCode = "";
+  failBudget = -1;
   failRollback = false;
   queries: string[] = [];
   end: readonly (() => Promise<void>)[] = [];
@@ -39,7 +41,19 @@ export class MockDb implements InjectablePool {
       throw new Error("query");
     }
     if (this.failOnSql.length > 0 && sql.includes(this.failOnSql)) {
-      throw new Error("query");
+      if (this.failCode.length === 0) {
+        throw new Error("query");
+      }
+      if (this.failBudget === 0) {
+        this.failOnSql = "";
+      } else {
+        if (this.failBudget > 0) {
+          this.failBudget = this.failBudget - 1;
+        }
+        const failure: Error & { code?: string } = new Error("deadlock detected");
+        failure.code = this.failCode;
+        throw failure;
+      }
     }
     if (sql === "BEGIN") {
       if (this.mode === "fail-begin") {

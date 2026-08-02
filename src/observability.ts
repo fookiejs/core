@@ -72,6 +72,10 @@ export const runBufferLimit = 10_000;
 
 export const lockTimeoutMs = 3_000;
 
+export const maxWriteAttempts = 3;
+
+export const writeRetryBackoffMs = 25;
+
 export const snapshotStatementTimeoutMs = 10_000;
 
 export const snapshotIdleTimeoutMs = 15_000;

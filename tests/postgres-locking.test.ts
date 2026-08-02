@@ -30,6 +30,29 @@ const counter = Model({
   },
 });
 
+const crossing = Model({
+  name: "LockCrossing",
+  fields: { alpha: z.number().int() },
+  flow: {
+    async create() {
+      return Done;
+    },
+    async list() {
+      return Done;
+    },
+    async update(flow) {
+      await pause(300);
+      await flow.pg.query("UPDATE public.lock_crossing SET alpha = alpha + 1 WHERE id <> $1", [
+        flow.id,
+      ]);
+      return Done;
+    },
+    async delete() {
+      return Done;
+    },
+  },
+});
+
 describe("postgres row locking", { skip: databaseUrl.length === 0 }, () => {
   let pool: pg.Pool;
 
@@ -45,7 +68,7 @@ describe("postgres row locking", { skip: databaseUrl.length === 0 }, () => {
     return app({
       listen: "0",
       database: databaseUrl,
-      models: [counter],
+      models: [counter, crossing],
       externals: [] as const,
       onExternalEvent: async () => {},
       pool: [
@@ -85,6 +108,44 @@ describe("postgres row locking", { skip: databaseUrl.length === 0 }, () => {
 
     await writer.stop();
     await second.stop();
+  });
+
+  it("breaks a deadlock instead of hanging on it", async () => {
+    const left = boot();
+    const right = boot();
+    await left.list(crossing, {});
+    await pool.query("DELETE FROM public.lock_crossing");
+
+    const first = await left.create(crossing, { alpha: 0 });
+    const second = await left.create(crossing, { alpha: 0 });
+    assert.equal(first.signal, "done");
+    assert.equal(second.signal, "done");
+    if (first.signal !== "done" || second.signal !== "done") {
+      throw new Error("crossing rows must exist");
+    }
+
+    await right.list(crossing, {});
+
+    const startedAt = Date.now();
+    const settled = await Promise.all([
+      left.update(crossing, { id: first.id, body: { alpha: 1 }, filter: {} }),
+      right.update(crossing, { id: second.id, body: { alpha: 1 }, filter: {} }),
+    ]);
+    const elapsed = Date.now() - startedAt;
+
+    assert.ok(
+      elapsed < 20_000,
+      `both writers must settle rather than hang, took ${String(elapsed)}ms`,
+    );
+    const done = settled.filter((outcome) => outcome?.signal === "done");
+    assert.ok(done.length >= 1, "one writer must win the deadlock outright");
+    assert.equal(done.length, 2, "the victim must retry and then succeed");
+
+    const rows = await pool.query("SELECT id, alpha FROM public.lock_crossing ORDER BY id");
+    assert.equal(rows.rowCount, 2);
+
+    await left.stop();
+    await right.stop();
   });
 
   it("keeps one snapshot across every read in the scope", async () => {

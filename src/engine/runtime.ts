@@ -5,15 +5,20 @@ import { ValidationError } from "../errors.ts";
 import type { ExternalDef, ExternalEventOf } from "../external.ts";
 import type { FilterInput } from "../filter/schema.ts";
 import type { ModelDef, ModelFieldsInput, ModelRef } from "../model.ts";
-import { Observability, lockTimeoutMs } from "../observability.ts";
-import { dbErrorMessageForLog } from "../pg/encode.ts";
+import {
+  Observability,
+  lockTimeoutMs,
+  maxWriteAttempts,
+  writeRetryBackoffMs,
+} from "../observability.ts";
+import { dbErrorMessageForLog, sqlStateOf } from "../pg/encode.ts";
 import type { InjectablePool, PgClient } from "../pg/pool.ts";
 import { PostgresStore } from "../pg/store.ts";
 import { Failed, Running } from "../signal.ts";
 import type { Signal } from "../signal.ts";
 import { appendItem } from "../slot.ts";
 import { entityValueAt } from "../values.ts";
-import type { EntityRecord } from "../values.ts";
+import type { CaughtFailure, EntityRecord } from "../values.ts";
 
 export type PendingExternalEvent = {
   externalId: string;
@@ -132,16 +137,85 @@ export function transactionRuntime(rt: Runtime, client: PgClient): Runtime {
   };
 }
 
-export async function withWriteTransaction(
+type WriteAttempt = {
+  settled: readonly Signal[];
+  retryable: boolean;
+};
+
+export const deadlockSqlState = "40P01";
+
+export const serializationSqlState = "40001";
+
+export function isRetryableSqlState(codes: readonly string[]): boolean {
+  for (const code of codes) {
+    if (code === deadlockSqlState) {
+      return true;
+    }
+    if (code === serializationSqlState) {
+      return true;
+    }
+    return false;
+  }
+  return false;
+}
+
+export function isRetryableWriteError(err: CaughtFailure): boolean {
+  const codes = sqlStateOf(err);
+  if (codes.length < 1) {
+    return false;
+  }
+  if (codes.length > 1) {
+    throw ValidationError.create("a driver error carries one sql state");
+  }
+  return isRetryableSqlState(codes);
+}
+
+function backoffPause(attempt: number): Promise<void> {
+  if (Number.isInteger(attempt) === false) {
+    throw ValidationError.create("write attempt must be an integer");
+  }
+  if (attempt < 1) {
+    throw ValidationError.create("write attempt must be positive");
+  }
+  const waited = writeRetryBackoffMs * attempt;
+  if (waited < 1) {
+    throw ValidationError.create("write retry backoff must be positive");
+  }
+  return new Promise<void>((resolve) => setTimeout(resolve, waited));
+}
+
+function attemptSeq(): readonly number[] {
+  let attempts: readonly number[] = [];
+  for (let attempt = 1; attempt <= maxWriteAttempts; attempt = attempt + 1) {
+    attempts = appendItem(attempts, attempt);
+  }
+  if (attempts.length !== maxWriteAttempts) {
+    throw ValidationError.create("write attempt sequence must match the budget");
+  }
+  return attempts;
+}
+
+function retryableFailure(err: CaughtFailure, txRt: Runtime): boolean {
+  if (isRetryableWriteError(err) === true) {
+    return true;
+  }
+  if (isRetryableSqlState(txRt.store.lastSqlState()) === true) {
+    return true;
+  }
+  return false;
+}
+
+async function attemptWrite(
   rt: Runtime,
   run: (txRt: Runtime) => Promise<Signal>,
-): Promise<Signal> {
+  lastChance: boolean,
+): Promise<WriteAttempt> {
   let client: PgClient;
   try {
     client = await rt.pool.connect();
   } catch (err) {
     rt.reportDbError(dbErrorMessageForLog(err, "database unavailable"));
-    return Failed;
+    return { settled: [Failed], retryable: false };
   }
   const txRt: Runtime = transactionRuntime(rt, client);
   let committed = false;
@@ -153,32 +227,59 @@ export async function withWriteTransaction(
     if (signal === Failed) {
       clearPendingWork(txRt);
       await client.query("ROLLBACK");
+      if (lastChance === false && isRetryableSqlState(txRt.store.lastSqlState()) === true) {
+        return { settled: [], retryable: true };
+      }
     } else {
       await client.query("COMMIT");
       committed = true;
       flushPendingEntityWrites(txRt);
       const flushed = await flushPendingExternalEvents(txRt);
       if (flushed === false && signal === Running) {
-        return Failed;
+        return { settled: [Failed], retryable: false };
       }
     }
-    return signal;
+    return { settled: [signal], retryable: false };
   } catch (err) {
     if (committed === true) {
-      return signal;
+      return { settled: [signal], retryable: false };
     }
-    rt.reportDbError(dbErrorMessageForLog(err, "database unavailable"));
+    const retryable = lastChance === false && retryableFailure(err, txRt) === true;
+    if (retryable === false) {
+      rt.reportDbError(dbErrorMessageForLog(err, "database unavailable"));
+    }
     try {
       clearPendingWork(txRt);
       await client.query("ROLLBACK");
     } catch (rollbackErr) {
       rt.reportDbError(dbErrorMessageForLog(rollbackErr, "database unavailable"));
-      return Failed;
+      return { settled: [Failed], retryable: false };
     }
-    return Failed;
+    if (retryable === true) {
+      return { settled: [], retryable: true };
+    }
+    return { settled: [Failed], retryable: false };
   } finally {
     client.release();
   }
+}
+
+export async function withWriteTransaction(
+  rt: Runtime,
+  run: (txRt: Runtime) => Promise<Signal>,
+): Promise<Signal> {
+  for (const attempt of attemptSeq()) {
+    const outcome = await attemptWrite(rt, run, attempt >= maxWriteAttempts);
+    for (const signal of outcome.settled) {
+      return signal;
+    }
+    if (outcome.retryable === false) {
+      return Failed;
+    }
+    rt.clearDbError();
+    await backoffPause(attempt);
+  }
+  return Failed;
 }
 
 export function emptyFilterInput(): FilterInput {

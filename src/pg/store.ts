@@ -9,6 +9,7 @@ import { entityStoreKey, isRelationField, isSystemFieldKey } from "../model.ts";
 import type { ModelDef, ModelFieldsInput } from "../model.ts";
 import {
   captureDbError,
+  sqlStateOf,
   dbErrorMessageForLog,
   fieldGroupFor,
   firstQueryRow,
@@ -26,7 +27,7 @@ import {
   toCamelCase,
 } from "./naming.ts";
 import type { OutboxStatus, Phase } from "../signal.ts";
-import type { PgQueryable } from "./pool.ts";
+import type { PgQueryResult, PgQueryable } from "./pool.ts";
 import {
   firstTextOrAbsent,
   outboxColumns,
@@ -179,6 +180,7 @@ export type StoreDbErrorHandler = (message: string) => void;
 export class PostgresStore {
   private readonly db: PgQueryable;
   private readonly onDbError: readonly StoreDbErrorHandler[];
+  private readonly stateBox: { codes: readonly string[] } = { codes: [] };
 
   private constructor(db: PgQueryable, onDbError: readonly StoreDbErrorHandler[]) {
     if (z.function().safeParse(db.query).success === false) {
@@ -187,8 +189,34 @@ export class PostgresStore {
     if (Array.isArray(onDbError) === false) {
       throw DatabaseError.create("database error handlers required");
     }
-    this.db = db;
+    this.db = { query: (sql, params = []) => this.noteFailures(db, sql, params) };
     this.onDbError = onDbError;
+  }
+
+  private async noteFailures(
+    db: PgQueryable,
+    sql: string,
+    params: readonly PgParam[],
+  ): Promise<PgQueryResult> {
+    try {
+      return await db.query(sql, params.slice());
+    } catch (err) {
+      const codes = sqlStateOf(err);
+      if (codes.length > 0) {
+        this.stateBox.codes = codes;
+      }
+      throw err;
+    }
+  }
+
+  lastSqlState(): readonly string[] {
+    if (Array.isArray(this.stateBox.codes) === false) {
+      throw DatabaseError.create("sql state box required");
+    }
+    if (this.stateBox.codes.length > 1) {
+      throw DatabaseError.create("only the last sql state is kept");
+    }
+    return this.stateBox.codes;
   }
 
   static create(db: PgQueryable, onDbError: readonly StoreDbErrorHandler[] = []): PostgresStore {
