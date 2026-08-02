@@ -15,13 +15,13 @@ import {
   createdEntity,
   domainFieldsFrom,
   isCreateBody,
-  isRelationField,
   mergeUpdateBody,
   stampSoftDelete,
   stampUpdate,
 } from "../model.ts";
 import type {
   EntityFieldsOf,
+  FieldValue,
   FieldsMap,
   ModelDef,
   ModelFieldsInput,
@@ -31,6 +31,7 @@ import type {
 } from "../model.ts";
 import { createObservability, obsScope, traceSpan } from "../observability.ts";
 import type { FlowObs, FlowTelemetry } from "../observability.ts";
+import { relationTargetOf } from "../pg/naming.ts";
 import { getEntity, persistEntity } from "../pg/store.ts";
 import { Done, Failed, Running } from "../signal.ts";
 import type { Signal } from "../signal.ts";
@@ -387,6 +388,18 @@ export type FlowRun<D extends ModelFieldsInput = ModelFieldsInput> = {
   signal: Signal;
 };
 
+function relatesToParent(fieldValue: FieldValue, parentName: string): boolean {
+  if (z.string().min(1).safeParse(parentName).success === false) {
+    return false;
+  }
+  for (const target of relationTargetOf(fieldValue)) {
+    if (target === parentName) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function bindRelationFields(
   child: ModelDef<ModelFieldsInput>,
   parent: ModelDef<ModelFieldsInput>,
@@ -396,7 +409,7 @@ export function bindRelationFields(
   const next = entityRecordFromPlain(body);
   const fields = domainFieldsFrom(child.fields);
   for (const [key, value] of Object.entries(fields)) {
-    if (isRelationField(value) && value.name === parent.name) {
+    if (relatesToParent(value, parent.name)) {
       next[key] = parentEntityId;
     }
   }
@@ -412,7 +425,7 @@ export function bindRelationFilter(
   const next = copyFilterState(filter);
   const fields = domainFieldsFrom(child.fields);
   for (const [key, value] of Object.entries(fields)) {
-    if (isRelationField(value) && value.name === parent.name) {
+    if (relatesToParent(value, parent.name)) {
       assignFilterOp(next, key, "eq", parentEntityId);
     }
   }
@@ -427,7 +440,7 @@ export function entityMatchesParentRelation(
 ): boolean {
   const fields = domainFieldsFrom(child.fields);
   for (const [key, value] of Object.entries(fields)) {
-    if (isRelationField(value) && value.name === parent.name) {
+    if (relatesToParent(value, parent.name)) {
       const relatedValues = entityValueAt(entity, key);
       if (relatedValues.length < 1) {
         return false;

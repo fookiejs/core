@@ -549,7 +549,7 @@ export class PostgresStore {
 
   async loadResumableRuns(limit: number): Promise<readonly RunStateRow[]> {
     const sql = `SELECT ${runColumns} FROM ${runTableName}
-    WHERE saga_phase IN ('forward', 'settling', 'compensating')
+    WHERE saga_phase IN ('forward', 'compensating')
     ORDER BY updated_at ASC
     LIMIT $1`;
     try {
