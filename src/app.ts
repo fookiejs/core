@@ -73,6 +73,26 @@ import { appendItem, catchValidation, firstPresent, mapLookup } from "./slot.ts"
 import { entityRecordFromPlain, entityRecordFromUpdateBody } from "./values.ts";
 import type { EntityRecord, JsonValue } from "./values.ts";
 
+function seqEdgeOf(
+  buffer: readonly { seq: number }[],
+): readonly { oldest: number; newest: number }[] {
+  if (buffer.length < 1) {
+    return [];
+  }
+  let oldest = 0;
+  let newest = 0;
+  for (const entry of buffer.slice(0, 1)) {
+    oldest = entry.seq;
+  }
+  for (const entry of buffer.slice(-1)) {
+    newest = entry.seq;
+  }
+  if (oldest < 1) {
+    return [];
+  }
+  return [{ oldest, newest }];
+}
+
 export function models(items: readonly ModelDef<ModelFieldsInput>[]): ModelDef<ModelFieldsInput>[] {
   let registered: readonly ModelDef<ModelFieldsInput>[] = [];
   for (const modelDef of items) {
@@ -1187,29 +1207,29 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
     const spans = this.obs.buffers.spans.filter((spanEntry) => spanEntry.seq > since);
     let nextSeq = since;
     let oldestSeq = 0;
-    for (const seq of this.bufferSeqs()) {
-      if (seq > nextSeq) {
-        nextSeq = seq;
+    for (const edge of this.bufferEdges()) {
+      if (edge.newest > nextSeq) {
+        nextSeq = edge.newest;
       }
-      if (oldestSeq === 0 || seq < oldestSeq) {
-        oldestSeq = seq;
+      if (oldestSeq === 0 || edge.oldest < oldestSeq) {
+        oldestSeq = edge.oldest;
       }
     }
     return { logs, metrics, spans, nextSeq, oldestSeq };
   }
 
-  private bufferSeqs(): readonly number[] {
-    let seqs: readonly number[] = [];
-    for (const logEntry of this.obs.buffers.logs) {
-      seqs = appendItem(seqs, logEntry.seq);
+  private bufferEdges(): readonly { oldest: number; newest: number }[] {
+    let edges: readonly { oldest: number; newest: number }[] = [];
+    for (const seqs of [
+      seqEdgeOf(this.obs.buffers.logs),
+      seqEdgeOf(this.obs.buffers.metrics),
+      seqEdgeOf(this.obs.buffers.spans),
+    ]) {
+      for (const edge of seqs) {
+        edges = appendItem(edges, edge);
+      }
     }
-    for (const metricEntry of this.obs.buffers.metrics) {
-      seqs = appendItem(seqs, metricEntry.seq);
-    }
-    for (const spanEntry of this.obs.buffers.spans) {
-      seqs = appendItem(seqs, spanEntry.seq);
-    }
-    return seqs;
+    return edges;
   }
 
   logs(): LogEntry[] {
