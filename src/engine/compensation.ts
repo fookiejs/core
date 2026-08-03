@@ -149,7 +149,6 @@ export async function compensateRun(rt: Runtime, runId: string): Promise<number>
       input: undoInput,
     });
     dispatched += 1;
-    return dispatched;
   }
   return dispatched;
 }
