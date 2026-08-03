@@ -22,6 +22,7 @@ import {
   httpSocketDrop,
   trackApp,
   shutdownLiveApps,
+  serveApp,
 } from "./mock-db.ts";
 
 let nextPort = 44000;
@@ -380,7 +381,7 @@ describe("final coverage", () => {
         pool: [db],
       }),
     );
-    fookie.run();
+    await serveApp(fookie);
 
     const failedCreate = await httpPost(port, "/httpfinal/create", {
       body: { email: "h@f.com", n: 1, note: "{}" },
@@ -700,7 +701,7 @@ describe("final coverage", () => {
         pool: [db],
       }),
     );
-    f3.run();
+    await serveApp(f3);
     const slash = await httpPost(port + 2, "/httpleft//update", {
       filter: {},
       body: { email: "a@b.com" },
@@ -750,7 +751,7 @@ describe("final coverage", () => {
         pool: [db],
       }),
     );
-    fookie.run();
+    await serveApp(fookie);
 
     const created = await fookie.create(jsonUser, { email: "j@c.com", data: "{}" });
     if (created.signal !== "done") {

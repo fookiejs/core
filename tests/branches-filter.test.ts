@@ -11,7 +11,14 @@ import {
   Types,
   app,
 } from "../src/index.ts";
-import { MockDb, httpPost, httpSocketDrop, trackApp, shutdownLiveApps } from "./mock-db.ts";
+import {
+  MockDb,
+  httpPost,
+  httpSocketDrop,
+  trackApp,
+  shutdownLiveApps,
+  serveApp,
+} from "./mock-db.ts";
 
 let nextPort = 46000;
 
@@ -187,7 +194,7 @@ describe("filter and http branches", () => {
         pool: [db],
       }),
     );
-    fookie.run();
+    await serveApp(fookie);
 
     await fookie.create(user, { email: "h@f.com", score: 1, meta: "{}" });
     await fookie.list(user, { email: { eq: "h@f.com", in: [] } });
@@ -330,7 +337,7 @@ describe("filter and http branches", () => {
         pool: [db],
       }),
     );
-    fookie.run();
+    await serveApp(fookie);
 
     const pending = await fookie.create(user, { email: "e@h.com" });
     if (pending.signal !== "running") {
@@ -444,7 +451,7 @@ describe("filter and http branches", () => {
         pool: [db],
       }),
     );
-    fookie.run();
+    await serveApp(fookie);
 
     const failed = await httpPost(port, "/httpfail/create", {
       body: { email: "fail@f.com" },

@@ -2,7 +2,7 @@ import { z } from "zod";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { app, Model, External, Done, Running, Failed, FailureClass, Phase } from "../src/index.ts";
-import { MockDb, httpPost } from "./mock-db.ts";
+import { MockDb, httpPost, serveApp } from "./mock-db.ts";
 
 type Seen = { id: string; name: string };
 
@@ -347,7 +347,7 @@ describe("dispatcher and failure reporting", () => {
     const db = new MockDb();
     const seen: Seen[] = [];
     const fookie = bootApp(db, seen, [mailOnly]);
-    fookie.run();
+    await serveApp(fookie);
 
     const box = (fookie as unknown as { dispatcherBox: { timers: { hasRef(): boolean }[] } })
       .dispatcherBox;
@@ -467,7 +467,7 @@ describe("create result and http surface", () => {
         },
       }),
     ]);
-    fookie.run();
+    await serveApp(fookie);
     const servers = (
       fookie as unknown as { serverBox: { servers: { address(): { port: number } }[] } }
     ).serverBox.servers;

@@ -14,7 +14,7 @@ import {
   app,
   models,
 } from "../src/index.ts";
-import { MockDb, httpPost, httpRaw, trackApp, shutdownLiveApps } from "./mock-db.ts";
+import { MockDb, httpPost, httpRaw, trackApp, shutdownLiveApps, serveApp } from "./mock-db.ts";
 
 let nextPort = 42000;
 
@@ -333,7 +333,7 @@ describe("coverage", () => {
         pool: [db],
       }),
     );
-    fookie.run();
+    await serveApp(fookie);
     const created = await httpPost(port, "/httpuser/create", {
       body: { email: "h@u.com", name: "H" },
     });

@@ -30,6 +30,9 @@ docker compose up -d
 - CRUD via `fookie.create`, `list`, `update`, `delete`
 - Saga resume via `fookie.resume(runId)` and `fookie.setExternalResult`
 - HTTP server via `fookie.run()` — `POST /{model}/create`, `/list`, `/{id}/update`, `/{id}/delete`, `/external/result`
+- `fookie.listening()` resolves once the socket is actually accepting connections, with the port it bound.
+  `run()` returns as soon as it has handed the socket to the OS, so a request issued on the next line races the
+  bind. Await this instead. Pass `listen: "0"` to let the OS pick a free port and read it back from here.
 - Shutdown via `fookie.stop()` — closes the HTTP server and owned database pool
 - Observability via `fookie.logs()`, `fookie.metrics()`, `fookie.spans()`
 - OpenTelemetry: spans, counters, and histograms are emitted through `@opentelemetry/api` — register any OTel SDK/exporter in your app and framework telemetry flows to it; without an SDK the calls are no-ops

@@ -40,6 +40,7 @@ mock.module("pg", {
 });
 
 const { app, Model, Done } = await import("../src/index.ts");
+const { serveApp } = await import("./mock-db.ts");
 
 describe("default pg pool", () => {
   it("uses pg.Pool when pool config is omitted", () => {
@@ -95,7 +96,7 @@ describe("default pg pool", () => {
       pool: [],
     });
 
-    fookie.run();
+    await serveApp(fookie);
     assert.equal(await fookie.stop(), true);
     assert.equal(lastPool !== false && lastPool.ended, true);
   });

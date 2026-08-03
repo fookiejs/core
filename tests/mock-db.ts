@@ -368,3 +368,15 @@ export async function shutdownLiveApps(): Promise<void> {
   await Promise.all([...liveApps].map((instance) => instance.stop()));
   liveApps.clear();
 }
+
+export async function serveApp<T extends App>(instance: T): Promise<number> {
+  const started = instance.run();
+  if (started === false) {
+    throw new Error("the app refused to start its http server");
+  }
+  const bound = await instance.listening();
+  for (const port of bound) {
+    return port;
+  }
+  throw new Error("the app never reported a listening port");
+}

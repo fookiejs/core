@@ -11,6 +11,7 @@ import {
   httpSocketDrop,
   trackApp,
   shutdownLiveApps,
+  serveApp,
 } from "./mock-db.ts";
 
 let nextPort = 47000;
@@ -69,7 +70,7 @@ describe("http edge routes", () => {
         pool: [db],
       }),
     );
-    fookie.run();
+    await serveApp(fookie);
 
     const root = await httpPost(port, "/only", {});
     assert.equal(root.status, 404);
@@ -123,7 +124,7 @@ describe("http edge routes", () => {
         pool: [db],
       }),
     );
-    fookie.run();
+    await serveApp(fookie);
 
     await httpPost(port, "/filteredge/create", {
       body: { email: "f@e.com", score: 1 },
@@ -177,7 +178,7 @@ describe("http edge routes", () => {
         pool: [db],
       }),
     );
-    fookie.run();
+    await serveApp(fookie);
 
     const created = await httpPost(port, "/mutate/create", {
       body: { email: "m@t.com", loc: [1, 2] },
@@ -257,7 +258,7 @@ describe("http edge routes", () => {
         pool: [db],
       }),
     );
-    fookie.run();
+    await serveApp(fookie);
 
     const created = await httpRaw(
       port,
@@ -316,7 +317,7 @@ describe("http edge routes", () => {
         pool: [db],
       }),
     );
-    fookie.run();
+    await serveApp(fookie);
 
     await httpPost(port, "/filterops/create", {
       body: { email: "f@ops.com", loc: [10, 20] },

@@ -11,7 +11,7 @@ import {
   type ExternalEventOf,
   type ExternalOutputOf,
 } from "../src/index.ts";
-import { MockDb, httpPost, trackApp, shutdownLiveApps } from "./mock-db.ts";
+import { MockDb, httpPost, trackApp, shutdownLiveApps, serveApp } from "./mock-db.ts";
 
 let nextPort = 45000;
 
@@ -433,7 +433,7 @@ describe("order flow integration", () => {
         pool: [db],
       }),
     );
-    fookie.run();
+    await serveApp(fookie);
 
     const userRes = await httpPost(port, "/user/create", {
       body: { email: "http@example.com", name: "Http User" },

@@ -14,7 +14,7 @@ import {
   app,
   models,
 } from "../src/index.ts";
-import { MockDb, httpPost, httpGet, trackApp, shutdownLiveApps } from "./mock-db.ts";
+import { MockDb, httpPost, httpGet, trackApp, shutdownLiveApps, serveApp } from "./mock-db.ts";
 
 let nextPort = 41000;
 
@@ -368,7 +368,7 @@ describe("fookie core", () => {
         pool: [db],
       }),
     );
-    fookie.run();
+    await serveApp(fookie);
     assert.equal(await fookie.stop(), true);
     await assert.rejects(
       () => httpPost(port, "/user/list", { filter: {} }),

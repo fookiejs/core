@@ -14,7 +14,7 @@ import {
   app,
   type CreateResult,
 } from "../src/index.ts";
-import { MockDb, httpPost, httpRaw, trackApp, shutdownLiveApps } from "./mock-db.ts";
+import { MockDb, httpPost, httpRaw, trackApp, shutdownLiveApps, serveApp } from "./mock-db.ts";
 
 let nextPort = 43000;
 
@@ -384,7 +384,7 @@ describe("branch coverage", () => {
         pool: [db],
       }),
     );
-    fookie.run();
+    await serveApp(fookie);
 
     const running = await httpPost(port, "/edge/create", {
       body: { email: "e@d.com", loc: [1, 2] },
@@ -624,7 +624,7 @@ describe("branch coverage", () => {
         pool: [db],
       }),
     );
-    fookie.run();
+    await serveApp(fookie);
 
     const badDeleteFilter = await httpPost(port, "/left/id/delete", {
       filter: { email: { eq: 1 } },
@@ -969,7 +969,7 @@ describe("branch coverage", () => {
 
     await fookie.list(cacheUser, { loc: { near: [0, 0] } });
 
-    fookie.run();
+    await serveApp(fookie);
     const badBody = await httpPost(port, "/cacheuser/create", { body: 123 });
     assert.equal(badBody.status, 400);
 

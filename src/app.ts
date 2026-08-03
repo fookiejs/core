@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { once } from "node:events";
 import http from "node:http";
 import { SpanStatusCode } from "@opentelemetry/api";
 import { externalSummaryOf, modelSummaryOf } from "./catalog.ts";
@@ -116,6 +117,30 @@ export type AppConfig<E extends readonly ExternalDef[] = readonly ExternalDef[]>
   pool: readonly InjectablePool[];
 };
 
+const boundAddress = z.object({ port: z.number().int().positive() });
+
+async function awaitBinding(server: http.Server): Promise<readonly number[]> {
+  const heard = await Promise.race([
+    once(server, "listening").then(() => true),
+    once(server, "error").then(() => false),
+  ]).catch(() => false);
+  if (heard === false) {
+    return [];
+  }
+  return boundPortOf(server);
+}
+
+function boundPortOf(server: http.Server): readonly number[] {
+  const parsed = boundAddress.safeParse(server.address());
+  if (parsed.success === false) {
+    return [];
+  }
+  if (parsed.data.port > 65535) {
+    return [];
+  }
+  return [parsed.data.port];
+}
+
 export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
   private readonly listen: string;
   private readonly registeredModels: readonly RegisteredModel[];
@@ -137,6 +162,7 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
   private readonly dbSyncBox: { pending: readonly Promise<boolean>[] } = { pending: [] };
   private readonly dbErrorBox: { messages: readonly string[] } = { messages: [] };
   private readonly serverBox: { servers: readonly http.Server[] } = { servers: [] };
+  private readonly boundBox: { ports: readonly Promise<readonly number[]>[] } = { ports: [] };
   private readonly dispatcherBox: {
     timers: readonly NodeJS.Timeout[];
     running: boolean;
@@ -310,6 +336,7 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
         this.serverBox.servers = [];
       }
     });
+    this.boundBox.ports = [awaitBinding(server)];
     server.listen(port);
     this.serverBox.servers = [server];
     this.startDispatcher();
@@ -317,6 +344,16 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
     return true;
   }
 
+  async listening(): Promise<readonly number[]> {
+    for (const pending of this.boundBox.ports) {
+      const bound = await pending;
+      if (bound.length < 1) {
+        return [];
+      }
+      return bound;
+    }
+    return [];
+  }
   private startDispatcher(): boolean {
     if (this.dispatcherBox.timers.length > 0) {
       return true;
