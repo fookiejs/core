@@ -539,7 +539,7 @@ export async function runCreate<D extends ModelFieldsInput>(
       entityId,
       mergeUpdateBody(model, entityRecordFromPlain(flow.body)),
     );
-    const ok = await persistEntity(rt, model, entityId, stored);
+    const ok = await persistEntity(rt, model, entityId, stored, true);
     if (ok === false) {
       return { signal: Failed };
     }
@@ -779,7 +779,7 @@ export async function executeRunMutation<D extends ModelFieldsInput>(
         run.entityId,
         mergeUpdateBody(run.model, entityRecordFromPlain(flow.body)),
       );
-      const ok = await persistEntity(rt, run.model, run.entityId, stored);
+      const ok = await persistEntity(rt, run.model, run.entityId, stored, true);
       if (ok === false) {
         return Failed;
       }

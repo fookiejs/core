@@ -29,6 +29,9 @@ export type PendingExternalEvent = {
 export type PendingEntityWrite = {
   key: string;
   entity: EntityRecord;
+  model: string;
+  entityId: string;
+  created: boolean;
 };
 
 export type PendingWriteQueue = {
@@ -231,6 +234,15 @@ async function attemptWrite(
         return { settled: [], retryable: true };
       }
     } else {
+      if (signal === Running) {
+        const cleared = await discardUncommittedCreates(txRt);
+        if (cleared === false) {
+          clearPendingWork(txRt);
+          await client.query("ROLLBACK");
+          return { settled: [Failed], retryable: false };
+        }
+        txRt.pendingEntityWrites.rows = [];
+      }
       await client.query("COMMIT");
       committed = true;
       flushPendingEntityWrites(txRt);
@@ -262,6 +274,24 @@ async function attemptWrite(
   } finally {
     client.release();
   }
+}
+
+async function discardUncommittedCreates(txRt: Runtime): Promise<boolean> {
+  let removed = 0;
+  for (const write of txRt.pendingEntityWrites.rows) {
+    if (write.created === false) {
+      continue;
+    }
+    const dropped = await txRt.store.removeEntityRow(txRt.models, write.model, write.entityId);
+    if (dropped === false) {
+      return false;
+    }
+    removed = removed + 1;
+  }
+  if (removed > txRt.pendingEntityWrites.rows.length) {
+    throw ValidationError.create("removed more rows than were written");
+  }
+  return true;
 }
 
 export async function withWriteTransaction(

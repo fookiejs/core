@@ -288,6 +288,26 @@ export class PostgresStore {
     }
   }
 
+  async removeEntityRow(
+    models: ReadonlyArray<ModelDef<ModelFieldsInput>>,
+    modelName: string,
+    entityId: string,
+  ): Promise<boolean> {
+    for (const model of models) {
+      if (model.name !== modelName) {
+        continue;
+      }
+      const table = quotedTableFor(model.name);
+      try {
+        await this.db.query(`DELETE FROM ${table} WHERE id = $1`, [entityId]);
+        return true;
+      } catch (err) {
+        return this.failQuery(err);
+      }
+    }
+    throw DatabaseError.create("unknown model cannot be rolled back");
+  }
+
   async ensureAllTables(
     models: ReadonlyArray<ModelDef<ModelFieldsInput>>,
     errorBox: DbErrorBox,
@@ -809,6 +829,7 @@ export async function persistEntity(
   model: ModelDef<ModelFieldsInput>,
   entityId: string,
   entity: EntityRecord,
+  created: boolean = false,
 ): Promise<boolean> {
   const dbOk = await rt.awaitDb();
   if (dbOk === false) {
@@ -821,7 +842,13 @@ export async function persistEntity(
     return false;
   }
   const key = entityStoreKey(model.name, entityId);
-  rt.pendingEntityWrites.rows = appendItem(rt.pendingEntityWrites.rows, { key, entity });
+  rt.pendingEntityWrites.rows = appendItem(rt.pendingEntityWrites.rows, {
+    key,
+    entity,
+    model: model.name,
+    entityId,
+    created,
+  });
   rt.entities.delete(key);
   return true;
 }
