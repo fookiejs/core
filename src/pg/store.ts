@@ -711,7 +711,7 @@ export class PostgresStore {
     const byStatus = boundInList("status", query.status, 1);
     const byRun = boundInList("run_id", query.runId, byStatus.params.length + 1);
     const limitIndex = byStatus.params.length + byRun.params.length + 1;
-    const sql = `SELECT ${outboxColumns} FROM ${outboxTableName} WHERE ${byStatus.sql} AND ${byRun.sql} ORDER BY run_id ASC, step_index ASC LIMIT $${limitIndex} OFFSET $${limitIndex + 1}`;
+    const sql = `SELECT ${outboxColumns} FROM ${outboxTableName} WHERE ${byStatus.sql} AND ${byRun.sql} ORDER BY run_id DESC, step_index ASC LIMIT $${limitIndex} OFFSET $${limitIndex + 1}`;
     const bound = byStatus.params
       .concat(byRun.params)
       .concat([pageBound(query.limit), pageBound(query.offset)]);

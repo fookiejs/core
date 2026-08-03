@@ -1,6 +1,6 @@
 {
   "name": "@fookiejs/core",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Model-driven backend framework with observable flows",
   "type": "module",
   "main": "dist/index.js",
