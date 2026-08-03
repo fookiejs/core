@@ -78,11 +78,16 @@ jobs:
           mkdir -p coverage
           npm run test:ci
 
-      - name: bump patch version
+      # Releases are deliberate: package.json names the version, and republishing
+      # one that already exists fails loudly instead of silently bumping past it.
+      - name: read the version being released
         id: version
         run: |
-          npm version patch --no-git-tag-version
           VERSION=$(node -p "require('./package.json').version")
+          if npm view "@fookiejs/core@$VERSION" version >/dev/null 2>&1; then
+            echo "@fookiejs/core@$VERSION is already published; bump package.json first"
+            exit 1
+          fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: publish to npm
@@ -90,13 +95,9 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: push version bump
+      - name: tag the release
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json package-lock.json
-          git diff --staged --quiet && exit 0
-          git commit -m "chore(release): v${{ steps.version.outputs.version }} [skip ci]"
           git tag "v${{ steps.version.outputs.version }}"
-          git push
           git push --tags
