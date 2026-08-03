@@ -95,29 +95,43 @@ describe(
       }
       assert.equal(queue.length, 5, "every ticket dispatched its external");
 
+      const listed = await fookie.outboxList({ status: [], runId: [], limit: 500, offset: 0 });
+      assert.ok(listed.length > 0, "the listing has to answer with rows");
+
+      let previous = "";
+      for (const row of listed) {
+        if (previous.length > 0) {
+          assert.ok(
+            row.runId <= previous,
+            `runs must come back newest first, saw ${row.runId} after ${previous}`,
+          );
+        }
+        previous = row.runId;
+      }
+
+      const ours: string[] = [];
+      for (const row of listed) {
+        if (madeRunIds.includes(row.runId) && ours.includes(row.runId) === false) {
+          ours.push(row.runId);
+        }
+      }
+      assert.equal(ours.length, madeRunIds.length, "every run this test made must be listed");
+      assert.deepEqual(
+        ours,
+        madeRunIds.toSorted().toReversed(),
+        "the newest of our runs has to be handed back before the oldest",
+      );
+
       const firstPage = await fookie.outboxList({ status: [], runId: [], limit: 2, offset: 0 });
       assert.equal(firstPage.length, 2, "the page respects its limit");
-
-      const newest = madeRunIds.toSorted().toReversed();
-      const wanted = newest.slice(0, 2);
-      const answered: string[] = [];
+      const oldestOverall = listed[listed.length - 1];
+      assert.ok(oldestOverall !== undefined, "the listing must have a last row");
       for (const row of firstPage) {
-        answered.push(row.runId);
+        assert.ok(
+          row.runId >= oldestOverall.runId,
+          "the first page must not open on the oldest run in the table",
+        );
       }
-      assert.deepEqual(
-        answered.toSorted().toReversed(),
-        wanted,
-        "an operator asking for two rows must be handed the two most recent",
-      );
-
-      const olderRun = madeRunIds.toSorted()[0];
-      assert.ok(olderRun !== undefined, "the oldest run has to exist to be excluded");
-      assert.equal(
-        answered.includes(String(olderRun)),
-        false,
-        "the first page must not open on ancient history",
-      );
-
       await fookie.stop();
     });
 

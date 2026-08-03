@@ -18,24 +18,25 @@ class PoolMock {
   }
 }
 
-mock.module("pg", {
-  exports: {
-    default: {
-      Pool: PoolMock,
-      types: {
-        builtins: {
-          DATE: 1082,
-          TIMESTAMP: 1114,
-          TIMESTAMPTZ: 1184,
-          INTERVAL: 1186,
-          CIRCLE: 718,
-          JSON: 114,
-          JSONB: 3802,
-        },
-        setTypeParser: () => {},
-      },
+const pgStub = {
+  Pool: PoolMock,
+  types: {
+    builtins: {
+      DATE: 1082,
+      TIMESTAMP: 1114,
+      TIMESTAMPTZ: 1184,
+      INTERVAL: 1186,
+      CIRCLE: 718,
+      JSON: 114,
+      JSONB: 3802,
     },
+    setTypeParser: () => {},
   },
+};
+
+mock.module("pg", {
+  defaultExport: pgStub,
+  namedExports: { Pool: PoolMock, types: pgStub.types },
 });
 
 const { app, Model, Done } = await import("../src/index.ts");

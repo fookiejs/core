@@ -5,31 +5,17 @@ import type { Runtime } from "../engine/runtime.ts";
 import { DatabaseError, ModelFieldError, NotFoundError, PgEncodeError } from "../errors.ts";
 import { emptyListPage } from "../filter/ops.ts";
 import type { FilterState, ListPage } from "../filter/ops.ts";
-import { entityStoreKey, isRelationField, isSystemFieldKey } from "../model.ts";
+import { entityStoreKey } from "../model.ts";
 import type { ModelDef, ModelFieldsInput } from "../model.ts";
 import {
   captureDbError,
   sqlStateOf,
   dbErrorMessageForLog,
-  fieldGroupFor,
   firstQueryRow,
-  parsePgValue,
   pgRowCells,
 } from "./encode.ts";
 import type { DbErrorBox, PgParam, PgRow } from "./encode.ts";
-import {
-  columnNameFor,
-  outboxTableName,
-  pgColumnType,
-  quoteIdent,
-  quotedColumnFor,
-  quotedTableFor,
-  relationTargetOf,
-  runTableName,
-  tableNameFor,
-  toCamelCase,
-} from "./naming.ts";
-import type { OutboxStatus, Phase } from "../signal.ts";
+import { outboxTableName, quotedTableFor, runTableName } from "./naming.ts";
 import type { PgQueryResult, PgQueryable } from "./pool.ts";
 import {
   firstTextOrAbsent,
@@ -41,144 +27,29 @@ import {
 import type { RunStateRow, RunStateWrite } from "./rows.ts";
 import { UpsertSql } from "./upsert.ts";
 import { WhereSql } from "./where.ts";
-import { appendItem, firstFilterGroup, mapLookup } from "../slot.ts";
+import { appendItem, mapLookup } from "../slot.ts";
 import { entityValueAt } from "../values.ts";
 import type { CaughtFailure, EntityRecord } from "../values.ts";
 
 export type { RunStateRow } from "./rows.ts";
 
-export function rowToEntity(
-  model: ModelDef<ModelFieldsInput>,
-  row: Record<string, PgParam>,
-): EntityRecord {
-  const entity: EntityRecord = {};
-  for (const [col, raw] of Object.entries(row)) {
-    const key = toCamelCase(col);
-    const groups = fieldGroupFor(model, key);
-    if (groups.length < 1) {
-      continue;
-    }
-    entity[key] = parsePgValue(raw, firstFilterGroup(groups));
-  }
-  const ids = entityValueAt(entity, "id");
-  if (ids.length < 1) {
-    throw DatabaseError.create("entity row invalid");
-  }
-  for (const id of ids) {
-    if (z.string().safeParse(id).success === false) {
-      throw DatabaseError.create("entity row invalid");
-    }
-  }
-  return entity;
-}
+export type {
+  LockMode,
+  LockModeKinds,
+  OutboxQuery,
+  RunQuery,
+  StoreDbErrorHandler,
+} from "./reads.ts";
+export { boundInList, lockSqlFor, pageBound, pageSqlFor, rowToEntity } from "./reads.ts";
 
-type PageSql = {
-  sql: string;
-  params: readonly PgParam[];
-};
-
-export function pageSqlFor(
-  model: ModelDef<ModelFieldsInput>,
-  page: ListPage,
-  startIndex: number,
-): PageSql {
-  let clauses: readonly string[] = [];
-  for (const term of page.order) {
-    if (Object.keys(model.fields).includes(term.field) === false) {
-      throw ModelFieldError.create("order field unknown");
-    }
-    const direction = term.direction === "desc" ? "DESC" : "ASC";
-    clauses = appendItem(clauses, `${quotedColumnFor(term.field)} ${direction}`);
-  }
-  clauses = appendItem(clauses, "id ASC");
-  let tail = ` ORDER BY ${clauses.join(", ")}`;
-  let params: readonly PgParam[] = [];
-  let index = startIndex;
-  for (const limit of page.limit) {
-    if (Number.isInteger(limit) === false || limit < 0) {
-      throw ModelFieldError.create("list limit must be a non-negative integer");
-    }
-    tail = `${tail} LIMIT $${index}`;
-    params = appendItem(params, limit);
-    index += 1;
-  }
-  for (const offset of page.offset) {
-    if (Number.isInteger(offset) === false || offset < 0) {
-      throw ModelFieldError.create("list offset must be a non-negative integer");
-    }
-    tail = `${tail} OFFSET $${index}`;
-    params = appendItem(params, offset);
-    index += 1;
-  }
-  return { sql: tail, params };
-}
-
-export type LockModeKinds = {
-  write: "write";
-};
-
-export type LockMode = LockModeKinds[keyof LockModeKinds];
-
-const noLockSql = " ";
-
-export function lockSqlFor(lock: readonly LockMode[]): string {
-  for (const mode of lock) {
-    if (mode !== "write") {
-      throw ModelFieldError.create("unknown lock mode");
-    }
-    return " FOR NO KEY UPDATE";
-  }
-  return noLockSql.trimEnd();
-}
-
-export type RunQuery = {
-  phase: readonly Phase[];
-  limit: number;
-  offset: number;
-};
-
-export type OutboxQuery = {
-  status: readonly OutboxStatus[];
-  runId: readonly string[];
-  limit: number;
-  offset: number;
-};
-
-type BoundList = {
-  sql: string;
-  params: readonly PgParam[];
-};
-
-export function boundInList(
-  column: string,
-  values: readonly string[],
-  startIndex: number,
-): BoundList {
-  if (values.length === 0) {
-    return { sql: "TRUE", params: [] };
-  }
-  let slots: readonly string[] = [];
-  let params: readonly PgParam[] = [];
-  let index = startIndex;
-  for (const listed of values) {
-    slots = appendItem(slots, `$${index}`);
-    params = appendItem(params, listed);
-    index += 1;
-  }
-  return { sql: `${column} IN (${slots.join(", ")})`, params };
-}
-
-export function pageBound(bound: number): number {
-  if (Number.isInteger(bound) === false) {
-    throw ModelFieldError.create("listing bound must be an integer");
-  }
-  if (bound < 0) {
-    throw ModelFieldError.create("listing bound must not be negative");
-  }
-  return bound;
-}
-
-export type StoreDbErrorHandler = (message: string) => void;
+import type { LockMode, OutboxQuery, RunQuery, StoreDbErrorHandler } from "./reads.ts";
+import { boundInList, lockSqlFor, pageBound, pageSqlFor, rowToEntity } from "./reads.ts";
+import {
+  modelForeignKeyStatements,
+  modelTableStatements,
+  outboxTableStatements,
+  runTableStatements,
+} from "./ddl.ts";
 
 export class PostgresStore {
   private readonly db: PgQueryable;
@@ -313,185 +184,32 @@ export class PostgresStore {
     errorBox: DbErrorBox,
   ): Promise<boolean> {
     for (const model of models) {
-      const ok = await this.ensureModelTable(model, errorBox);
+      const ok = await this.runStatements(modelTableStatements(model), errorBox);
       if (ok === false) {
         return false;
       }
     }
     for (const model of models) {
-      const linked = await this.ensureModelForeignKeys(model, errorBox);
+      const linked = await this.runStatements(modelForeignKeyStatements(model), errorBox);
       if (linked === false) {
         return false;
       }
     }
-    return this.ensureOutboxTable(errorBox);
+    const outbox = await this.runStatements(outboxTableStatements(), errorBox);
+    if (outbox === false) {
+      return false;
+    }
+    return this.runStatements(runTableStatements(), errorBox);
   }
 
-  private async ensureModelTable(
-    model: ModelDef<ModelFieldsInput>,
+  private async runStatements(
+    statements: readonly string[],
     errorBox: DbErrorBox,
   ): Promise<boolean> {
-    const table = tableNameFor(model.name);
-    const qualified = quotedTableFor(model.name);
-    let columns: readonly string[] = [];
-    for (const [key, field] of Object.entries(model.fields)) {
-      const col = quotedColumnFor(key);
-      const type = pgColumnType(field);
-      if (key === "isDeleted") {
-        columns = appendItem(columns, `${col} ${type} NOT NULL DEFAULT false`);
-      } else if (key === "createdAt" || key === "updatedAt") {
-        columns = appendItem(columns, `${col} ${type} NOT NULL DEFAULT NOW()`);
-      } else if (isSystemFieldKey(key)) {
-        columns = appendItem(columns, `${col} ${type} NOT NULL`);
-      } else {
-        columns = appendItem(columns, `${col} ${type}`);
+    try {
+      for (const statement of statements) {
+        await this.db.query(statement);
       }
-    }
-    const sql = `CREATE TABLE IF NOT EXISTS ${qualified} (${columns.join(", ")}, PRIMARY KEY (id))`;
-    try {
-      await this.db.query(sql);
-      for (const [alterKey, alterField] of Object.entries(model.fields)) {
-        const col = quotedColumnFor(alterKey);
-        const indexName = quoteIdent(`${table}_${columnNameFor(alterKey)}_idx`);
-        const uniqueName = quoteIdent(`${table}_${columnNameFor(alterKey)}_uidx`);
-        const type = pgColumnType(alterField);
-        let alterSql = `ALTER TABLE ${qualified} ADD COLUMN IF NOT EXISTS ${col} ${type}`;
-        if (alterKey === "isDeleted") {
-          alterSql = `ALTER TABLE ${qualified} ADD COLUMN IF NOT EXISTS ${col} ${type} NOT NULL DEFAULT false`;
-        } else if (alterKey === "createdAt" || alterKey === "updatedAt") {
-          alterSql = `ALTER TABLE ${qualified} ADD COLUMN IF NOT EXISTS ${col} ${type} NOT NULL DEFAULT NOW()`;
-        }
-        await this.db.query(alterSql);
-        if (isRelationField(alterField)) {
-          await this.db.query(`CREATE INDEX IF NOT EXISTS ${indexName} ON ${qualified} (${col})`);
-          continue;
-        }
-        if (alterField.meta.unique) {
-          await this.db.query(
-            `CREATE UNIQUE INDEX IF NOT EXISTS ${uniqueName} ON ${qualified} (${col})`,
-          );
-        }
-        if (alterField.meta.index && alterField.meta.unique === false) {
-          await this.db.query(`CREATE INDEX IF NOT EXISTS ${indexName} ON ${qualified} (${col})`);
-        }
-      }
-      return true;
-    } catch (err) {
-      captureDbError(err, errorBox);
-      return false;
-    }
-  }
-
-  private async ensureModelForeignKeys(
-    model: ModelDef<ModelFieldsInput>,
-    errorBox: DbErrorBox,
-  ): Promise<boolean> {
-    const table = tableNameFor(model.name);
-    const qualified = quotedTableFor(model.name);
-    try {
-      for (const [key, field] of Object.entries(model.fields)) {
-        for (const targetModel of relationTargetOf(field)) {
-          const col = quotedColumnFor(key);
-          const target = quotedTableFor(targetModel);
-          const name = quoteIdent(`${table}_${columnNameFor(key)}_fk`);
-          await this.db.query(
-            `DO $$ BEGIN
-    ALTER TABLE ${qualified} ADD CONSTRAINT ${name}
-      FOREIGN KEY (${col}) REFERENCES ${target} (id)
-      ON DELETE RESTRICT DEFERRABLE INITIALLY DEFERRED;
-  EXCEPTION WHEN duplicate_object THEN NULL;
-  WHEN undefined_table THEN NULL;
-  END $$;`,
-          );
-        }
-      }
-      return true;
-    } catch (err) {
-      captureDbError(err, errorBox);
-      return false;
-    }
-  }
-
-  private async ensureOutboxTable(errorBox: DbErrorBox): Promise<boolean> {
-    const sql = `CREATE TABLE IF NOT EXISTS ${outboxTableName} (
-    external_id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    status TEXT NOT NULL,
-    input JSONB NOT NULL,
-    output JSONB,
-    entity_id TEXT NOT NULL,
-    model TEXT NOT NULL,
-    run_id TEXT NOT NULL,
-    attempt INTEGER NOT NULL DEFAULT 1,
-    step_index INTEGER NOT NULL DEFAULT 0,
-    step TEXT NOT NULL DEFAULT 'compensatable',
-    next_attempt_at TIMESTAMPTZ,
-    error TEXT,
-    compensation_of TEXT,
-    dispatched_at TIMESTAMPTZ
-  )`;
-    try {
-      await this.db.query(sql);
-      await this.db.query(
-        `ALTER TABLE ${outboxTableName} ADD COLUMN IF NOT EXISTS attempt INTEGER NOT NULL DEFAULT 1`,
-      );
-      await this.db.query(
-        `ALTER TABLE ${outboxTableName} ADD COLUMN IF NOT EXISTS step_index INTEGER NOT NULL DEFAULT 0`,
-      );
-      await this.db.query(
-        `ALTER TABLE ${outboxTableName} ADD COLUMN IF NOT EXISTS step TEXT NOT NULL DEFAULT 'compensatable'`,
-      );
-      await this.db.query(
-        `ALTER TABLE ${outboxTableName} ADD COLUMN IF NOT EXISTS next_attempt_at TIMESTAMPTZ`,
-      );
-      await this.db.query(`ALTER TABLE ${outboxTableName} ADD COLUMN IF NOT EXISTS error TEXT`);
-      await this.db.query(
-        `ALTER TABLE ${outboxTableName} ADD COLUMN IF NOT EXISTS compensation_of TEXT`,
-      );
-      await this.db.query(
-        `ALTER TABLE ${outboxTableName} ADD COLUMN IF NOT EXISTS dispatched_at TIMESTAMPTZ`,
-      );
-      await this.db.query(
-        `CREATE INDEX IF NOT EXISTS fookie_outbox_due_idx ON ${outboxTableName} (status, next_attempt_at)`,
-      );
-      await this.db.query(
-        `CREATE INDEX IF NOT EXISTS fookie_outbox_run_idx ON ${outboxTableName} (run_id, step_index)`,
-      );
-      return this.ensureRunTable(errorBox);
-    } catch (err) {
-      captureDbError(err, errorBox);
-      return false;
-    }
-  }
-
-  private async ensureRunTable(errorBox: DbErrorBox): Promise<boolean> {
-    const sql = `CREATE TABLE IF NOT EXISTS ${runTableName} (
-    run_id TEXT PRIMARY KEY,
-    model TEXT NOT NULL,
-    entity_id TEXT NOT NULL,
-    operation TEXT NOT NULL,
-    body JSONB NOT NULL,
-    filter JSONB NOT NULL,
-    saga_phase TEXT NOT NULL DEFAULT 'forward',
-    pivot_external_id TEXT,
-    error TEXT,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-  )`;
-    try {
-      await this.db.query(sql);
-      await this.db.query(
-        `ALTER TABLE ${runTableName} ADD COLUMN IF NOT EXISTS saga_phase TEXT NOT NULL DEFAULT 'forward'`,
-      );
-      await this.db.query(
-        `ALTER TABLE ${runTableName} ADD COLUMN IF NOT EXISTS pivot_external_id TEXT`,
-      );
-      await this.db.query(`ALTER TABLE ${runTableName} ADD COLUMN IF NOT EXISTS error TEXT`);
-      await this.db.query(
-        `ALTER TABLE ${runTableName} ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`,
-      );
-      await this.db.query(
-        `CREATE INDEX IF NOT EXISTS fookie_run_phase_idx ON ${runTableName} (saga_phase)`,
-      );
       return true;
     } catch (err) {
       captureDbError(err, errorBox);
