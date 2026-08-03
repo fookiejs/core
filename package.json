@@ -14,6 +14,14 @@
   "files": [
     "dist"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fookiejs/core.git"
+  },
+  "homepage": "https://github.com/fookiejs/core#readme",
+  "bugs": {
+    "url": "https://github.com/fookiejs/core/issues"
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
@@ -35,13 +43,14 @@
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
-  "keywords": [
-    "framework",
-    "ddd",
-    "workflow",
-    "observability"
-  ],
   "license": "MIT",
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@types/node": "^26.0.1",
+    "@types/pg": "^8.20.0",
+    "pg": "^8.22.0",
+    "zod": "^4.4.3"
+  },
   "devDependencies": {
     "@fookiejs/eslint-plugin": "^0.1.10",
     "@typescript-eslint/parser": "^8.0.0",
@@ -50,11 +59,10 @@
     "tsx": "^4.22.4",
     "typescript": "^6.0.3"
   },
-  "dependencies": {
-    "@opentelemetry/api": "^1.9.0",
-    "@types/node": "^26.0.1",
-    "@types/pg": "^8.20.0",
-    "pg": "^8.22.0",
-    "zod": "^4.4.3"
-  }
+  "keywords": [
+    "framework",
+    "ddd",
+    "workflow",
+    "observability"
+  ]
 }
