@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { logDatabaseFailure } from "../engine/flow.ts";
 import type { OutboxEntry } from "../engine/outbox.ts";
+import { cacheEntity } from "../engine/runtime.ts";
 import type { Runtime } from "../engine/runtime.ts";
 import { DatabaseError, ModelFieldError, NotFoundError, PgEncodeError } from "../errors.ts";
 import { emptyListPage } from "../filter/ops.ts";
@@ -532,7 +533,7 @@ export async function getEntity(
   }
   try {
     const fromDb = await rt.store.loadEntity(model, entityId, lock);
-    rt.entities.set(key, fromDb);
+    cacheEntity(rt.entities, key, fromDb);
     return fromDb;
   } catch (err) {
     if (err instanceof DatabaseError) {

@@ -19,7 +19,12 @@ import {
 } from "./engine/outbox.ts";
 import type { OutboxEntry } from "./engine/outbox.ts";
 import type { RunStateRow } from "./pg/store.ts";
-import type { PendingEventQueue, PendingWriteQueue, Runtime } from "./engine/runtime.ts";
+import type {
+  EmissionCursor,
+  PendingEventQueue,
+  PendingWriteQueue,
+  Runtime,
+} from "./engine/runtime.ts";
 import {
   DatabaseError,
   ModelFieldError,
@@ -412,6 +417,8 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       results: [],
       page: [],
       signal: Running,
+      starts: 0,
+      emissions: { seen: 0, published: 0 },
     };
     this.runs.set(runId, run);
     const createRt = this.runtimeFor(runId, model, entityId, "create");
@@ -479,6 +486,8 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       results: [],
       page: [page],
       signal: Running,
+      starts: 0,
+      emissions: { seen: 0, published: 0 },
     };
     this.runs.set(runId, run);
     const rt = this.runtimeFor(runId, model, runId, "list", pinned);
@@ -537,6 +546,8 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       results: [],
       page: [],
       signal: Running,
+      starts: 0,
+      emissions: { seen: 0, published: 0 },
     };
     this.runs.set(runId, run);
     const mutationRt = this.runtimeFor(runId, model, input.id, "update");
@@ -562,6 +573,8 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       results: [],
       page: [],
       signal: Running,
+      starts: 0,
+      emissions: { seen: 0, published: 0 },
     };
     this.runs.set(runId, run);
     const mutationRt = this.runtimeFor(runId, model, input.id, "delete");
@@ -594,6 +607,16 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
     );
   }
 
+  private reportUnknownExternal(externalId: string, event: string): void {
+    const scope = this.rootScope();
+    this.obs.count(scope, event);
+    this.obs.error(scope, event, {
+      externalId,
+      reason: "this process has never seen that external id",
+      hint: "the outbox is loaded once at boot and lives in memory, so a settlement that lands on a different node than the one that dispatched it is dropped here",
+    });
+  }
+
   async setExternalResult(externalResult: {
     externalId: string;
     output: JsonValue;
@@ -604,6 +627,7 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
     }
     const outboxHits = mapLookup(this.outbox, externalResult.externalId);
     if (outboxHits.length < 1) {
+      this.reportUnknownExternal(externalResult.externalId, "external.result_unknown");
       return false;
     }
     {
@@ -1068,6 +1092,10 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
     if (dbOk === false) {
       return false;
     }
+    if (this.outbox.has(failure.externalId) === false) {
+      this.reportUnknownExternal(failure.externalId, "external.failure_unknown");
+      return false;
+    }
     for (const outboxRow of mapLookup(this.outbox, failure.externalId)) {
       if (outboxRow.status !== "pending") {
         return false;
@@ -1371,6 +1399,10 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
     operation: string,
     pinned: readonly PostgresStore[] = [],
   ): Runtime<E> {
+    let emissions: EmissionCursor = { seen: 0, published: 0 };
+    for (const run of mapLookup(this.runs, traceId)) {
+      emissions = run.emissions;
+    }
     return {
       traceId,
       model,
@@ -1389,6 +1421,7 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
       pendingExternalEvents: this.pendingExternalEvents,
       pendingEntityWrites: this.pendingEntityWrites,
       nestedSteps: { steps: 0 },
+      emissions,
       reportDbError: (message: string) => {
         if (z.string().safeParse(message).success === false) {
           this.dbErrorBox.messages = [];
@@ -1552,6 +1585,8 @@ export class App<E extends readonly ExternalDef[] = readonly ExternalDef[]> {
         results: [],
         page: [],
         signal: Running,
+        starts: 1,
+        emissions: { seen: 0, published: 0 },
       });
       restored += 1;
     }

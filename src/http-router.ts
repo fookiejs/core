@@ -185,6 +185,8 @@ export async function routeHttp(
       results: [],
       page: [],
       signal: Running,
+      starts: 0,
+      emissions: { seen: 0, published: 0 },
     };
     ports.runs.set(runId, run);
     const signal = await executeRun(ports.runtimeFor(runId, model, entityId, "create"), run);
@@ -226,6 +228,8 @@ export async function routeHttp(
       results: [],
       page: [],
       signal: Running,
+      starts: 0,
+      emissions: { seen: 0, published: 0 },
     };
     ports.runs.set(runId, run);
     const signal = await executeRun(ports.runtimeFor(runId, model, runId, "list"), run);
@@ -285,6 +289,8 @@ export async function routeHttp(
       results: [],
       page: [],
       signal: Running,
+      starts: 0,
+      emissions: { seen: 0, published: 0 },
     };
     ports.runs.set(runId, run);
     const signal = await executeRun(ports.runtimeFor(runId, model, entityId, "update"), run);
@@ -312,6 +318,8 @@ export async function routeHttp(
       results: [],
       page: [],
       signal: Running,
+      starts: 0,
+      emissions: { seen: 0, published: 0 },
     };
     ports.runs.set(runId, run);
     const signal = await executeRun(ports.runtimeFor(runId, model, entityId, "delete"), run);

@@ -3,14 +3,14 @@ import { ModelFieldError, ValidationError } from "./errors.ts";
 import type { EntityRecord, FilterGroup } from "./values.ts";
 
 export function mapLookup<K, V>(map: Map<K, V>, key: K): V[] {
-  let found: readonly V[] = [];
-  for (const [entryKey, entryValue] of map) {
-    if (entryKey === key) {
-      found = appendItem(found, entryValue);
-      break;
-    }
+  if (map.has(key) === false) {
+    return [];
   }
-  return found.slice();
+  const held = map.get(key);
+  if (held === undefined) {
+    return [];
+  }
+  return [held];
 }
 
 export function catchValidation<T>(run: () => T): T[] {

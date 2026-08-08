@@ -47,6 +47,12 @@ export default [
     },
   },
   {
+    files: ["src/slot.ts"],
+    rules: {
+      "fookie/no-null-undefined": "off",
+    },
+  },
+  {
     files: ["tests/**/*.ts"],
     languageOptions: {
       parser: tsParser,

@@ -4,7 +4,7 @@ import { nestedEntityId } from "./ids.ts";
 import { compensateRun } from "./compensation.ts";
 import { flushPendingExternalEvents, runExternal } from "./outbox.ts";
 import { requireModel, resolveModel, scopedRuntime, withWriteTransaction } from "./runtime.ts";
-import type { RoomBox, Runtime } from "./runtime.ts";
+import type { EmissionCursor, RoomBox, Runtime } from "./runtime.ts";
 import { DatabaseError, ModelFieldError, PgEncodeError, ValidationError } from "../errors.ts";
 import type { ExternalDef, InferExternalInputFrom, InferExternalOutputFrom } from "../external.ts";
 import { entityMatchesFilter } from "../filter/match.ts";
@@ -416,6 +416,8 @@ export type FlowRun<D extends ModelFieldsInput = ModelFieldsInput> = {
   results: EntityRecord[];
   page: readonly ListPage[];
   signal: Signal;
+  starts: number;
+  emissions: EmissionCursor;
 };
 
 function listPageOf(pages: readonly ListPage[]): ListPage {
@@ -940,7 +942,13 @@ export async function executeRun<D extends ModelFieldsInput>(
     }
     rt.clearDbError();
     const startedAt = Date.now();
-    rt.obs.count(scope, "operation.started");
+    run.emissions.seen = 0;
+    if (run.starts < 1) {
+      rt.obs.count(scope, "operation.started");
+    } else {
+      rt.obs.count(scope, "operation.resumed");
+    }
+    run.starts = run.starts + 1;
     let signal: Signal = Failed;
 
     if (run.operation === "list") {

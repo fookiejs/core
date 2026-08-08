@@ -7,6 +7,7 @@ import type { FilterInput } from "../filter/schema.ts";
 import type { ModelDef, ModelFieldsInput, ModelRef } from "../model.ts";
 import {
   Observability,
+  entityCacheLimit,
   lockTimeoutMs,
   maxWriteAttempts,
   writeRetryBackoffMs,
@@ -46,6 +47,11 @@ export type NestedStepCursor = {
   steps: number;
 };
 
+export type EmissionCursor = {
+  seen: number;
+  published: number;
+};
+
 export type RoomBox = {
   names: readonly string[];
 };
@@ -78,7 +84,28 @@ export type Runtime<E extends readonly ExternalDef[] = readonly ExternalDef[]> =
   pendingExternalEvents: PendingEventQueue;
   pendingEntityWrites: PendingWriteQueue;
   nestedSteps: NestedStepCursor;
+  emissions: EmissionCursor;
 };
+
+export function cacheEntity(
+  entities: Map<string, EntityRecord>,
+  key: string,
+  entity: EntityRecord,
+): void {
+  entities.set(key, entity);
+  if (entities.size <= entityCacheLimit) {
+    return;
+  }
+  for (const oldest of entities.keys()) {
+    if (oldest === key) {
+      continue;
+    }
+    entities.delete(oldest);
+    if (entities.size <= entityCacheLimit) {
+      return;
+    }
+  }
+}
 
 export function clearPendingWork(rt: Runtime): void {
   if (z.looseObject({}).safeParse(rt).success === false) {
@@ -107,7 +134,7 @@ export function flushPendingEntityWrites(rt: Runtime): void {
     if (deletedTrues.length > 0) {
       rt.entities.delete(write.key);
     } else {
-      rt.entities.set(write.key, write.entity);
+      cacheEntity(rt.entities, write.key, write.entity);
     }
   }
 }
@@ -137,6 +164,7 @@ export function transactionRuntime(rt: Runtime, client: PgClient): Runtime {
     pendingEntityWrites: { rows: [] },
     pendingExternalEvents: { events: [] },
     nestedSteps: rt.nestedSteps,
+    emissions: rt.emissions,
   };
 }
 
@@ -383,6 +411,7 @@ export function runtimeOf(
     pendingExternalEvents: rt.pendingExternalEvents,
     pendingEntityWrites: rt.pendingEntityWrites,
     nestedSteps: rt.nestedSteps,
+    emissions: rt.emissions,
   };
 }
 

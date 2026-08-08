@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { metrics as otelMetrics, trace, SpanStatusCode } from "@opentelemetry/api";
 import type { Attributes, Counter, Histogram, Span } from "@opentelemetry/api";
-import type { Runtime } from "./engine/runtime.ts";
+import type { EmissionCursor, Runtime } from "./engine/runtime.ts";
 import { ValidationError } from "./errors.ts";
 import type { FilterInput } from "./filter/schema.ts";
 import { isoNow } from "./model.ts";
@@ -69,6 +69,8 @@ export const pruneIntervalMs = 3_600_000;
 export const retentionMs = 30 * 24 * 3_600_000;
 
 export const runBufferLimit = 10_000;
+
+export const entityCacheLimit = 50_000;
 
 export const lockTimeoutMs = 3_000;
 
@@ -372,6 +374,16 @@ export type FlowTelemetry = {
   histogram: (name: string, metricAmount: number) => boolean;
 };
 
+export function replayedEmission(cursor: EmissionCursor): boolean {
+  const ordinal = cursor.seen;
+  cursor.seen = ordinal + 1;
+  if (ordinal < cursor.published) {
+    return true;
+  }
+  cursor.published = ordinal + 1;
+  return false;
+}
+
 export function createObservability(rt: Runtime): FlowTelemetry {
   const scope = obsScope(rt);
   return {
@@ -382,6 +394,9 @@ export function createObservability(rt: Runtime): FlowTelemetry {
       if (z.looseObject({}).safeParse(fields).success === false) {
         return false;
       }
+      if (replayedEmission(rt.emissions) === true) {
+        return true;
+      }
       rt.obs.info(scope, message, fields);
       return true;
     },
@@ -391,6 +406,9 @@ export function createObservability(rt: Runtime): FlowTelemetry {
       }
       if (z.looseObject({}).safeParse(scope).success === false) {
         return false;
+      }
+      if (replayedEmission(rt.emissions) === true) {
+        return true;
       }
       rt.obs.count(scope, name);
       return true;
@@ -404,6 +422,9 @@ export function createObservability(rt: Runtime): FlowTelemetry {
       }
       if (z.looseObject({}).safeParse(scope).success === false) {
         return false;
+      }
+      if (replayedEmission(rt.emissions) === true) {
+        return true;
       }
       rt.obs.measure(scope, name, metricAmount);
       return true;
