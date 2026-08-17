@@ -1,0 +1,57 @@
+{
+  "name": "@fookiejs/fuzz",
+  "version": "0.1.0",
+  "description": "Generates the possibility space for a fookie app: bodies, filters and whole operation sequences, replayable from a seed.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fookiejs/core.git",
+    "directory": "packages/fuzz"
+  },
+  "homepage": "https://github.com/fookiejs/core/tree/main/packages/fuzz#readme",
+  "bugs": {
+    "url": "https://github.com/fookiejs/core/issues"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck:all": "tsc -p tsconfig.lint.json --noEmit",
+    "test": "node --import tsx --test \"tests/*.test.ts\"",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "license": "MIT",
+  "peerDependencies": {
+    "@fookiejs/core": ">=0.2.0"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@fookiejs/core": "*",
+    "@fookiejs/eslint-plugin": "*",
+    "@types/node": "^26.0.1",
+    "@types/pg": "^8.20.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^10.6.0",
+    "pg": "^8.22.0",
+    "prettier": "^3.8.1",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

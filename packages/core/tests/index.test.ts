@@ -1,0 +1,497 @@
+import { z } from "zod";
+import { afterEach, beforeEach, describe, it } from "node:test";
+import assert from "node:assert/strict";
+import {
+  Done,
+  External,
+  Failed,
+  Model,
+  OutboxCompleted,
+  OutboxFailed,
+  OutboxPending,
+  Running,
+  Types,
+  app,
+  models,
+} from "../src/index.ts";
+import { MockDb, httpPost, httpGet, LiveApps, serveApp } from "./mock-db.ts";
+import { Postgres } from "./engines.ts";
+
+let nextPort = 41000;
+
+const scoreExt = External({
+  name: "fraud.score",
+  input: { amount: z.number().finite().nonnegative() },
+  output: { score: z.number().int() },
+  attempts: 3,
+  backoff: "exponential",
+  timeoutMs: 30_000,
+});
+
+const notifyExt = External({
+  name: "notify.send",
+  input: { to: z.string().email(), body: z.string() },
+  output: { sent: z.boolean() },
+  attempts: 3,
+  backoff: "fixed",
+  timeoutMs: 30_000,
+});
+
+function buildUserModel(flow: ReturnType<typeof flows>) {
+  return Model({
+    name: "User",
+    fields: {
+      email: z.string().email().meta({ unique: true }),
+      name: z.string().meta({ index: true }),
+      score: z.number().int().min(0).max(100),
+      location: Types.coordinate,
+      meta: Types.jsonb,
+    },
+    flow,
+  });
+}
+
+describe("fookie core", () => {
+  let db: MockDb;
+  let apps: LiveApps;
+  let port: number;
+
+  beforeEach(() => {
+    db = new MockDb();
+    apps = new LiveApps();
+    port = nextPort;
+    nextPort += 10;
+  });
+
+  afterEach(async () => {
+    await apps.shutdown();
+  });
+
+  function createApp(flow: ReturnType<typeof flows>, onExternalEvent = async () => {}) {
+    const user = buildUserModel(flow);
+    return app({
+      listen: String(port),
+      database: Postgres("postgres://mock", [db]),
+      models: models([user]),
+      externals: [scoreExt, notifyExt] as const,
+      onExternalEvent,
+    });
+  }
+
+  it("creates entity with done signal", async () => {
+    const user = buildUserModel({
+      async create() {
+        return Done;
+      },
+      async list() {
+        return Done;
+      },
+      async update() {
+        return Done;
+      },
+      async delete() {
+        return Done;
+      },
+    });
+    const fookie = app({
+      listen: String(port),
+      database: Postgres("postgres://mock", [db]),
+      models: [user],
+      externals: [scoreExt] as const,
+      onExternalEvent: async () => {},
+    });
+    const result = await fookie.create(user, {
+      email: "a@b.com",
+      name: "Ada",
+      score: 10,
+      location: [1, 2],
+      meta: "{}",
+    });
+    assert.equal(result.signal, "done");
+    if (result.signal === "done") {
+      assert.equal(result.entity.email, "a@b.com");
+      assert.equal(result.entity.isDeleted, false);
+    }
+  });
+
+  it("returns failed on invalid create body", async () => {
+    const user = buildUserModel({
+      async create() {
+        return Done;
+      },
+      async list() {
+        return Done;
+      },
+      async update() {
+        return Done;
+      },
+      async delete() {
+        return Done;
+      },
+    });
+    const fookie = createApp(user.flow);
+    const result = await fookie.create(user, {
+      email: "not-email",
+      name: "x",
+      score: 1,
+      location: [0, 0],
+      meta: "{}",
+    });
+    assert.equal(result.signal, "failed");
+  });
+
+  it("runs external flow and resumes with setExternalResult", async () => {
+    const events: string[] = [];
+    const user = buildUserModel({
+      async create(flow) {
+        const ext = await flow.external(scoreExt, { amount: 50 });
+        if (ext.signal === "done") {
+          return Done;
+        }
+        return ext.signal;
+      },
+      async list() {
+        return Done;
+      },
+      async update() {
+        return Done;
+      },
+      async delete() {
+        return Done;
+      },
+    });
+    const fookie = app({
+      listen: String(port),
+      database: Postgres("postgres://mock", [db]),
+      models: [user],
+      externals: [scoreExt] as const,
+      onExternalEvent: async (event) => {
+        events.push(event.externalId);
+      },
+    });
+    const pending = await fookie.create(user, {
+      email: "c@d.com",
+      name: "Cal",
+      score: 5,
+      location: [3, 4],
+      meta: "{}",
+    });
+    assert.equal(pending.signal, "running");
+    assert.equal(events.length, 1);
+    const externalId = events[0] ?? "";
+    const ok = await fookie.setExternalResult({ externalId, output: { score: 99 } });
+    assert.equal(ok, true);
+    const list = await fookie.list(user, { email: { eq: "c@d.com" } });
+    assert.equal(list.signal, "done");
+    assert.ok(list.results.length > 0);
+  });
+
+  it("lists updates and deletes entities", async () => {
+    const user = buildUserModel({
+      async create() {
+        return Done;
+      },
+      async list(flow) {
+        flow.log("listed", { email: { eq: "l@t.com" } });
+        flow.metric.increment("listed");
+        await flow.trace("t", async () => true);
+        return Done;
+      },
+      async update() {
+        return Done;
+      },
+      async delete() {
+        return Done;
+      },
+    });
+    const fookie = app({
+      listen: String(port),
+      database: Postgres("postgres://mock", [db]),
+      models: [user],
+      externals: [scoreExt] as const,
+      onExternalEvent: async () => {},
+    });
+    const created = await fookie.create(user, {
+      email: "l@t.com",
+      name: "List",
+      score: 1,
+      location: [0, 0],
+      meta: "{}",
+    });
+    assert.equal(created.signal, "done");
+    const listSignal = await fookie.list(user, { email: { eq: "l@t.com" } });
+    assert.equal(listSignal.signal, "done");
+    assert.ok(listSignal.results.length > 0);
+    if (created.signal !== "done") {
+      return;
+    }
+    const updateSignal = await fookie.update(
+      user,
+      { id: { eq: created.id }, email: { eq: "l@t.com" } },
+      { name: "Listed" },
+    );
+    assert.equal(updateSignal.signal, "done");
+    const deleteSignal = await fookie.delete(user, {
+      id: created.id,
+      filter: { email: { eq: "l@t.com" } },
+    });
+    assert.equal(deleteSignal.signal, "done");
+    assert.ok(fookie.logs().length > 0);
+    assert.ok(fookie.metrics().length > 0);
+    assert.ok(fookie.spans().length > 0);
+  });
+
+  it("supports nested model operations", async () => {
+    const child = Model({
+      name: "Post",
+      fields: {
+        title: z.string(),
+        author: Types.relation({ name: "User" }),
+      },
+      flow: {
+        async create() {
+          return Done;
+        },
+        async list() {
+          return Done;
+        },
+        async update() {
+          return Done;
+        },
+        async delete() {
+          return Done;
+        },
+      },
+    });
+    const user = buildUserModel({
+      async create(flow) {
+        const nested = await flow.create(child, { title: "Hello", author: flow.id });
+        if (nested.signal === "done" && "entity" in nested) {
+          return Done;
+        }
+        return Failed;
+      },
+      async list(flow) {
+        const nested = await flow.list(child, { title: { eq: "Hello" } });
+        return nested.signal;
+      },
+      async update(flow) {
+        const nested = await flow.update(
+          child,
+          { id: { eq: "00000000-0000-7000-8000-000000000001" } },
+          { title: "Hi" },
+        );
+        return nested.signal;
+      },
+      async delete(flow) {
+        const nested = await flow.delete(child, {
+          id: "00000000-0000-7000-8000-000000000001",
+          filter: {},
+        });
+        return nested.signal;
+      },
+    });
+    const fookie = app({
+      listen: String(port),
+      database: Postgres("postgres://mock", [db]),
+      models: [user, child],
+      externals: [scoreExt] as const,
+      onExternalEvent: async () => {},
+    });
+    const created = await fookie.create(user, {
+      email: "n@e.com",
+      name: "Nest",
+      score: 2,
+      location: [1, 1],
+      meta: "{}",
+    });
+    assert.equal(created.signal, "done");
+    await fookie.list(user, {});
+  });
+
+  it("serves http api", async () => {
+    const user = buildUserModel({
+      async create() {
+        return Done;
+      },
+      async list() {
+        return Done;
+      },
+      async update() {
+        return Done;
+      },
+      async delete() {
+        return Done;
+      },
+    });
+    const fookie = apps.track(
+      app({
+        listen: String(port),
+        database: Postgres("postgres://mock", [db]),
+        models: [user],
+        externals: [scoreExt] as const,
+        onExternalEvent: async () => {},
+      }),
+    );
+    assert.equal(fookie.run(), true);
+    assert.equal(fookie.run(), true);
+    const created = await httpPost(port, "/user/create", {
+      body: { email: "h@t.com", name: "Http", score: 3, location: [1, 2], meta: "{}" },
+    });
+    assert.equal(created.status, 200);
+    assert.equal(created.json.signal, "done");
+    const listed = await httpPost(port, "/user/list", { filter: { email: { eq: "h@t.com" } } });
+    assert.equal(listed.status, 200);
+    const bad = await httpPost(port, "/missing/create", { body: {} });
+    assert.equal(bad.status, 404);
+    const method = await httpGet(port, "/user/list");
+    assert.equal(method, 405);
+  });
+
+  it("stops the http server and owned pool", async () => {
+    const user = buildUserModel({
+      create: async () => Done,
+      list: async () => Done,
+      update: async () => Done,
+      delete: async () => Done,
+    });
+    const fookie = apps.track(
+      app({
+        listen: String(port),
+        database: Postgres("postgres://mock", [db]),
+        models: [user],
+        externals: [scoreExt] as const,
+        onExternalEvent: async () => {},
+      }),
+    );
+    await serveApp(fookie);
+    assert.equal(await fookie.stop(), true);
+    await assert.rejects(
+      () => httpPost(port, "/user/list", { filter: {} }),
+      (err: Error) => err.message.includes("ECONNREFUSED"),
+    );
+  });
+
+  it("rolls back failed mutations", async () => {
+    const user = buildUserModel({
+      async create() {
+        return Done;
+      },
+      async list() {
+        return Done;
+      },
+      async update() {
+        return Done;
+      },
+      async delete() {
+        return Done;
+      },
+    });
+    db.mode = "fail-upsert";
+    const fookie = app({
+      listen: String(port),
+      database: Postgres("postgres://mock", [db]),
+      models: [user],
+      externals: [scoreExt] as const,
+      onExternalEvent: async () => {},
+    });
+    const result = await fookie.create(user, {
+      email: "r@b.com",
+      name: "Rollback",
+      score: 1,
+      location: [0, 0],
+      meta: "{}",
+    });
+    assert.equal(result.signal, "failed");
+  });
+
+  it("hydrates outbox from database on startup", async () => {
+    db.outbox.set("e1", {
+      external_id: "e1",
+      name: "fraud.score",
+      status: OutboxCompleted,
+      input: { amount: 1 },
+      output: { score: 1 },
+      entity_id: "ent",
+      model: "User",
+      run_id: "run",
+      attempt: 1,
+    });
+    const user = buildUserModel({
+      async create() {
+        return Done;
+      },
+      async list() {
+        return Done;
+      },
+      async update() {
+        return Done;
+      },
+      async delete() {
+        return Done;
+      },
+    });
+    const fookie = app({
+      listen: String(port),
+      database: Postgres("postgres://mock", [db]),
+      models: [user],
+      externals: [scoreExt] as const,
+      onExternalEvent: async () => {},
+    });
+    await fookie.list(user, {});
+    const ok = await fookie.setExternalResult({ externalId: "e1", output: { score: 2 } });
+    assert.equal(ok, true);
+  });
+
+  it("exercises filter operators and types", async () => {
+    assert.ok(Types.varchar(10).kind.includes("varchar"));
+    assert.equal(Types.enum("a", "b").kind, "enum");
+    const user = buildUserModel({
+      async create() {
+        return Failed;
+      },
+      async list() {
+        return Running;
+      },
+      async update() {
+        return Running;
+      },
+      async delete() {
+        return Failed;
+      },
+    });
+    const fookie = app({
+      listen: String(port),
+      database: Postgres("postgres://mock", [db]),
+      models: [user],
+      externals: [scoreExt, notifyExt] as const,
+      onExternalEvent: async () => {},
+    });
+    await fookie.create(user, {
+      email: "f@f.com",
+      name: "F",
+      score: 1,
+      location: [0, 0],
+      meta: "{}",
+    });
+    await fookie.list(user, {
+      email: { like: "%@%" },
+      name: { ilike: "f%" },
+      score: { gte: 0, lte: 100, in: [1, 2] },
+      location: { near: [0, 0, 100] },
+    });
+    await fookie.update(
+      user,
+      { id: { eq: "00000000-0000-7000-8000-000000000099" }, name: { ne: "y" } },
+      { name: "X" },
+    );
+    await fookie.delete(user, {
+      id: "00000000-0000-7000-8000-000000000099",
+      filter: { meta: { contains: "{}" } },
+    });
+    assert.equal(
+      await fookie.setExternalResult({ externalId: "missing", output: { score: 1 } }),
+      false,
+    );
+  });
+});

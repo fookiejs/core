@@ -1,0 +1,55 @@
+{
+  "name": "@fookiejs/eslint-plugin",
+  "version": "0.1.10",
+  "description": "ESLint plugin for TypeScript code quality — naming, structure, type safety.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "node --import tsx/esm --test tests/rules/*.test.ts",
+    "lint": "eslint src tests"
+  },
+  "keywords": [
+    "eslint",
+    "typescript",
+    "linter"
+  ],
+  "peerDependencies": {
+    "@typescript-eslint/parser": ">=7.0.0",
+    "eslint": ">=8.0.0",
+    "typescript": ">=5.0.0"
+  },
+  "dependencies": {
+    "@typescript-eslint/utils": "^8.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.1",
+    "@typescript-eslint/parser": "^8.0.0",
+    "@typescript-eslint/rule-tester": "^8.0.0",
+    "eslint": "^10.6.0",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fookiejs/core.git",
+    "directory": "packages/eslint-plugin"
+  },
+  "homepage": "https://github.com/fookiejs/core/tree/main/packages/eslint-plugin#readme",
+  "bugs": {
+    "url": "https://github.com/fookiejs/core/issues"
+  }
+}

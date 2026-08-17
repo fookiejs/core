@@ -1,5 +1,9 @@
 node_modules
 dist
+.turbo
+packages/*/node_modules
+packages/*/dist
+packages/*/coverage
 *.log
 .env
 .env.*

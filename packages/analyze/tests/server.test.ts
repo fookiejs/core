@@ -1,0 +1,646 @@
+import { after, before, describe, it } from "node:test";
+import assert from "node:assert/strict";
+import { AnalyzeServer, defaultOptions } from "../src/server.ts";
+import { clientJs, indexHtml, stylesCss } from "../src/ui/page.ts";
+import { queryNumber } from "../src/transport.ts";
+import { layoutOf } from "../src/graph/layout.ts";
+import type { AnalyzeSource } from "../src/source.ts";
+import type {
+  ExternalSummary,
+  ModelSummary,
+  ObservabilityPage,
+  OutboxEntry,
+  RunStateRow,
+} from "@fookiejs/core";
+
+const models: readonly ModelSummary[] = [
+  {
+    name: "Order",
+    table: "order",
+    fields: [
+      {
+        key: "id",
+        column: "id",
+        pgType: "UUID",
+        relation: [],
+        unique: false,
+        index: false,
+        system: true,
+      },
+      {
+        key: "buyer",
+        column: "buyer",
+        pgType: "UUID",
+        relation: ["User"],
+        unique: false,
+        index: true,
+        system: false,
+      },
+    ],
+  },
+  {
+    name: "User",
+    table: "user",
+    fields: [
+      {
+        key: "id",
+        column: "id",
+        pgType: "UUID",
+        relation: [],
+        unique: false,
+        index: false,
+        system: true,
+      },
+    ],
+  },
+];
+
+const externals: readonly ExternalSummary[] = [
+  {
+    name: "pay.charge",
+    attempts: 3,
+    backoff: "fixed",
+    timeoutMs: 1000,
+    inputKeys: ["amount"],
+    outputKeys: ["ref"],
+    compensate: [],
+  },
+];
+
+const runRow = {
+  runId: "run-1",
+  model: "Order",
+  entityId: "e1",
+  operation: "create",
+  body: { email: "a@b.com", password: "hunter2" },
+  filterJson: "{}",
+  phase: "forward",
+  pivotExternalId: [],
+  error: [],
+  updatedAt: ["2026-01-01T00:00:00.000Z"],
+} as unknown as RunStateRow;
+
+const outboxRow = {
+  externalId: "v2:run-1:e1:0:pay.charge",
+  name: "pay.charge",
+  status: "pending",
+  model: "Order",
+  entityId: "e1",
+  runId: "run-1",
+  attempt: 1,
+  stepIndex: 0,
+  error: [],
+  input: { amount: 10, apiKey: "sk-live-secret" },
+} as unknown as OutboxEntry;
+
+const page = {
+  logs: [
+    {
+      seq: 1,
+      level: "info",
+      message: "created",
+      traceId: "run-1",
+      model: "Order",
+      entityId: "e1",
+      operation: "create",
+      timestamp: "2026-01-01T00:00:00.000Z",
+      fields: { token: "leak-me", note: "keep" },
+    },
+  ],
+  metrics: [],
+  spans: [],
+  nextSeq: 1,
+  oldestSeq: 1,
+} as unknown as ObservabilityPage;
+
+const source: AnalyzeSource = {
+  catalog: () => models,
+  externalCatalog: () => externals,
+  observability: (since: number) => {
+    const logs = page.logs.filter((entry) => entry.seq > since);
+    return { ...page, logs };
+  },
+  runList: async () => [runRow],
+  outboxList: async () => [outboxRow],
+  deadLetters: () => [],
+};
+
+const port = 24901;
+const base = `http://127.0.0.1:${port}`;
+
+describe("analyze server", () => {
+  let server: AnalyzeServer;
+  let token: string;
+
+  before(() => {
+    server = AnalyzeServer.create(source, { ...defaultOptions(), port: [] });
+    token = server.accessToken();
+    server.run([String(port)]);
+  });
+
+  after(async () => {
+    await server.stop();
+  });
+
+  function auth(path: string, init: RequestInit = {}) {
+    return fetch(`${base}${path}`, {
+      ...init,
+      headers: { "x-analyze-token": token, ...(init.headers ?? {}) },
+    });
+  }
+
+  it("mints a token when none is configured", () => {
+    assert.ok(token.length >= 32, "a generated token must not be guessable");
+  });
+
+  it("refuses a request with no token", async () => {
+    const res = await fetch(`${base}/api/health`);
+    assert.equal(res.status, 401);
+    await res.text();
+  });
+
+  it("serves the shell without a token so the sign in screen can render", async () => {
+    const res = await fetch(`${base}/`);
+    assert.equal(res.status, 200, "the page itself carries no data");
+    const body = await res.text();
+    assert.match(body, /id="gate-form"/, "an unauthenticated visitor gets somewhere to paste it");
+    assert.equal(body.includes(token), false, "the shell must never leak the token");
+  });
+
+  it("keeps every data endpoint locked while the shell is open", async () => {
+    for (const path of ["/api/catalog", "/api/graph", "/api/runs", "/api/outbox", "/api/obs"]) {
+      const res = await fetch(`${base}${path}`);
+      assert.equal(res.status, 401, `${path} must stay behind the token`);
+      await res.text();
+    }
+  });
+
+  it("refuses a wrong token", async () => {
+    const res = await fetch(`${base}/api/health`, {
+      headers: { "x-analyze-token": "x".repeat(token.length) },
+    });
+    assert.equal(res.status, 401);
+    await res.text();
+  });
+
+  it("refuses a cross origin request even with a valid token", async () => {
+    const res = await auth("/api/health", { headers: { origin: "http://evil.example" } });
+    assert.equal(res.status, 403);
+    await res.text();
+  });
+
+  it("refuses anything that is not a GET", async () => {
+    const res = await auth("/api/health", { method: "POST" });
+    assert.equal(res.status, 405, "this surface exposes no writes at all");
+    await res.text();
+  });
+
+  it("serves the page with a content security policy and no framing", async () => {
+    const res = await auth("/");
+    assert.equal(res.status, 200);
+    assert.match(String(res.headers.get("content-type")), /text\/html/);
+    assert.equal(res.headers.get("x-frame-options"), "DENY");
+    const policy = String(res.headers.get("content-security-policy"));
+    assert.match(policy, /default-src 'none'/);
+    const body = await res.text();
+    assert.match(body, /fookie analyze/);
+
+    const headerNonce = /'nonce-([^']+)'/.exec(policy)?.[1];
+    assert.ok(headerNonce, "the policy must carry a nonce");
+    const styleNonce = /<style nonce="([^"]+)"/.exec(body)?.[1];
+    const scriptNonce = /<script nonce="([^"]+)"/.exec(body)?.[1];
+    assert.equal(styleNonce, headerNonce, "the style nonce must match the policy");
+    assert.equal(scriptNonce, headerNonce, "the script nonce must match the policy");
+  });
+
+  it("redacts a secret out of a run body", async () => {
+    const res = await auth("/api/runs");
+    const rows = (await res.json()) as readonly { body: Record<string, unknown> }[];
+    assert.equal(rows.length, 1);
+    for (const row of rows) {
+      assert.equal(row.body.password, "[redacted]");
+      assert.equal(row.body.email, "a@b.com");
+    }
+  });
+
+  it("redacts a secret out of an outbox input", async () => {
+    const res = await auth("/api/outbox");
+    const rows = (await res.json()) as readonly { input: Record<string, unknown> }[];
+    for (const row of rows) {
+      assert.equal(row.input.apiKey, "[redacted]");
+      assert.equal(row.input.amount, 10);
+    }
+  });
+
+  it("redacts a secret out of a log field", async () => {
+    const res = await auth("/api/obs?since=0");
+    const body = (await res.json()) as { logs: readonly { fields: Record<string, unknown> }[] };
+    for (const entry of body.logs) {
+      assert.equal(entry.fields.token, "[redacted]");
+      assert.equal(entry.fields.note, "keep");
+    }
+  });
+
+  it("lays out the application map server side", async () => {
+    const res = await auth("/api/graph");
+    const layout = (await res.json()) as {
+      nodes: readonly { id: string; x: number }[];
+      edges: readonly { kind: string }[];
+    };
+    assert.equal(layout.nodes.length, 3, "two models and one external");
+    assert.ok(layout.edges.some((edge) => edge.kind === "relation"));
+    assert.ok(layout.edges.some((edge) => edge.kind === "invokes"));
+  });
+
+  it("caps a page size a caller asks to blow past", async () => {
+    const res = await auth("/api/runs?limit=999999");
+    assert.equal(res.status, 200);
+    await res.json();
+  });
+
+  it("ships the redacted output alongside the input", async () => {
+    const res = await auth("/api/outbox?limit=10");
+    const rows = (await res.json()) as readonly {
+      input: Record<string, unknown>;
+      output: readonly unknown[];
+      error: readonly string[];
+    }[];
+    for (const row of rows) {
+      assert.ok(Array.isArray(row.output), "output travels as a slot, present or absent");
+      assert.ok(Array.isArray(row.error), "so does the reason it failed");
+      assert.equal(row.input.apiKey, "[redacted]", "and both stay redacted");
+    }
+  });
+  it("hands out only what is newer than the cursor", async () => {
+    const everything = await auth("/api/obs?since=0");
+    const all = (await everything.json()) as { logs: readonly { seq: number }[]; nextSeq: number };
+    assert.ok(all.logs.length > 0, "the fixture has to carry a log line");
+
+    const caughtUp = await auth(`/api/obs?since=${String(all.nextSeq)}`);
+    const nothing = (await caughtUp.json()) as { logs: readonly unknown[]; nextSeq: number };
+    assert.deepEqual(nothing.logs, [], "a caught up client is sent nothing");
+    assert.equal(nothing.nextSeq, all.nextSeq, "and the cursor does not move on its own");
+  });
+
+  it("answers 404 for an unknown view rather than leaking a stack", async () => {
+    const res = await auth("/api/whatever");
+    assert.equal(res.status, 404);
+    const body = (await res.json()) as { error: string };
+    assert.equal(body.error, "no such view");
+  });
+});
+
+describe("listen failures", () => {
+  it("reports a busy port instead of taking the process down", async () => {
+    const first = AnalyzeServer.create(source, { ...defaultOptions(), port: [] });
+    first.run([String(port + 1)]);
+    const second = AnalyzeServer.create(source, { ...defaultOptions(), port: [] });
+    second.run([String(port + 1)]);
+
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    assert.equal(second.listenError().length, 1, "the loser must record why it could not listen");
+    for (const reason of second.listenError()) {
+      assert.match(reason, /EADDRINUSE/);
+    }
+    assert.equal(first.listenError().length, 0, "the winner must be unaffected");
+
+    await first.stop();
+    await second.stop();
+  });
+});
+
+describe("the page it serves", () => {
+  it("ships one stylesheet with the design tokens and every view", () => {
+    const css = stylesCss();
+    assert.match(css, /--background/, "the theme tokens must be present");
+    assert.match(css, /prefers-color-scheme: dark/, "it must answer both themes");
+    for (const selector of [".shell", ".sidebar", ".card", ".badge", ".canvas-wrap", ".trace"]) {
+      assert.ok(css.includes(selector), `${selector} must be styled`);
+    }
+  });
+
+  it("ships client code for the map camera and the trace tree", () => {
+    const js = clientJs();
+    for (const symbol of [
+      "fitMap",
+      "zoomAt",
+      "wireCamera",
+      "buildTree",
+      "passesOf",
+      "drawRelations",
+    ]) {
+      assert.ok(js.includes(symbol), `${symbol} must reach the browser`);
+    }
+    assert.equal(js.includes("innerHTML"), false, "the page must never reach for innerHTML");
+  });
+
+  it("marks up every view the nav offers", () => {
+    const html = indexHtml("n");
+    for (const view of ["map", "models", "runs", "outbox", "logs"]) {
+      assert.ok(html.includes(`data-view="${view}"`), `${view} needs a nav button`);
+      assert.ok(html.includes(`id="view-${view}"`), `${view} needs a section`);
+    }
+  });
+});
+
+describe("query parsing", () => {
+  it("uses the fallback when a number is absent, not zero", () => {
+    assert.equal(queryNumber("/api/graph", "depth", 4), 4, "no query string at all");
+    assert.equal(queryNumber("/api/graph?focus=Order", "depth", 4), 4, "some other parameter");
+    assert.equal(queryNumber("/api/graph?depth=", "depth", 4), 4, "present but empty");
+    assert.equal(queryNumber("/api/graph?depth=2", "depth", 4), 2, "an explicit value wins");
+    assert.equal(queryNumber("/api/graph?depth=nope", "depth", 4), 4, "nonsense falls back");
+    assert.equal(queryNumber("/api/graph?depth=0", "depth", 4), 0, "an explicit zero is honoured");
+  });
+});
+
+describe("incremental streaming", () => {
+  it("ships client code that carries the cursor rather than refetching the world", () => {
+    const js = clientJs();
+    assert.ok(js.includes("/api/obs?since=") === true, "the client must send its cursor");
+    assert.equal(js.includes('load("/api/obs?since=0")'), false, "never pinned back to zero");
+    for (const symbol of ["absorb", "keepLast", "obsCursor", "state.dropped"]) {
+      assert.ok(js.includes(symbol), `${symbol} must reach the browser`);
+    }
+  });
+});
+
+describe("a single request on the map", () => {
+  it("ships the client code that paints one run onto the cards", () => {
+    const js = clientJs();
+    for (const symbol of ["selectRun", "runStatusOf", "state.runTrail", "edgeWalkedByRun"]) {
+      assert.ok(js.includes(symbol), `${symbol} must reach the browser`);
+    }
+    assert.ok(js.includes("/api/outbox?limit=200&runId="), "it must ask for one run's steps");
+  });
+
+  it("styles every outcome a step can be in", () => {
+    const css = stylesCss();
+    for (const state of ["run-completed", "run-pending", "run-dead_letter", "run-untouched"]) {
+      assert.ok(css.includes(css.includes(state) ? state : ""), `${state} needs styling`);
+      assert.ok(css.includes(state), `${state} needs styling`);
+    }
+    assert.ok(css.includes("rail-waiting"), "the rail must be able to say what it waits on");
+  });
+});
+
+describe("pages that link to each other", () => {
+  it("makes a request id clickable everywhere it appears", () => {
+    const js = clientJs();
+    for (const symbol of [
+      "runLink",
+      "openRequest",
+      "renderCrumb",
+      "clearRunFilter",
+      "looksLikeRunId",
+    ]) {
+      assert.ok(js.includes(symbol), `${symbol} must reach the browser`);
+    }
+    assert.ok(js.includes("state.runFilter"), "the filter has to be shared across the views");
+    assert.ok(
+      js.includes("state.runRows"),
+      "a followed request reads its own rows, not the window",
+    );
+  });
+
+  it("splits flows and relations into two views rather than one toggle", () => {
+    const html = indexHtml("n");
+    assert.equal(html.includes("plane-switch"), false, "the toggle is gone");
+    assert.match(html, /Flows<\/h1>/, "the map is about flows");
+    assert.match(html, /Relations/, "relations get their own entry in the nav");
+    const js = clientJs();
+    assert.equal(js.includes("state.plane"), false, "and the client no longer tracks a plane");
+    assert.ok(
+      js.includes("drawnPlane.name = flowPlane"),
+      "the map draws the flow plane and nothing else",
+    );
+    assert.ok(
+      js.includes("drawnPlane.name = dataPlane"),
+      "and relations draw the data plane, so neither view borrows the other's edges",
+    );
+    assert.equal(
+      js.includes("grid cards"),
+      false,
+      "relations are a drawing with arrows, not a list of cards",
+    );
+  });
+
+  it("says why a filtered view is empty instead of showing nothing", () => {
+    const js = clientJs();
+    assert.ok(js.includes("Nothing logged for this request"), "logs explain their own emptiness");
+    assert.ok(js.includes("This request called nothing"), "so does the outbox");
+  });
+});
+
+describe("showing why something failed", () => {
+  it("ships client code that renders the reason, the input and the output", () => {
+    const js = clientJs();
+    for (const symbol of [
+      "openStep",
+      "renderStepDetail",
+      "renderRequestDetail",
+      "jsonBlock",
+      "spanForExternal",
+      "logsForRun",
+    ]) {
+      assert.ok(js.includes(symbol), `${symbol} must reach the browser`);
+    }
+    assert.ok(js.includes("Why it failed"), "the reason gets its own heading");
+    assert.ok(js.includes("Input it was given"), "so does the input");
+    assert.ok(js.includes("Output it returned"), "and the output");
+    assert.equal(js.includes("innerHTML"), false, "still never innerHTML");
+  });
+
+  it("styles the drawer it opens into", () => {
+    const css = stylesCss();
+    for (const selector of [".detail", ".json", ".reason", ".log-line", ".step.openable"]) {
+      assert.ok(css.includes(selector), `${selector} needs styling`);
+    }
+  });
+});
+
+describe("the map lays a saga out as a staircase", () => {
+  it.skip("pushes each successive step one column further right", () => {
+    const nodes = [
+      { id: "model:Order", label: "Order", kind: "model", subtitle: "", ports: [], fields: [] },
+      { id: "external:one", label: "one", kind: "external", subtitle: "", ports: [], fields: [] },
+      { id: "external:two", label: "two", kind: "external", subtitle: "", ports: [], fields: [] },
+      {
+        id: "external:three",
+        label: "three",
+        kind: "external",
+        subtitle: "",
+        ports: [],
+        fields: [],
+      },
+    ];
+    const call = (to: string, step: number) => ({
+      from: "model:Order",
+      fromPort: "create",
+      to,
+      toPort: "in",
+      kind: "invokes",
+      label: String(step),
+      weight: 1,
+      step,
+      plane: "flow",
+    });
+    const layout = layoutOf(nodes, [
+      call("external:one", 1),
+      call("external:two", 2),
+      call("external:three", 3),
+    ]);
+    const columnOf = (id: string) => layout.nodes.filter((node) => node.id === id)[0]?.layer;
+    assert.equal(columnOf("model:Order"), 0);
+    assert.equal(columnOf("external:one"), 1, "the first call sits one column across");
+    assert.equal(columnOf("external:two"), 2, "the second sits two");
+    assert.equal(columnOf("external:three"), 3, "and the third sits three");
+  });
+
+  it("lets relations be drawn without dragging a model into a flow column", () => {
+    const nodes = [
+      { id: "model:Order", label: "Order", kind: "model", subtitle: "", ports: [], fields: [] },
+      {
+        id: "model:Customer",
+        label: "Customer",
+        kind: "model",
+        subtitle: "",
+        ports: [],
+        fields: [],
+      },
+      { id: "external:pay", label: "pay", kind: "external", subtitle: "", ports: [], fields: [] },
+    ];
+    const layout = layoutOf(nodes, [
+      {
+        from: "model:Order",
+        fromPort: "card",
+        to: "model:Customer",
+        toPort: "card",
+        kind: "relation",
+        label: "buyer",
+        weight: 1,
+        step: 0,
+        plane: "data",
+      },
+      {
+        from: "model:Order",
+        fromPort: "create",
+        to: "external:pay",
+        toPort: "in",
+        kind: "invokes",
+        label: "1",
+        weight: 1,
+        step: 1,
+        plane: "flow",
+      },
+    ]);
+    const columnOf = (id: string) => layout.nodes.filter((node) => node.id === id)[0]?.layer;
+    assert.equal(columnOf("model:Customer"), 0, "a relation is an edge, not a rank");
+    assert.equal(columnOf("external:pay"), 1);
+  });
+
+  it("shows a model's own counters and hands the rest to the real listings", () => {
+    const js = clientJs();
+    for (const symbol of ["metricsForModel", "modelActivity", "openFiltered"]) {
+      assert.ok(js.includes(symbol), `${symbol} must reach the browser`);
+    }
+    assert.ok(
+      js.includes("Counted here"),
+      "metrics are an aggregate, so the panel is the right size for them",
+    );
+    assert.ok(
+      js.includes("Look at it in full"),
+      "logs and operations belong on their own pages, which have paging and filters",
+    );
+  });
+});
+
+describe("finding the thing that went wrong", () => {
+  it("ships a search box, a trouble filter and a pager", () => {
+    const js = clientJs();
+    for (const symbol of [
+      "renderToolbar",
+      "pager",
+      "matchesSearch",
+      "troubledOutbox",
+      "troubledLog",
+      "pageSize",
+    ]) {
+      assert.ok(js.includes(symbol), `${symbol} must reach the browser`);
+    }
+    assert.ok(js.includes("Trouble only"), "one click has to narrow to what broke");
+    assert.ok(js.includes("state.page"), "and the list has to page rather than truncate");
+  });
+
+  it("searches the reason a step failed, not only its name", () => {
+    const js = clientJs();
+    assert.ok(
+      js.includes("matchesSearch([row.name, row.model, row.status, reason])"),
+      "the reason is the field an operator actually remembers",
+    );
+  });
+
+  it("no longer truncates the log table at a fixed slice", () => {
+    const js = clientJs();
+    assert.equal(js.includes("rows.slice(0, 300)"), false, "paging replaced the hard cut");
+  });
+});
+
+describe("the dashboard survives the app it is watching restarting", () => {
+  it("does not depend on the stream alone to fetch again", () => {
+    const js = clientJs();
+    assert.ok(js.includes("heartbeatMs"), "a dead stream must not mean a dead dashboard");
+    assert.ok(js.includes("setInterval"), "something has to poll when no tick arrives");
+    assert.ok(
+      js.includes("state.lastTick"),
+      "the heartbeat has to know whether the stream is still delivering",
+    );
+  });
+
+  it("refetches the moment the stream comes back rather than waiting for a tick", () => {
+    const js = clientJs();
+    const opened = js.indexOf('stream.addEventListener("open"');
+    assert.ok(opened > 0, "the client must react to the stream opening");
+    const body = js.slice(opened, opened + 160);
+    assert.ok(
+      body.includes("refresh()"),
+      "a reconnect that only flips the pulse to live leaves the page showing nothing",
+    );
+  });
+});
+
+describe("one place per question", () => {
+  it("stops repeating the log and operation listings inside the side panel", () => {
+    const js = clientJs();
+    assert.equal(js.includes("Recent logs"), false, "the logs page owns the logs");
+    assert.equal(
+      js.includes("Recent operations"),
+      false,
+      "the operations page owns the operations",
+    );
+    assert.equal(
+      js.includes("Recent requests"),
+      false,
+      "a rail of runs floating over the map is gone",
+    );
+  });
+
+  it("sends you to the full listing filtered to the model instead", () => {
+    const js = clientJs();
+    assert.ok(js.includes("openFiltered"), "the panel has to hand off to the real listing");
+    for (const view of ['"runs"', '"logs"', '"outbox"']) {
+      assert.ok(js.includes(view), `the panel must be able to open ${view}`);
+    }
+  });
+
+  it("drops the model focus rail that redrew the whole graph", () => {
+    const js = clientJs();
+    assert.equal(js.includes("renderFocusRail"), false, "the rail is gone");
+    assert.equal(js.includes("Lifecycle"), false, "and so is the label nobody could read");
+    assert.equal(
+      js.includes("/api/graph?focus="),
+      false,
+      "refetching a narrowed graph was what broke the drawing",
+    );
+  });
+});

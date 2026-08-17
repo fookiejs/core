@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>fookie — the model is the backend</title>
+    <meta
+      name="description"
+      content="Declare models. Write flows. GraphQL, sagas, and a live map fall out of that. Postgres is the control plane. When a step fails, the run unwinds."
+    />
+    <link rel="canonical" href="https://fookiejs.com/" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta property="og:title" content="fookie" />
+    <meta property="og:description" content="The model is the backend." />
+    <meta property="og:url" content="https://fookiejs.com/" />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#11110f" />
+    <style>
+      :root {
+        --paper: #f3efe6;
+        --ink: #11110f;
+        --mute: #6b675e;
+        --line: #d9d2c3;
+        --slab: #161513;
+        --code: #ece7db;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+      }
+      body {
+        font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+        line-height: 1.45;
+        -webkit-font-smoothing: antialiased;
+      }
+      a {
+        color: inherit;
+      }
+      code,
+      pre,
+      .mono {
+        font-family: ui-monospace, "SF Mono", "IBM Plex Mono", Menlo, monospace;
+      }
+      .bar {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 22px 28px;
+        border-bottom: 1px solid var(--ink);
+      }
+      .mark {
+        font-size: 18px;
+        letter-spacing: 0.18em;
+        text-transform: lowercase;
+        font-weight: 700;
+      }
+      nav {
+        display: flex;
+        gap: 22px;
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      nav a {
+        text-decoration: none;
+      }
+      nav a:hover {
+        text-decoration: underline;
+        text-underline-offset: 4px;
+      }
+      .hero {
+        padding: 72px 28px 56px;
+        max-width: 1180px;
+      }
+      .kicker {
+        font-family: ui-monospace, "SF Mono", Menlo, monospace;
+        font-size: 12px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--mute);
+        margin: 0 0 28px;
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(52px, 10vw, 128px);
+        line-height: 0.88;
+        letter-spacing: -0.045em;
+        font-weight: 600;
+      }
+      .lede {
+        max-width: 34em;
+        margin: 36px 0 0;
+        font-size: 22px;
+        color: var(--mute);
+      }
+      .cta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 36px;
+        align-items: center;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        height: 42px;
+        padding: 0 18px;
+        background: var(--ink);
+        color: var(--paper);
+        text-decoration: none;
+        font-family: ui-monospace, "SF Mono", Menlo, monospace;
+        font-size: 13px;
+        letter-spacing: 0.04em;
+      }
+      .install {
+        font-family: ui-monospace, "SF Mono", Menlo, monospace;
+        font-size: 13px;
+        border: 1px solid var(--ink);
+        padding: 10px 14px;
+        background: transparent;
+        cursor: pointer;
+      }
+      .stage {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        border-top: 1px solid var(--ink);
+        border-bottom: 1px solid var(--ink);
+      }
+      .pane {
+        background: var(--slab);
+        color: var(--code);
+        min-height: 520px;
+      }
+      .pane + .pane {
+        border-left: 1px solid #2a2824;
+      }
+      .pane header {
+        display: flex;
+        justify-content: space-between;
+        padding: 14px 18px;
+        border-bottom: 1px solid #2a2824;
+        font-family: ui-monospace, "SF Mono", Menlo, monospace;
+        font-size: 11px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: #9a9588;
+      }
+      pre {
+        margin: 0;
+        padding: 22px 18px 28px;
+        overflow: auto;
+        font-size: 12.5px;
+        line-height: 1.55;
+      }
+      .k {
+        color: #d27a4f;
+      }
+      .f {
+        color: #e8d5a3;
+      }
+      .s {
+        color: #8fb58a;
+      }
+      .c {
+        color: #7d7a72;
+      }
+      .n {
+        color: #9db7d4;
+      }
+      .claims {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        border-bottom: 1px solid var(--ink);
+      }
+      .claim {
+        padding: 36px 28px 40px;
+      }
+      .claim + .claim {
+        border-left: 1px solid var(--line);
+      }
+      .claim h2 {
+        margin: 0 0 12px;
+        font-size: 28px;
+        letter-spacing: -0.03em;
+      }
+      .claim p {
+        margin: 0;
+        color: var(--mute);
+        font-size: 16px;
+      }
+      .map {
+        padding: 48px 28px 56px;
+        max-width: 1180px;
+      }
+      .map pre.diagram {
+        background: transparent;
+        color: var(--ink);
+        padding: 0;
+        font-size: 13px;
+        line-height: 1.7;
+      }
+      .packs {
+        border-top: 1px solid var(--ink);
+      }
+      .pack {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 24px;
+        padding: 18px 28px;
+        border-bottom: 1px solid var(--line);
+        text-decoration: none;
+      }
+      .pack:hover {
+        background: #ebe6db;
+      }
+      .pack b {
+        font-family: ui-monospace, "SF Mono", Menlo, monospace;
+        font-size: 13px;
+        font-weight: 500;
+      }
+      .pack span {
+        color: var(--mute);
+      }
+      footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+        padding: 28px;
+        font-size: 13px;
+        color: var(--mute);
+      }
+      footer a {
+        text-decoration: none;
+      }
+      footer a:hover {
+        text-decoration: underline;
+        text-underline-offset: 3px;
+      }
+      @media (max-width: 860px) {
+        .stage,
+        .claims,
+        .pack {
+          grid-template-columns: 1fr;
+        }
+        .pane + .pane,
+        .claim + .claim {
+          border-left: 0;
+          border-top: 1px solid #2a2824;
+        }
+        .claim + .claim {
+          border-top-color: var(--line);
+        }
+        h1 {
+          font-size: 56px;
+        }
+        .bar,
+        .hero,
+        .claim,
+        .map,
+        .pack,
+        footer {
+          padding-left: 18px;
+          padding-right: 18px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bar">
+      <div class="mark">fookie</div>
+      <nav>
+        <a href="https://github.com/fookiejs/core">GitHub</a>
+        <a href="https://www.npmjs.com/package/@fookiejs/core">npm</a>
+        <a href="https://discord.com/invite/Y4BPxTUMsh">Discord</a>
+        <a href="mailto:umut@fookiejs.com">Contact</a>
+      </nav>
+    </div>
+    <section class="hero">
+      <p class="kicker">TypeScript · GraphQL · sagas</p>
+      <h1>The model<br />is the backend.</h1>
+      <p class="lede">
+        Declare models. Write flows. GraphQL, compensation, and a live map fall out of that. Postgres
+        holds the control plane. Redis can hold the hot rows. When a step fails, every undo runs.
+      </p>
+      <div class="cta">
+        <a class="btn" href="https://github.com/fookiejs/core">Read the source</a>
+        <button class="install" type="button" id="copy">
+          npm i @fookiejs/core @fookiejs/postgresql @fookiejs/graphql-server
+        </button>
+      </div>
+    </section>
+    <section class="stage">
+      <div class="pane">
+        <header><span>you write</span><span>model.ts</span></header>
+        <pre><code><span class="k">const</span> fraud = <span class="f">External</span>({
+  name: <span class="s">"fraud.score"</span>,
+  input: { amount: z.number() },
+  output: { score: z.number().int() },
+  attempts: <span class="n">3</span>,
+  backoff: <span class="s">"exponential"</span>,
+});
+
+<span class="k">const</span> Order = <span class="f">Model</span>({
+  name: <span class="s">"Order"</span>,
+  fields: {
+    amount: z.number().nonnegative(),
+    status: z.enum([<span class="s">"draft"</span>, <span class="s">"confirmed"</span>]),
+  },
+  flow: {
+    <span class="k">async</span> <span class="f">create</span>(flow) {
+      <span class="k">const</span> scored = <span class="k">await</span> flow.external(fraud, {
+        amount: flow.body.amount,
+      });
+      <span class="k">if</span> (scored.signal !== Done) <span class="k">return</span> scored.signal;
+      <span class="k">if</span> (scored.output.score &gt; <span class="n">80</span>) <span class="k">return</span> Failed;
+      flow.body.status = <span class="s">"confirmed"</span>;
+      <span class="k">return</span> Done;
+    },
+    <span class="k">async</span> <span class="f">list</span>(flow) {
+      flow.filter.status.eq(<span class="s">"confirmed"</span>);
+      <span class="k">return</span> Done;
+    },
+  },
+});
+
+graphqlServer(app, { port: [<span class="s">"4000"</span>] });
+analyze(app, { port: [<span class="s">"4300"</span>] });</code></pre>
+      </div>
+      <div class="pane">
+        <header><span>they call</span><span>graphql</span></header>
+        <pre><code><span class="c"># authorization ran in list.</span>
+<span class="c"># the mutation is a saga, not a POST.</span>
+
+<span class="k">mutation</span> {
+  createOrder(body: {
+    amount: <span class="n">40</span>
+    status: draft
+  }) {
+    signal
+    id
+    runId
+  }
+}
+
+<span class="k">query</span> {
+  orders {
+    id
+    amount
+    status
+  }
+}
+
+<span class="c"># RUNNING is data.</span>
+<span class="c"># the external sits in the outbox.</span>
+<span class="c"># resume it. if it dead-letters,</span>
+<span class="c"># every compensation walks.</span></code></pre>
+      </div>
+    </section>
+    <section class="claims">
+      <article class="claim">
+        <h2>GraphQL is the door.</h2>
+        <p>
+          Deep relation reads without N+1. Snapshot-consistent. Mutations return
+          <code class="mono">signal</code>, <code class="mono">id</code>, <code class="mono">runId</code>.
+          Live updates are SSE. <code class="mono">who</code> returns client ids.
+        </p>
+      </article>
+      <article class="claim">
+        <h2>Failure unwinds.</h2>
+        <p>
+          An exhausted external dead-letters. Then every completed step that declared a compensation
+          is undone, not only the last one. Each undo has its own outbox row.
+        </p>
+      </article>
+      <article class="claim">
+        <h2>Analyze is a map.</h2>
+        <p>
+          Models, runs, outbox, dead letters. Token gate. Not your public surface. Never put it on the
+          internet.
+        </p>
+      </article>
+    </section>
+    <section class="map">
+      <p class="kicker">shape</p>
+      <pre class="diagram">model ──flow──► external                 GraphQL
+                   │                        │
+                   ▼                        ▼
+                outbox                 snapshot read
+                   │                   no N+1
+                   ▼
+               analyze
+            map · runs · dead letters</pre>
+    </section>
+    <section class="packs">
+      <a class="pack" href="https://github.com/fookiejs/core/tree/main/packages/core">
+        <b>@fookiejs/core</b><span>Models, flows, outbox, compensation</span>
+      </a>
+      <a class="pack" href="https://github.com/fookiejs/core/tree/main/packages/postgresql">
+        <b>@fookiejs/postgresql</b><span>Control plane. Transactions, saga, relations</span>
+      </a>
+      <a class="pack" href="https://github.com/fookiejs/core/tree/main/packages/redis">
+        <b>@fookiejs/redis</b><span>Same query surface. Hot rows</span>
+      </a>
+      <a class="pack" href="https://github.com/fookiejs/core/tree/main/packages/graphql-server">
+        <b>@fookiejs/graphql-server</b><span>The product API</span>
+      </a>
+      <a class="pack" href="https://github.com/fookiejs/core/tree/main/packages/realtime">
+        <b>@fookiejs/realtime</b><span>Rules</span>
+      </a>
+      <a class="pack" href="https://github.com/fookiejs/core/tree/main/packages/analyze">
+        <b>@fookiejs/analyze</b><span>The debugger</span>
+      </a>
+      <a class="pack" href="https://github.com/fookiejs/core/tree/main/packages/fuzz">
+        <b>@fookiejs/fuzz</b><span>Seeded walks across the possibility space</span>
+      </a>
+      <a class="pack" href="https://github.com/fookiejs/core/tree/main/packages/otlp">
+        <b>@fookiejs/otlp</b><span>Optional OTLP</span>
+      </a>
+      <a class="pack" href="https://github.com/fookiejs/core/tree/main/packages/eslint-plugin">
+        <b>@fookiejs/eslint-plugin</b><span>The house rules, as lint</span>
+      </a>
+    </section>
+    <footer>
+      <span>MIT · Node 22+</span>
+      <span>
+        <a href="mailto:umut@fookiejs.com">umut@fookiejs.com</a>
+        ·
+        <a href="https://github.com/fookiejs/core">github.com/fookiejs/core</a>
+      </span>
+    </footer>
+    <script>
+      const copy = document.getElementById("copy");
+      const text = "npm i @fookiejs/core @fookiejs/postgresql @fookiejs/graphql-server";
+      copy.addEventListener("click", async () => {
+        await navigator.clipboard.writeText(text);
+        copy.textContent = "copied";
+        window.setTimeout(() => {
+          copy.textContent = text;
+        }, 1200);
+      });
+    </script>
+  </body>
+</html>

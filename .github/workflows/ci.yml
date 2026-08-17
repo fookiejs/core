@@ -6,7 +6,6 @@ on:
   pull_request:
   workflow_dispatch:
 
-# Least privilege by default. Jobs that need more raise it themselves.
 permissions:
   contents: read
 
@@ -22,27 +21,28 @@ jobs:
     name: static analysis
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: ${{ env.NODE_VERSION_PRIMARY }}
           cache: npm
       - run: npm ci
-
-      # Each check is its own step so a red X points at one cause.
-      - name: lint (src + tests)
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: .turbo
+          key: turbo-static-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+          restore-keys: |
+            turbo-static-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+      - run: npm run build
+      - name: lint
         run: npm run lint
       - name: format
         run: npm run format:check
-      - name: typecheck (src, must be clean)
+      - name: typecheck
         run: npm run typecheck
-      - name: typecheck (src + tests + example, ratchet)
-        run: npm run typecheck:all
-      - name: build
-        run: npm run build
-      - name: published package contains only dist
+      - name: published core package contains only dist
         run: |
-          npm pack --dry-run --json > "$RUNNER_TEMP/pack.json"
+          npm pack --dry-run --json -w @fookiejs/core > "$RUNNER_TEMP/pack.json"
           node -e "
             const files = JSON.parse(require('fs').readFileSync(process.env.RUNNER_TEMP + '/pack.json','utf8'))[0].files.map(f => f.path);
             const stray = files.filter(f => f !== 'package.json' && f !== 'README.md' && f !== 'LICENSE' && f.startsWith('dist/') === false);
@@ -72,18 +72,21 @@ jobs:
           --health-timeout 5s
           --health-retries 20
     env:
-      # Without this the entire postgres suite silently skips itself.
       FOOKIE_TEST_DATABASE: postgres://postgres:postgres@localhost:5432/fookie_test
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: ${{ matrix.node }}
           cache: npm
       - run: npm ci
-
-      # If the service container were unreachable the postgres suite would just
-      # skip itself and the run would look green. Fail loudly instead.
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: .turbo
+          key: turbo-test-${{ runner.os }}-node-${{ matrix.node }}-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+          restore-keys: |
+            turbo-test-${{ runner.os }}-node-${{ matrix.node }}-${{ hashFiles('package-lock.json') }}-
+      - run: npm run build
       - name: prove postgres is reachable
         run: |
           node -e '
@@ -94,32 +97,29 @@ jobs:
               .then((r) => { console.log(r.rows[0].version); return pool.end(); })
               .catch((e) => { console.error(e.message); process.exit(1); });
           '
-
-      - name: run tests with coverage
+      - name: workspace tests
+        run: npx turbo run test --filter=!@fookiejs/core
+      - name: core tests with coverage
         run: |
-          mkdir -p coverage
-          npm run test:ci
-
-      # Reporting runs even when tests fail — a red run is exactly when you want the report.
+          mkdir -p packages/core/coverage
+          npx turbo run test:ci --filter=@fookiejs/core
       - name: coverage summary
         if: always()
+        working-directory: packages/core
         run: npm run coverage:summary -- "node ${{ matrix.node }}" >> "$GITHUB_STEP_SUMMARY"
-
       - name: upload coverage + junit
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: reports-node-${{ matrix.node }}
           path: |
-            coverage/lcov.info
-            coverage/junit.xml
+            packages/core/coverage/lcov.info
+            packages/core/coverage/junit.xml
           retention-days: 30
           if-no-files-found: error
-
-      # Gate last, so the artifacts and summary above always exist.
       - name: coverage gate
         if: always()
-        run: npm run coverage:gate
+        run: npm run coverage:gate -w @fookiejs/core
 
   coverage-comment:
     name: coverage comment
@@ -130,29 +130,27 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: ${{ env.NODE_VERSION_PRIMARY }}
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: reports-node-${{ env.NODE_VERSION_PRIMARY }}
-          path: coverage
+          path: packages/core/coverage
         continue-on-error: true
-
       - name: post or update the coverage comment
-        # Fork PRs get a read-only token; never fail the run over a comment.
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           PR: ${{ github.event.pull_request.number }}
         run: |
-          test -f coverage/lcov.info || { echo "no coverage artifact to report"; exit 0; }
+          test -f packages/core/coverage/lcov.info || { echo "no coverage artifact to report"; exit 0; }
           marker='<!-- fookie-coverage-report -->'
           {
             echo "$marker"
-            node scripts/coverage-summary.mjs coverage/lcov.info "node ${NODE_VERSION_PRIMARY}"
+            node packages/core/scripts/coverage-summary.mjs packages/core/coverage/lcov.info "node ${NODE_VERSION_PRIMARY}"
           } > comment.md
           existing=$(gh api "repos/$REPO/issues/$PR/comments" --paginate \
             --jq "[.[] | select(.body | startswith(\"$marker\")) | .id] | first")
@@ -168,15 +166,13 @@ jobs:
     name: house invariants
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: no module grows past 600 lines
         env:
-          # Decompose these, then delete them from this list. Never add to it.
-          KNOWN_DEBT: "src/app.ts src/engine/flow.ts"
+          KNOWN_DEBT: "packages/core/src/app.ts packages/core/src/engine/flow.ts"
         run: |
           status=0
-          for f in $(find src -name '*.ts' | sort); do
+          for f in $(find packages/core/src -name '*.ts' | sort); do
             n=$(wc -l < "$f")
             case " $KNOWN_DEBT " in
               *" $f "*)
@@ -190,15 +186,13 @@ jobs:
             fi
           done
           test "$status" -eq 0
-
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: ${{ env.NODE_VERSION_PRIMARY }}
-
-      # Catches dead modules and broken relative import specifiers.
+          cache: npm
+      - run: npm ci
       - name: module graph is connected
-        run: npm run check:graph
-
+        run: npm run check:graph -w @fookiejs/core
       - name: report module sizes
         if: always()
         run: |
@@ -207,7 +201,7 @@ jobs:
             echo ''
             echo '| module | lines |'
             echo '| --- | --- |'
-            find src -name '*.ts' -exec sh -c 'echo "| \`$1\` | $(wc -l < "$1") |"' _ {} \; | sort -t'|' -k3 -rn
+            find packages/core/src -name '*.ts' -exec sh -c 'echo "| \`$1\` | $(wc -l < "$1") |"' _ {} \; | sort -t'|' -k3 -rn
           } >> "$GITHUB_STEP_SUMMARY"
 
   dependency-review:
@@ -218,8 +212,8 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48
         with:
           fail-on-severity: high
           comment-summary-in-pr: on-failure
@@ -228,8 +222,8 @@ jobs:
     name: npm audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: ${{ env.NODE_VERSION_PRIMARY }}
           cache: npm

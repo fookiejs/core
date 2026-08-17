@@ -1,0 +1,40 @@
+{
+  "name": "@fookiejs/demo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A 3x3 space that wires every fookie package: Redis beads, GraphQL, SSE, analyze.",
+  "type": "module",
+  "scripts": {
+    "up": "docker compose up --build --scale fookie=10 --scale realtime=10",
+    "down": "docker compose down -v",
+    "db:up": "docker compose up -d postgres redis",
+    "db:down": "docker compose down -v",
+    "start": "node --import tsx src/main.ts",
+    "fuzz": "node --import tsx src/fuzz.ts",
+    "build": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --import tsx --test \"tests/*.test.ts\"",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@fookiejs/analyze": "*",
+    "@fookiejs/core": "*",
+    "@fookiejs/fuzz": "*",
+    "@fookiejs/graphql-server": "*",
+    "@fookiejs/otlp": "*",
+    "@fookiejs/postgresql": "*",
+    "@fookiejs/realtime": "*",
+    "@fookiejs/redis": "*",
+    "pg": "^8.22.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.1",
+    "@types/pg": "^8.20.0",
+    "prettier": "^3.8.1",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3"
+  }
+}

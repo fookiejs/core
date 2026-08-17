@@ -1,10 +1,9 @@
-node_modules
-dist
-coverage
-.git
-.github
-tests
-scripts
-example.ts
+**/node_modules
+**/dist
+**/coverage
+**/.turbo
+**/.git
+**/.github
+**/pioneer
 *.log
 .DS_Store

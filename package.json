@@ -1,68 +1,29 @@
 {
-  "name": "@fookiejs/core",
-  "version": "0.2.4",
-  "description": "Model-driven backend framework with observable flows",
+  "name": "fookie",
+  "private": true,
   "type": "module",
-  "main": "dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
-  "files": [
-    "dist"
+  "workspaces": [
+    "packages/*"
   ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/fookiejs/core.git"
-  },
-  "homepage": "https://github.com/fookiejs/core#readme",
-  "bugs": {
-    "url": "https://github.com/fookiejs/core/issues"
-  },
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "typecheck:all": "node scripts/typecheck-ratchet.mjs",
-    "typecheck:all:accept": "node scripts/typecheck-ratchet.mjs --write",
-    "start": "node dist/index.js",
-    "example": "tsx --tsconfig tsconfig.example.json example.ts",
-    "test": "node --import tsx --experimental-test-module-mocks --test \"tests/*.test.ts\"",
-    "test:coverage": "node --import tsx --experimental-test-module-mocks --test --experimental-test-coverage --test-coverage-include=src/** --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 \"tests/*.test.ts\"",
-    "test:ci": "node --import tsx --experimental-test-module-mocks --test --experimental-test-coverage --test-coverage-include=src/** --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=coverage/lcov.info --test-reporter=junit --test-reporter-destination=coverage/junit.xml \"tests/*.test.ts\"",
-    "test:pg": "node --import tsx --experimental-test-module-mocks --test \"tests/postgres.test.ts\"",
-    "test:watch": "node --import tsx --experimental-test-module-mocks --test --watch \"tests/*.test.ts\"",
-    "check:graph": "node scripts/check-module-graph.mjs",
-    "coverage:summary": "node scripts/coverage-summary.mjs coverage/lcov.info",
-    "coverage:gate": "node scripts/coverage-ratchet.mjs coverage/lcov.info",
-    "coverage:gate:accept": "node scripts/coverage-ratchet.mjs coverage/lcov.info --write",
-    "lint": "eslint .",
-    "format": "prettier --write .",
-    "format:check": "prettier --check ."
-  },
-  "license": "MIT",
-  "dependencies": {
-    "@opentelemetry/api": "^1.9.0",
-    "@types/node": "^26.0.1",
-    "@types/pg": "^8.20.0",
-    "pg": "^8.22.0",
-    "zod": "^4.4.3"
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "format": "turbo run format",
+    "format:check": "turbo run format:check",
+    "publish:changed": "node scripts/publish-changed.mjs",
+    "site": "npx --yes serve site -p 4173"
   },
   "devDependencies": {
-    "@fookiejs/eslint-plugin": "^0.1.10",
-    "@typescript-eslint/parser": "^8.0.0",
-    "eslint": "^10.6.0",
-    "prettier": "^3.8.1",
-    "tsx": "^4.22.4",
-    "typescript": "^6.0.3"
+    "turbo": "^2.10.10"
   },
-  "keywords": [
-    "framework",
-    "ddd",
-    "workflow",
-    "observability"
-  ]
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "npm@10.9.7",
+  "overrides": {
+    "typescript": "6.0.3"
+  },
+  "license": "MIT"
 }

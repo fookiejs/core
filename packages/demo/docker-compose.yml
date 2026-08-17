@@ -1,0 +1,99 @@
+services:
+  proxy:
+    image: nginx:1.27-alpine
+    ports:
+      - "3001:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      fookie:
+        condition: service_started
+      realtime:
+        condition: service_started
+  fookie:
+    build:
+      context: ../..
+      dockerfile: packages/demo/Dockerfile
+    expose:
+      - "3001"
+    environment:
+      ROLE: api
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/fookie_demo
+      REDIS_URL: redis://redis:6379
+      API_PORT: "3001"
+      API_BIND: "0.0.0.0"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+  realtime:
+    build:
+      context: ../..
+      dockerfile: packages/demo/Dockerfile
+    expose:
+      - "4100"
+    environment:
+      ROLE: realtime
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/fookie_demo
+      REDIS_URL: redis://redis:6379
+      REALTIME_PORT: "4100"
+      REALTIME_BIND: "0.0.0.0"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+  tick:
+    build:
+      context: ../..
+      dockerfile: packages/demo/Dockerfile
+    environment:
+      ROLE: tick
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/fookie_demo
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+  analyze:
+    build:
+      context: ../..
+      dockerfile: packages/demo/Dockerfile
+    ports:
+      - "4300:4300"
+    environment:
+      ROLE: analyze
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/fookie_demo
+      REDIS_URL: redis://redis:6379
+      ANALYZE_PORT: "4300"
+      ANALYZE_BIND: "0.0.0.0"
+      ANALYZE_TOKEN: ${ANALYZE_TOKEN:-demo}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+  postgres:
+    image: postgres:18
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: fookie_demo
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d fookie_demo"]
+      interval: 2s
+      timeout: 5s
+      retries: 20
+  redis:
+    image: redis:7
+    ports:
+      - "6381:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 5s
+      retries: 20
